@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Architecting Intelligence: Building LLMs From First Principle – Series Overview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    :root {
+      --bg-main: #f6eaaf;
+      --bg-card: #ffffff;
+      --bg-soft: #ead3c1;
+      --accent:  #941236;
+      --text-main: #222222;
+      --text-muted: #555555;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, #ffffff, var(--bg-main));
+      color: var(--text-main);
+      line-height: 1.7;
+    }
+
+    .series-page-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 3.5rem;
+    }
+
+    /* LAYOUT: main + sidebar */
+    .series-layout {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+
+    .series-main {
+      flex: 3;
+    }
+
+    .series-sidebar {
+      flex: 1.2;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .series-layout {
+        flex-direction: column;
+      }
+      .series-sidebar {
+        width: 100%;
+      }
+    }
+
+    /* HERO */
+    .series-hero {
+      background: var(--bg-card);
+      border-radius: 1.5rem;
+      padding: 2.5rem 2.5rem 2.2rem;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+      border-top: 6px solid var(--accent);
+      margin-bottom: 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .series-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.9rem;
+      border-radius: 999px;
+      background: var(--bg-soft);
+      color: var(--accent);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .series-pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .series-title {
+      font-size: 2.2rem;
+      margin: 0.2rem 0 0.6rem;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    .series-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      margin: 0 0 1.6rem;
+      max-width: 50rem;
+    }
+
+    .series-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .series-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .series-meta-label {
+      font-weight: 600;
+      color: #7a0f29;
+    }
+
+    .series-bg-orbit {
+      position: absolute;
+      right: -80px;
+      top: -80px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(234, 211, 193, 0.8), rgba(148, 18, 54, 0.1));
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .series-bg-orbit-small {
+      position: absolute;
+      right: 40px;
+      bottom: -40px;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(246, 234, 175, 0.9), transparent);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    /* SECTION TITLES */
+    .section-heading {
+      margin: 2.3rem 0 0.6rem;
+      font-size: 1.6rem;
+      color: var(--accent);
+    }
+
+    .section-subheading {
+      margin: 0 0 1.2rem;
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 42rem;
+    }
+
+    /* GRID OF CHAPTER CARDS */
+    .chapters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.4rem;
+    }
+
+    .chapter-card {
+      background: #fffdf7;
+      border-radius: 1rem;
+      padding: 1.3rem 1.35rem 1.3rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+      border: 1px solid rgba(148, 18, 54, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chapter-status {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.8rem;
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+    }
+
+    .chapter-status.published {
+      background: rgba(30, 150, 100, 0.12);
+      color: #1e9664;
+    }
+
+    .chapter-status.soon {
+      background: rgba(148, 18, 54, 0.06);
+      color: var(--accent);
+    }
+
+    .chapter-part {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #7a0f29;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .chapter-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #3a111c;
+      margin: 0.1rem 0 0.15rem;
+    }
+
+    .chapter-description {
+      font-size: 0.98rem;
+      color: var(--text-muted);
+      margin: 0.2rem 0 0.4rem;
+    }
+
+    .chapter-meta-line {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.4rem;
+      align-items: baseline;
+    }
+
+    .chapter-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.9rem;
+      margin-top: 0.3rem;
+      text-decoration: none;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .chapter-link:hover {
+      text-decoration: underline;
+    }
+
+    /* FLOW SECTION */
+    .flow-container {
+      margin-top: 1.2rem;
+      background: rgba(255, 253, 247, 0.9);
+      border-radius: 1.2rem;
+      padding: 1.8rem 1.7rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+      border: 1px solid rgba(148,18,54,0.08);
+    }
+
+    .flow-intro {
+      font-size: 1.05rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .flow-steps {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      counter-reset: flow-step;
+    }
+
+    .flow-step {
+      position: relative;
+      padding-left: 2.3rem;
+      margin-bottom: 1.3rem;
+    }
+
+    .flow-step::before {
+      counter-increment: flow-step;
+      content: counter(flow-step);
+      position: absolute;
+      left: 0;
+      top: 0.12rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    .flow-step-title {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #3a111c;
+      margin-bottom: 0.15rem;
+    }
+
+    .flow-step-body {
+      font-size: 0.97rem;
+      color: var(--text-muted);
+    }
+
+    .tiny-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+    }
+
+    /* SIDEBAR CARDS */
+    .sidebar-card {
+      background: #fffdf7;
+      border-radius: 1rem;
+      padding: 1.2rem 1.2rem 1.25rem;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.05);
+      border: 1px solid rgba(148,18,54,0.08);
+    }
+
+    .sidebar-title {
+      font-size: 1.1rem;
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+    }
+
+    .sidebar-link {
+      display: block;
+      padding: 0.5rem 0.4rem;
+      border-radius: 0.6rem;
+      text-decoration: none;
+      background: transparent;
+      transition: background 0.18s ease, transform 0.12s ease;
+    }
+
+    .sidebar-link + .sidebar-link {
+      margin-top: 0.15rem;
+    }
+
+    .sidebar-link:hover {
+      background: rgba(234, 211, 193, 0.5);
+      transform: translateX(2px);
+    }
+
+    .sidebar-link-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #3a111c;
+    }
+
+    .sidebar-link-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .sidebar-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.6rem;
+    }
+
+    /* COMMENTS */
+    .comments-section {
+      margin-top: 3rem;
+    }
+
+    .comments-section h2 {
+      font-size: 1.4rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .series-hero {
+        padding: 2rem 1.6rem;
+        border-radius: 1.1rem;
+      }
+      .series-title {
+        font-size: 1.9rem;
+      }
+      .series-subtitle {
+        font-size: 1.02rem;
+      }
+      .series-meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .flow-container {
+        padding: 1.5rem 1.3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- NAVBAR -->
+  <header class="site-header">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <span class="brand-mark">AM</span>
+        <span class="brand-text">Adithya MD</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="blogs.html">Blogs</a>
+        <a href="projects.html">Projects</a>
+        <a href="startup.html">Moisture Meter</a>
+
+        <div class="dropdown">
+          <button class="dropbtn">Teaching &amp; Outreach ▾</button>
+          <div class="dropdown-content">
+            <a href="teaching.html">Teaching Roles</a>
+            <a href="workshops.html">Workshops</a>
+            <a href="talks.html">Talks</a>
+          </div>
+        </div>
+
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="series-page-wrapper">
+    <div class="series-layout">
+
+      <!-- MAIN CONTENT -->
+      <div class="series-main">
+        <!-- HERO -->
+        <section class="series-hero">
+          <div class="series-bg-orbit"></div>
+          <div class="series-bg-orbit-small"></div>
+
+          <div class="series-pill">
+            <span class="series-pill-dot"></span>
+            LLM series · Foundations
+          </div>
+
+          <h1 class="series-title">
+            Architecting Intelligence: Building LLMs From First Principle
+          </h1>
+
+          <p class="series-subtitle">
+            A long-form, foundations-first journey from raw text and encodings, to tokens, embeddings,
+            transformers, and training. This series stops at a solid mental model of <strong>base LLMs</strong>
+          </p>
+
+          <div class="series-meta-row">
+            <div class="series-meta-item">
+              <span class="series-meta-label">Scope:</span>
+              Encodings · tokenisation · embeddings · transformers · training &amp; generation.
+            </div>
+              <div class="series-meta-item">
+              <span class="series-meta-label">Status:</span>
+              In progress: early parts live, more coming.
+            </div>
+          </div>
+        </section>
+
+        <!-- PUBLISHED CHAPTERS -->
+        <section>
+          <h2 class="section-heading">Published Blogs</h2>
+          <p class="section-subheading">
+            These are the parts that are already written. 
+          </p>
+
+          <div class="chapters-grid">
+            <!-- Part 1 -->
+            <article class="chapter-card">
+              <span class="chapter-status published">Published</span>
+              <div class="chapter-part">Part 1</div>
+              <h3 class="chapter-title">The Strange History of Teaching Computers to Read Anything at All</h3>
+              <p class="chapter-description">
+                Telegraphs, Morse, ASCII, encoding wars, Unicode, and UTF-8. We follow the messy journey from
+                “machines can only do arithmetic” to “machines can at least store text”, and see why that still
+                doesn’t give us <em>meaning</em>.
+              </p>
+              <div class="chapter-meta-line">
+                <span>Focus: encodings &amp; “text → numbers”</span>
+                <span>~10–15 min read</span>
+              </div>
+              <a class="chapter-link" href="llm1.html">
+                Read Part 1 →
+              </a>
+            </article>
+
+            <!-- Part 2 -->
+            <article class="chapter-card">
+              <span class="chapter-status published">Published</span>
+              <div class="chapter-part">Part 2</div>
+              <h3 class="chapter-title">When Numbers Start to Mean Something</h3>
+              <p class="chapter-description">
+                We warm up with images (MNIST), distances, and cosine similarity to build the idea of
+                “geometric meaning”. Then we ask: if this works so nicely for pictures, can we do something
+                similar for text, or are Unicode code points doomed to be meaningless integers?
+              </p>
+              <div class="chapter-meta-line">
+                <span>Focus: geometry, similarity, structure</span>
+                <span>~10–15 min read</span>
+              </div>
+              <a class="chapter-link" href="llm2.html">
+                Read Part 2 →
+              </a>
+            </article>
+          </div>
+        </section>
+
+        <!-- UPCOMING CHAPTERS -->
+        <section>
+          <h2 class="section-heading">Upcoming chapters</h2>
+          <p class="section-subheading">
+            The remaining parts focus on the basic building blocks of modern LLMs: tokens, embeddings,
+            transformers, and training. No agents, no tool use — we stop right at a clean, well-understood
+            base model.
+          </p>
+
+          <div class="chapters-grid">
+            <!-- Part 3 -->
+            <article class="chapter-card">
+              <span class="chapter-status soon">Planned</span>
+              <div class="chapter-part">Part 3</div>
+              <h3 class="chapter-title">Tokens: The Basic Units Our Models Actually See</h3>
+              <p class="chapter-description">
+                What exactly is a token? Why “word = token” falls apart quickly, how characters are too small,
+                and why subword units are the awkward but effective compromise that modern LLMs are built on.
+              </p>
+              <div class="chapter-meta-line">
+                <span>Focus: words vs chars vs subwords</span>
+                <span>Foundation for tokenisers</span>
+              </div>
+            </article>
+
+            <!-- Part 4 -->
+            <article class="chapter-card">
+              <span class="chapter-status soon">Planned</span>
+              <div class="chapter-part">Part 4</div>
+              <h3 class="chapter-title">How Tokenisers Are Built: BPE, WordPiece &amp; Friends</h3>
+              <p class="chapter-description">
+                A conceptual walkthrough of data-driven tokeniser construction. We’ll look at ideas like
+                “merge frequent pairs”, vocab size trade-offs, and why these strange algorithms give us such
+                usable token sets in practice.
+              </p>
+              <div class="chapter-meta-line">
+                <span>Focus: tokeniser algorithms</span>
+                <span>Designing vocabularies</span>
+              </div>
+            </article>
+
+            <!-- Part 5 -->
+            <article class="chapter-card">
+              <span class="chapter-status soon">Planned</span>
+              <div class="chapter-part">Part 5</div>
+              <h3 class="chapter-title">From Tokens to Vectors: Embeddings and High-Dimensional Meaning</h3>
+              <p class="chapter-description">
+                Tokens become points in a high-dimensional space. We connect Part 2’s geometry to language:
+                neighbourhoods, similarity, analogies, and why “meaningful” numbers are the first real step
+                towards understanding.
+              </p>
+              <div class="chapter-meta-line">
+                <span>Focus: embedding layers &amp; geometry</span>
+                <span>Link to cosine similarity</span>
+              </div>
+            </article>
+
+            <!-- Part 6 -->
+            <article class="chapter-card">
+              <span class="chapter-status soon">Planned</span>
+              <div class="chapter-part">Part 6</div>
+              <h3 class="chapter-title">From Sequences to Transformers</h3>
+              <p class="chapter-description">
+                We move from single-token vectors to full sequences. Why RNNs struggle, what attention actually
+                does, and how a transformer block wires embeddings, positional encodings, and self-attention
+                into something that can model long-range dependencies.
+              </p>
+              <div class="chapter-meta-line">
+                <span>Focus: attention &amp; transformer blocks</span>
+                <span>The “second big pillar”</span>
+              </div>
+            </article>
+
+            <!-- Part 7 -->
+            <article class="chapter-card">
+              <span class="chapter-status soon">Planned</span>
+              <div class="chapter-part">Part 7</div>
+              <h3 class="chapter-title">Training and Generation: How LLMs Actually Learn</h3>
+              <p class="chapter-description">
+                Next-token prediction, cross-entropy, optimisation, and sampling strategies. We’ll keep it
+                conceptually honest: enough detail to demystify training and text generation, without pretending
+                you need to derive every gradient by hand.
+              </p>
+              <div class="chapter-meta-line">
+                <span>Focus: loss, optimisation, decoding</span>
+                <span>End of the foundation</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- FLOW / ROADMAP SECTION -->
+        <section>
+          <h2 class="section-heading">How this series flows</h2>
+          <p class="section-subheading">
+            The idea is to build upwards in layers: encodings → tokens → vectors → transformers → training.
+            No big jumps, no “just trust the math”, and a clean stopping point once the core model is clear.
+          </p>
+
+          <div class="flow-container">
+            <p class="flow-intro">
+              You can think of the series as a staircase. Each step answers one big question properly before
+              we move on to the next.
+            </p>
+
+            <ul class="flow-steps">
+              <li class="flow-step">
+                <div class="flow-step-title">Layer 0: How text becomes bytes and code points</div>
+                <div class="flow-step-body">
+                  Part 1 covers encodings: telegraphs, ASCII, Unicode, UTF-8. The goal here is to make it
+                  painfully clear what the machine actually sees when we think we’re “just typing text”.
+                </div>
+              </li>
+
+              <li class="flow-step">
+                <div class="flow-step-title">Layer 1: How numbers acquire geometry</div>
+                <div class="flow-step-body">
+                  Part 2 uses images and distances to build intuition for geometric meaning. This gives us
+                  the mental model we’ll later reuse for embeddings: points, neighbourhoods, similarity.
+                </div>
+              </li>
+
+              <li class="flow-step">
+                <div class="flow-step-title">Layer 2: Tokens as the units of text</div>
+                <div class="flow-step-body">
+                  Parts 3–4 talk about what tokens are, why we need subwords, and how tokenisers are built
+                  from real text. By the end, “tokenisation” should feel like a design choice, not a mystery.
+                </div>
+              </li>
+
+              <li class="flow-step">
+                <div class="flow-step-title">Layer 3: Embeddings and high-dimensional meaning</div>
+                <div class="flow-step-body">
+                  Part 5 turns tokens into vectors, ties back to the geometry from Part 2, and explains why
+                  this is the first place where “text as numbers” starts to become “text as structure”.
+                </div>
+              </li>
+
+              <li class="flow-step">
+                <div class="flow-step-title">Layer 4: Transformers as sequence models</div>
+                <div class="flow-step-body">
+                  Part 6 takes sequences of embeddings and shows how the transformer architecture processes
+                  them: attention, positional information, and stacked blocks that slowly refine the signal.
+                </div>
+              </li>
+
+              <li class="flow-step">
+                <div class="flow-step-title">Layer 5: Training and generation</div>
+                <div class="flow-step-body">
+                  Part 7 closes the loop: how we train the model with next-token prediction and cross-entropy,
+                  and how we turn a trained model into something that can generate text with different sampling
+                  strategies. This is where we stop: at a clean view of a base LLM.
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <p class="tiny-note">
+            After Part 7, we deliberately <em>do not</em> go into agents or tools. The goal of this series is
+            to make the core model feel intuitive and understandable — not to chase every buzzword.
+          </p>
+        </section>
+
+        <!-- COMMENTS -->
+        <section id="comments" class="comments-section">
+          <h2>Comments</h2>
+
+          <!-- Giscus: replace data-* values with actual ones from https://giscus.app -->
+          <script src="https://giscus.app/client.js"
+                  data-repo="YOUR_USERNAME/YOUR_REPO"
+                  data-repo-id="YOUR_REPO_ID"
+                  data-category="Blog Comments"
+                  data-category-id="YOUR_CATEGORY_ID"
+                  data-mapping="pathname"
+                  data-strict="0"
+                  data-reactions-enabled="1"
+                  data-emit-metadata="0"
+                  data-input-position="bottom"
+                  data-theme="light"
+                  data-lang="en"
+                  crossorigin="anonymous"
+                  async>
+          </script>
+        </section>
+      </div>
+
+      <!-- SIDEBAR -->
+      <aside class="series-sidebar">
+        <div class="sidebar-card">
+          <h2 class="sidebar-title">Other series on this site</h2>
+
+          <!-- You can adjust these links / names to your actual series pages -->
+          <a class="sidebar-link" href="dsp-embedded-series.html">
+            <div class="sidebar-link-title">DSP in Embedded Systems</div>
+            <div class="sidebar-link-meta">
+              Signals, sampling, filters, and all the slightly painful but beautiful stuff.
+            </div>
+          </a>
+
+          <a class="sidebar-link" href="embedded-c-series.html">
+            <div class="sidebar-link-title">Writing Embedded Code With Understanding</div>
+            <div class="sidebar-link-meta">
+              From “it compiles” to “it’s actually well-written C on microcontrollers”.
+            </div>
+          </a>
+
+          <a class="sidebar-link" href="math-stats-ml-series.html">
+            <div class="sidebar-link-title">Mathematics &amp; Statistics for ML</div>
+            <div class="sidebar-link-meta">
+              Probability, linear algebra, optimisation — but explained like you actually want to use them.
+            </div>
+          </a>
+
+          <a class="sidebar-link" href="tinyllm-esp32-series.html">
+            <div class="sidebar-link-title">TinyLLM on ESP32</div>
+            <div class="sidebar-link-meta">
+              Getting language models to run on embarrassingly small hardware.
+            </div>
+          </a>
+
+          <p class="sidebar-note">
+            I’ll keep this updated as the other series go live and stabilise. Right now it’s more of a
+            “coming soon / under construction” corner.
+          </p>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+</body>
+</html>
