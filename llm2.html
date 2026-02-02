@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>{{BLOG_TITLE}}</title>
+  <title>From Characters to Concepts: Why Text Alone Isn’t Enough</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
 
@@ -523,11 +523,438 @@ Before trying to construct such a space for language, it helps to look at a case
 
 <hr class="section-divider">
 
+
 <h3>Why we start with images</h3>
 
 <p>
-Images give us exactly that starting point.
+Images give us a starting point that text never had. Not because they are simpler, but because
+they already live inside a structure that learning systems understand. An image is not a symbol.
+It is a field of numbers laid out in space. Even before learning begins, geometry is already present.
 </p>
+
+<p>
+To make this concrete, let us look at a real dataset that almost everyone in machine learning
+has encountered at some point: MNIST.
+</p>
+
+<div class="image-block">
+  <div class="image-frame">
+    <img
+      src="https://upload.wikimedia.org/wikipedia/commons/b/b1/MNIST_dataset_example.png"
+      alt="MNIST dataset example showing handwritten digits 0 to 9"
+      loading="lazy"
+    >
+    <div class="image-placeholder-label">MNIST dataset samples</div>
+  </div>
+
+  <p class="image-caption">
+    A classic snapshot: different people writing the same digits, with just enough variation to remind us that
+    “the same class” is never literally the same pixels.
+  </p>
+</div>
+
+<p>
+Nothing semantic has happened yet. There is no concept of “three” or “eight” inside the machine.
+All that exists are pixel intensities. But those intensities already encode structure.
+Two handwritten threes tend to activate similar regions of the image.
+A three and an eight do not.
+</p>
+
+<p>
+This is the crucial difference from text. The similarity is not something we must invent.
+It is already there, waiting to be measured.
+</p>
+
+<hr class="section-divider">
+
+<h3>Images as vectors, not pictures</h3>
+
+<p>
+Each MNIST image is a 28×28 grid of grayscale values. If we simply read those values row by row,
+we obtain a vector with 784 components. Nothing clever. No learning. Just bookkeeping.
+</p>
+
+<!-- 28×28 image → 784 vector (SVG diagram, Blog style) -->
+<div class="viz-diagram-wrap">
+  <svg class="viz-diagram" viewBox="0 0 1100 360" role="img" aria-label="28 by 28 image flattened into a 784-dimensional vector">
+    <defs>
+      <linearGradient id="bgGrad28" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#fff7da"></stop>
+        <stop offset="100%" stop-color="#fdeedc"></stop>
+      </linearGradient>
+
+      <filter id="softShadow28" x="-20%" y="-30%" width="140%" height="160%">
+        <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000000" flood-opacity="0.08"/>
+      </filter>
+
+      <style>
+        .label { font: 800 18px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #941236; letter-spacing: 0.5px; }
+        .small { font: 650 14px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #555; }
+        .mono  { font: 750 16px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; fill: #222; }
+        .mono2 { font: 700 14px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; fill: #222; opacity: 0.85; }
+      </style>
+    </defs>
+
+    <!-- Outer rounded card -->
+    <rect x="22" y="22" width="1056" height="260" rx="28" fill="url(#bgGrad28)" filter="url(#softShadow28)"></rect>
+    <rect x="22" y="22" width="1056" height="260" rx="28" fill="none" stroke="#e3a3a3" stroke-width="3" stroke-dasharray="10 10"></rect>
+
+    <!-- Left: stylized 28×28 grid -->
+    <g transform="translate(95 70)">
+      <rect x="0" y="0" width="210" height="210" rx="22" fill="rgba(255,255,255,0.92)" stroke="rgba(148,18,54,0.18)" stroke-width="2"></rect>
+
+      <!-- Grid (14×14 drawn, labelled as 28×28 to keep it readable) -->
+      <g transform="translate(24 24)">
+        <!-- background micro-cells -->
+        <g opacity="0.18">
+          <!-- vertical lines -->
+          <path d="M0 0 V162 M12 0 V162 M24 0 V162 M36 0 V162 M48 0 V162 M60 0 V162 M72 0 V162 M84 0 V162 M96 0 V162 M108 0 V162 M120 0 V162 M132 0 V162 M144 0 V162 M156 0 V162 M168 0 V162"
+                stroke="#222" stroke-width="1"/>
+          <!-- horizontal lines -->
+          <path d="M0 0 H168 M0 12 H168 M0 24 H168 M0 36 H168 M0 48 H168 M0 60 H168 M0 72 H168 M0 84 H168 M0 96 H168 M0 108 H168 M0 120 H168 M0 132 H168 M0 144 H168 M0 156 H168 M0 168 H168"
+                stroke="#222" stroke-width="1"/>
+        </g>
+
+        <!-- “ink” pixels (a rough digit stroke) -->
+        <g>
+          <!-- draw a few filled cells to suggest a handwritten digit -->
+          <rect x="60" y="18" width="12" height="12" rx="3" fill="rgba(148,18,54,0.75)"></rect>
+          <rect x="72" y="18" width="12" height="12" rx="3" fill="rgba(148,18,54,0.75)"></rect>
+          <rect x="84" y="30" width="12" height="12" rx="3" fill="rgba(148,18,54,0.75)"></rect>
+          <rect x="72" y="42" width="12" height="12" rx="3" fill="rgba(148,18,54,0.75)"></rect>
+          <rect x="60" y="54" width="12" height="12" rx="3" fill="rgba(148,18,54,0.75)"></rect>
+          <rect x="72" y="54" width="12" height="12" rx="3" fill="rgba(148,18,54,0.75)"></rect>
+          <rect x="84" y="66" width="12" height="12" rx="3" fill="rgba(148,18,54,0.75)"></rect>
+          <rect x="72" y="78" width="12" height="12" rx="3" fill="rgba(148,18,54,0.75)"></rect>
+          <rect x="60" y="78" width="12" height="12" rx="3" fill="rgba(148,18,54,0.75)"></rect>
+        </g>
+      </g>
+
+      <text x="105" y="244" text-anchor="middle" class="mono2">28 × 28 pixels</text>
+      <text x="105" y="-18" text-anchor="middle" class="small">grayscale image</text>
+    </g>
+
+    <!-- Middle: arrow + "flatten" -->
+    <g>
+      <path d="M365 170 H655" stroke="rgba(148,18,54,0.55)" stroke-width="8" stroke-linecap="round"></path>
+      <path d="M655 170 L632 156" stroke="rgba(148,18,54,0.55)" stroke-width="8" stroke-linecap="round"></path>
+      <path d="M655 170 L632 184" stroke="rgba(148,18,54,0.55)" stroke-width="8" stroke-linecap="round"></path>
+      <text x="510" y="140" text-anchor="middle" class="label">flatten</text>
+      <text x="510" y="160" text-anchor="middle" class="small">read row-by-row</text>
+    </g>
+
+    <!-- Right: vector representation -->
+    <g transform="translate(700 92)">
+      <rect x="0" y="0" width="320" height="156" rx="22" fill="rgba(255,255,255,0.92)" stroke="rgba(148,18,54,0.18)" stroke-width="2"></rect>
+
+      <!-- vector bars -->
+      <g transform="translate(22 34)">
+        <rect x="0"  y="18" width="14" height="52" rx="6" fill="rgba(0,0,0,0.08)"></rect>
+        <rect x="20" y="6"  width="14" height="64" rx="6" fill="rgba(148,18,54,0.55)"></rect>
+        <rect x="40" y="26" width="14" height="44" rx="6" fill="rgba(0,0,0,0.10)"></rect>
+        <rect x="60" y="0"  width="14" height="70" rx="6" fill="rgba(148,18,54,0.45)"></rect>
+        <rect x="80" y="18" width="14" height="52" rx="6" fill="rgba(148,18,54,0.30)"></rect>
+
+        <text x="118" y="44" class="mono">…</text>
+
+        <rect x="150" y="10" width="14" height="60" rx="6" fill="rgba(148,18,54,0.40)"></rect>
+        <rect x="170" y="28" width="14" height="42" rx="6" fill="rgba(0,0,0,0.10)"></rect>
+        <rect x="190" y="22" width="14" height="48" rx="6" fill="rgba(148,18,54,0.30)"></rect>
+
+        <text x="230" y="44" class="mono">…</text>
+      </g>
+
+      <text x="160" y="132" text-anchor="middle" class="mono">[ x₁, x₂, x₃, … , x₇₈₄ ]</text>
+      <text x="160" y="180" text-anchor="middle" class="mono2">vector in ℝ⁷⁸⁴</text>
+
+      <text x="160" y="-18" text-anchor="middle" class="small">one long list of pixel values</text>
+    </g>
+
+    <!-- Badge -->
+
+  </svg>
+
+  <p class="viz-diagram-caption">
+    A handwritten digit is just a grid of numbers. Flatten the grid and you get a single vector —
+    a point in a 784-dimensional space.
+  </p>
+</div>
+
+<style>
+  .viz-diagram-wrap{
+    margin: 2.6rem 0 1.2rem;
+  }
+  .viz-diagram{
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .viz-diagram-caption{
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: 0.95rem;
+    color: #555;
+  }
+</style>
+
+
+<p>
+At this point, something profound but quiet has happened. The image is no longer a picture.
+It is a location. A point in space. And once things live in space, geometry applies automatically.
+</p>
+
+<p>
+Two images that look similar to us tend to land near each other in this space.
+Images that look different tend to land far apart.
+No labels are required for this to be true.
+</p>
+
+<hr class="section-divider">
+
+<h3>What similarity actually means mathematically</h3>
+
+<p>
+Once an image is flattened, it is no longer a “picture” to the machine. It is a vector.
+For MNIST, that means a point
+\(\mathbf{x} \in \mathbb{R}^{784}\),
+where each coordinate is a pixel intensity (after whatever normalisation you choose).
+At that moment, the question “do these two digits look alike?” becomes a purely geometric question:
+how close are two points in \(\mathbb{R}^{784}\), and how aligned are their directions?
+</p>
+
+<p>
+There are two similarity notions that show up everywhere because they capture two different intuitions:
+</p>
+
+<p>
+<strong>(1) Euclidean distance.</strong>
+Given two image vectors \(\mathbf{x}, \mathbf{y} \in \mathbb{R}^{784}\),
+their pixel-level discrepancy is
+</p>
+
+<p>
+\[
+d(\mathbf{x}, \mathbf{y}) \;=\; \lVert \mathbf{x} - \mathbf{y} \rVert_2
+\;=\;
+\sqrt{\sum_{i=1}^{784} (x_i - y_i)^2 }.
+\]
+</p>
+
+<p>
+This is the most literal notion of similarity: if \(d(\mathbf{x},\mathbf{y})\) is small, then the two images
+agree on most pixels, most of the time. But it is also fragile. A small shift in stroke position,
+a thicker pen, or a global brightness change can move many coordinates and inflate the distance,
+even when a human would still confidently say “same digit”.
+</p>
+
+<p>
+<strong>(2) Cosine similarity.</strong>
+Cosine similarity focuses not on raw pixel values, but on the <em>direction</em> of the vectors.
+It is defined by
+</p>
+
+<p>
+\[
+\mathrm{cosine}(\mathbf{x}, \mathbf{y})
+\;=\;
+\frac{\mathbf{x}^{\top}\mathbf{y}}{\lVert \mathbf{x} \rVert_2 \,\lVert \mathbf{y} \rVert_2 }.
+\]
+</p>
+
+<p>
+This formula is doing something extremely clean:
+</p>
+
+<ul>
+  <li>\(\mathbf{x}^{\top}\mathbf{y} = \sum_i x_i y_i\) measures raw overlap: do “bright” pixels in \(\mathbf{x}\) tend to also be bright in \(\mathbf{y}\)?</li>
+  <li>Dividing by \(\lVert \mathbf{x} \rVert_2 \lVert \mathbf{y} \rVert_2\) removes scale: if one image is uniformly darker or thicker, the similarity does not collapse.</li>
+</ul>
+
+<p>
+Geometrically, cosine similarity is exactly the cosine of the angle \(\theta\) between the vectors:
+</p>
+
+<p>
+\[
+\mathrm{cosine}(\mathbf{x}, \mathbf{y}) = \cos(\theta),
+\qquad
+\theta = \arccos\!\Big(\frac{\mathbf{x}^{\top}\mathbf{y}}{\lVert \mathbf{x} \rVert_2 \,\lVert \mathbf{y} \rVert_2 }\Big).
+\]
+</p>
+
+<p>
+So “similar” becomes a crisp statement: two images behave similarly if their vectors point in almost the same direction,
+i.e., \(\theta\) is small, i.e., \(\cos(\theta)\) is close to 1.
+</p>
+
+<div class="viz-diagram-wrap">
+  <svg class="viz-diagram" viewBox="0 0 1100 420" role="img" aria-label="Cosine similarity geometry: two vectors and their angle">
+    <defs>
+      <linearGradient id="bgGradCosMath" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#fff7da"></stop>
+        <stop offset="100%" stop-color="#fdeedc"></stop>
+      </linearGradient>
+
+      <filter id="softShadowCosMath" x="-20%" y="-30%" width="140%" height="160%">
+        <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000000" flood-opacity="0.08"/>
+      </filter>
+
+      <marker id="arrowHeadCosMath" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+        <path d="M0,0 L10,5 L0,10 Z" fill="rgba(148,18,54,0.78)"></path>
+      </marker>
+
+      <style>
+        .tMain { font: 800 18px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #941236; letter-spacing: 0.6px; }
+        .tSmall { font: 650 14px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #555; }
+        .tMono { font: 750 15px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; fill: #222; }
+        .tMono2 { font: 700 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; fill: #222; opacity: 0.85; }
+      </style>
+    </defs>
+
+    <!-- Outer rounded card -->
+    <rect x="22" y="22" width="1056" height="300" rx="28" fill="url(#bgGradCosMath)" filter="url(#softShadowCosMath)"></rect>
+    <rect x="22" y="22" width="1056" height="300" rx="28" fill="none" stroke="#e3a3a3" stroke-width="3" stroke-dasharray="10 10"></rect>
+
+    <!-- Left explanatory text -->
+    <text x="70" y="85" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="19" fill="#222">
+      🧭 Cosine similarity between image vectors
+    </text>
+    <text x="70" y="120" class="tMono">
+      cosine(x, y) = (xᵀy) / (||x|| · ||y||)
+    </text>
+    <text x="70" y="148" class="tMono2">
+      = cos(θ)  →  θ small means “high similarity”
+    </text>
+
+    <!-- Diagram area -->
+    <g transform="translate(520 64)">
+      <!-- axes -->
+      <path d="M0 230 H460" stroke="rgba(34,34,34,0.18)" stroke-width="3" stroke-linecap="round"></path>
+      <path d="M40 270 V0" stroke="rgba(34,34,34,0.18)" stroke-width="3" stroke-linecap="round"></path>
+
+      <!-- origin -->
+      <circle cx="40" cy="230" r="6" fill="#222"></circle>
+      <text x="52" y="250" class="tSmall">O</text>
+
+      <!-- vector x -->
+      <path d="M40 230 L365 120" stroke="rgba(148,18,54,0.78)" stroke-width="9"
+            stroke-linecap="round" marker-end="url(#arrowHeadCosMath)"></path>
+      <text x="375" y="116" class="tSmall">x</text>
+
+      <!-- vector y (small angle) -->
+      <path d="M40 230 L350 152" stroke="rgba(177,59,76,0.72)" stroke-width="9"
+            stroke-linecap="round" marker-end="url(#arrowHeadCosMath)"></path>
+      <text x="360" y="158" class="tSmall">y</text>
+
+      <!-- angle arc -->
+      <path d="M150 195
+               A140 140 0 0 1 145 214"
+            fill="none" stroke="rgba(148,18,54,0.55)" stroke-width="5" stroke-linecap="round"></path>
+      <text x="165" y="188" class="tMono2">θ</text>
+
+      <!-- dot product cue -->
+      <rect x="220" y="246" width="220" height="48" rx="16"
+            fill="rgba(255,255,255,0.92)" stroke="rgba(148,18,54,0.18)" stroke-width="2"></rect>
+      <text x="330" y="275" text-anchor="middle" class="tMono">
+        xᵀy = ||x||·||y||·cos(θ)
+      </text>
+    </g>
+
+    <!-- Badge -->
+    <g>
+      <rect x="842" y="245" width="220" height="46" rx="23"
+            fill="rgba(255,255,255,0.92)" stroke="rgba(148,18,54,0.22)" stroke-width="2"></rect>
+      <text x="952" y="275" text-anchor="middle"
+            font-family="system-ui, -apple-system, Segoe UI, sans-serif"
+            font-size="14" font-weight="800" letter-spacing="2" fill="#941236">
+        COSINE SIMILARITY
+      </text>
+    </g>
+  </svg>
+
+  <p class="viz-diagram-caption">
+    Cosine similarity is the cosine of the angle between two vectors:
+    small angle \( \theta \Rightarrow \cos(\theta)\approx 1 \Rightarrow \) high similarity.
+  </p>
+</div>
+
+<p>
+Now the key point becomes mathematically obvious. Suppose \(\mathbf{y} = \alpha \mathbf{x}\) for some \(\alpha > 0\).
+That corresponds to “the same pattern but scaled” (thicker stroke, stronger contrast, different overall brightness).
+Then
+</p>
+
+<p>
+\[
+\mathrm{cosine}(\mathbf{x}, \mathbf{y})
+=
+\frac{\mathbf{x}^{\top}(\alpha\mathbf{x})}{\lVert\mathbf{x}\rVert_2 \,\lVert\alpha\mathbf{x}\rVert_2}
+=
+\frac{\alpha \lVert\mathbf{x}\rVert_2^2}{\lVert\mathbf{x}\rVert_2 \,(\alpha \lVert\mathbf{x}\rVert_2)}
+=
+1.
+\]
+</p>
+
+<p>
+So cosine similarity explicitly treats positive rescaling as “no change in identity”, which is exactly what we want for
+handwritten digits: the geometry respects the <em>shape</em> more than the absolute intensity.
+This is the moment where meaning starts to look like a property of space.
+Not a definition. Not a label. A geometry.
+</p>
+
+<div class="emphasis-line">
+Once you put data into a space, “meaning” becomes something you can measure.
+</div>
+
+<style>
+  .viz-diagram-wrap{
+    margin: 2.6rem 0 1.2rem;
+  }
+  .viz-diagram{
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .viz-diagram-caption{
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: 0.95rem;
+    color: #555;
+  }
+</style>
+
+
+<hr class="section-divider">
+
+<h3>Why this matters for language</h3>
+
+<p>
+This is why images are such a powerful place to begin. They show us what learning systems
+want but text does not naturally provide.
+</p>
+
+<p>
+Unicode gave text stable identities. But identities are isolated points.
+They do not live in space. They have no distance, no angle, no neighbourhood.
+A learning system has nothing to measure except equality.
+</p>
+
+<p>
+Images taught us a lesson the hard way:
+</p>
+
+<div class="emphasis-line">
+Learning requires a space where similarity is measurable.
+</div>
+
+<p>
+If language is ever going to be learnable in the same way images are,
+we must first build such a space for words.
+That is the problem embeddings are trying to solve.
+</p>
+
+
 
 
 
