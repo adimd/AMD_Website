@@ -451,90 +451,331 @@
         </p>
 
         <!-- BLOG CONTENT GOES HERE -->
-        <h3>What we actually achieved last time</h3>
+       <section id="blog4-section-1">
+  <h2>The question we can no longer avoid</h2>
 
-<p>
-By the end of the last piece, text had finally made it into machines. Not in a metaphorical sense, but in a very literal one. Characters had stable numerical identities. Those numbers survived storage, copying, and transmission. Unicode closed a long chapter that began with telegraphs and broken encodings.
-</p>
+  <p>
+    At the end of Blog 3, we arrived at a very precise stopping point. We had taken a dataset in \( \mathbb{R}^d \), built a matrix from it using nothing more than outer products, and reduced the entire unsupervised learning problem to a single decision: choose a unit direction \(w\) that maximizes the quantity \(w^\top M w\). Up to that moment, everything we did was preparation. We carefully rewrote the problem until nothing felt arbitrary, until every step followed naturally from the idea of compression and reconstruction.
+  </p>
 
-<p>
-This was a real achievement. It solved a real problem. Text stopped breaking.
-</p>
+  <p>
+    Now the question becomes unavoidable. How do we actually find such a direction. We cannot guess, and we cannot scan over all possible directions, especially in high-dimensional spaces where that idea does not even make sense. The answer has to come from the matrix \(M\) itself, because that is the only object that contains information about the data.
+  </p>
 
-<p>
-But it is important to be precise about what was solved. What we built was a way for machines to hold text, not a way for machines to work with it.
-</p>
+  <p>
+    So the right way to think is not to ask which direction we should try, but to ask which directions the data already prefers. The expression \(w^\top M w\) is not just a formula. It assigns a score to every possible direction, and that score changes as we rotate \(w\) while keeping its length fixed.
+  </p>
 
-<div class="emphasis-line">
-Text became representable.
-Nothing became meaningful.
-</div>
+  <p>
+    Some directions interact weakly with the matrix, meaning the score barely changes as we move around them. Other directions interact very strongly, where even a small change in orientation causes a noticeable drop in the score. These special directions are not chosen by us. They are already encoded in the structure of \(M\).
+  </p>
 
-<hr class="section-divider">
+  <p>
+    In the rest of this blog, we will uncover what these directions are, how to identify them, and why aligning \(w\) with one of them solves the optimization problem we have been carefully building toward.
+  </p>
 
-<h3>What these numbers do and do not contain</h3>
+</section>
+<section id="blog4-section-2">
+  <h2>What happens when a matrix acts on a direction</h2>
 
-<p>
-The numbers assigned by Unicode are identifiers. They are references into a table that everyone agrees on. The number for a character is stable, global, and unambiguous. That is exactly why Unicode works.
-</p>
+  <p>
+    To make progress, we need to understand one simple idea. What does the matrix \(M\) actually do to a direction \(w\).
+    Not algebraically, but geometrically.
+  </p>
 
-<p>
-But these numbers carry no internal structure. The number for one character does not know anything about the number next to it. The number for a word does not know it forms a unit. There is no notion of similarity, distance, or relationship built into the representation itself.
-</p>
+  <p>
+    Take any unit direction \(w \in \mathbb{R}^d\). Now apply the matrix \(M\) to it and look at the resulting vector:
+  </p>
 
-<p>
-This is not a flaw. It is a design choice. Unicode was never meant to express relationships. It was meant to prevent disagreement.
-</p>
+  <p class="math-block">
+    \[
+      Mw
+    \]
+  </p>
 
-<hr class="section-divider">
+  <p>
+    The output is another vector in \( \mathbb{R}^d \). In general, this new vector does not point in the same direction as \(w\).
+    It may be tilted, stretched, or compressed in some complicated way.
+  </p>
 
-<h3>Why learning changes the problem</h3>
+  <p>
+    But notice something important. The quantity we are trying to maximize,
+    \(w^\top M w\), is exactly the inner product between \(w\) and the transformed vector \(Mw\).
+  </p>
 
-<p>
-As long as machines were only storing and displaying text, this limitation did not matter. But learning systems ask a different kind of question. They are not asked to preserve symbols. They are asked to detect patterns.
-</p>
+  <p class="math-block">
+    \[
+      w^\top M w = w^\top (Mw)
+    \]
+  </p>
 
-<p>
-Learning systems adjust themselves based on regularities in data. They respond to repetition. To closeness. To things behaving similarly across different contexts. All of these ideas quietly assume the existence of structure.
-</p>
+  <p>
+    This gives us a very concrete interpretation.
+    For a chosen direction \(w\), the score we assign to it depends on how well \(Mw\) aligns with \(w\) itself.
+  </p>
 
-<div class="emphasis-line">
-Learning does not operate on labels.
-It operates on relationships.
-</div>
+  <p>
+    If \(Mw\) points mostly in the same direction as \(w\), the inner product is large.
+    If \(Mw\) points away from \(w\), the inner product is smaller.
+    If \(Mw\) happens to be nearly orthogonal to \(w\), the score drops significantly.
+  </p>
 
-<p>
-Once you see this, the problem becomes unavoidable. If all a system sees is a sequence of unrelated integers, there is no obvious place for similarity to come from. There is no notion of “close” or “far.” There is only equality or inequality.
-</p>
+  <p>
+    So maximizing \(w^\top M w\) is not an abstract goal.
+    We are searching for a direction that, when passed through the matrix built from the data,
+    comes back pointing as closely as possible to itself.
+  </p>
 
-<hr class="section-divider">
+  <p>
+    This is a very strong requirement.
+    Most directions do not have this property.
+    Apply \(M\) to them, and they turn into something pointing elsewhere.
+  </p>
 
-<h3>The question we can no longer avoid</h3>
+  <p>
+    But if there exists a direction for which the action of \(M\) produces a vector aligned with that same direction,
+    then that direction will naturally score very high under \(w^\top M w\).
+  </p>
 
-<p>
-Turning text into numbers was necessary. It was not sufficient.
-</p>
+  <p>
+    In the next section, we will look at what it means for a direction to retain its orientation after a matrix acts on it,
+    and why those directions play a central role in solving our optimization problem.
+  </p>
 
-<p>
-If a machine is going to learn anything from text, those numbers must live in a space where relationships are even possible. A space where patterns can form. A space where similarity is something the system can respond to, rather than something it has to invent from scratch.
-</p>
+</section>
 
-<div class="emphasis-line">
-Meaning does not arrive as a definition.
-It arrives as structure.
-</div>
+<section id="blog4-section-3">
+  <h2>Directions that remain aligned</h2>
 
-<p>
-Before trying to construct such a space for language, it helps to look at a case where this idea is already unavoidable. Where numbers naturally live in a geometric arrangement, and similarity is not a metaphor but a measurable quantity.
-</p>
+  <p>
+    In the previous section, we noticed something subtle but important.
+    The quantity \(w^\top M w\) measures how well a direction \(w\) aligns with the vector obtained after applying the matrix \(M\) to it.
+    In other words, we are rewarding directions that come back pointing in roughly the same direction after the transformation.
+  </p>
 
-<hr class="section-divider">
+  <p>
+    Now let us push this idea one step further.
+    Imagine a direction \(w\) with a very special property.
+    When the matrix \(M\) acts on it, the result does not tilt away or rotate elsewhere.
+    It simply stretches or shrinks the same direction.
+  </p>
 
-<h3>Why we start with images</h3>
+  <p class="math-block">
+    \[
+      Mw = \lambda w
+    \]
+  </p>
 
-<p>
-Images give us exactly that starting point.
-</p>
+  <p>
+    Here, \(\lambda\) is just a scalar.
+    The important part is not its value, but the fact that the direction remains unchanged.
+  </p>
+
+  <p>
+    For such a direction, the score we are trying to maximize becomes especially simple.
+  </p>
+
+  <p class="math-block">
+    \[
+      w^\top M w = w^\top (\lambda w) = \lambda (w^\top w)
+    \]
+  </p>
+
+  <p>
+    Since we are working with unit vectors, \(w^\top w = 1\).
+    That means the score is exactly \(\lambda\).
+  </p>
+
+  <p>
+    This tells us something very important.
+    For these special directions, the optimization problem is no longer ambiguous.
+    The score is fixed entirely by how much the matrix stretches that direction.
+  </p>
+
+  <p>
+    Now compare this with a generic direction.
+    For most choices of \(w\), the vector \(Mw\) points somewhere else.
+    Part of it aligns with \(w\), and part of it spills into other directions.
+    The inner product \(w^\top M w\) only captures the aligned portion.
+  </p>
+
+  <p>
+    That means generic directions are inherently inefficient.
+    Some of the transformation produced by \(M\) is wasted in directions that do not contribute to the score.
+  </p>
+
+  <p>
+    In contrast, a direction that remains aligned after the transformation captures everything.
+    Nothing is wasted.
+  </p>
+
+  <p>
+    This observation explains why these special directions matter.
+    If our goal is to find a direction that maximizes \(w^\top M w\),
+    then directions that remain aligned under the action of \(M\) are natural candidates.
+  </p>
+
+  <p>
+    There is a name for such directions.
+    They are called eigenvectors of the matrix \(M\),
+    and the corresponding scalar \(\lambda\) is called the eigenvalue.
+  </p>
+
+  <p>
+    We did not introduce this name earlier because the concept comes first.
+    Eigenvectors are not abstract objects invented for linear algebra.
+    They are the directions that the data itself preserves.
+  </p>
+
+  <p>
+    In the next and final section of this blog,
+    we will see why choosing the direction corresponding to the largest eigenvalue
+    solves the optimization problem we started with.
+  </p>
+
+</section>
+
+<section id="blog4-section-4">
+  <h2>Why the largest eigenvalue gives the answer</h2>
+
+  <p>
+    We now have all the pieces on the table.
+    We are trying to choose a unit direction \(w\) that maximizes the quantity \(w^\top M w\),
+    and we have identified a special family of directions that interact with the matrix in a very clean way.
+  </p>
+
+  <p>
+    For a direction \(w\) that satisfies \(Mw = \lambda w\),
+    the value of the objective becomes especially simple.
+    Because the direction remains aligned after the transformation,
+    the score reduces to a single number.
+  </p>
+
+  <p class="math-block">
+    \[
+      w^\top M w = \lambda
+    \]
+  </p>
+
+  <p>
+    This means that, among these special directions,
+    the problem of choosing the best \(w\) becomes the problem of choosing the largest possible \(\lambda\).
+  </p>
+
+  <p>
+    Now think about what happens if we choose any other direction that is not one of these aligned directions.
+    When we apply the matrix to it, the result tilts away.
+    Part of the transformed vector aligns with \(w\), and part of it leaks into other directions.
+  </p>
+
+  <p>
+    The inner product \(w^\top M w\) only measures the aligned portion.
+    Whatever spills into other directions does not contribute.
+    That loss is unavoidable for generic directions.
+  </p>
+
+  <p>
+    In contrast, an aligned direction wastes nothing.
+    Every bit of the transformation contributes to the score.
+    This already suggests why such directions are optimal candidates.
+  </p>
+
+  <p>
+    But there is something even stronger going on.
+  </p>
+
+  <p>
+    Any unit direction \(w\) can be written as a combination of these special directions.
+    When we evaluate \(w^\top M w\),
+    the matrix effectively weights each component according to how strongly it stretches that direction.
+  </p>
+
+  <p>
+    Directions associated with larger stretching factors contribute more to the score.
+    Directions associated with smaller stretching factors contribute less.
+  </p>
+
+  <p>
+    This means that, no matter how we mix directions,
+    the maximum possible value of \(w^\top M w\) is capped by the largest stretching factor encoded in the matrix.
+  </p>
+
+  <p>
+    And that maximum is achieved precisely when we choose \(w\) to align with the direction that the matrix stretches the most.
+  </p>
+
+  <p>
+    In other words, the direction corresponding to the largest eigenvalue of \(M\)
+    captures the maximum total projection of the data.
+    It minimizes reconstruction error.
+    It is the most information-preserving one-dimensional representation of the dataset.
+  </p>
+
+  <p>
+    Nothing in this conclusion was assumed at the beginning.
+    It emerged naturally from thinking about compression, projection, and alignment.
+  </p>
+
+  <p>
+    This is why unsupervised learning problems that begin with reconstruction
+    so often end with eigenvalues and eigenvectors.
+    They are not abstract algebraic objects.
+    They are the directions the data itself prefers.
+  </p>
+
+</section>
+<section id="blog4-conclusion">
+  <h2>Where this leaves us</h2>
+
+  <p>
+    Let us pause and reflect on what we have uncovered in this blog.
+  </p>
+
+  <p>
+    We began with a question that sounded purely computational.
+    Given a dataset, how do we choose a single direction that allows us to represent the data with minimal loss.
+    There were no labels, no targets, and no notion of correctness.
+    Only the idea of compression and reconstruction.
+  </p>
+
+  <p>
+    By carefully following that idea, we arrived at a concrete optimization problem.
+    We were not asked to guess a direction or impose structure on the data.
+    We were asked to let the data speak through a matrix built directly from it.
+  </p>
+
+  <p>
+    That matrix turned out to encode more than just numbers.
+    It encoded how the dataset spreads across space,
+    and which directions preserve the most information when the data is projected.
+  </p>
+
+  <p>
+    We saw that the search for the best direction is not arbitrary.
+    Among all possible directions, there exist a few special ones that the matrix preserves.
+    These directions are not defined by us.
+    They are determined entirely by the structure of the data.
+  </p>
+
+  <p>
+    Choosing the direction associated with the largest eigenvalue is not a trick or a mathematical coincidence.
+    It is simply the direction along which the data retains the maximum possible projection energy.
+    It is the most faithful one-dimensional representation of the dataset.
+  </p>
+
+  <p>
+    At this point, we have solved the problem we set out to solve.
+    We now know how to find the best single direction for compressing data,
+    and we understand why that direction has the form it does.
+  </p>
+
+  <p>
+    In the next blog, we will move beyond a single direction.
+    We will ask how to represent data using multiple directions.
+ 
+  </p>
+
+</section>
 
 
         <!-- COMMENTS SECTION -->

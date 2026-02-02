@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{BLOG_TITLE}}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Theme colors:
+       #f6eaaf (light yellow), #ead3c1 (soft peach), #941236 (deep maroon) -->
+  <style>
+    :root {
+      --bg-main: #f6eaaf;
+      --bg-card: #ffffff;
+      --bg-soft: #ead3c1;
+      --accent:  #941236;
+      --text-main: #222222;
+      --text-muted: #555555;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, #ffffff, var(--bg-main));
+      color: var(--text-main);
+      line-height: 1.7;
+    }
+
+    .page-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 3.5rem;
+    }
+
+    /* Main layout: article + sidebar */
+    .blog-layout {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+
+    .blog-card {
+      background: var(--bg-card);
+      border-radius: 1.25rem;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+      padding: 2.5rem 2.75rem;
+      border-top: 6px solid var(--accent);
+      flex: 3;
+    }
+
+    .blog-sidebar {
+      flex: 1.2;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .blog-layout {
+        flex-direction: column;
+      }
+
+      .blog-sidebar {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .blog-card {
+        padding: 1.75rem 1.5rem;
+        border-radius: 1rem;
+      }
+    }
+
+    .blog-meta {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .series-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      background: var(--bg-soft);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .series-tag-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-size: 2.1rem;
+      margin: 0.4rem 0 0.75rem;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    .blog-subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-bottom: 1.8rem;
+    }
+
+    h2 {
+      font-size: 1.7rem;
+      margin-top: 2.25rem;
+      margin-bottom: 0.6rem;
+      color: var(--accent);
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      margin-top: 1.6rem;
+      margin-bottom: 0.4rem;
+      color: #7a0f29;
+    }
+
+    p {
+      margin: 0.5rem 0 0.9rem;
+      font-size: 1.2rem;
+    }
+
+    strong {
+      color: #3a111c;
+    }
+
+    .emphasis-line {
+      padding: 0.7rem 1rem;
+      border-left: 4px solid var(--accent);
+      background: #fff8e7;
+      border-radius: 0.6rem;
+      font-size: 1.2rem;
+      margin: 1rem 0 1.4rem;
+    }
+
+    .timeline-callout {
+      background: var(--bg-soft);
+      border-radius: 0.9rem;
+      padding: 1rem 1.1rem;
+      margin: 1.4rem 0;
+      font-size: 0.93rem;
+    }
+
+    .timeline-callout-title {
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.14em;
+    }
+
+    ul {
+      padding-left: 1.3rem;
+      margin: 0.25rem 0 1rem;
+    }
+
+    li {
+      margin: 0.2rem 0;
+      font-size: 1.2rem;
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    .inline-question {
+      font-style: italic;
+      color: #4a222b;
+    }
+
+    .section-divider {
+      margin: 2.2rem 0 1.8rem;
+      height: 1px;
+      border: none;
+      background: linear-gradient(to right, transparent, #d7b2a3, transparent);
+    }
+
+    /* Sidebar cards + links */
+    .sidebar-card {
+      background: #fffdf7;
+      border-radius: 1rem;
+      padding: 1.1rem 1.1rem 1.2rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+      border: 1px solid rgba(148, 18, 54, 0.08);
+    }
+
+    .sidebar-title {
+      font-size: 1.1rem;
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+    }
+
+    .sidebar-title-sm {
+      font-size: 0.98rem;
+      margin: 0 0 0.6rem;
+      color: #7a0f29;
+    }
+
+    .sidebar-link {
+      display: block;
+      padding: 0.5rem 0.4rem;
+      border-radius: 0.6rem;
+      text-decoration: none;
+      background: transparent;
+      transition: background 0.18s ease, transform 0.12s ease;
+    }
+
+    .sidebar-link + .sidebar-link {
+      margin-top: 0.15rem;
+    }
+
+    .sidebar-link:hover {
+      background: rgba(234, 211, 193, 0.5);
+      transform: translateX(2px);
+    }
+
+    .sidebar-link-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #3a111c;
+    }
+
+    .sidebar-link-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .sidebar-link-title-sm {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #3a111c;
+    }
+
+    .sidebar-empty {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Image blocks inside article */
+    .image-block {
+      margin: 1.6rem 0 1.3rem;
+    }
+
+    .image-frame {
+      width: 100%;
+      max-width: 780px;
+      height: 260px;
+      margin: 0 auto;
+      border-radius: 0.9rem;
+      border: 2px dashed rgba(148, 18, 54, 0.35);
+      background: linear-gradient(
+        135deg,
+        rgba(246, 234, 175, 0.5),
+        rgba(234, 211, 193, 0.6)
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      cursor: zoom-in; 
+    }
+
+    .image-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .image-placeholder-text {
+      font-size: 0.9rem;
+      color: #5c2a33;
+      text-align: center;
+      padding: 0 1.5rem;
+    }
+
+    .image-placeholder-label {
+      position: absolute;
+      bottom: 10px;
+      right: 12px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: rgba(148, 18, 54, 0.8);
+      background: rgba(255, 255, 255, 0.75);
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+    }
+
+    .image-caption {
+      max-width: 780px;
+      margin: 0.5rem auto 0.2rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* Image zoom modal */
+    .image-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .image-modal.open {
+      display: flex;
+    }
+
+    .image-modal-inner {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+    }
+
+    .image-modal-img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 1rem;
+      transform: scale(1.1);   
+      transform-origin: center;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5);
+      background: #ffffff;
+    }
+
+    .image-modal-caption {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: #f6eaaf;
+      text-align: center;
+    }
+
+    .image-modal-close {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      border: none;
+      background: #ffffff;
+      color: #941236;
+      border-radius: 999px;
+      width: 28px;
+      height: 28px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+
+    @media (max-width: 768px) {
+      .image-frame {
+        height: 210px;
+      }
+      .image-placeholder-text {
+        font-size: 0.85rem;
+        padding: 0 1rem;
+      }
+    }
+
+    /* Comments section */
+    .comments-section {
+      margin-top: 3rem;
+    }
+
+    .comments-section h2 {
+      font-size: 1.4rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Image zoom modal -->
+  <div id="image-modal" class="image-modal" aria-hidden="true">
+    <div class="image-modal-inner">
+      <button class="image-modal-close" aria-label="Close image">&times;</button>
+      <img id="image-modal-img" class="image-modal-img" alt="">
+      <p id="image-modal-caption" class="image-modal-caption"></p>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <header class="site-header">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <span class="brand-mark">AM</span>
+        <span class="brand-text">Adithya MD</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="blogs.html">Blogs</a>
+        <a href="projects.html">Projects</a>
+        <a href="startup.html">Moisture Meter</a>
+
+        <div class="dropdown">
+          <button class="dropbtn">Teaching &amp; Outreach ▾</button>
+          <div class="dropdown-content">
+            <a href="teaching.html">Teaching Roles</a>
+            <a href="workshops.html">Workshops</a>
+            <a href="talks.html">Talks</a>
+          </div>
+        </div>
+
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="page-wrapper">
+    <div class="blog-layout">
+
+      <!-- MAIN ARTICLE -->
+      <article class="blog-card"
+               data-post-id="{{POST_ID}}"
+               data-series-id="{{SERIES_ID}}">
+
+        <div class="blog-meta">
+          <span class="series-tag">
+            <span class="series-tag-dot"></span>
+            {{SERIES_NAME}}
+          </span>
+        </div>
+
+        <h1>{{BLOG_TITLE}}</h1>
+        <p class="blog-subtitle">
+          {{BLOG_SUBTITLE}}
+        </p>
+
+        <!-- BLOG CONTENT GOES HERE -->
+        <section id="blog3-section-1">
+  <h2>The real problem is choosing the direction</h2>
+
+  <p>
+    Let me say clearly what changed between Blog 2 and Blog 3.
+  </p>
+
+  <p>
+    In Blog 2, we pretended the direction of the line \(w\) was already known.
+    Under that assumption, the only question left was this.
+    For a single point \(x\), where should its proxy \(c\,w\) sit on that line.
+    That is why we solved for the best \(c^*\).
+  </p>
+
+  <p>
+    Now I want to remove that assumption.
+    In a real dataset, nobody hands us the correct direction \(w\).
+    We have to choose it.
+  </p>
+
+  <p>
+    Suppose we have \(n\) points in \(d\) dimensions:
+  </p>
+
+  <p class="math-block">
+    \[
+      x_1, x_2, \dots, x_n \in \mathbb{R}^d
+    \]
+  </p>
+
+  <p>
+    Imagine I propose a direction \(w\).
+    The moment I propose it, something automatic happens.
+    Every data point \(x_i\) gets forced onto that direction by proxy representation.
+  </p>
+
+  <p>
+    For each point, we choose the best proxy on the line spanned by \(w\).
+    That means we pick a scalar \(c_i\) so that \(c_i w\) is the closest point on the line to \(x_i\).
+    This gives us one proxy per point:
+  </p>
+
+  <p class="math-block">
+    \[
+      x_i \longrightarrow \hat{x}_i = c_i w
+    \]
+  </p>
+
+  <p>
+    And because we are compressing, we accept that the proxy will not match the original perfectly.
+    So each point also produces an error vector:
+  </p>
+
+  <p class="math-block">
+    \[
+      r_i = x_i - \hat{x}_i
+    \]
+  </p>
+
+  <p>
+    Here is the main shift.
+  </p>
+
+  <p>
+    In Blog 2, we judged a direction \(w\) using one point.
+    In Blog 3, we must judge a direction \(w\) using the entire dataset.
+    Because if \(w\) is a bad choice, it does not just hurt one reconstruction.
+    It forces every point to be badly represented.
+  </p>
+
+  <p>
+    So the dataset-level goal becomes:
+    choose \(w\) so that the total reconstruction error across all points is as small as possible.
+  </p>
+
+  <p class="math-block">
+    \[
+      \text{Choose } w \text{ to minimize } \sum_{i=1}^{n} \|x_i - \hat{x}_i\|^2
+    \]
+  </p>
+
+  <p>
+    This is the entire focus of Blog 3.
+    We are not solving for the proxy of one point anymore.
+    We are choosing the direction of the line itself so that proxies for all points become as accurate as possible.
+  </p>
+
+  <div class="image-block">
+    <div class="image-frame">
+      <img src="assets/USL_Series/Blog3/Image1.png" alt="Many data points with two candidate directions w1 and w2 showing different total projection errors" />
+    </div>
+    <p class="image-caption">
+      Figure 1 — Different choices of direction \(w\) create different proxies for every point, which changes the total reconstruction error across the dataset.
+    </p>
+  </div>
+
+</section>
+<section id="blog3-section-2">
+  <h2>Writing down the total reconstruction error</h2>
+
+  <p>
+    Now that the role of the direction \(w\) is clear, we need a precise way to judge whether a proposed direction is good or bad.
+    The only honest way to do this is to look at what happens to every point when we force it to use that direction.
+  </p>
+
+  <p>
+    Fix a direction \(w\).
+    For each data point \(x_i\), we already know what its best proxy looks like.
+    It is the projection of \(x_i\) onto the line spanned by \(w\).
+  </p>
+
+  <p>
+    Since we are enforcing \(\|w\| = 1\), the proxy for \(x_i\) is:
+  </p>
+
+  <p class="math-block">
+    \[
+      \hat{x}_i = (x_i^\top w)\,w
+    \]
+  </p>
+
+  <p>
+    This step is important conceptually.
+    Once \(w\) is fixed, there is no freedom left in choosing the proxy.
+    Each point is automatically mapped to the closest point on the line.
+  </p>
+
+  <p>
+    That mapping produces an error vector for every point:
+  </p>
+
+  <p class="math-block">
+    \[
+      r_i(w) = x_i - (x_i^\top w)\,w
+    \]
+  </p>
+
+  <p>
+    Each error vector tells us how much information is lost when the point is represented using the direction \(w\).
+    Some points may be represented well.
+    Others may not.
+  </p>
+
+  <p>
+    The question is how to combine these individual errors into a single quantity that evaluates the direction \(w\).
+  </p>
+
+  <p>
+    The most natural choice is to look at the squared length of each error vector and add them up.
+    Squaring ensures that large errors are penalized more heavily and that positive and negative deviations do not cancel each other.
+  </p>
+
+  <p class="math-block">
+    \[
+      \text{Total error}(w) = \sum_{i=1}^{n} \|x_i - (x_i^\top w)\,w\|^2
+    \]
+  </p>
+
+  <p>
+    This expression does exactly what we want.
+    For a given direction \(w\), it measures how much reconstruction error we accumulate when every point is forced to use that direction for compression.
+  </p>
+
+  <p>
+    If the data is well aligned with \(w\), most projections will be close to the original points and the total error will be small.
+    If the data spreads away from \(w\), the projections will be poor and the total error will be large.
+  </p>
+
+  <p>
+    At this stage, the learning problem has a very clear mathematical form.
+    We are looking for the direction \(w\) that minimizes this total reconstruction error.
+  </p>
+
+  <p class="math-block">
+    \[
+      \min_{\|w\| = 1} \sum_{i=1}^{n} \|x_i - (x_i^\top w)\,w\|^2
+    \]
+  </p>
+
+  <p>
+    Everything that follows in this series is about understanding and solving this optimization problem.
+    The next step is to simplify this expression so that we can see more clearly what it is really trying to optimize.
+  </p>
+
+</section>
+
+<section id="blog3-section-3">
+  <h2>Simplifying the objective: separating what depends on \(w\)</h2>
+
+  <p>
+    We now have a clean mathematical statement of the problem.
+    Choose a unit direction \(w\) that minimizes the total reconstruction error:
+  </p>
+
+  <p class="math-block">
+    \[
+      \sum_{i=1}^{n} \|x_i - (x_i^\top w)\,w\|^2
+    \]
+  </p>
+
+  <p>
+    Before trying to solve this, it helps to understand its structure.
+    In particular, we want to see which parts of this expression actually depend on the choice of \(w\),
+    and which parts do not.
+  </p>
+
+  <p>
+    Let us focus on a single term inside the sum.
+    Consider the squared error for one point \(x_i\):
+  </p>
+
+  <p class="math-block">
+    \[
+      \|x_i - (x_i^\top w)\,w\|^2
+    \]
+  </p>
+
+  <p>
+    We expand this expression using the same idea as before.
+    Write the squared norm as an inner product:
+  </p>
+
+  <p class="math-block">
+    \[
+      (x_i - (x_i^\top w)\,w)^\top (x_i - (x_i^\top w)\,w)
+    \]
+  </p>
+
+  <p>
+    Expanding term by term gives:
+  </p>
+
+  <p class="math-block">
+    \[
+      x_i^\top x_i
+      - 2 (x_i^\top w)(w^\top x_i)
+      + (x_i^\top w)^2 (w^\top w)
+    \]
+  </p>
+
+  <p>
+    Recall that \(w\) has unit length.
+    This means \(w^\top w = 1\).
+    Using this, the expression simplifies to:
+  </p>
+
+  <p class="math-block">
+    \[
+      \|x_i\|^2 - (x_i^\top w)^2
+    \]
+  </p>
+
+  <p>
+    This result is worth pausing on.
+    The squared reconstruction error for a point splits cleanly into two parts.
+  </p>
+
+  <p>
+    The first term, \(\|x_i\|^2\), depends only on the data point itself.
+    It does not depend on the direction \(w\) at all.
+  </p>
+
+  <p>
+    The second term, \((x_i^\top w)^2\), depends entirely on how well the point aligns with the direction \(w\).
+    If the point lies mostly along \(w\), this term is large.
+    If the point is nearly orthogonal to \(w\), this term is small.
+  </p>
+
+  <p>
+    Now substitute this simplified form back into the total error.
+  </p>
+
+  <p class="math-block">
+    \[
+      \sum_{i=1}^{n} \|x_i - (x_i^\top w)\,w\|^2
+      =
+      \sum_{i=1}^{n} \|x_i\|^2
+      -
+      \sum_{i=1}^{n} (x_i^\top w)^2
+    \]
+  </p>
+
+  <p>
+    This decomposition reveals something important.
+  </p>
+
+  <p>
+    The first sum, \(\sum_i \|x_i\|^2\), is completely independent of \(w\).
+    No matter which direction we choose, this term remains the same.
+  </p>
+
+  <p>
+    The second sum, \(\sum_i (x_i^\top w)^2\), is the only part that changes when we change \(w\).
+  </p>
+
+  <p>
+    Because of this, minimizing the total reconstruction error is equivalent to maximizing the second term.
+  </p>
+
+  <p class="math-block">
+    \[
+      \min_{\|w\|=1}
+      \sum_{i=1}^{n} \|x_i - (x_i^\top w)\,w\|^2
+      \quad \Longleftrightarrow \quad
+      \max_{\|w\|=1}
+      \sum_{i=1}^{n} (x_i^\top w)^2
+    \]
+  </p>
+
+  <p>
+    This reformulation is conceptually useful.
+    Instead of thinking in terms of minimizing error,
+    we can think in terms of choosing a direction that captures as much of the data as possible when projected onto it.
+  </p>
+
+  <p>
+    The next step is to understand how to work with this new objective,
+    and how to rewrite it in a form that exposes its structure more clearly.
+  </p>
+
+</section>
+
+<section id="blog3-section-4">
+  <h2>Why minimizing reconstruction error becomes maximizing projection</h2>
+
+  <p>
+    The last section ended with a statement that can feel like a trick if we do not explain it slowly.
+    We started with a goal that sounds like this:
+    pick \(w\) so that the reconstruction error is as small as possible.
+  </p>
+
+  <p>
+    Then suddenly we rewrote the problem and it started sounding like this:
+    pick \(w\) so that the projections \((x_i^\top w)\) are as large as possible.
+  </p>
+
+  <p>
+    If you do not build intuition here, it can feel like we changed the problem.
+    We did not.
+    We only changed the way we describe the same quantity.
+  </p>
+
+  <p>
+    Let us go back to one data point first.
+    Fix a unit vector \(w\), and take a single point \(x_i\).
+    We represent \(x_i\) using its proxy on the line spanned by \(w\):
+  </p>
+
+  <p class="math-block">
+    \[
+      \hat{x}_i = (x_i^\top w)\,w
+    \]
+  </p>
+
+  <p>
+    Now look at the point \(x_i\) as being split into two pieces.
+    One piece lies along the direction \(w\).
+    The other piece lies perpendicular to \(w\).
+  </p>
+
+  <p>
+    The proxy \(\hat{x}_i\) keeps only the piece along \(w\).
+    The reconstruction error keeps only the perpendicular leftover.
+  </p>
+
+  <div class="image-block">
+    <div class="image-frame">
+      <img src="assets/USL_Series/Blog3/Image2.png" alt="Vector x decomposed into projection along w and perpendicular residual" />
+    </div>
+    <p class="image-caption">
+      Figure 2 — A point \(x_i\) decomposed into its projection on the line spanned by \(w\) and the perpendicular residual error.
+    </p>
+  </div>
+
+  <p>
+    This is why the squared error simplifies to:
+  </p>
+
+  <p class="math-block">
+    \[
+      \|x_i - (x_i^\top w)\,w\|^2 = \|x_i\|^2 - (x_i^\top w)^2
+    \]
+  </p>
+
+  <p>
+    The term \(\|x_i\|^2\) is fixed because the point is fixed.
+    The only thing that changes with \(w\) is the projection term \((x_i^\top w)^2\).
+  </p>
+
+  <p>
+    Now here is the key relationship.
+  </p>
+
+  <p>
+    For a fixed point \(x_i\), you cannot change \(\|x_i\|^2\).
+    It is a constant number.
+    So the only way to make the error small is to make the projection term large.
+  </p>
+
+  <p>
+    Another way to say the same thing is:
+    the squared length of a vector equals the squared length of its projection along \(w\) plus the squared length of its leftover perpendicular part.
+    If one part increases, the other part must decrease.
+  </p>
+
+  <p>
+    Now extend this idea to the dataset.
+  </p>
+
+  <p class="math-block">
+    \[
+      \sum_{i=1}^{n} \|x_i - (x_i^\top w)\,w\|^2
+      =
+      \sum_{i=1}^{n} \|x_i\|^2
+      -
+      \sum_{i=1}^{n} (x_i^\top w)^2
+    \]
+  </p>
+
+  <p>
+    The first term, \(\sum_i \|x_i\|^2\), is still constant with respect to \(w\).
+    We are not changing the data points.
+    We are only changing the direction we choose to represent them.
+  </p>
+
+  <p>
+    So when we change \(w\), the only thing that changes is the second term.
+    That means the direction that minimizes the total error is exactly the direction that maximizes the total squared projection.
+  </p>
+
+  <p class="math-block">
+    \[
+      \min_{\|w\|=1}
+      \sum_{i=1}^{n} \|x_i - (x_i^\top w)\,w\|^2
+      \quad \Longleftrightarrow \quad
+      \max_{\|w\|=1}
+      \sum_{i=1}^{n} (x_i^\top w)^2
+    \]
+  </p>
+
+  <p>
+    This is a very useful shift in viewpoint.
+  </p>
+
+  <p>
+    Minimizing reconstruction error sounds like we are only thinking about what we lose.
+    Maximizing projection sounds like we are thinking about what we keep.
+    They are the same decision, just described from two different angles.
+  </p>
+
+  <p>
+    The next step is to rewrite the quantity \(\sum_i (x_i^\top w)^2\) in a compact form,
+    because that will reveal what structure in the dataset actually decides the best direction \(w\).
+  </p>
+
+</section>
+
+<section id="blog3-section-5">
+  <h2>Rewriting the objective with dimensions in mind</h2>
+
+  <p>
+    Let us slow down and pay attention to dimensions.
+    Doing this carefully removes a lot of confusion later.
+  </p>
+
+  <p>
+    Each data point \(x_i\) lives in a \(d\)-dimensional space.
+  </p>
+
+  <p class="math-block">
+    \[
+      x_i \in \mathbb{R}^d
+    \]
+  </p>
+
+  <p>
+    The direction we are trying to learn, \(w\), also lives in the same space.
+  </p>
+
+  <p class="math-block">
+    \[
+      w \in \mathbb{R}^d \quad \text{with } \|w\| = 1
+    \]
+  </p>
+
+  <p>
+    When we take the inner product \(x_i^\top w\),
+    the result is a scalar.
+    It measures how much of the point \(x_i\) lies along the direction \(w\).
+  </p>
+
+  <p class="math-block">
+    \[
+      x_i^\top w \in \mathbb{R}
+    \]
+  </p>
+
+  <p>
+    Our objective is built by squaring this scalar and summing over all points:
+  </p>
+
+  <p class="math-block">
+    \[
+      \sum_{i=1}^{n} (x_i^\top w)^2
+    \]
+  </p>
+
+  <p>
+    This expression already makes sense dimensionally.
+    Each term is a squared scalar.
+    The sum is also a scalar.
+  </p>
+
+  <p>
+    However, to understand how the data as a whole influences this quantity,
+    it helps to rewrite each term so that the role of the vector \(w\) is explicit.
+  </p>
+
+  <p>
+    Start with a single term:
+  </p>
+
+  <p class="math-block">
+    \[
+      (x_i^\top w)^2
+    \]
+  </p>
+
+  <p>
+    Since this is a scalar, we are free to reorder the multiplication.
+    Write it as:
+  </p>
+
+  <p class="math-block">
+    \[
+      (x_i^\top w)(x_i^\top w) = w^\top (x_i x_i^\top) w
+    \]
+  </p>
+
+  <p>
+    Now pay attention to the dimensions.
+  </p>
+
+  <p>
+    The outer product \(x_i x_i^\top\) takes a \(d\)-dimensional vector
+    and produces a \(d \times d\) matrix:
+  </p>
+
+  <p class="math-block">
+    \[
+      x_i x_i^\top \in \mathbb{R}^{d \times d}
+    \]
+  </p>
+
+  <p>
+    When we place this matrix between \(w^\top\) and \(w\),
+    the result is again a scalar:
+  </p>
+
+  <p class="math-block">
+    \[
+      w^\top (x_i x_i^\top) w \in \mathbb{R}
+    \]
+  </p>
+
+  <p>
+    This rewriting does not change the value of the expression.
+    It only makes the dependence on the direction \(w\) explicit.
+  </p>
+
+  <p>
+    Now substitute this form back into the sum over all points:
+  </p>
+
+  <p class="math-block">
+    \[
+      \sum_{i=1}^{n} (x_i^\top w)^2
+      =
+      \sum_{i=1}^{n} w^\top (x_i x_i^\top) w
+    \]
+  </p>
+
+  <p>
+    Because \(w\) does not depend on the index \(i\),
+    we can factor it out of the summation:
+  </p>
+
+  <p class="math-block">
+    \[
+      \sum_{i=1}^{n} w^\top (x_i x_i^\top) w
+      =
+      w^\top \left( \sum_{i=1}^{n} x_i x_i^\top \right) w
+    \]
+  </p>
+
+  <p>
+    The matrix inside the parentheses is a \(d \times d\) matrix:
+  </p>
+
+  <p class="math-block">
+    \[
+      \sum_{i=1}^{n} x_i x_i^\top \in \mathbb{R}^{d \times d}
+    \]
+  </p>
+
+  <p>
+    It is constructed entirely from the data.
+    Each data point contributes a rank-one matrix \(x_i x_i^\top\),
+    and the dataset contributes their sum.
+  </p>
+
+  <p>
+    The objective can now be written compactly as:
+  </p>
+
+  <p class="math-block">
+    \[
+      \max_{\|w\| = 1}
+      \; w^\top \left( \sum_{i=1}^{n} x_i x_i^\top \right) w
+    \]
+  </p>
+
+  <p>
+    Written this way, the problem becomes very clear.
+    We are choosing a direction \(w \in \mathbb{R}^d\)
+    that interacts with a \(d \times d\) matrix built from the data,
+    and produces a scalar score measuring how much projection energy
+    that direction captures.
+  </p>
+
+  <p>
+    In the next section, we will study this type of optimization problem directly.
+    We will ask what kind of unit vectors maximize expressions of the form
+    \(w^\top M w\), and why the answer has a very specific structure.
+  </p>
+
+</section>
+<section id="blog3-section-6">
+  <h2>What choosing the “best direction” really means</h2>
+
+  <p>
+    Let us pause and look carefully at the problem we have ended up with.
+    Not the symbols, but the decision we are actually making.
+  </p>
+
+  <p>
+    We have a dataset of points living in \( \mathbb{R}^d \).
+    From that dataset, we built a matrix:
+  </p>
+
+  <p class="math-block">
+    \[
+      M = \sum_{i=1}^{n} x_i x_i^\top
+    \]
+  </p>
+
+  <p>
+    This matrix is not something we chose.
+    It is forced on us by the algebra of projection.
+    It is simply the object that collects, in one place, how the data spreads in space.
+  </p>
+
+  <p>
+    Now we are asked to choose a direction \(w\), with unit length,
+    that maximizes the quantity:
+  </p>
+
+  <p class="math-block">
+    \[
+      w^\top M w
+    \]
+  </p>
+
+  <p>
+    What does this quantity actually do.
+  </p>
+
+  <p>
+    Pick a direction \(w\).
+    Imagine fixing it in space.
+    Now look at every data point and ask:
+    how much of this point lies along that direction.
+  </p>
+
+  <p>
+    For a single point \(x_i\), that amount is given by \(x_i^\top w\).
+    Squaring it removes sign and measures magnitude.
+  </p>
+
+  <p>
+    When we sum \((x_i^\top w)^2\) over all points,
+    we are measuring how strongly the entire dataset aligns with the direction \(w\).
+  </p>
+
+  <p>
+    If most points have large components along \(w\),
+    this sum will be large.
+    If most points are nearly perpendicular to \(w\),
+    this sum will be small.
+  </p>
+
+  <p>
+    Now imagine slowly rotating \(w\) while keeping its length fixed.
+  </p>
+
+  <p>
+    As you rotate it, the projections of the data points change.
+    Some directions slice through the cloud of data and capture very little.
+    Other directions pass through the long axis of the cloud and capture a lot.
+  </p>
+
+  <p>
+    The value of \(w^\top M w\) changes smoothly as you rotate \(w\).
+    You can think of it as a score attached to each possible direction.
+  </p>
+
+  <p>
+    The unit-length constraint matters here.
+    Without it, we could increase the score simply by scaling \(w\).
+    By forcing \(\|w\| = 1\), we are saying something very specific:
+    we are comparing directions, not magnitudes.
+  </p>
+
+  <p>
+    So the optimization problem is this.
+  </p>
+
+  <p>
+    Among all possible directions in \( \mathbb{R}^d \),
+    which direction captures the largest total projection of the data.
+  </p>
+
+  <p>
+    It is important to notice that this problem must have an answer.
+    The set of unit vectors is closed and bounded.
+    The score \(w^\top M w\) varies continuously as we move \(w\).
+  </p>
+
+  <p>
+    That means there exists at least one direction where this score is maximized.
+  </p>
+
+  <p>
+    What is special about that direction is not that it minimizes error or maximizes variance.
+    Those are descriptions we attach afterward.
+  </p>
+
+  <p>
+    What makes it special is simpler.
+    If you choose any other direction,
+    the dataset, when projected onto it, spreads out less.
+  </p>
+
+  <p>
+    The data itself decides this direction.
+    We are not imposing it.
+    We are only asking the data to tell us where it extends the most.
+  </p>
+
+  <p>
+    In the next section, we will see how this direction can be characterized exactly.
+    We will see that the matrix \(M\) contains a small number of preferred directions,
+    and that the optimal \(w\) must align with one of them.
+  </p>
+
+</section>
+
+<section id="blog3-conclusion">
+  <h2>Where we stand at the end of Blog 3</h2>
+
+  <p>
+    Let us take stock of what we have actually done so far.
+  </p>
+
+  <p>
+    We started this series by framing unsupervised learning as a compression problem.
+    Not compression in the file-format sense,
+    but in the sense of representing data using fewer numbers while still being able to reconstruct it reasonably well.
+  </p>
+
+  <p>
+    In Blog 2, we focused on a single point.
+    We asked a very local question.
+    If I am forced to represent this point using a line,
+    where on that line should its proxy live.
+    That question naturally led to projections and reconstruction error.
+  </p>
+
+  <p>
+    In this blog, we shifted the level of thinking.
+    We stopped worrying about one point at a time and started worrying about the dataset as a whole.
+  </p>
+
+  <p>
+    Once we fix a direction \(w\),
+    every point is automatically represented by its closest proxy on that direction.
+    That leaves us with only one real choice.
+    Which direction should we choose so that the total reconstruction error across all points is as small as possible.
+  </p>
+
+  <p>
+    We saw that minimizing reconstruction error is the same as maximizing how much of the data we keep when projecting onto a direction.
+    This is not a change of objective.
+    It is the same quantity viewed from two complementary perspectives.
+  </p>
+
+  <p>
+    Writing the problem carefully exposed its structure.
+    The entire dataset influences the choice of direction through a single matrix built from outer products of the data points.
+    This matrix summarizes how the data spreads in different directions.
+  </p>
+
+  <p>
+    At the end of Blog 3, we are left with a clean and precise question.
+  </p>
+
+  <p>
+    Among all unit directions in a high-dimensional space,
+    which direction captures the largest total projection of the data.
+  </p>
+
+  <p>
+    Nothing in this reasoning required labels.
+    Nothing required targets.
+    Nothing required a notion of correctness.
+    We only used geometry, reconstruction, and the idea of making the least damaging compression choice.
+  </p>
+
+  <p>
+    In the next blog, we will answer the question we have carefully set up.
+    We will see how the matrix built from the data reveals its preferred directions,
+    and why choosing one of those directions is not a heuristic,
+    but a consequence of the optimization problem itself.
+  </p>
+
+</section>
+
+
+        <!-- COMMENTS SECTION -->
+        <hr class="section-divider">
+
+        <section id="comments" class="comments-section">
+          <h2>Comments</h2>
+
+          <script src="https://giscus.app/client.js"
+                  data-repo="adimd/AMD_Website"
+                  data-repo-id="R_kgDOQlniOw"
+                  data-category="General"
+                  data-category-id="DIC_kwDOQlniO84CzoR1"
+                  data-mapping="pathname"
+                  data-strict="0"
+                  data-reactions-enabled="1"
+                  data-emit-metadata="0"
+                  data-input-position="bottom"
+                  data-theme="preferred_color_scheme"
+                  data-lang="en"
+                  crossorigin="anonymous"
+                  async>
+          </script>
+        </section>
+
+      </article>
+
+      <!-- SIDEBAR -->
+      <aside class="blog-sidebar">
+        <div class="sidebar-card">
+          <h2 class="sidebar-title">More in this series</h2>
+          <div id="series-posts"></div>
+        </div>
+
+        <div class="sidebar-card">
+          <h3 class="sidebar-title-sm">Other recent posts</h3>
+          <div id="recent-posts"></div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- Dynamic sidebar data + logic -->
+  <script src="/posts.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (typeof BLOG_POSTS === "undefined") return;
+
+      const articleEl = document.querySelector(".blog-card");
+      if (!articleEl) return;
+
+      const currentId = articleEl.dataset.postId;
+      const currentSeriesId = articleEl.dataset.seriesId;
+
+      const currentPost = BLOG_POSTS.find(p => p.id === currentId);
+      if (!currentPost) return;
+
+      const sameSeries = BLOG_POSTS
+        .filter(p => p.seriesId === currentSeriesId && p.id !== currentId)
+        .sort((a, b) => (a.part || 0) - (b.part || 0));
+
+      const recent = BLOG_POSTS
+        .filter(p => p.id !== currentId)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 4);
+
+      const seriesContainer = document.getElementById("series-posts");
+      const recentContainer = document.getElementById("recent-posts");
+
+      if (sameSeries.length === 0) {
+        seriesContainer.innerHTML =
+          '<p class="sidebar-empty">More parts in this series are on the way.</p>';
+      } else {
+        seriesContainer.innerHTML = sameSeries.map(p => `
+          <a class="sidebar-link" href="${p.url}">
+            <div class="sidebar-link-title">
+              Part ${p.part}: ${p.title.replace(/^Part\\s*\\d+\\s*[–-]\\s*/, "")}
+            </div>
+            <div class="sidebar-link-meta">
+              ${p.date}
+            </div>
+          </a>
+        `).join("");
+      }
+
+      recentContainer.innerHTML = recent.map(p => `
+        <a class="sidebar-link" href="${p.url}">
+          <div class="sidebar-link-title-sm">${p.title}</div>
+          <div class="sidebar-link-meta">${p.date}</div>
+        </a>
+      `).join("");
+    });
+  </script>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Lightbox / image zoom logic
+    const modal = document.getElementById("image-modal");
+    const modalImg = document.getElementById("image-modal-img");
+    const modalCaption = document.getElementById("image-modal-caption");
+    const modalClose = document.querySelector(".image-modal-close");
+
+    if (!modal || !modalImg || !modalCaption || !modalClose) return;
+
+    // Any <img> inside .image-frame becomes zoomable
+    document.querySelectorAll(".image-frame img").forEach(function (img) {
+      img.style.cursor = "zoom-in";
+      img.addEventListener("click", function () {
+        modalImg.src = img.src;
+        modalImg.alt = img.alt || "";
+
+        // Use the nearest .image-caption if available
+        const captionEl = img.closest(".image-block")?.querySelector(".image-caption");
+        modalCaption.textContent = captionEl
+          ? captionEl.textContent.trim()
+          : (img.alt || "");
+
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+      });
+    });
+
+    function closeModal() {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      modalImg.src = "";
+      modalCaption.textContent = "";
+    }
+
+    modalClose.addEventListener("click", closeModal);
+
+    // Click on dark background closes too
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // ESC key closes
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && modal.classList.contains("open")) {
+        closeModal();
+      }
+    });
+  });
+  </script>
+    <!-- MathJax for LaTeX-style equations -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+
+</body>
+</html>

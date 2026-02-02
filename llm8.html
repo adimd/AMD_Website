@@ -451,89 +451,405 @@
         </p>
 
         <!-- BLOG CONTENT GOES HERE -->
-        <h3>What we actually achieved last time</h3>
+       <h2>1. A New Question: Where Do These Probabilities Come From?</h2>
 
 <p>
-By the end of the last piece, text had finally made it into machines. Not in a metaphorical sense, but in a very literal one. Characters had stable numerical identities. Those numbers survived storage, copying, and transmission. Unicode closed a long chapter that began with telegraphs and broken encodings.
-</p>
-
-<p>
-This was a real achievement. It solved a real problem. Text stopped breaking.
-</p>
-
-<p>
-But it is important to be precise about what was solved. What we built was a way for machines to hold text, not a way for machines to work with it.
+In the previous chapter, we finally introduced the idea of probability:
 </p>
 
 <div class="emphasis-line">
-Text became representable.
-Nothing became meaningful.
+  <strong>p(context | center)</strong>  
+  = “How likely is this context to appear next to this center?”
+</div>
+
+<p>
+We said that our model computes this probability using softmax:
+</p>
+
+<div class="emphasis-line">
+  p(context | center) =
+    e<sup>score(center → context)</sup> /
+    Σ<sub>all c'</sub> e<sup>score(center → c')</sup>
+</div>
+
+<p>
+This is the <em>model’s</em> probability.  
+But… probability of what?  
+Where does the <em>true</em> probability — the one we are trying to match — actually come from?
+</p>
+
+<p>
+We were never given any “true probability tables”.  
+No teacher handed us:
+</p>
+
+<ul>
+  <li>p(I | love)</li>
+  <li>p(my | love)</li>
+  <li>p(dog | love)</li>
+  <li>etc.</li>
+</ul>
+
+<p>
+And yet, our training objective says we must maximize these probabilities.  
+So the natural question is:
+</p>
+
+<div class="emphasis-line">
+<strong>Where does the true probability distribution come from?</strong>
+</div>
+
+<p>
+This chapter is about showing that this distribution is <em>hidden in the training data itself</em>,
+and our model is simply trying to approximate it.
+</p>
+
+<hr class="section-divider">
+
+<h2>2. The Secret: The Training Corpus Already Contains a Probability Distribution</h2>
+
+<p>
+Let’s return to our four-sentence universe:
+</p>
+
+<div class="emphasis-line">
+I love my dog.<br>
+I love my cat.<br>
+You love my dog.<br>
+You love my cat.
+</div>
+
+<p>
+When we extract all (center → context) events from these sentences,
+we are not just forming a list — we are forming <strong>empirical statistics</strong>.
+These statistics implicitly contain a probability distribution.
+</p>
+
+<p>
+Let’s look at just the events where the center is:
+</p>
+
+<div class="emphasis-line"><strong>center = love</strong></div>
+
+<p>
+From the corpus, we saw:
+</p>
+
+<ul>
+  <li>love → I (twice)</li>
+  <li>love → You (twice)</li>
+  <li>love → my (four times)</li>
+</ul>
+
+<p>
+Nothing else occurs as context for “love”.
+</p>
+
+<p>
+So the empirical distribution — the true distribution according to our data — is:
+</p>
+
+<div class="emphasis-line">
+  <strong>p<sub>data</sub>(I | love)   = 2 / 8</strong>  
+  <br>
+  <strong>p<sub>data</sub>(You | love) = 2 / 8</strong>  
+  <br>
+  <strong>p<sub>data</sub>(my | love)  = 4 / 8</strong>  
+</div>
+
+<p>
+And:
+</p>
+
+<ul>
+  <li>p<sub>data</sub>(dog | love) = 0</li>
+  <li>p<sub>data</sub>(cat | love) = 0</li>
+</ul>
+
+<p>
+We did not invent these numbers.  
+We did not assign them arbitrarily.  
+They were <em>already there</em>, encoded in how often things appear in the training data.
+</p>
+
+<div class="emphasis-line">
+<strong>The corpus already contains a probability distribution.  
+We are simply uncovering it.</strong>
 </div>
 
 <hr class="section-divider">
 
-<h3>What these numbers do and do not contain</h3>
+<h2>3. The Fundamental Goal of Training</h2>
 
 <p>
-The numbers assigned by Unicode are identifiers. They are references into a table that everyone agrees on. The number for a character is stable, global, and unambiguous. That is exactly why Unicode works.
-</p>
-
-<p>
-But these numbers carry no internal structure. The number for one character does not know anything about the number next to it. The number for a word does not know it forms a unit. There is no notion of similarity, distance, or relationship built into the representation itself.
-</p>
-
-<p>
-This is not a flaw. It is a design choice. Unicode was never meant to express relationships. It was meant to prevent disagreement.
-</p>
-
-<hr class="section-divider">
-
-<h3>Why learning changes the problem</h3>
-
-<p>
-As long as machines were only storing and displaying text, this limitation did not matter. But learning systems ask a different kind of question. They are not asked to preserve symbols. They are asked to detect patterns.
-</p>
-
-<p>
-Learning systems adjust themselves based on regularities in data. They respond to repetition. To closeness. To things behaving similarly across different contexts. All of these ideas quietly assume the existence of structure.
+Now, the goal of training becomes beautifully clear:
 </p>
 
 <div class="emphasis-line">
-Learning does not operate on labels.
-It operates on relationships.
+<strong>
+We want the model’s probability  
+p<sub>model</sub>(context | center)  
+to match the empirical probability  
+p<sub>data</sub>(context | center)
+</strong>
 </div>
 
 <p>
-Once you see this, the problem becomes unavoidable. If all a system sees is a sequence of unrelated integers, there is no obvious place for similarity to come from. There is no notion of “close” or “far.” There is only equality or inequality.
-</p>
-
-<hr class="section-divider">
-
-<h3>The question we can no longer avoid</h3>
-
-<p>
-Turning text into numbers was necessary. It was not sufficient.
-</p>
-
-<p>
-If a machine is going to learn anything from text, those numbers must live in a space where relationships are even possible. A space where patterns can form. A space where similarity is something the system can respond to, rather than something it has to invent from scratch.
+This is the entire purpose of learning W and C.
+All the geometry, dot products, exponentials, softmax —
+everything is there to allow us to shape W and C so that:
 </p>
 
 <div class="emphasis-line">
-Meaning does not arrive as a definition.
-It arrives as structure.
+<strong>
+p<sub>model</sub>(context | center) ≈ p<sub>data</sub>(context | center)
+</strong>
 </div>
 
 <p>
-Before trying to construct such a space for language, it helps to look at a case where this idea is already unavoidable. Where numbers naturally live in a geometric arrangement, and similarity is not a metaphor but a measurable quantity.
+When this match is perfect, our embeddings encode the true structural relationships present in the dataset.
 </p>
 
 <hr class="section-divider">
 
-<h3>Why we start with images</h3>
+<h2>4. How the Model Tries to Match the Data Distribution</h2>
 
 <p>
-Images give us exactly that starting point.
+Our model computes:
+</p>
+
+<div class="emphasis-line">
+p<sub>model</sub>(context | center) =
+  e<sup>W[center]·C[context]</sup> /
+  Σ e<sup>W[center]·C[c']</sup>
+</div>
+
+<p>
+Compare this to:
+</p>
+
+<div class="emphasis-line">
+p<sub>data</sub>(context | center) = (count of (center → context)) / (total events with center)
+</div>
+
+<p>
+The model tries to adjust W and C so that these two probabilities line up.
+Let’s walk through this slowly and intuitively.
+</p>
+
+<h3>4.1. If the data says a context is common…</h3>
+
+<p>
+For example:
+</p>
+
+<div class="emphasis-line">
+p<sub>data</sub>(my | love) = 4/8 = 0.5
+</div>
+
+<p>
+Half the time “love” appears, “my” is next to it.  
+So our model should behave such that:
+</p>
+
+<div class="emphasis-line">
+p<sub>model</sub>(my | love) ≈ 0.5
+</div>
+
+<p>
+To achieve this, the model will:
+</p>
+
+<ul>
+  <li>increase score(love → my)</li>
+  <li>increase e<sup>score(love → my)</sup></li>
+  <li>thus increase p<sub>model</sub>(my | love)</li>
+</ul>
+
+<h3>4.2. If the data says a context is rare…</h3>
+
+<p>
+For example:
+</p>
+
+<div class="emphasis-line">
+p<sub>data</sub>(dog | love) = 0
+</div>
+
+<p>
+Then the model must eventually push:
+</p>
+
+<div class="emphasis-line">
+p<sub>model</sub>(dog | love) → 0
+</div>
+
+<p>
+To do this, the model must make:
+</p>
+
+<ul>
+  <li>score(love → dog) very low</li>
+  <li>so that e<sup>score</sup> is tiny</li>
+  <li>so that softmax assigns it negligible probability</li>
+</ul>
+
+<p>
+This is the meaning of the “negative pressure” during training:
+events that never occur in the dataset get pushed down.
+</p>
+
+<hr class="section-divider">
+
+<h2>5. An Intuitive Picture: The Training Set Is the Teacher</h2>
+
+<p>
+Think of the training set as a tutor that keeps giving hints:
+</p>
+
+<ul>
+  <li>“love and my appear together a lot.”</li>
+  <li>“love and dog never appear directly next to each other.”</li>
+  <li>“I and You behave symmetrically around love.”</li>
+  <li>“dog and cat behave symmetrically around my.”</li>
+</ul>
+
+<p>
+The tutor never says:
+</p>
+
+<ul>
+  <li>“p(my | love) = 0.5”</li>
+  <li>“p(I | love) = 0.25”</li>
+</ul>
+
+<p>
+Those probabilities are not written anywhere explicitly.  
+They are <strong>hidden</strong> inside the dataset, waiting to be discovered.
+</p>
+
+<div class="emphasis-line">
+<strong>
+Training is the process of making the model uncover these hidden probabilities  
+and match them with its own predicted probabilities.
+</strong>
+</div>
+
+<p>
+The model searches for W and C such that:
+</p>
+
+<ul>
+  <li>common events get high model-probability,</li>
+  <li>rare events get low model-probability,</li>
+  <li>impossible events get probability near zero.</li>
+</ul>
+
+<hr class="section-divider">
+
+<h2>6. Formalizing the Goal: Matching Two Distributions</h2>
+
+<p>
+For each center word <em>w</em>, the data defines a distribution:
+</p>
+
+<div class="emphasis-line">
+p<sub>data</sub>(context | w)
+</div>
+
+<p>
+And the model defines a distribution:
+</p>
+
+<div class="emphasis-line">
+p<sub>model</sub>(context | w)
+</div>
+
+<p>
+The objective of training is:
+</p>
+
+<div class="emphasis-line">
+<strong>
+Choose W and C to make p<sub>model</sub>(context | w)  
+as close as possible to p<sub>data</sub>(context | w).
+</strong>
+</div>
+
+<p>
+When these two distributions match closely, we say the model has “learned the statistics of the language”.
+This means:
+</p>
+
+<ul>
+  <li>Words that co-occur often end up geometrically aligned.</li>
+  <li>Words that play similar roles end up near each other.</li>
+  <li>Words that never meet end up far apart.</li>
+</ul>
+
+<div class="emphasis-line">
+<strong>The training set’s distribution → becomes the model’s distribution → becomes the geometry of the embedding space.</strong>
+</div>
+
+<hr class="section-divider">
+
+<h2>7. The Beauty of the Whole Design</h2>
+
+<p>
+Let’s pause and appreciate the architecture:
+</p>
+
+<ol>
+  <li>The dataset implicitly contains probabilities through word co-occurrence counts.</li>
+  <li>We extract these through repeated (center, context) events.</li>
+  <li>We define scores from word vectors W and C.</li>
+  <li>We convert scores to strengths using e<sup>x</sup>.</li>
+  <li>We convert strengths to probabilities using softmax.</li>
+  <li>We adjust W and C so these probabilities match the hidden data distribution.</li>
+</ol>
+
+<div class="emphasis-line">
+<strong>
+Training is simply the correction loop that pushes  
+p<sub>model</sub>(context | center) → p<sub>data</sub>(context | center).
+</strong>
+</div>
+
+<p>
+Once this match becomes good, the embedding matrices W and C naturally encode the structure of the corpus.
+When this happens, meaning emerges in geometry.
+</p>
+
+<hr class="section-divider">
+
+<h2>8. Where We Go Next: Loss</h2>
+
+<p>
+We now understand:
+</p>
+
+<ul>
+  <li>the dataset defines a hidden probability distribution,</li>
+  <li>the model defines a probability through softmax,</li>
+  <li>and training aims to make these match.</li>
+</ul>
+
+<p>
+The next question is:
+</p>
+
+<div class="emphasis-line">
+<strong>
+How do we measure “match” mathematically,  
+and how do we force the model to improve it?
+</strong>
+</div>
+
+<p>
+This is the purpose of the <strong>loss function</strong>.  
+In the next chapter, we will derive — naturally and slowly —  
+why the log-likelihood of the data leads to the famous <strong>cross-entropy loss</strong>,
+and how it pushes the model to increase the probability of true events.
 </p>
 
 
@@ -682,11 +998,6 @@ Images give us exactly that starting point.
     });
   });
   </script>
-    <!-- MathJax for LaTeX-style equations -->
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-<script id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-</script>
 
 </body>
 </html>

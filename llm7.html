@@ -451,89 +451,555 @@
         </p>
 
         <!-- BLOG CONTENT GOES HERE -->
-        <h3>What we actually achieved last time</h3>
+        <h2>1. Picking Up the Thread: From Geometry to Decisions</h2>
 
 <p>
-By the end of the last piece, text had finally made it into machines. Not in a metaphorical sense, but in a very literal one. Characters had stable numerical identities. Those numbers survived storage, copying, and transmission. Unicode closed a long chapter that began with telegraphs and broken encodings.
+In the last few chapters, we carefully built up three ideas:
 </p>
 
-<p>
-This was a real achievement. It solved a real problem. Text stopped breaking.
-</p>
+<ul>
+  <li>We can treat every <strong>(center → context)</strong> pair from the corpus as a tiny teaching signal.</li>
+  <li>Each word has two vectors: one when it is the <strong>center</strong> (in matrix W) and one when it is the <strong>context</strong> (in matrix C).</li>
+  <li>Given a center and context, we can compute a geometric <strong>score</strong>:
+    <br><br>
+    <code>score(center → context) = W[center] · C[context]</code>
+  </li>
+</ul>
 
 <p>
-But it is important to be precise about what was solved. What we built was a way for machines to hold text, not a way for machines to work with it.
+All of this was grounded in our tiny universe:
 </p>
 
 <div class="emphasis-line">
-Text became representable.
-Nothing became meaningful.
+I love my dog.<br>
+I love my cat.<br>
+You love my dog.<br>
+You love my cat.
+</div>
+
+<p>
+We also fixed the embedding dimension to <strong>2</strong>, so every word is literally a 2D arrow in a plane.  
+The dot product became a way to measure how aligned two arrows are.
+</p>
+
+<p>
+Now we will ask a very important question:
+</p>
+
+<div class="emphasis-line">
+<strong>We have scores. But what are we actually trying to maximize?</strong>
+</div>
+
+<p>
+We will find that “maximize the score” is not the right goal.
+Instead, we will slowly move toward:
+<strong>maximize the probability of the correct context</strong>.
+And to do that, we will gently introduce <strong>e<sup>x</sup></strong> and <strong>softmax</strong>.
+</p>
+
+<hr class="section-divider">
+
+<h2>2. Why “Just Make the Score Big” Is Not Enough</h2>
+
+<p>
+Take one real event from our tiny corpus:
+</p>
+
+<div class="emphasis-line">
+(love → You)
+</div>
+
+<p>
+Our intuition says:
+</p>
+
+<div class="emphasis-line">
+“If (love → You) is a real thing in the corpus, we want its score to be high.”
+</div>
+
+<p>
+So we might naively think:
+</p>
+
+<div class="emphasis-line">
+“Let’s train the model to <strong>maximize score(love → You)</strong>.”
+</div>
+
+<p>
+This sounds reasonable at first glance, but falls apart when we examine it carefully. Let’s see why.
+</p>
+
+<h3>2.1. The “blow up the vectors” problem</h3>
+
+<p>
+Suppose the model sets:
+</p>
+
+<ul>
+  <li>W[love] = (10⁶, 10⁶)</li>
+  <li>C[You] = (10⁶, 10⁶)</li>
+</ul>
+
+<p>
+Then:
+</p>
+
+<p>
+score(love → You) = 10⁶ × 10⁶ + 10⁶ × 10⁶ = 2 × 10¹²
+</p>
+
+<p>
+Enormous score.  
+Has the model learned anything meaningful? Not really.
+</p>
+
+<p>
+We have not told the model:
+</p>
+
+<ul>
+  <li>how big is “big enough”,</li>
+  <li>how this score should compare to score(love → I),</li>
+  <li>how it should compare to impossible contexts like (love → dog).</li>
+</ul>
+
+<p>
+Simply inflating vector magnitudes can always make scores larger.
+But that does not encode <em>structure</em>.
+</p>
+
+<h3>2.2. Language is about choices, not absolute scores</h3>
+
+<p>
+When “love” appears as the center word, the real question is not:
+</p>
+
+<p class="inline-question">
+“Is score(love → You) big?”
+</p>
+
+<p>
+The real question is:
+</p>
+
+<ul>
+  <li>“Given the center word <strong>love</strong>, which context is more likely:
+    I, You, my, dog, cat, or some other word?”</li>
+</ul>
+
+<p>
+We care about how “You” competes with other possible neighbours of “love”.
+In other words:
+</p>
+
+<div class="emphasis-line">
+<strong>We care about scores <em>relative</em> to other scores, not scores in isolation.</strong>
+</div>
+
+<p>
+This “relative” viewpoint is exactly what probability gives us.
+</p>
+
+<hr class="section-divider">
+
+<h2>3. Reframing the Goal: From Scores to p(context | center)</h2>
+
+<p>
+For each center word, say <strong>love</strong>, there are many possible contexts the model could imagine.  
+The corpus tells us which ones actually occur:
+</p>
+
+<ul>
+  <li>(love → I)</li>
+  <li>(love → You)</li>
+  <li>(love → my)</li>
+</ul>
+
+<p>
+Notice that we <em>never</em> saw:
+</p>
+
+<ul>
+  <li>(love → dog)</li>
+  <li>(love → cat)</li>
+</ul>
+
+<p>
+So a good model should reflect that behaviour.  
+In probabilistic terms, we want:
+</p>
+
+<ul>
+  <li>p(I | love) — reasonably high</li>
+  <li>p(You | love) — reasonably high</li>
+  <li>p(my | love) — very high (it always appears around love in our tiny corpus)</li>
+  <li>p(dog | love), p(cat | love) — very close to zero</li>
+</ul>
+
+<p>
+So our high-level goal becomes:
+</p>
+
+<div class="emphasis-line">
+<strong>When the center is “love”, assign high probability to the contexts that actually appear with “love” in the corpus, and low probability to those that don’t.</strong>
+</div>
+
+<p>
+We have shifted from:
+</p>
+
+<ul>
+  <li>“Maximize scores for true pairs”</li>
+</ul>
+
+<p>
+to:
+</p>
+
+<ul>
+  <li>“Maximize the <strong>probability</strong> of the true context given the center.”</li>
+</ul>
+
+<p>
+The scores will still be the raw material — but probability is now the <em>thing we want to maximize</em>.
+</p>
+
+<hr class="section-divider">
+
+<h2>4. Using Scores as Raw Preferences</h2>
+
+<p>
+We already have:
+</p>
+
+<div class="emphasis-line">
+<code>score(center → context) = W[center] · C[context]</code>
+</div>
+
+<p>
+Think of each score as a kind of <strong>raw preference</strong>:
+</p>
+
+<ul>
+  <li>If score(love → I) is higher than score(love → dog), then the model “prefers” I over dog as a neighbour of love.</li>
+  <li>If score(love → my) is the highest among all contexts, then my is currently the model’s favourite neighbour for love.</li>
+</ul>
+
+<p>
+But these raw scores are just real numbers.
+They can be negative, positive, large, or tiny.  
+We need to transform them into something that behaves more like a “strength” of belief.
+</p>
+
+<p>
+This suggests a two-step plan:
+</p>
+
+<ol>
+  <li>Map each score to a <strong>positive strength value</strong>.</li>
+  <li>Normalize these strengths so that they form a <strong>probability distribution</strong>.</li>
+</ol>
+
+<p>
+We will do exactly this in the next two sections.
+</p>
+
+<hr class="section-divider">
+
+<h2>5. Step 1 – From Score to Positive “Strength” via e<sup>x</sup></h2>
+
+<p>
+We want a function f(x) that takes any real number x (our score) and returns a positive number:
+</p>
+
+<ul>
+  <li>f(x) &gt; 0 for all x,</li>
+  <li>f is <strong>increasing</strong>: larger score → larger strength,</li>
+  <li>ideally, it should highlight differences; slightly higher scores should become noticeably stronger.</li>
+</ul>
+
+<p>
+The exponential function does all of this beautifully:
+</p>
+
+<div class="emphasis-line">
+<strong>f(x) = e<sup>x</sup></strong>
+</div>
+
+<p>
+Some basic behaviour of e<sup>x</sup>:
+</p>
+
+<ul>
+  <li>e<sup>0</sup> = 1</li>
+  <li>e<sup>1</sup> ≈ 2.718</li>
+  <li>e<sup>2</sup> ≈ 7.39</li>
+  <li>e<sup>-1</sup> ≈ 0.367</li>
+</ul>
+
+<p>
+So:
+</p>
+
+<ul>
+  <li>score = 0 → strength = 1</li>
+  <li>score = 2 → strength ≈ 7.39 (much stronger)</li>
+  <li>score = -1 → strength ≈ 0.37 (much weaker)</li>
+</ul>
+
+<p>
+This has a nice interpretation:
+</p>
+
+<div class="emphasis-line">
+Higher scores do not just increase linearly — they increase <strong>multiplicatively</strong> in strength.
+</div>
+
+<p>
+So we define:
+</p>
+
+<div class="emphasis-line">
+<strong>strength(center → context) = e<sup>score(center → context)</sup></strong>
+</div>
+
+<p>
+Now every center–context pair has a positive strength value.
+But we still don’t have probabilities yet.
+</p>
+
+<hr class="section-divider">
+
+<h2>6. Step 2 – From Strengths to Probabilities: Softmax</h2>
+
+<p>
+Imagine a fixed center word, say:
+</p>
+
+<div class="emphasis-line">
+<strong>center = love</strong>
+</div>
+
+<p>
+Our vocabulary (in this tiny universe) is:
+</p>
+
+<ul>
+  <li>I, You, love, my, dog, cat</li>
+</ul>
+
+<p>
+We can compute a score for “love” with each possible context:
+</p>
+
+<ul>
+  <li>score(love → I)</li>
+  <li>score(love → You)</li>
+  <li>score(love → my)</li>
+  <li>score(love → dog)</li>
+  <li>score(love → cat)</li>
+  <li>score(love → love) – weird, but mathematically allowed</li>
+</ul>
+
+<p>
+Then convert each into a strength using e<sup>x</sup>:
+</p>
+
+<p>
+strength(love → context) = e<sup>score(love → context)</sup>
+</p>
+
+<p>
+Now we have a bunch of positive numbers, one for each possible context word.
+How do we make this into a probability distribution p(context | love)?
+</p>
+
+<p>
+We use the simplest possible idea: <strong>normalize</strong>.
+</p>
+
+<div class="emphasis-line">
+<strong>
+p(context | love) =
+  e<sup>score(love → context)</sup> 
+  / Σ<sub>all c'</sub> e<sup>score(love → c')</sup>
+</strong>
+</div>
+
+<p>
+This is the <strong>softmax</strong> function:
+</p>
+
+<ul>
+  <li>Everything is positive (because of e<sup>x</sup>).</li>
+  <li>Probabilities sum to 1 (because we divide by the sum over all contexts).</li>
+  <li>Higher scores produce much higher probabilities, thanks to the exponential.</li>
+</ul>
+
+<p>
+Now we have exactly what we wanted:
+</p>
+
+<div class="emphasis-line">
+<strong>A way to turn geometric scores into proper probabilities p(context | center).</strong>
 </div>
 
 <hr class="section-divider">
 
-<h3>What these numbers do and do not contain</h3>
+<h2>7. A Tiny Numerical Example with “love”</h2>
 
 <p>
-The numbers assigned by Unicode are identifiers. They are references into a table that everyone agrees on. The number for a character is stable, global, and unambiguous. That is exactly why Unicode works.
+Let’s imagine concrete (fake) scores for “love” as center:
+</p>
+
+<ul>
+  <li>score(love → I)   = 2.0</li>
+  <li>score(love → You) = 2.1</li>
+  <li>score(love → my)  = 2.5</li>
+  <li>score(love → dog) = -1.0</li>
+  <li>score(love → cat) = -1.2</li>
+</ul>
+
+<p>
+Turn them into strengths:
+</p>
+
+<ul>
+  <li>strength(love → I)   = e<sup>2.0</sup>  ≈ 7.39</li>
+  <li>strength(love → You) = e<sup>2.1</sup>  ≈ 8.17</li>
+  <li>strength(love → my)  = e<sup>2.5</sup>  ≈ 12.18</li>
+  <li>strength(love → dog) = e<sup>-1.0</sup> ≈ 0.37</li>
+  <li>strength(love → cat) = e<sup>-1.2</sup> ≈ 0.30</li>
+</ul>
+
+<p>
+Total strength:
 </p>
 
 <p>
-But these numbers carry no internal structure. The number for one character does not know anything about the number next to it. The number for a word does not know it forms a unit. There is no notion of similarity, distance, or relationship built into the representation itself.
+S ≈ 7.39 + 8.17 + 12.18 + 0.37 + 0.30 ≈ 28.41
 </p>
 
 <p>
-This is not a flaw. It is a design choice. Unicode was never meant to express relationships. It was meant to prevent disagreement.
+Now probabilities:
 </p>
 
-<hr class="section-divider">
-
-<h3>Why learning changes the problem</h3>
+<ul>
+  <li>p(I   | love) ≈ 7.39 / 28.41 ≈ 0.26</li>
+  <li>p(You | love) ≈ 8.17 / 28.41 ≈ 0.29</li>
+  <li>p(my  | love) ≈ 12.18 / 28.41 ≈ 0.43</li>
+  <li>p(dog | love) ≈ 0.37 / 28.41 ≈ 0.013</li>
+  <li>p(cat | love) ≈ 0.30 / 28.41 ≈ 0.010</li>
+</ul>
 
 <p>
-As long as machines were only storing and displaying text, this limitation did not matter. But learning systems ask a different kind of question. They are not asked to preserve symbols. They are asked to detect patterns.
+Look at what has happened:
 </p>
 
+<ul>
+  <li>“my” has the highest probability – the model really believes in (love, my).</li>
+  <li>“I” and “You” also have reasonable probabilities.</li>
+  <li>“dog” and “cat” are almost zero – they are not directly neighbours of “love” in our corpus.</li>
+</ul>
+
 <p>
-Learning systems adjust themselves based on regularities in data. They respond to repetition. To closeness. To things behaving similarly across different contexts. All of these ideas quietly assume the existence of structure.
+This matches our tiny dataset extremely well.  
+We did not hard-code any of this behaviour — it emerged from scores and exponentials being turned into probabilities.
 </p>
 
 <div class="emphasis-line">
-Learning does not operate on labels.
-It operates on relationships.
+<strong>Now our model no longer has “just scores” – it has actual beliefs about which words are likely to appear next.</strong>
 </div>
-
-<p>
-Once you see this, the problem becomes unavoidable. If all a system sees is a sequence of unrelated integers, there is no obvious place for similarity to come from. There is no notion of “close” or “far.” There is only equality or inequality.
-</p>
 
 <hr class="section-divider">
 
-<h3>The question we can no longer avoid</h3>
+<h2>8. What Are We Maximizing Now, Exactly?</h2>
 
 <p>
-Turning text into numbers was necessary. It was not sufficient.
-</p>
-
-<p>
-If a machine is going to learn anything from text, those numbers must live in a space where relationships are even possible. A space where patterns can form. A space where similarity is something the system can respond to, rather than something it has to invent from scratch.
+We started by saying:
 </p>
 
 <div class="emphasis-line">
-Meaning does not arrive as a definition.
-It arrives as structure.
+“Maximizing scores alone doesn’t quite make sense.”
 </div>
 
 <p>
-Before trying to construct such a space for language, it helps to look at a case where this idea is already unavoidable. Where numbers naturally live in a geometric arrangement, and similarity is not a metaphor but a measurable quantity.
+Now we can say something more precise:
+</p>
+
+<div class="emphasis-line">
+<strong>
+For each observed pair (center → context) from the training set,  
+we want to <em>maximize p(context | center)</em>.
+</strong>
+</div>
+
+<p>
+Because p(context | center) is defined via softmax, this indirectly means:
+</p>
+
+<ul>
+  <li>we want to increase the score of the <strong>true</strong> context,</li>
+  <li>and decrease the scores of <strong>other possible</strong> contexts (so they don’t steal probability mass).</li>
+</ul>
+
+<p>
+So we are still “maximizing the score”, but now in a <em>relative</em> sense:
+</p>
+
+<div class="emphasis-line">
+We are not trying to make scores huge.  
+We are trying to make the <strong>true score bigger than the competing scores</strong>.
+</div>
+
+<p>
+Probability (via softmax) gives us a clean way to measure how well we are doing at that.
 </p>
 
 <hr class="section-divider">
 
-<h3>Why we start with images</h3>
+<h2>9. The Big Picture: From Raw Geometry to Learnable Beliefs</h2>
 
 <p>
-Images give us exactly that starting point.
+Let’s stitch Blogs 4, 5, and 6 into one continuous story:
+</p>
+
+<ol>
+  <li><strong>Blog 4</strong> – Conceptual:
+    <br>
+    Language gives us events like (center, context).  
+    We want word vectors W and C that capture the structure behind these events.</li>
+
+  <li><strong>Blog 5</strong> – Mathematical:
+    <br>
+    Each word gets two vectors (center + context).  
+    A dot product W[center] · C[context] gives a score that measures geometric compatibility.</li>
+
+  <li><strong>Blog 6</strong> – Probabilistic:
+    <br>
+    Scores alone are not enough.  
+    We pass scores through e<sup>x</sup>, normalize with softmax, and get probabilities p(context | center).  
+    Our goal becomes: maximize the probability of the correct context for each center.</li>
+</ol>
+
+<div class="emphasis-line">
+<strong>
+Indirectly, by maximizing these probabilities,  
+we are shaping W and C so that the geometry of the embedding space mirrors the statistical structure of language.
+</strong>
+</div>
+
+<p>
+In the next chapter, we will answer a natural follow-up:
+</p>
+
+<p class="inline-question">
+“If our goal is to maximize these probabilities, what does the explicit <em>loss function</em> look like?”
+</p>
+
+<p>
+That path will take us to log-likelihood and cross-entropy — the final piece
+that connects geometry, probability, and gradient-based learning into one training loop.
 </p>
 
 
@@ -682,11 +1148,6 @@ Images give us exactly that starting point.
     });
   });
   </script>
-    <!-- MathJax for LaTeX-style equations -->
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-<script id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-</script>
 
 </body>
 </html>

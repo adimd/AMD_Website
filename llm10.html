@@ -451,90 +451,555 @@
         </p>
 
         <!-- BLOG CONTENT GOES HERE -->
-        <h3>What we actually achieved last time</h3>
+        <h2>1. Starting Point: What We Actually Do During Training</h2>
 
 <p>
-By the end of the last piece, text had finally made it into machines. Not in a metaphorical sense, but in a very literal one. Characters had stable numerical identities. Those numbers survived storage, copying, and transmission. Unicode closed a long chapter that began with telegraphs and broken encodings.
+Forget fancy probability words for a moment. Think about what happens inside
+the training loop in the most down-to-earth way.
 </p>
 
-<p>
-This was a real achievement. It solved a real problem. Text stopped breaking.
-</p>
+<ol>
+  <li>You take one training example – a center–context pair \((w_i, c_i)\).</li>
+  <li>The model predicts a probability \(p_{\text{model}}(c_i \mid w_i)\).</li>
+  <li>You compute some loss number \(\ell_i\) from that probability.</li>
+  <li>You add it to the total loss, move to the next example, and so on.</li>
+</ol>
 
 <p>
-But it is important to be precise about what was solved. What we built was a way for machines to hold text, not a way for machines to work with it.
+From the previous posts, we decided that the most natural per-example loss is
+the <strong>surprise</strong>:
 </p>
 
 <div class="emphasis-line">
-Text became representable.
-Nothing became meaningful.
+  <strong>
+  \[
+    \ell_i
+    \;=\;
+    -\log p_{\text{model}}(c_i \mid w_i).
+  \]
+  </strong>
+</div>
+
+<p>
+If the model assigns high probability to the actual context, \(\ell_i\) is
+small. If it assigns low probability, \(\ell_i\) is large.
+This is exactly what we want.
+</p>
+
+<p>
+After going through all \(N\) training examples, we compute the average:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    L_{\text{empirical}}
+    \;=\;
+    \frac{1}{N}
+    \sum_{i=1}^{N}
+      \big(
+        -\log p_{\text{model}}(c_i \mid w_i)
+      \big).
+  \]
+  </strong>
+</div>
+
+<p>
+This is the quantity the optimizer is actually minimizing.
+So the big question becomes:
+</p>
+
+<div class="emphasis-line">
+  <strong>
+    What does this average really <em>mean</em>, in terms of probability?
+  </strong>
 </div>
 
 <hr class="section-divider">
 
-<h3>What these numbers do and do not contain</h3>
+<h2>2. Looking at the Data as Counts</h2>
 
 <p>
-The numbers assigned by Unicode are identifiers. They are references into a table that everyone agrees on. The number for a character is stable, global, and unambiguous. That is exactly why Unicode works.
+Let’s step back and look at the dataset as a big bag of
+(center, context) pairs. Some pairs appear often, some rarely, some never.
 </p>
 
 <p>
-But these numbers carry no internal structure. The number for one character does not know anything about the number next to it. The number for a word does not know it forms a unit. There is no notion of similarity, distance, or relationship built into the representation itself.
+Imagine we tabulate how many times each pair appears:
 </p>
+
+<table class="surprise-table">
+  <thead>
+    <tr>
+      <th>Pair \((w, c)\)</th>
+      <th>Count in corpus</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>\((\text{love}, \text{my})\)</td>
+      <td>\(\text{count}(\text{love}, \text{my})\)</td>
+    </tr>
+    <tr>
+      <td>\((\text{love}, \text{You})\)</td>
+      <td>\(\text{count}(\text{love}, \text{You})\)</td>
+    </tr>
+    <tr>
+      <td>\((\text{my}, \text{dog})\)</td>
+      <td>\(\text{count}(\text{my}, \text{dog})\)</td>
+    </tr>
+    <tr>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+  </tbody>
+</table>
 
 <p>
-This is not a flaw. It is a design choice. Unicode was never meant to express relationships. It was meant to prevent disagreement.
+The total number of training pairs is:
 </p>
 
-<hr class="section-divider">
-
-<h3>Why learning changes the problem</h3>
-
-<p>
-As long as machines were only storing and displaying text, this limitation did not matter. But learning systems ask a different kind of question. They are not asked to preserve symbols. They are asked to detect patterns.
-</p>
-
-<p>
-Learning systems adjust themselves based on regularities in data. They respond to repetition. To closeness. To things behaving similarly across different contexts. All of these ideas quietly assume the existence of structure.
-</p>
-
-<div class="emphasis-line">
-Learning does not operate on labels.
-It operates on relationships.
+<div class="equation-block">
+  <strong>
+  \[
+    N
+    \;=\;
+    \sum_{w, c}
+      \text{count}(w, c).
+  \]
+  </strong>
 </div>
 
 <p>
-Once you see this, the problem becomes unavoidable. If all a system sees is a sequence of unrelated integers, there is no obvious place for similarity to come from. There is no notion of “close” or “far.” There is only equality or inequality.
+Now recall the empirical average loss:
 </p>
 
-<hr class="section-divider">
-
-<h3>The question we can no longer avoid</h3>
-
-<p>
-Turning text into numbers was necessary. It was not sufficient.
-</p>
-
-<p>
-If a machine is going to learn anything from text, those numbers must live in a space where relationships are even possible. A space where patterns can form. A space where similarity is something the system can respond to, rather than something it has to invent from scratch.
-</p>
-
-<div class="emphasis-line">
-Meaning does not arrive as a definition.
-It arrives as structure.
+<div class="equation-block">
+  <strong>
+  \[
+    L_{\text{empirical}}
+    \;=\;
+    \frac{1}{N} \sum_{i=1}^{N}
+      \big(
+        -\log p_{\text{model}}(c_i \mid w_i)
+      \big).
+  \]
+  </strong>
 </div>
 
 <p>
-Before trying to construct such a space for language, it helps to look at a case where this idea is already unavoidable. Where numbers naturally live in a geometric arrangement, and similarity is not a metaphor but a measurable quantity.
+We can regroup this sum by <em>unique</em> pairs \((w, c)\).  
+Every time the same pair appears, it contributes the same
+\(-\log p_{\text{model}}(c \mid w)\).
+</p>
+
+<p>
+So we can rewrite:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    L_{\text{empirical}}
+    \;=\;
+    \frac{1}{N}
+    \sum_{w, c}
+      \text{count}(w, c)
+      \cdot
+      \big(
+        -\log p_{\text{model}}(c \mid w)
+      \big).
+  \]
+  </strong>
+</div>
+
+<p>
+This is the <em>same number</em>, just written in a more structured way:
+we are summing over all (center, context) pairs, weighted by how often they
+appear in the corpus.
 </p>
 
 <hr class="section-divider">
 
-<h3>Why we start with images</h3>
+<h2>3. From Counts to an Empirical Data Distribution</h2>
 
 <p>
-Images give us exactly that starting point.
+Now comes the key conceptual shift.  
+Whenever you see <code>count / N</code>, you should think:
+<strong>“Ah, that looks like a probability.”</strong>
 </p>
+
+<p>
+Define the empirical joint probability:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    p_{\text{data}}(w, c)
+    \;=\;
+    \frac{\text{count}(w, c)}{N}.
+  \]
+  </strong>
+</div>
+
+<p>
+This simply says:
+</p>
+
+<div class="emphasis-line">
+  <strong>
+    If I randomly pick one pair from the dataset,  
+    the chance it is \((w, c)\) is
+    \(p_{\text{data}}(w, c)\).
+  </strong>
+</div>
+
+<p>
+Using this, we can rewrite the empirical loss compactly:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    L_{\text{empirical}}
+    \;=\;
+    \sum_{w, c}
+      p_{\text{data}}(w, c)
+      \cdot
+      \big(
+        -\log p_{\text{model}}(c \mid w)
+      \big).
+  \]
+  </strong>
+</div>
+
+<p>
+Now the expression is starting to look like an
+<strong>expectation</strong>: “sum of probability times value”.
+</p>
+
+<hr class="section-divider">
+
+<h2>4. Splitting the Data Distribution: Center and Context</h2>
+
+<p>
+The joint probability \(p_{\text{data}}(w, c)\) can be factored as:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    p_{\text{data}}(w, c)
+    \;=\;
+    p_{\text{data}}(w)\,
+    p_{\text{data}}(c \mid w).
+  \]
+  </strong>
+</div>
+
+<p>
+Here:
+</p>
+
+<ul>
+  <li>\(p_{\text{data}}(w)\) is “how often does this center word \(w\) appear in the corpus?”</li>
+  <li>\(p_{\text{data}}(c \mid w)\) is “given that the center is \(w\), how often is the context \(c\)?”</li>
+</ul>
+
+<p>
+Substitute this into the loss:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    L_{\text{empirical}}
+    \;=\;
+    \sum_{w, c}
+      p_{\text{data}}(w)\,
+      p_{\text{data}}(c \mid w)
+      \cdot
+      \big(
+        -\log p_{\text{model}}(c \mid w)
+      \big).
+  \]
+  </strong>
+</div>
+
+<p>
+Rearrange the sums (sum over \(w\) outside, contexts inside):
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    L_{\text{empirical}}
+    \;=\;
+    \sum_{w}
+      p_{\text{data}}(w)
+      \left[
+        \sum_{c}
+          p_{\text{data}}(c \mid w)
+          \cdot
+          \big(
+            -\log p_{\text{model}}(c \mid w)
+          \big)
+      \right].
+  \]
+  </strong>
+</div>
+
+<p>
+Inside the square brackets, look at the inner sum:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    L(w)
+    \;=\;
+    \sum_{c}
+      p_{\text{data}}(c \mid w)
+      \cdot
+      \big(
+        -\log p_{\text{model}}(c \mid w)
+      \big).
+  \]
+  </strong>
+</div>
+
+<p>
+This is the <strong>average surprise of the model for a fixed center word \(w\)</strong>,
+when contexts are drawn according to the data distribution.
+</p>
+
+<p>
+So the full loss is:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    L_{\text{empirical}}
+    \;=\;
+    \sum_{w}
+      p_{\text{data}}(w)\,
+      L(w).
+  \]
+  </strong>
+</div>
+
+<p>
+In words:
+</p>
+
+<div class="emphasis-line">
+  <strong>
+    The total loss is the average (over center words \(w\))  
+    of the model’s average surprise over contexts \(c\) drawn from
+    \(p_{\text{data}}(c \mid w)\).
+  </strong>
+</div>
+
+<hr class="section-divider">
+
+<h2>5. Zooming In on \(L(w)\): A Probability–Probability Comparison</h2>
+
+<p>
+Let’s stare at \(L(w)\) again:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    L(w)
+    \;=\;
+    \sum_{c}
+      p_{\text{data}}(c \mid w)
+      \cdot
+      \big(
+        -\log p_{\text{model}}(c \mid w)
+      \big).
+  \]
+  </strong>
+</div>
+
+<p>
+This expression is doing something very specific:
+</p>
+
+<ul>
+  <li>It takes the <strong>true probabilities</strong>
+      \(p_{\text{data}}(c \mid w)\)</li>
+  <li>and compares them with the <strong>model probabilities</strong>
+      \(p_{\text{model}}(c \mid w)\)</li>
+  <li>by computing an average of \(-\log p_{\text{model}}(c \mid w)\)
+      weighted by \(p_{\text{data}}(c \mid w)\).</li>
+</ul>
+
+<p>
+In expectation notation, you can write:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    L(w)
+    \;=\;
+    \mathbb{E}_{c \sim p_{\text{data}}(\cdot \mid w)}
+      \left[
+        -\log p_{\text{model}}(c \mid w)
+      \right].
+  \]
+  </strong>
+</div>
+
+<p>
+So: if nature chooses contexts according to
+\(p_{\text{data}}(\cdot \mid w)\),  
+\(L(w)\) tells you the model’s <em>average surprise</em> about what actually happens.
+</p>
+
+<hr class="section-divider">
+
+<h2>6. Now We Name It: Cross-Entropy</h2>
+
+<p>
+Up to this point, we have only used basic ideas:
+</p>
+
+<ul>
+  <li>per-example surprise = \(-\log p_{\text{model}}\)</li>
+  <li>average over the dataset</li>
+  <li>rewriting that average using frequencies and probabilities</li>
+</ul>
+
+<p>
+What we have arrived at for a fixed center word \(w\) is:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    L(w)
+    \;=\;
+    \sum_{c}
+      p_{\text{data}}(c \mid w)
+      \cdot
+      \big(
+        -\log p_{\text{model}}(c \mid w)
+      \big).
+  \]
+  </strong>
+</div>
+
+<p>
+This exact pattern appears in information theory and is given a name:
+<strong>cross-entropy</strong>.
+</p>
+
+<p>
+Given two distributions \(P(c)\) and \(Q(c)\) over the same outcomes,
+the cross-entropy of \(P\) with respect to \(Q\) is:
+</p>
+
+<div class="equation-block">
+  <strong>
+  \[
+    H(P, Q)
+    \;=\;
+    \sum_{c}
+      P(c)\,
+      \big(
+        -\log Q(c)
+      \big).
+  \]
+  </strong>
+</div>
+
+<p>
+If you set:
+</p>
+
+<ul>
+  <li>\(P(c) = p_{\text{data}}(c \mid w)\)</li>
+  <li>\(Q(c) = p_{\text{model}}(c \mid w)\)</li>
+</ul>
+
+<p>
+then:
+</p>
+
+<div class="emphasis-line">
+  <strong>
+  \[
+    L(w)
+    \;=\;
+    H\!\left(
+      p_{\text{data}}(\cdot \mid w),
+      \;p_{\text{model}}(\cdot \mid w)
+    \right).
+  \]
+  </strong>
+</div>
+
+<p>
+So the loss for a single center word \(w\) is precisely the
+<strong>cross-entropy</strong> between:
+</p>
+
+<ul>
+  <li>the distribution that the <strong>data</strong> uses to pick contexts, and</li>
+  <li>the distribution that the <strong>model</strong> predicts for contexts.</li>
+</ul>
+
+<hr class="section-divider">
+
+<h2>7. Intuition: Why Minimizing Cross-Entropy Makes Sense</h2>
+
+<p>
+Now that we know our loss is cross-entropy, what does minimizing it mean,
+intuitively?
+</p>
+
+<ul>
+  <li>If \(p_{\text{data}}(c \mid w)\) is large (the context really does appear
+      often in the data),  
+      and the model sets \(p_{\text{model}}(c \mid w)\) too small,  
+      then the term
+      \(p_{\text{data}}(c \mid w)\,(-\log p_{\text{model}}(c \mid w))\)
+      is large &rarr; big contribution to the loss.</li>
+
+  <li>The only way for the model to reduce this contribution is to <strong>raise</strong>
+      \(p_{\text{model}}(c \mid w)\) closer to \(p_{\text{data}}(c \mid w)\).</li>
+
+  <li>If the model wastes probability mass on contexts that almost never appear
+      in the data, it must reduce probability on common contexts  
+      (because probabilities must sum to 1),  
+      which again increases the loss.</li>
+</ul>
+
+<p>
+So minimizing cross-entropy forces the model to:
+</p>
+
+<ul>
+  <li>assign high probability to events that are common in the data,</li>
+  <li>assign low probability to events that are rare or absent in the data,</li>
+  <li>and in the end, make
+      \(p_{\text{model}}(\cdot \mid w)\)
+      track
+      \(p_{\text{data}}(\cdot \mid w)\)
+      as closely as possible.</li>
+</ul>
+
+<div class="emphasis-line">
+  <strong>
+    Cross-entropy is just the formal name for  
+    “average surprise of the model when reality follows the data”.
+  </strong>
+</div>
 
 
         <!-- COMMENTS SECTION -->
@@ -682,8 +1147,8 @@ Images give us exactly that starting point.
     });
   });
   </script>
-    <!-- MathJax for LaTeX-style equations -->
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async
         src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
 </script>

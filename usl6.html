@@ -451,91 +451,556 @@
         </p>
 
         <!-- BLOG CONTENT GOES HERE -->
-        <h3>What we actually achieved last time</h3>
+        <section id="blog6-section-1">
+  <h2>From geometry to storage</h2>
 
-<p>
-By the end of the last piece, text had finally made it into machines. Not in a metaphorical sense, but in a very literal one. Characters had stable numerical identities. Those numbers survived storage, copying, and transmission. Unicode closed a long chapter that began with telegraphs and broken encodings.
-</p>
+  <p>
+    Up to now, we have deliberately stayed in a geometric world.
+    We talked about directions, projections, residuals, and structure.
+    We asked what the data looks like when viewed from the right angles.
+  </p>
 
-<p>
-This was a real achievement. It solved a real problem. Text stopped breaking.
-</p>
+  <p>
+    But there is another way to look at the same story.
+    One that a computation-minded person cannot avoid for long.
+  </p>
 
-<p>
-But it is important to be precise about what was solved. What we built was a way for machines to hold text, not a way for machines to work with it.
-</p>
+  <p>
+    Everything we have done so far can be interpreted as a decision about storage.
+    About how many numbers we choose to remember for each data point,
+    and which numbers are worth keeping.
+  </p>
 
-<div class="emphasis-line">
-Text became representable.
-Nothing became meaningful.
-</div>
+  <p>
+    When we represented a point using a single direction,
+    we replaced a \(d\)-dimensional vector with one scalar.
+    When we added a second direction,
+    we chose to store two scalars instead of the original \(d\).
+  </p>
 
-<hr class="section-divider">
+  <p>
+    Nothing magical happened.
+    We simply decided that some numbers mattered more than others.
+  </p>
 
-<h3>What these numbers do and do not contain</h3>
+  <p>
+    The decomposition we arrived at in the previous blog makes this explicit.
+    A data point is no longer stored as raw coordinates.
+    It is stored as a list of coefficients along carefully chosen directions,
+    plus a residual that we may or may not keep.
+  </p>
 
-<p>
-The numbers assigned by Unicode are identifiers. They are references into a table that everyone agrees on. The number for a character is stable, global, and unambiguous. That is exactly why Unicode works.
-</p>
+  <p>
+    This is compression in the most literal sense.
+    Fewer numbers.
+    Less storage.
+    Controlled loss.
+  </p>
 
-<p>
-But these numbers carry no internal structure. The number for one character does not know anything about the number next to it. The number for a word does not know it forms a unit. There is no notion of similarity, distance, or relationship built into the representation itself.
-</p>
+  <p>
+    At the same time, something else has been quietly happening.
+    Every step of this process can be written using matrices.
+    The directions we discovered can be stacked.
+    The coefficients can be collected.
+    The residuals can be expressed as matrix operations.
+  </p>
 
-<p>
-This is not a flaw. It is a design choice. Unicode was never meant to express relationships. It was meant to prevent disagreement.
-</p>
+  <p>
+    In this blog, we will step away from geometry just enough
+    to see how this entire story looks from a matrix and computation viewpoint.
+    Not to replace intuition,
+    but to make it usable.
+  </p>
 
-<hr class="section-divider">
+  <p>
+    We will ask two concrete questions.
+    How does this decomposition reduce data storage.
+    And how does the matrix formulation allow us to compute it efficiently for large datasets.
+  </p>
 
-<h3>Why learning changes the problem</h3>
+</section>
 
-<p>
-As long as machines were only storing and displaying text, this limitation did not matter. But learning systems ask a different kind of question. They are not asked to preserve symbols. They are asked to detect patterns.
-</p>
+<section id="blog6-section-2">
+  <h2>Counting what we store, with a concrete example</h2>
 
-<p>
-Learning systems adjust themselves based on regularities in data. They respond to repetition. To closeness. To things behaving similarly across different contexts. All of these ideas quietly assume the existence of structure.
-</p>
+  <p>
+    Let us make the idea of compression explicit by doing something very simple.
+    Let us count numbers.
+  </p>
 
-<div class="emphasis-line">
-Learning does not operate on labels.
-It operates on relationships.
-</div>
+  <p>
+    Suppose each data point originally lives in \( \mathbb{R}^d \).
+    Storing one point in its raw form means storing \(d\) numbers.
+    Storing \(n\) such points means storing \(n \times d\) numbers.
+  </p>
 
-<p>
-Once you see this, the problem becomes unavoidable. If all a system sees is a sequence of unrelated integers, there is no obvious place for similarity to come from. There is no notion of “close” or “far.” There is only equality or inequality.
-</p>
+  <p>
+    There is no interpretation here.
+    This is just storage.
+  </p>
 
-<hr class="section-divider">
+  <p>
+    Now let us make this concrete.
+    Imagine a dataset with:
+  </p>
 
-<h3>The question we can no longer avoid</h3>
+  <p class="math-block">
+    \[
+      n = 100{,}000 \quad \text{points}, \qquad d = 1{,}000 \quad \text{dimensions}
+    \]
+  </p>
 
-<p>
-Turning text into numbers was necessary. It was not sufficient.
-</p>
+  <p>
+    Storing this dataset in its raw form requires:
+  </p>
 
-<p>
-If a machine is going to learn anything from text, those numbers must live in a space where relationships are even possible. A space where patterns can form. A space where similarity is something the system can respond to, rather than something it has to invent from scratch.
-</p>
+  <p class="math-block">
+    \[
+      100{,}000 \times 1{,}000 = 100{,}000{,}000 \quad \text{numbers}
+    \]
+  </p>
 
-<div class="emphasis-line">
-Meaning does not arrive as a definition.
-It arrives as structure.
-</div>
+  <p>
+    That is one hundred million numbers, before we have done anything interesting with the data.
+  </p>
 
-<p>
-Before trying to construct such a space for language, it helps to look at a case where this idea is already unavoidable. Where numbers naturally live in a geometric arrangement, and similarity is not a metaphor but a measurable quantity.
-</p>
+  <p>
+    Now look at what changes once we adopt the representation we developed in the previous blogs.
+  </p>
 
-<hr class="section-divider">
+  <p>
+    Instead of storing each point directly,
+    we choose a small number of directions
+    and store how strongly each point aligns with those directions.
+  </p>
 
-<h3>Why we start with images</h3>
+  <p>
+    Suppose we decide to keep \(k = 20\) directions.
+    For each data point, we now store only 20 numbers:
+  </p>
 
-<p>
-Images give us exactly that starting point.
-</p>
+  <p class="math-block">
+    \[
+      (x_i^\top w_1),\; (x_i^\top w_2),\; \dots,\; (x_i^\top w_{20})
+    \]
+  </p>
 
+  <p>
+    Across the entire dataset, this requires:
+  </p>
+
+  <p class="math-block">
+    \[
+      100{,}000 \times 20 = 2{,}000{,}000 \quad \text{numbers}
+    \]
+  </p>
+
+  <p>
+    Of course, we also need to store the directions themselves.
+    Each direction lives in \( \mathbb{R}^{1000} \),
+    so storing 20 directions costs:
+  </p>
+
+  <p class="math-block">
+    \[
+      20 \times 1{,}000 = 20{,}000 \quad \text{numbers}
+    \]
+  </p>
+
+  <p>
+    Putting everything together, the total storage becomes:
+  </p>
+
+  <p class="math-block">
+    \[
+      2{,}000{,}000 + 20{,}000 = 2{,}020{,}000 \quad \text{numbers}
+    \]
+  </p>
+
+  <p>
+    Compare this with the original one hundred million numbers.
+  </p>
+
+  <p>
+    We have reduced storage by nearly a factor of fifty,
+    while still retaining a controlled approximation of every data point.
+  </p>
+
+  <p>
+    This is the key idea.
+    The compression does not come from clever encoding tricks.
+    It comes from deciding which numbers are worth remembering.
+  </p>
+
+  <p>
+    The value of \(k\) controls this trade-off.
+    A larger \(k\) means more storage and better reconstruction.
+    A smaller \(k\) means more aggressive compression and larger residuals.
+  </p>
+
+
+</section>
+
+<section id="blog6-section-3">
+  <h2>Writing the entire dataset as a matrix</h2>
+
+  <p>
+    Up to now, we have described compression by talking about one data point at a time.
+    That is useful for intuition, but it is not how computation actually happens.
+    When datasets are large, we operate on all points together.
+  </p>
+
+  <p>
+    The natural way to do that is to stack the data into a matrix.
+  </p>
+
+  <p>
+    Suppose we collect all \(n\) data points into a single matrix:
+  </p>
+
+  <p class="math-block">
+    \[
+      X =
+      \begin{bmatrix}
+        x_1^\top \\
+        x_2^\top \\
+        \vdots \\
+        x_n^\top
+      \end{bmatrix}
+      \in \mathbb{R}^{n \times d}
+    \]
+  </p>
+
+  <p>
+    Each row of this matrix is one data point.
+    Storing the dataset in raw form means storing this entire matrix.
+  </p>
+
+  <p>
+    Now recall what our learned directions look like.
+    We chose \(k\) directions \(w_1, w_2, \dots, w_k\),
+    each living in \( \mathbb{R}^d \).
+  </p>
+
+  <p>
+    Stack these directions as columns of another matrix:
+  </p>
+
+  <p class="math-block">
+    \[
+      W =
+      \begin{bmatrix}
+        w_1 & w_2 & \dots & w_k
+      \end{bmatrix}
+      \in \mathbb{R}^{d \times k}
+    \]
+  </p>
+
+  <p>
+    This matrix \(W\) is the object that defines our representation.
+    It tells us which directions we care about.
+  </p>
+
+  <p>
+    Now look at what happens when we multiply the data matrix by this direction matrix:
+  </p>
+
+  <p class="math-block">
+    \[
+      Z = X W
+    \]
+  </p>
+
+  <p>
+    The result \(Z\) is a matrix in \( \mathbb{R}^{n \times k} \).
+    Each row of \(Z\) contains the coefficients
+    \((x_i^\top w_1, x_i^\top w_2, \dots, x_i^\top w_k)\)
+    for the corresponding data point.
+  </p>
+
+  <p>
+    This matrix \(Z\) is the compressed representation of the dataset.
+    It is exactly the collection of numbers we decided to store.
+  </p>
+
+  <p>
+    Reconstruction can also be written in matrix form.
+    If we multiply the coefficient matrix back by the direction matrix,
+    we obtain:
+  </p>
+
+  <p class="math-block">
+    \[
+      \hat{X} = Z W^\top = X W W^\top
+    \]
+  </p>
+
+  <p>
+    This matrix \(\hat{X}\) is the best rank-\(k\) approximation of the original data
+    under the choices we have made.
+  </p>
+
+  <p>
+    The residuals we talked about earlier now appear naturally as:
+  </p>
+
+  <p class="math-block">
+    \[
+      R = X - \hat{X}
+    \]
+  </p>
+
+  <p>
+    Nothing new has been introduced here.
+    We have simply rewritten the same ideas using matrices.
+  </p>
+
+  <p>
+    But this rewriting matters.
+    It shows that compression, reconstruction, and residuals
+    are all just matrix multiplications.
+    This is what makes the method scalable and practical.
+  </p>
+
+
+</section>
+
+<section id="blog6-section-4">
+  <h2>The one matrix that keeps showing up</h2>
+
+  <p>
+    Let us be very clear about what we are trying to do at this stage.
+  </p>
+
+  <p>
+    We want to find directions that allow us to store fewer numbers,
+    while losing as little information as possible.
+    Everything we have done so far has been a way of making this idea precise.
+  </p>
+
+  <p>
+    Earlier in this series, we arrived at these directions by thinking geometrically.
+    We asked which direction captures the largest projection of the data.
+    That question led us to an optimization problem.
+  </p>
+
+  <p>
+    When we worked through that optimization,
+    a particular object appeared naturally:
+  </p>
+
+  <p class="math-block">
+    \[
+      \sum_{i=1}^{n} x_i x_i^\top
+    \]
+  </p>
+
+  <p>
+    At the time, this object was not introduced as a computational tool.
+    It appeared simply because we were adding up projection contributions from all points.
+  </p>
+
+  <p>
+    Now let us look at the same quantity from a storage and computation viewpoint.
+  </p>
+
+  <p>
+    Recall that we stacked all data points into a matrix:
+  </p>
+
+  <p class="math-block">
+    \[
+      X =
+      \begin{bmatrix}
+        x_1^\top \\
+        x_2^\top \\
+        \vdots \\
+        x_n^\top
+      \end{bmatrix}
+    \]
+  </p>
+
+  <p>
+    If we multiply this matrix by its transpose, we get:
+  </p>
+
+  <p class="math-block">
+    \[
+      X^\top X
+    \]
+  </p>
+
+  <p>
+    Writing this out explicitly shows that:
+  </p>
+
+  <p class="math-block">
+    \[
+      X^\top X = \sum_{i=1}^{n} x_i x_i^\top
+    \]
+  </p>
+
+  <p>
+    This is not a new object.
+    It is exactly the same quantity that appeared earlier
+    when we were reasoning about projections and residuals.
+  </p>
+
+  <p>
+    This is the key realization.
+  </p>
+
+  <p>
+    The matrix \(X^\top X\) contains all the information needed
+    to decide which directions are most important for compression.
+    We do not need to examine points one by one.
+    We do not need to track residuals explicitly.
+  </p>
+
+  <p>
+    Once this matrix is built,
+    the problem of finding good compression directions
+    becomes a problem of analyzing this single object.
+  </p>
+
+  <p>
+    From a computational perspective,
+    this is what makes the entire approach practical.
+    From a conceptual perspective,
+    it tells us that geometry, compression, and computation
+    have been pointing to the same structure all along.
+  </p>
+
+</section>
+
+<section id="blog6-section-5">
+  <h2>Why this makes the problem computable</h2>
+
+  <p>
+    Up to this point, everything we have done could still feel abstract.
+    We talked about directions, projections, residuals, and compression.
+    But none of this matters unless it leads to something we can actually compute.
+  </p>
+
+  <p>
+    The moment we recognize that all of this structure is captured by the matrix \(X^\top X\),
+    the nature of the problem changes.
+  </p>
+
+  <p>
+    Instead of reasoning about every data point separately,
+    we now have a single object that summarizes the entire dataset.
+    This matrix does not grow with the number of data points.
+    Its size depends only on the dimensionality of the data.
+  </p>
+
+  <p>
+    This is a crucial shift.
+  </p>
+
+  <p>
+    The original dataset may contain millions of points.
+    But once we have formed \(X^\top X\),
+    all questions about dominant directions,
+    projection strength,
+    and compression quality
+    can be answered by analyzing this matrix alone.
+  </p>
+
+  <p>
+    From a computational perspective,
+    this is exactly what we want.
+    We replace a problem that depends on \(n\) large vectors
+    with a problem that depends on a single \(d \times d\) matrix.
+  </p>
+
+  <p>
+    Even more importantly,
+    the operations we need to perform on this matrix are well understood.
+    We are no longer inventing new algorithms.
+    We are using standard linear algebra tools
+    that are stable, efficient, and heavily optimized.
+  </p>
+
+  <p>
+    This is why the entire earlier discussion about projections and residuals matters.
+    It ensures that when we analyze \(X^\top X\),
+    we are not performing an arbitrary computation.
+    We are extracting directions that are optimal with respect to the compression goal we defined.
+  </p>
+
+  <p>
+    In other words,
+    the matrix formulation does not replace intuition.
+    It makes the intuition executable.
+  </p>
+
+  <p>
+    In the final section of this blog,
+    we will step back and summarize how geometry, storage, and computation
+    have converged to the same conclusion,
+    and why this sets the stage for naming the method explicitly in the next blog.
+  </p>
+
+</section>
+
+<section id="blog6-conclusion">
+  <h2>What we gained by changing perspective</h2>
+
+  <p>
+    In this blog, we did not introduce a new idea.
+    We changed the way we looked at an idea we already understood.
+  </p>
+
+  <p>
+    We started with a geometric story.
+    Directions, projections, and residuals helped us understand
+    how structure appears in high-dimensional data.
+  </p>
+
+  <p>
+    We then reframed the same story as a storage problem.
+    Each choice of direction became a decision about which numbers to keep
+    and which ones we were willing to discard.
+  </p>
+
+  <p>
+    Finally, we rewrote everything in matrix form.
+    This was not a mathematical flourish.
+    It was the step that turned intuition into something computable.
+  </p>
+
+  <p>
+    Seeing the same structure appear in the matrix \(X^\top X\)
+    showed us that geometry, compression, and computation
+    were never separate concerns.
+    They were different views of the same problem.
+  </p>
+
+  <p>
+    Once the problem is expressed in this form,
+    finding good representations is no longer mysterious.
+    It becomes a matter of analyzing a single object
+    that summarizes the entire dataset.
+  </p>
+
+  <p>
+    This perspective explains why unsupervised learning methods
+    can scale to large datasets,
+    and why they are able to discover structure
+    without any labels or targets.
+  </p>
+
+  <p>
+    In the next blog,
+    we will finally give a name to the procedure
+    that has been quietly guiding everything so far.
+    We will see how this matrix viewpoint leads naturally
+    to a standard decomposition,
+    and why its components are ordered by importance.
+  </p>
+
+</section>
 
         <!-- COMMENTS SECTION -->
         <hr class="section-divider">

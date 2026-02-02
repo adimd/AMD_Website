@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Part 3 — Meaning From Neighbours: Co-Occurrence & Embeddings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Global site styles -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- MathJax for TeX equations -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']]
+      }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <!-- Page-specific styles -->
+  <style>
+    :root {
+      --bg-main: #f6eaaf;
+      --bg-card: #ffffff;
+      --bg-soft: #ead3c1;
+      --accent:  #941236;
+      --text-main: #222222;
+      --text-muted: #555555;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        linear-gradient(135deg, rgba(234, 211, 193, 0.4), rgba(246, 234, 175, 0.6)),
+        var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.75;
+      font-size: 18px;
+    }
+
+    .page-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 3.5rem;
+    }
+
+    .content-layout {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 900px) {
+      .content-layout {
+        flex-direction: column;
+      }
+    }
+
+    .blog-main { flex: 3; }
+    .blog-sidebar { flex: 1.3; }
+
+    .blog-card {
+      background: var(--bg-card);
+      border-radius: 1.25rem;
+      box-shadow:
+        0 16px 40px rgba(0, 0, 0, 0.08),
+        0 -6px 18px rgba(148, 18, 54, 0.06);
+      padding: 2.5rem 2.75rem;
+      border-top: 6px solid var(--accent);
+    }
+
+    @media (max-width: 768px) {
+      .blog-card {
+        padding: 1.75rem 1.5rem;
+        border-radius: 1rem;
+      }
+    }
+
+    .blog-meta {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .series-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      background: var(--bg-soft);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .series-tag-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      margin: 0.4rem 0 0.75rem;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    .blog-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      margin-bottom: 1.8rem;
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      margin-top: 2.25rem;
+      margin-bottom: 0.6rem;
+      color: var(--accent);
+    }
+
+    h3 {
+      font-size: 1.2rem;
+      margin-top: 1.6rem;
+      margin-bottom: 0.4rem;
+      color: #7a0f29;
+    }
+
+    p {
+      margin: 0.5rem 0 0.9rem;
+      font-size: 1rem;
+    }
+
+    strong {
+      color: #3a111c;
+    }
+
+    .inline-question {
+      font-style: italic;
+      color: #4a222b;
+    }
+
+    .emphasis-line {
+      padding: 0.9rem 1.1rem;
+      border-left: 4px solid var(--accent);
+      background: #fff8e7;
+      border-radius: 0.6rem;
+      font-size: 0.98rem;
+      margin: 1rem 0 1.4rem;
+    }
+
+    .section-divider {
+      margin: 2.2rem 0 1.8rem;
+      height: 1px;
+      border: none;
+      background: linear-gradient(to right, transparent, #d7b2a3, transparent);
+    }
+
+    ul {
+      padding-left: 1.3rem;
+      margin: 0.25rem 0 1rem;
+    }
+
+    li {
+      margin: 0.2rem 0;
+      font-size: 1rem;
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    /* Image blocks */
+    .image-block {
+      margin: 1.6rem 0 1.3rem;
+    }
+
+    .image-frame {
+      width: 100%;
+      max-width: 720px;
+      height: 260px;
+      margin: 0 auto;
+      border-radius: 0.9rem;
+      border: 2px dashed rgba(148, 18, 54, 0.35);
+      background: linear-gradient(
+        135deg,
+        rgba(246, 234, 175, 0.5),
+        rgba(234, 211, 193, 0.6)
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      cursor: zoom-in;
+    }
+
+    .image-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .image-placeholder-text {
+      font-size: 0.9rem;
+      color: #5c2a33;
+      text-align: center;
+      padding: 0 1.5rem;
+    }
+
+    .image-placeholder-label {
+      position: absolute;
+      bottom: 10px;
+      right: 12px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: rgba(148, 18, 54, 0.8);
+      background: rgba(255, 255, 255, 0.75);
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+    }
+
+    .image-caption {
+      max-width: 720px;
+      margin: 0.5rem auto 0.2rem;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .image-frame {
+        height: 210px;
+      }
+      .image-placeholder-text {
+        font-size: 0.85rem;
+        padding: 0 1rem;
+      }
+    }
+
+    /* Co-occurrence table */
+    .cooc-wrapper {
+      max-width: 100%;
+      overflow-x: auto;
+      margin: 1rem 0 1.4rem;
+    }
+
+    .cooc-table {
+      border-collapse: collapse;
+      min-width: 420px;
+      margin: 0 auto;
+      font-size: 0.9rem;
+      background: #fffdf7;
+      border-radius: 0.6rem;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    }
+
+    .cooc-table th,
+    .cooc-table td {
+      border: 1px solid rgba(148,18,54,0.18);
+      padding: 0.45rem 0.6rem;
+      text-align: center;
+    }
+
+    .cooc-table th {
+      background: #ead3c1;
+      color: #3a111c;
+      font-weight: 600;
+    }
+
+    .cooc-table thead th:first-child {
+      background: transparent;
+      border: none;
+    }
+
+    .cooc-table tbody th {
+      background: #f6eaaf;
+      font-weight: 600;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+    }
+
+    /* Sidebar */
+    .sidebar-card {
+      background: #fffdf7;
+      border-radius: 1rem;
+      padding: 1.1rem 1.1rem 1.2rem;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+      border: 1px solid rgba(148,18,54,0.08);
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .sidebar-card h2 {
+      font-size: 1.05rem;
+      margin: 0 0 0.4rem;
+      color: var(--accent);
+    }
+
+    .sidebar-card p {
+      margin: 0 0 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.86rem;
+    }
+
+    .sidebar-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0.1rem 0 0.3rem;
+    }
+
+    .sidebar-list li {
+      margin: 0.2rem 0;
+      font-size: 0.87rem;
+    }
+
+    .sidebar-link {
+      text-decoration: none;
+      color: #3a111c;
+      padding: 0.15rem 0.25rem;
+      border-radius: 0.4rem;
+      display: inline-block;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .sidebar-link:hover {
+      background: rgba(234,211,193,0.7);
+      transform: translateX(2px);
+    }
+
+    .sidebar-current {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .sidebar-small {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+    }
+
+    /* Comments */
+    .comments-section {
+      max-width: 1100px;
+      margin: 2.5rem auto 0;
+      background: #ffffff;
+      border-radius: 1rem;
+      padding: 1.8rem 1.7rem;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+      border: 1px solid rgba(148,18,54,0.08);
+    }
+
+    .comments-section h2 {
+      margin-top: 0;
+      margin-bottom: 0.8rem;
+      font-size: 1.4rem;
+      color: var(--accent);
+    }
+
+    .comments-intro {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin: 0 0 1rem;
+    }
+
+    /* Image zoom modal */
+    .image-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .image-modal.open {
+      display: flex;
+    }
+
+    .image-modal-inner {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+    }
+
+    .image-modal-img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 1rem;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5);
+      background: #ffffff;
+    }
+
+    .image-modal-caption {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: #f6eaaf;
+      text-align: center;
+    }
+
+    .image-modal-close {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      border: none;
+      background: #ffffff;
+      color: #941236;
+      border-radius: 999px;
+      width: 28px;
+      height: 28px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAVBAR (assumes style.css defines .site-header, .nav-container, .brand, .nav-links, etc.) -->
+  <header class="site-header">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <span class="brand-mark">AM</span>
+        <span class="brand-text">Adithya MD</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="blogs.html">Blogs</a>
+        <a href="projects.html">Projects</a>
+        <a href="startup.html">Moisture Meter</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="page-wrapper">
+    <div class="content-layout">
+
+      <!-- MAIN ARTICLE -->
+      <article class="blog-card blog-main">
+
+        <div class="blog-meta">
+          <span class="series-tag">
+            <span class="series-tag-dot"></span>
+            LLM from first principles
+          </span>
+        </div>
+
+        <h1>Part 3 — Meaning From Neighbours: Co-Occurrence & Embeddings</h1>
+        <p class="blog-subtitle">
+          How we move from “just words in a row” to vectors that quietly know dog and cat belong together.
+        </p>
+
+        <h2>Why meaning is really about behaviour</h2>
+
+        <p>
+          If you ask a philosopher where the meaning of a word lives, they might say something like:
+        </p>
+
+        <p class="inline-question">
+          “The meaning of <em>dog</em> lives inside the word <strong>dog</strong> itself.”
+        </p>
+
+        <p>
+          That’s a beautiful thought. It’s also completely useless if you’re a computer.
+        </p>
+
+        <p>
+          Machines don’t have childhood memories of chasing dogs or being barked at. They don’t have
+          smell, or fur, or “aww cute” reactions. All they see is a sequence of symbols:
+          <code>"d"</code>, <code>"o"</code>, <code>"g"</code>.
+        </p>
+
+        <p>
+          The real secret is much more down-to-earth:
+        </p>
+
+        <div class="emphasis-line">
+          We understand words because of the <strong>situations</strong> they appear in and the
+          <strong>neighbours</strong> they keep.
+        </div>
+
+        <p>
+          Every time you read or hear a sentence, your brain quietly updates an internal model:
+        </p>
+        <ul>
+          <li>“Dog” tends to appear near “pet”, “walk”, “bark”, “leash”.</li>
+          <li>“Cat” tends to appear near “pet”, “purr”, “climb”, “couch-ownership”.</li>
+          <li>“Quantum field theory” tends to appear nowhere near “cute Instagram story”.</li>
+        </ul>
+
+        <p>
+          The pattern of who appears next to whom slowly turns into your sense of meaning.
+          Linguists gave this idea a name in the mid-20th century.
+        </p>
+
+        <p class="emphasis-line">
+          <strong>Distributional hypothesis:</strong>  
+          words that occur in similar <strong>contexts</strong> tend to have similar
+          <strong>meanings</strong>.
+        </p>
+
+        <p>
+          Zellig Harris hinted at it. J. R. Firth gave it the classic line:
+          <em>“You shall know a word by the company it keeps.”</em>  
+          Modern embeddings, Word2Vec, GloVe, transformers — they’re all very fancy ways of
+          operationalising that one sentence.
+        </p>
+
+        <hr class="section-divider">
+
+        <h2>A tiny universe of six words</h2>
+
+        <p>
+          Let’s build a tiny language. Not English. Not Kannada. Just a six-word universe:
+        </p>
+
+        <ul>
+          <li>I love my dog</li>
+          <li>I love my cat</li>
+          <li>You love my dog</li>
+          <li>You love my cat</li>
+        </ul>
+
+        <p>
+          Vocabulary (with a fixed ordering so we can build matrices later):
+        </p>
+
+        <ul>
+          <li>0 → I</li>
+          <li>1 → You</li>
+          <li>2 → love</li>
+          <li>3 → my</li>
+          <li>4 → dog</li>
+          <li>5 → cat</li>
+        </ul>
+
+        <p>
+          Even without doing any math, your brain has already noticed a few things:
+        </p>
+        <ul>
+          <li>“Dog” and “cat” feel very similar.</li>
+          <li>“I” and “You” play similar roles at the start.</li>
+          <li>“love my” is basically welded together everywhere.</li>
+        </ul>
+
+        <p>
+          Now the challenge is: can we get a computer to notice this <em>without</em> us telling it
+          explicitly “dog and cat are both pets”?
+        </p>
+
+        <div class="emphasis-line">
+          The only thing we’ll let the machine look at is <strong>neighbours</strong>.
+          Nothing else.
+        </div>
+
+        <hr class="section-divider">
+
+        <h2>Defining neighbours properly (window size = 1)</h2>
+
+        <p>
+          There are many possible definitions of “context”: same sentence, a window of 2–5 words,
+          whole paragraph, etc. For now, we deliberately keep things very strict and clean:
+        </p>
+
+        <div class="emphasis-line">
+          <strong>Rule:</strong> two words are neighbours if they are
+          <strong>adjacent</strong> in a sentence.  
+          This is a context window of size 1.
+        </div>
+
+        <p>
+          So in the sentence:
+        </p>
+
+        <p><code>I love my dog</code></p>
+
+        <p>
+          The adjacent pairs are:
+        </p>
+
+        <ul>
+          <li>(I, love)</li>
+          <li>(love, my)</li>
+          <li>(my, dog)</li>
+        </ul>
+
+        <p>
+          Here is one more important design choice:
+        </p>
+
+        <div class="emphasis-line">
+          For every adjacent pair \((a, b)\), we increment <strong>both</strong> directions:
+          \((a, b)\) and \((b, a)\).  
+          That way, our co-occurrence matrix is <strong>symmetric</strong>.
+        </div>
+
+        <p>
+          We’re not yet interested in order (who comes first, who comes second).
+          We just care that these two words bump into each other as neighbours.
+        </p>
+
+        <h3>Counting neighbours in each sentence</h3>
+
+        <p><strong>Sentence 1:</strong> I love my dog</p>
+        <ul>
+          <li>(I, love), (love, I)</li>
+          <li>(love, my), (my, love)</li>
+          <li>(my, dog), (dog, my)</li>
+        </ul>
+
+        <p><strong>Sentence 2:</strong> I love my cat</p>
+        <ul>
+          <li>(I, love), (love, I)</li>
+          <li>(love, my), (my, love)</li>
+          <li>(my, cat), (cat, my)</li>
+        </ul>
+
+        <p><strong>Sentence 3:</strong> You love my dog</p>
+        <ul>
+          <li>(You, love), (love, You)</li>
+          <li>(love, my), (my, love)</li>
+          <li>(my, dog), (dog, my)</li>
+        </ul>
+
+        <p><strong>Sentence 4:</strong> You love my cat</p>
+        <ul>
+          <li>(You, love), (love, You)</li>
+          <li>(love, my), (my, love)</li>
+          <li>(my, cat), (cat, my)</li>
+        </ul>
+
+        <h3>Aggregated neighbour counts</h3>
+
+        <p>
+          Now we add up how many times each <em>unordered</em> pair meets as neighbours:
+        </p>
+
+        <ul>
+          <li><code>I – love</code> : 2 times</li>
+          <li><code>You – love</code> : 2 times</li>
+          <li><code>love – my</code> : 4 times</li>
+          <li><code>my – dog</code> : 2 times</li>
+          <li><code>my – cat</code> : 2 times</li>
+        </ul>
+
+        <p>
+          Every other pair (like “I – dog”, “You – cat”, “dog – cat”) never sit next to each other,
+          so their co-occurrence count is 0.
+        </p>
+
+        <div class="image-block">
+          <div class="image-frame">
+            <!-- Replace this with your own SVG/PNG of the word-neighbour graph if you like -->
+            <div class="image-placeholder-text">
+              <strong>Suggested image:</strong> a tiny graph of six nodes (“I”, “You”, “love”, “my”,
+              “dog”, “cat”) with edges between neighbours, labelled with counts:
+              2 between I–love, 2 between You–love, 4 between love–my, 2 between my–dog, 2 between my–cat.
+            </div>
+            <div class="image-placeholder-label">Neighbour graph</div>
+          </div>
+          <p class="image-caption">
+            In this miniature universe, “dog” and “cat” have exactly the same neighbour (“my”), with the
+            same strength.
+          </p>
+        </div>
+
+        <hr class="section-divider">
+
+        <h2>Building the 6×6 co-occurrence matrix</h2>
+
+        <p>
+          Now we turn those counts into a proper matrix.  
+          We fix the vocabulary order as:
+        </p>
+
+        <p>
+          \[
+            V = [\text{I},\ \text{You},\ \text{love},\ \text{my},\ \text{dog},\ \text{cat}]
+          \]
+        </p>
+
+        <p>
+          Then we build a matrix \(M \in \mathbb{R}^{6 \times 6}\) where:
+        </p>
+
+        <ul>
+          <li>\(M[i, j]\) = number of times word \(i\) appears next to word \(j\) (with window size 1),</li>
+          <li>and we’ve made it symmetric by adding counts in both directions.</li>
+        </ul>
+
+        <div class="cooc-wrapper">
+          <table class="cooc-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>I</th>
+                <th>You</th>
+                <th>love</th>
+                <th>my</th>
+                <th>dog</th>
+                <th>cat</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>I</th>
+                <td>0</td>
+                <td>0</td>
+                <td>2</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+              </tr>
+              <tr>
+                <th>You</th>
+                <td>0</td>
+                <td>0</td>
+                <td>2</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+              </tr>
+              <tr>
+                <th>love</th>
+                <td>2</td>
+                <td>2</td>
+                <td>0</td>
+                <td>4</td>
+                <td>0</td>
+                <td>0</td>
+              </tr>
+              <tr>
+                <th>my</th>
+                <td>0</td>
+                <td>0</td>
+                <td>4</td>
+                <td>0</td>
+                <td>2</td>
+                <td>2</td>
+              </tr>
+              <tr>
+                <th>dog</th>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>2</td>
+                <td>0</td>
+                <td>0</td>
+              </tr>
+              <tr>
+                <th>cat</th>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>2</td>
+                <td>0</td>
+                <td>0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          A few nice observations immediately fall out of this matrix:
+        </p>
+
+        <ul>
+          <li>
+            The rows for <code>dog</code> and <code>cat</code> are
+            <strong>exactly identical</strong>:
+            <code>[0, 0, 0, 2, 0, 0]</code>.
+          </li>
+          <li>
+            The rows for <code>I</code> and <code>You</code> are also identical:
+            <code>[0, 0, 2, 0, 0, 0]</code>.
+          </li>
+          <li>
+            <code>love</code> and <code>my</code> sit in the middle, linking subjects to pets.
+          </li>
+        </ul>
+
+        <div class="emphasis-line">
+          Without any dictionary, annotations, or labels,  
+          the matrix has quietly learned that “dog” and “cat” behave the same way
+          in this little world.
+        </div>
+
+        <p class="muted">
+          And notice: we got this just from <strong>one-step neighbours</strong>.
+          No big window. No sentence-level context. Just adjacency.
+        </p>
+
+        <div class="image-block">
+          <div class="image-frame">
+            <!-- Replace with a heatmap image if you render one -->
+            <!-- Example:
+            <img src="assets/llm-series/part3-cooccurrence-heatmap.png"
+                 data-full="assets/llm-series/part3-cooccurrence-heatmap-large.png"
+                 alt="Heatmap of the 6x6 co-occurrence matrix for the toy corpus">
+            -->
+            <div class="image-placeholder-text">
+              <strong>Suggested image:</strong> a heatmap of the 6×6 co-occurrence matrix,
+              where the “dog” and “cat” rows look identical, and “love–my” is the brightest
+              connection.
+            </div>
+            <div class="image-placeholder-label">Co-occurrence heatmap</div>
+          </div>
+          <p class="image-caption">
+            A simple matrix, but it already captures that dog and cat live in the same neighbourhood.
+          </p>
+        </div>
+
+        <hr class="section-divider">
+
+        <h2>Seeing meaning as geometry</h2>
+
+        <p>
+          Each row of this matrix is now a <strong>vector</strong>. That means each word
+          has a little “address” in a 6-dimensional space:
+        </p>
+
+        <ul>
+          <li><code>dog</code> → [0, 0, 0, 2, 0, 0]</li>
+          <li><code>cat</code> → [0, 0, 0, 2, 0, 0]</li>
+          <li><code>love</code> → [2, 2, 0, 4, 0, 0]</li>
+          <li><code>my</code> → [0, 0, 4, 0, 2, 2]</li>
+        </ul>
+
+        <p>
+          If we plotted this in some intelligently flattened 2D picture, “dog” and “cat” would sit
+          on top of each other. “I” and “You” would sit together somewhere else. “love” and “my”
+          would sit in the busy crossroads of this universe.
+        </p>
+
+        <p>
+          This is the first glimpse of what we’ll eventually call an
+          <strong>embedding space</strong>:
+        </p>
+
+        <div class="emphasis-line">
+          Similar words have similar vectors.  
+          Similar vectors live near each other in geometry.
+        </div>
+
+        <p>
+          Our current space is tiny and clumsy — 6 dimensions isn’t much, and the data is toy-sized.
+          But the pattern is already visible.
+        </p>
+
+        <p>
+          There is, however, a huge problem waiting when we scale this up to real language.
+        </p>
+
+        <hr class="section-divider">
+
+        <h2>Why co-occurrence matrices don’t scale</h2>
+
+        <p>
+          In real NLP, our vocabulary \(V\) is not 6 words. It might be:
+        </p>
+
+        <ul>
+          <li>\(V = 50{,}000\) (a modest model), or</li>
+          <li>\(V = 200{,}000\) (if you’re being generous with rare words).</li>
+        </ul>
+
+        <p>
+          Our co-occurrence matrix \(M \in \mathbb{R}^{V \times V}\) suddenly looks like:
+        </p>
+
+        <p>
+          \[
+            50{,}000 \times 50{,}000 = 2.5 \text{ billion cells}.
+          \]
+        </p>
+
+        <p>
+          That’s not a cute table anymore. That’s the Excel sheet that makes your laptop cry.
+        </p>
+
+        <p>
+          And the issues don’t stop there:
+        </p>
+
+        <ul>
+          <li><strong>It’s huge.</strong> Even storing it densely is expensive.</li>
+          <li><strong>It’s sparse.</strong> Most word pairs never co-occur, so most entries are zero.</li>
+          <li><strong>It’s noisy.</strong> Rare words and weird contexts create fragile statistics.</li>
+          <li><strong>It’s awkward to use.</strong> Each word’s vector is 50,000-dimensional. Computing similarities is slow.</li>
+        </ul>
+
+        <p>
+          So the good news is: co-occurrence captures something real about meaning.  
+          The bad news is: it’s like keeping your entire life’s information in raw CCTV footage.
+          All the meaning is in there somewhere, but it’s not convenient.
+        </p>
+
+        <div class="image-block">
+          <div class="image-frame">
+            <!-- Replace with a sketch/illustration of a huge sparse matrix -->
+            <div class="image-placeholder-text">
+              <strong>Suggested image:</strong> a massive, mostly-empty matrix labelled
+              “V × V co-occurrence matrix”, with a few tiny non-zero dots to show sparsity.
+            </div>
+            <div class="image-placeholder-label">The matrix that ate your RAM</div>
+          </div>
+          <p class="image-caption">
+            Co-occurrence matrices are information-rich but also large, sparse, and painful to store.
+          </p>
+        </div>
+
+        <hr class="section-divider">
+
+        <h2>From sparse counts to dense embeddings</h2>
+
+        <p>
+          The natural next question is:
+        </p>
+
+        <p class="inline-question">
+          Do we really need all 50,000 numbers in each word’s vector?
+        </p>
+
+        <p>
+          Intuitively, no. We only need enough dimensions to capture:
+        </p>
+
+        <ul>
+          <li>which kinds of contexts this word tends to live in, and</li>
+          <li>how that compares to other words.</li>
+        </ul>
+
+        <p>
+          Instead of a giant, sparse vector like:
+        </p>
+
+        <p>
+          \[
+            \text{dog}_{\text{sparse}} = [0, 0, 0, 2, 0, 0, \dots, 0] \in \mathbb{R}^{V},
+          \]
+        </p>
+
+        <p>
+          we’d like a much smaller, dense vector, say:
+        </p>
+
+        <p>
+          \[
+            \text{dog}_{\text{embed}} = [0.72,\; -0.11,\; 0.83,\; 0.21,\; \dots] \in \mathbb{R}^{d},
+          \]
+        </p>
+
+        <p>
+          where \(d\) is maybe 50, 100, or 300 — much smaller than \(V\).
+        </p>
+
+        <div class="emphasis-line">
+          These smaller, dense vectors are what we call
+          <strong>word embeddings</strong>.
+        </div>
+
+        <p>
+          They are still trying to encode “the company a word keeps”, but in a compressed,
+          learnable format.
+        </p>
+
+        <div class="image-block">
+          <div class="image-frame">
+            <!-- Replace with an illustration: tall sparse bar vs short dense bar -->
+            <div class="image-placeholder-text">
+              <strong>Suggested image:</strong> Left: a tall, mostly-zero sparse vector labelled
+              “Co-occurrence row for ‘dog’”.  
+              Right: a short, dense vector labelled “Embedding for ‘dog’”.
+            </div>
+            <div class="image-placeholder-label">Compression of meaning</div>
+          </div>
+          <p class="image-caption">
+            We trade an unwieldy, sparse fingerprint for a compact, dense one that still preserves
+            similarity relationships.
+          </p>
+        </div>
+
+        <p>
+          From a matrix perspective, you can imagine we’re trying to approximate our huge
+          co-occurrence matrix \(M\) with something like:
+        </p>
+
+        <p>
+          \[
+            M \approx W C^{\top},
+          \]
+        </p>
+
+        <p>
+          where:
+        </p>
+
+        <ul>
+          <li>\(W \in \mathbb{R}^{V \times d}\) — one \(d\)-dimensional vector per word (as “center”),</li>
+          <li>\(C \in \mathbb{R}^{V \times d}\) — one \(d\)-dimensional vector per word (as “context”),</li>
+          <li>and \(d \ll V\).</li>
+        </ul>
+
+        <p>
+          In practice, we don’t actually build \(M\) and then factor it. That would still be huge.
+          Instead, modern methods like Word2Vec learn the matrices \(W\) and \(C\) directly by asking
+          the model to <strong>predict neighbours</strong>.
+        </p>
+
+        <p class="emphasis-line">
+          Co-occurrence gave us the idea of “meaning as a vector”.  
+          Embeddings make that idea computationally tractable.
+        </p>
+
+        <hr class="section-divider">
+
+        <h2>Where this is going next</h2>
+
+        <p>
+          In the first part of this series, we saw how text turns into raw numbers (ASCII, Unicode,
+          UTF-8) with <strong>zero meaning</strong>.  
+          In the second, we saw how geometry starts to create meaning for images and scores.
+        </p>
+
+        <p>
+          In this part, we’ve made a crucial move for language:
+        </p>
+
+        <ul>
+          <li>We treated words as <strong>nodes in a graph</strong> of neighbours.</li>
+          <li>We built a co-occurrence matrix using only <strong>one-step adjacency</strong>.</li>
+          <li>We saw that “dog” and “cat” naturally acquire identical vectors.</li>
+          <li>We realised that this approach does not scale, but points directly towards embeddings.</li>
+        </ul>
+
+        <div class="emphasis-line">
+          The big conceptual shift:  
+          <strong>Meaning = patterns of usage, compressed into vectors.</strong>
+        </div>
+
+        <p>
+          What we haven’t done yet is show you how to <em>learn</em> those vectors from real text.
+        </p>
+
+        <p>
+          That’s where we go next:
+        </p>
+
+        <ul>
+          <li>Turn “who are my neighbours?” into a <strong>prediction game</strong>.</li>
+          <li>Use simple neural models to guess a word’s neighbours (or guess the word from its neighbours).</li>
+          <li>Let gradients slowly sculpt the embedding space.</li>
+        </ul>
+
+        <p class="muted">
+          Once we’re comfortable with embeddings and prediction, we’ll finally be ready
+          to talk about tokens, attention, and why transformers feel so natural once all these
+          building blocks are in place.
+        </p>
+
+      </article>
+
+      <!-- SIDEBAR -->
+      <aside class="blog-sidebar">
+        <div class="sidebar-card">
+          <h2>About this series</h2>
+          <p>
+            This is Part 3 of <strong>“Architecting Intelligence: Building LLMs From First Principle”</strong>.  
+            Early posts move slowly on purpose — encodings, geometry, co-occurrence, embeddings — so
+            transformers don’t feel like black magic later.
+          </p>
+        </div>
+
+        <div class="sidebar-card">
+          <h2>In this series</h2>
+          <ul class="sidebar-list">
+            <li>
+              <a class="sidebar-link" href="llm-part1-tokenisation.html">
+                Part 1 — Teaching Computers to See Text at All
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="llm-part2-geometry-of-meaning.html">
+                Part 2 — When Numbers Start to Mean Something
+              </a>
+            </li>
+            <li>
+              <span class="sidebar-link sidebar-current">
+                Part 3 — Meaning From Neighbours
+              </span>
+            </li>
+            <li>
+              <span class="sidebar-link">
+                Part 4 — Predicting Neighbours (upcoming)
+              </span>
+            </li>
+          </ul>
+          <p class="sidebar-small">
+            For the full roadmap and how this eventually connects to transformers, see the
+            <a href="llm-series.html" class="sidebar-link">series overview</a>.
+          </p>
+        </div>
+
+        <div class="sidebar-card">
+          <h2>Other planned series</h2>
+          <p>
+            Coming soon: DSP on embedded systems, writing embedded C with understanding,
+            math &amp; statistics for ML, and TinyLLM on ESP32.
+          </p>
+          <p class="sidebar-small">
+            They’ll show up here once they are past the “rough notes” stage.
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- COMMENTS -->
+    <section class="comments-section" id="comments">
+      <h2>Comments</h2>
+      <p class="comments-intro">
+        Something clicked? Something felt off? I’d love to hear your questions, corrections,
+        or “this finally made sense” stories.
+      </p>
+
+      <!-- Giscus: replace the data-* attributes with your actual repo + category -->
+      <script src="https://giscus.app/client.js"
+              data-repo="YOUR_USERNAME/YOUR_REPO"
+              data-repo-id="YOUR_REPO_ID"
+              data-category="Blog Comments"
+              data-category-id="YOUR_CATEGORY_ID"
+              data-mapping="pathname"
+              data-strict="0"
+              data-reactions-enabled="1"
+              data-emit-metadata="0"
+              data-input-position="bottom"
+              data-theme="light"
+              data-lang="en"
+              crossorigin="anonymous"
+              async>
+      </script>
+    </section>
+  </div>
+
+  <!-- IMAGE ZOOM MODAL -->
+  <div id="image-modal" class="image-modal" aria-hidden="true">
+    <div class="image-modal-inner">
+      <button class="image-modal-close" aria-label="Close image">&times;</button>
+      <img id="image-modal-img" class="image-modal-img" alt="">
+      <p id="image-modal-caption" class="image-modal-caption"></p>
+    </div>
+  </div>
+
+  <!-- Image zoom logic -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const modal = document.getElementById("image-modal");
+      const modalImg = document.getElementById("image-modal-img");
+      const modalCaption = document.getElementById("image-modal-caption");
+      const modalClose = document.querySelector(".image-modal-close");
+
+      if (!modal || !modalImg || !modalCaption || !modalClose) return;
+
+      document.querySelectorAll(".image-frame img").forEach(function (img) {
+        img.style.cursor = "zoom-in";
+        img.addEventListener("click", function () {
+          modalImg.src = img.dataset.full || img.src;
+          modalImg.alt = img.alt || "";
+
+          const captionEl = img.closest(".image-block")?.querySelector(".image-caption");
+          modalCaption.textContent = captionEl
+            ? captionEl.textContent.trim()
+            : (img.alt || "");
+
+          modal.classList.add("open");
+          modal.setAttribute("aria-hidden", "false");
+        });
+      });
+
+      function closeModal() {
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
+        modalImg.src = "";
+        modalCaption.textContent = "";
+      }
+
+      modalClose.addEventListener("click", closeModal);
+
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) {
+          closeModal();
+        }
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && modal.classList.contains("open")) {
+          closeModal();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

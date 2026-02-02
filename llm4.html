@@ -435,8 +435,8 @@
 
       <!-- MAIN ARTICLE -->
       <article class="blog-card"
-               data-post-id="{{POST_ID}}"
-               data-series-id="{{SERIES_ID}}">
+               data-post-id="llm-part4"
+               data-series-id="llm-first-principles">
 
         <div class="blog-meta">
           <span class="series-tag">
@@ -451,89 +451,408 @@
         </p>
 
         <!-- BLOG CONTENT GOES HERE -->
-        <h3>What we actually achieved last time</h3>
+       <h2>1. Rewinding the Story: What Co-occurrence First Taught Us</h2>
 
 <p>
-By the end of the last piece, text had finally made it into machines. Not in a metaphorical sense, but in a very literal one. Characters had stable numerical identities. Those numbers survived storage, copying, and transmission. Unicode closed a long chapter that began with telegraphs and broken encodings.
+In the previous chapter, we built a tiny co-occurrence table from a tiny universe of words. 
+Even though the vocabulary was small, something remarkable happened:
+patterns of <em>meaning</em> began to shine through simply by looking at which words tended to
+appear near each other.
 </p>
 
 <p>
-This was a real achievement. It solved a real problem. Text stopped breaking.
+“Dog” and “cat” behaved similarly.  
+“I” and “you” behaved similarly.  
+“My” interacted frequently with nouns.  
+“Love” stood in the middle of many relationships.
 </p>
 
 <p>
-But it is important to be precise about what was solved. What we built was a way for machines to hold text, not a way for machines to work with it.
+Without using any machine learning, without any training loops, 
+the co-occurrence table quietly whispered:
 </p>
 
 <div class="emphasis-line">
-Text became representable.
-Nothing became meaningful.
+<strong>“A word is known by the company it keeps.”</strong>
+</div>
+
+<p>
+This idea by itself is powerful. But today, we are not here to celebrate it.
+We are here to ask:  
+<strong>Why isn't co-occurrence enough?</strong>  
+And more importantly:  
+<strong>How do we move from static counts to representations that learn?</strong>
+</p>
+
+<div class="image-block">
+  <div class="image-frame">
+    <span class="image-placeholder-text">
+      Small toy co-occurrence matrix showing similar rows for “dog” and “cat”
+    </span>
+    <span class="image-placeholder-label">placeholder</span>
+  </div>
+  <p class="image-caption">
+    Even a tiny co-occurrence matrix reveals similarity — but cannot learn it.
+  </p>
 </div>
 
 <hr class="section-divider">
 
-<h3>What these numbers do and do not contain</h3>
+<h2>2. The Moment Co-occurrence Begins to Crack</h2>
 
 <p>
-The numbers assigned by Unicode are identifiers. They are references into a table that everyone agrees on. The number for a character is stable, global, and unambiguous. That is exactly why Unicode works.
+At small scale, co-occurrence tables feel magical.  
+At large scale, they begin to fall apart.  
+Understanding <em>why</em> they break naturally leads us toward <strong>W</strong> and <strong>C</strong>.
 </p>
 
-<p>
-But these numbers carry no internal structure. The number for one character does not know anything about the number next to it. The number for a word does not know it forms a unit. There is no notion of similarity, distance, or relationship built into the representation itself.
-</p>
+<h3>2.1 The scale problem</h3>
 
 <p>
-This is not a flaw. It is a design choice. Unicode was never meant to express relationships. It was meant to prevent disagreement.
-</p>
-
-<hr class="section-divider">
-
-<h3>Why learning changes the problem</h3>
-
-<p>
-As long as machines were only storing and displaying text, this limitation did not matter. But learning systems ask a different kind of question. They are not asked to preserve symbols. They are asked to detect patterns.
-</p>
-
-<p>
-Learning systems adjust themselves based on regularities in data. They respond to repetition. To closeness. To things behaving similarly across different contexts. All of these ideas quietly assume the existence of structure.
+A real vocabulary is not 6 words — it is 50,000 or 100,000 words.  
+The co-occurrence matrix becomes a monster:
 </p>
 
 <div class="emphasis-line">
-Learning does not operate on labels.
-It operates on relationships.
+100,000 × 100,000 = 10 billion cells.
 </div>
 
 <p>
-Once you see this, the problem becomes unavoidable. If all a system sees is a sequence of unrelated integers, there is no obvious place for similarity to come from. There is no notion of “close” or “far.” There is only equality or inequality.
+Not only is this enormous, but most entries are zero because many word pairs never meet.
+We now have a gigantic, expensive, sparse object.
 </p>
 
-<hr class="section-divider">
-
-<h3>The question we can no longer avoid</h3>
+<h3>2.2 The lack-of-learning problem</h3>
 
 <p>
-Turning text into numbers was necessary. It was not sufficient.
+But the deeper limitation is conceptual:  
+<strong>The co-occurrence table cannot improve itself.</strong>
 </p>
 
 <p>
-If a machine is going to learn anything from text, those numbers must live in a space where relationships are even possible. A space where patterns can form. A space where similarity is something the system can respond to, rather than something it has to invent from scratch.
+Once built, it freezes time.  
+It cannot look at a mistake and correct itself.  
+It cannot shift its understanding when new sentences appear.  
+It is a <em>summary</em>, not a learner.
 </p>
 
 <div class="emphasis-line">
-Meaning does not arrive as a definition.
-It arrives as structure.
+Co-occurrence shows structure, but cannot <strong>discover</strong> structure.
 </div>
 
 <p>
-Before trying to construct such a space for language, it helps to look at a case where this idea is already unavoidable. Where numbers naturally live in a geometric arrangement, and similarity is not a metaphor but a measurable quantity.
+If we want a system that learns meaning like humans do — 
+incrementally, through countless experiences — 
+we need something more dynamic.
 </p>
 
 <hr class="section-divider">
 
-<h3>Why we start with images</h3>
+<h2>3. Looking Behind the Matrix: The World of Micro-Events</h2>
 
 <p>
-Images give us exactly that starting point.
+Let’s imagine how the co-occurrence matrix is actually produced.  
+It is not magically formed — it emerges from a long sequence of tiny observations:
+</p>
+
+<ul>
+  <li>At this moment, “love” touched “my”.</li>
+  <li>At this moment, “my” touched “dog”.</li>
+  <li>At this moment, “dog” touched “my”.</li>
+</ul>
+
+<p>
+These are not numbers yet — they are <strong>events</strong>.
+Moments in a sentence where two words find themselves next to each other.
+</p>
+
+<p>
+In fact, the co-occurrence matrix is nothing but:
+</p>
+
+<div class="emphasis-line">
+<strong>All events, counted.</strong>
+</div>
+
+<p>
+But we can do something much more powerful.  
+Instead of throwing away the individual events and keeping only the counts,
+we can learn from the events <strong>directly</strong>.
+</p>
+
+<div class="image-block">
+  <div class="image-frame">
+    <span class="image-placeholder-text">
+      Diagram: stream of (center, context) events leading into a table
+    </span>
+    <span class="image-placeholder-label">placeholder</span>
+  </div>
+  <p class="image-caption">
+    Before the matrix exists, a river of events flows through the corpus.
+  </p>
+</div>
+
+<p>
+This is the turning point of the entire chapter:
+</p>
+
+<div class="emphasis-line">
+<strong>Instead of summarising meaning, we want to learn meaning from raw experience.</strong>
+</div>
+
+<hr class="section-divider">
+
+<h2>4. From Events to a Training Dataset</h2>
+
+<p>
+Let’s take the sentence:
+</p>
+
+<p><em>I love my dog</em></p>
+
+<p>
+With a context window of 1, we extract pairs:
+</p>
+
+<ul>
+  <li>(center = love, context = I)</li>
+  <li>(center = love, context = my)</li>
+  <li>(center = my, context = love)</li>
+  <li>(center = my, context = dog)</li>
+  <li>(center = dog, context = my)</li>
+</ul>
+
+<p>
+Every pair says:
+</p>
+
+<div class="emphasis-line">
+“Please remember that these two words appeared together.”
+</div>
+
+<p>
+When we do this for millions of sentences, we build a <strong>training dataset</strong>,
+a long list of all the little word-neighbourhood events that happened in real language.
+</p>
+
+<p>
+And this dataset will guide how the model forms meaning.
+</p>
+
+<hr class="section-divider">
+
+<h2>5. A Leap Forward: Two Learnable Dictionaries</h2>
+
+<p>
+Now we take the same idea that the co-occurrence matrix hinted at — 
+the idea that meaning emerges from usage — 
+but we build it in a way that <strong>learns</strong>.
+</p>
+
+<p>
+We introduce two matrices:
+</p>
+
+<ul>
+  <li><strong>W</strong>: When the word is the <em>center</em>.</li>
+  <li><strong>C</strong>: When the word is the <em>context</em>.</li>
+</ul>
+
+<p>
+Why two matrices?  
+Because words behave differently depending on how they appear:
+as something being described (center)  
+vs. something that helps describe another word (context).
+</p>
+
+<p>
+These matrices start as random vectors.  
+They know nothing.  
+They contain no meaning.
+</p>
+
+<p>
+But with enough training examples, meaning begins to take shape — 
+not because we force it,  
+but because language <em>teaches</em> it.
+</p>
+
+<div class="emphasis-line">
+<strong>W and C do what the co-occurrence table could not: they learn from mistakes and adapt over time.</strong>
+</div>
+
+<hr class="section-divider">
+
+<h2>6. How a Single Example Changes the Model</h2>
+
+<p>
+Take one training pair:
+</p>
+
+<p><em>(dog, my)</em></p>
+
+<p>
+What happens inside the model?
+</p>
+
+<ol>
+  <li>It retrieves W[dog] — how “dog” behaves as a center word.</li>
+  <li>It retrieves C[my] — how “my” behaves as a context word.</li>
+  <li>It updates them so that they become slightly more compatible.</li>
+</ol>
+
+<p>
+Nothing dramatic happens with just one example.  
+But imagine doing this millions of times, across millions of words.
+</p>
+
+<p>
+The model gradually shapes the geometric landscape of meaning.
+</p>
+
+<div class="emphasis-line">
+Each event reshapes the embedding space by an infinitesimal amount —  
+meaning is carved slowly, like a river shaping rock.
+</div>
+
+<hr class="section-divider">
+
+<h2>7. Why Similar Words Become Geometrically Close</h2>
+
+<p>
+Now consider all events with <strong>dog</strong>:
+</p>
+
+<ul>
+  <li>(dog, my)</li>
+  <li>(dog, the)</li>
+  <li>(dog, big)</li>
+  <li>(dog, barking)</li>
+</ul>
+
+<p>
+Each event nudges W[dog] toward its corresponding context vector.
+</p>
+
+<p>
+Now consider <strong>cat</strong>:
+</p>
+
+<ul>
+  <li>(cat, my)</li>
+  <li>(cat, the)</li>
+  <li>(cat, cute)</li>
+  <li>(cat, purring)</li>
+</ul>
+
+<p>
+Because “dog” and “cat” share many similar contexts,  
+they receive similar nudges.
+</p>
+
+<p>
+Over time, these nudges accumulate into geometry:
+</p>
+
+<div class="emphasis-line">
+<strong>W[dog] and W[cat] drift toward each other naturally.</strong>
+</div>
+
+<p>
+This is not a hack.  
+This is not something we programmed explicitly.  
+We never said:
+</p>
+
+<p class="inline-question">
+“Dog and cat are animals — please make them close.”
+</p>
+
+<p>
+Instead, the <em>language itself</em> delivered countless tiny hints,  
+and the embedding space simply rearranged to honour them.
+</p>
+
+<div class="image-block">
+  <div class="image-frame">
+    <span class="image-placeholder-text">
+      Illustration: dog & cat vectors drifting closer through shared context nudges
+    </span>
+    <span class="image-placeholder-label">placeholder</span>
+  </div>
+  <p class="image-caption">
+    Words drift together if the training data repeatedly treats them similarly.
+  </p>
+</div>
+
+<p>
+This emergent geometry replaces the static co-occurrence matrix
+with a living, learnable representation of meaning.
+</p>
+
+<hr class="section-divider">
+
+<h2>8. A Deep Intuition: How Meaning Emerges From Repeated Corrections</h2>
+
+<p>
+Here is the real philosophical jump in this chapter:
+</p>
+
+<div class="emphasis-line">
+<strong>Meaning is not assigned. It is accumulated.</strong>
+</div>
+
+<p>
+No single event gives the model complete knowledge.  
+Meaning emerges as the <em>average effect</em> of thousands of micro-corrections.
+</p>
+
+<p>
+This is exactly how humans learn words.  
+You do not learn the word “apple” from a dictionary definition.  
+You learn it from hearing it, seeing it, touching it, tasting it —
+over and over again, in different contexts.
+</p>
+
+<p>
+Models learn the same way:  
+repeated exposure to patterns of context causes similar words to cluster,
+opposite words to separate,
+and rare relationships to take shape gradually.
+</p>
+
+<p>
+Co-occurrence tables <em>capture</em> this pattern,  
+but W and C actually <em>learn</em> it.
+</p>
+
+<hr class="section-divider">
+
+<h2>9. Summary: Why W and C Are the First Step Toward Modern NLP</h2>
+
+<ul>
+  <li>Co-occurrence reveals structure but cannot adapt.</li>
+  <li>Events let us treat language as a sequence of teachable moments.</li>
+  <li>W and C are two learnable dictionaries that respond to training signals.</li>
+  <li>Meaning emerges gradually from repeated vector adjustments.</li>
+</ul>
+
+<div class="emphasis-line">
+<strong>Co-occurrence tables showed us that context carries meaning.</strong><br>
+<strong>W and C let us learn that meaning directly from data.</strong>
+</div>
+
+<p>
+In the next chapter, we will go deeper:
+<strong>How do we convert compatibility into probability?  
+How does a model decide which contexts are likely?  
+And how does loss instruct embeddings where to move?</strong>
+</p>
+
+<p>
+For now, we have completed the most important conceptual leap:
+moving from <em>counting meaning</em>  
+to <em>learning meaning</em>.
 </p>
 
 
@@ -682,11 +1001,6 @@ Images give us exactly that starting point.
     });
   });
   </script>
-    <!-- MathJax for LaTeX-style equations -->
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-<script id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-</script>
 
 </body>
 </html>
