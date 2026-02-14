@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>From Reset to main(): How the Runtime Is Constructed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../style.css">
+
+    <script>
+  MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)'], ['$', '$']]
+    }
+  };
+</script>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+  async>
+</script>
+  <!-- Theme colors:
+       #f6eaaf (light yellow), #ead3c1 (soft peach), #941236 (deep maroon) -->
+  <style>
+    :root {
+      --bg-main: #f6eaaf;
+      --bg-card: #ffffff;
+      --bg-soft: #ead3c1;
+      --accent:  #941236;
+      --text-main: #222222;
+      --text-muted: #555555;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, #ffffff, var(--bg-main));
+      color: var(--text-main);
+      line-height: 1.7;
+    }
+
+    .page-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 3.5rem;
+    }
+
+    /* Main layout: article + sidebar */
+    .blog-layout {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+
+    .blog-card {
+      background: var(--bg-card);
+      border-radius: 1.25rem;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+      padding: 2.5rem 2.75rem;
+      border-top: 6px solid var(--accent);
+      flex: 3;
+    }
+
+    .blog-sidebar {
+      flex: 1.2;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .blog-layout {
+        flex-direction: column;
+      }
+
+      .blog-sidebar {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .blog-card {
+        padding: 1.75rem 1.5rem;
+        border-radius: 1rem;
+      }
+    }
+
+    .blog-meta {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .series-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      background: var(--bg-soft);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .series-tag-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-size: 2.1rem;
+      margin: 0.4rem 0 0.75rem;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    .blog-subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-bottom: 1.8rem;
+    }
+
+    h2 {
+      font-size: 1.7rem;
+      margin-top: 2.25rem;
+      margin-bottom: 0.6rem;
+      color: var(--accent);
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      margin-top: 1.6rem;
+      margin-bottom: 0.4rem;
+      color: #7a0f29;
+    }
+
+    p {
+      margin: 0.5rem 0 0.9rem;
+      font-size: 1.2rem;
+    }
+
+    strong {
+      color: #3a111c;
+    }
+
+    .emphasis-line {
+      padding: 0.7rem 1rem;
+      border-left: 4px solid var(--accent);
+      background: #fff8e7;
+      border-radius: 0.6rem;
+      font-size: 1.2rem;
+      margin: 1rem 0 1.4rem;
+    }
+
+    .timeline-callout {
+      background: var(--bg-soft);
+      border-radius: 0.9rem;
+      padding: 1rem 1.1rem;
+      margin: 1.4rem 0;
+      font-size: 0.93rem;
+    }
+
+    .timeline-callout-title {
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.14em;
+    }
+
+    ul {
+      padding-left: 1.3rem;
+      margin: 0.25rem 0 1rem;
+    }
+
+    li {
+      margin: 0.2rem 0;
+      font-size: 1.2rem;
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    .inline-question {
+      font-style: italic;
+      color: #4a222b;
+    }
+
+    .section-divider {
+      margin: 2.2rem 0 1.8rem;
+      height: 1px;
+      border: none;
+      background: linear-gradient(to right, transparent, #d7b2a3, transparent);
+    }
+
+    /* Sidebar cards + links */
+    .sidebar-card {
+      background: #fffdf7;
+      border-radius: 1rem;
+      padding: 1.1rem 1.1rem 1.2rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+      border: 1px solid rgba(148, 18, 54, 0.08);
+    }
+
+    .sidebar-title {
+      font-size: 1.1rem;
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+    }
+
+    .sidebar-title-sm {
+      font-size: 0.98rem;
+      margin: 0 0 0.6rem;
+      color: #7a0f29;
+    }
+
+    .sidebar-link {
+      display: block;
+      padding: 0.5rem 0.4rem;
+      border-radius: 0.6rem;
+      text-decoration: none;
+      background: transparent;
+      transition: background 0.18s ease, transform 0.12s ease;
+    }
+
+    .sidebar-link + .sidebar-link {
+      margin-top: 0.15rem;
+    }
+
+    .sidebar-link:hover {
+      background: rgba(234, 211, 193, 0.5);
+      transform: translateX(2px);
+    }
+
+    .sidebar-link-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #3a111c;
+    }
+
+    .sidebar-link-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .sidebar-link-title-sm {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #3a111c;
+    }
+
+    .sidebar-empty {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Image blocks inside article */
+    .image-block {
+      margin: 1.6rem 0 1.3rem;
+    }
+
+    .image-frame {
+      width: 100%;
+      max-width: 780px;
+      height: 260px;
+      margin: 0 auto;
+      border-radius: 0.9rem;
+      border: 2px dashed rgba(148, 18, 54, 0.35);
+      background: linear-gradient(
+        135deg,
+        rgba(246, 234, 175, 0.5),
+        rgba(234, 211, 193, 0.6)
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      cursor: zoom-in; 
+    }
+
+    .image-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .image-placeholder-text {
+      font-size: 0.9rem;
+      color: #5c2a33;
+      text-align: center;
+      padding: 0 1.5rem;
+    }
+
+    .image-placeholder-label {
+      position: absolute;
+      bottom: 10px;
+      right: 12px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: rgba(148, 18, 54, 0.8);
+      background: rgba(255, 255, 255, 0.75);
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+    }
+
+    .image-caption {
+      max-width: 780px;
+      margin: 0.5rem auto 0.2rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* Image zoom modal */
+    .image-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .image-modal.open {
+      display: flex;
+    }
+
+    .image-modal-inner {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+    }
+
+    .image-modal-img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 1rem;
+      transform: scale(1.1);   
+      transform-origin: center;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5);
+      background: #ffffff;
+    }
+
+    .image-modal-caption {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: #f6eaaf;
+      text-align: center;
+    }
+
+    .image-modal-close {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      border: none;
+      background: #ffffff;
+      color: #941236;
+      border-radius: 999px;
+      width: 28px;
+      height: 28px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+
+    @media (max-width: 768px) {
+      .image-frame {
+        height: 210px;
+      }
+      .image-placeholder-text {
+        font-size: 0.85rem;
+        padding: 0 1rem;
+      }
+    }
+
+    /* Comments section */
+    .comments-section {
+      margin-top: 3rem;
+    }
+
+    .comments-section h2 {
+      font-size: 1.4rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Image zoom modal -->
+  <div id="image-modal" class="image-modal" aria-hidden="true">
+    <div class="image-modal-inner">
+      <button class="image-modal-close" aria-label="Close image">&times;</button>
+      <img id="image-modal-img" class="image-modal-img" alt="">
+      <p id="image-modal-caption" class="image-modal-caption"></p>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+   <header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">AM</span>
+      <span class="brand-text">Adithya MD</span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="../index.html">Home</a>
+      <a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a>
+      <a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+
+      <div class="dropdown">
+        <button class="dropbtn">Teaching &amp; Outreach ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+
+      <a href="../contact.html">Contact</a>
+    </nav>
+  </div>
+</header>
+
+  <div class="page-wrapper">
+    <div class="blog-layout">
+
+      <!-- MAIN ARTICLE -->
+      <article class="blog-card"
+               data-post-id="{{POST_ID}}"
+               data-series-id="{{SERIES_ID}}">
+
+        <div class="blog-meta">
+          <span class="series-tag">
+            <span class="series-tag-dot"></span>
+           Understanding Memory in Microcontrollers
+          </span>
+        </div>
+
+        <h1>From Reset to main(): How the Runtime Is Constructed</h1>
+        <p class="blog-subtitle">
+          A program does not begin where we think it does.
+        </p>
+
+        <!-- BLOG CONTENT GOES HERE -->
+      <p>
+  When writing embedded software, it is natural to imagine that a program begins its life at the first line of
+  <code>main()</code>. After all, this is where the programmer’s logic appears to start. The function is visible,
+  explicit, and central to the structure of most applications. Yet, from the microcontroller’s perspective, the story
+  is very different.
+</p>
+
+<p>
+  A microcontroller does not power on into a running C program. It does not wake up knowing what variables exist, what
+  functions have been defined, or what memory structures must be established. At the instant power is applied, the
+  device is simply a processor with access to an address space. Nothing more is guaranteed.
+</p>
+
+<div class="emphasis-line">
+  Before <code>main()</code> executes, the system must first construct the very environment in which <code>main()</code> can exist.
+</div>
+
+<p>
+  This raises a subtle but profoundly important question. If RAM is volatile, if variables are abstractions of the
+  language, and if execution requires a valid stack, how does a program ever begin running in a meaningful way? What
+  prepares memory? What establishes state? What determines where execution starts?
+</p>
+
+<p>
+  To answer this, we must temporarily set aside the familiar view of programs as collections of functions and instead
+  adopt the processor’s viewpoint. From the machine’s perspective, execution begins not with a function call, but with
+  a reset event.
+</p>
+
+<h2>The Reset Event: Where Execution Truly Begins</h2>
+
+<p>
+  From the programmer’s perspective, a reset may feel like a simple restart. The device turns on, the program runs,
+  and execution appears to begin as though the system were resuming a familiar sequence. Internally, however, a reset
+  is not a continuation. It is a reinitialization of the processor’s state.
+</p>
+
+<p>
+  At the moment of reset, the CPU does not possess awareness of functions, variables, or program structure. Those are
+  constructs of the language and the toolchain. The processor operates on a far more primitive basis. It begins by
+  fetching an instruction from a predefined location within the address space.
+</p>
+
+<div class="emphasis-line">
+  Execution begins with an address, not a function.
+</div>
+
+<p>
+  This starting location is determined by the microcontroller’s design. A specific address is reserved for reset
+  behaviour, often referred to as the reset vector. When a reset occurs, the processor loads this address and begins
+  instruction fetch just as it would for any other part of memory.
+</p>
+
+<p>
+  Nothing about this initial step implies the existence of a fully formed program environment. RAM contents are
+  undefined. No stack has been established. No variables have been initialized. The processor simply begins executing
+  instructions located at the reset entry point.
+</p>
+
+<div class="emphasis-line">
+  The program, as we recognize it, has not yet begun. Only instruction execution has.
+</div>
+
+<p>
+  What follows is a carefully orchestrated sequence of operations whose purpose is not application logic, but
+  environment construction. Before meaningful program behaviour can emerge, memory must be prepared, runtime state
+  must be established, and essential structures must be created.
+</p>
+
+<p>
+  In other words, the earliest instructions executed after reset are concerned not with what the program does, but
+  with enabling the program to run at all.
+</p>
+
+<h2>Constructing Order from an Undefined State</h2>
+
+<p>
+  Immediately after a reset, the processor begins executing instructions, but the surrounding memory environment is
+  not yet meaningful. This is particularly important in the case of RAM. Unlike program memory, RAM does not retain
+  its contents when power is removed. At startup, its state is undefined.
+</p>
+
+<p>
+  Undefined does not simply mean empty. It means that the values present in memory cannot be assumed to follow any
+  predictable pattern. Residual electrical states, previous activity, or random conditions may influence what bits
+  appear in each location. From the program’s perspective, RAM at reset is unreliable.
+</p>
+
+<div class="emphasis-line">
+  A program cannot begin reasoning with memory whose contents have no defined meaning.
+</div>
+
+<p>
+  Yet, high-level languages encourage a very different intuition. We write global variables, assign initial values,
+  and expect those values to exist when execution reaches <code>main()</code>. This expectation is so natural that the
+  underlying problem often goes unnoticed: RAM does not inherently know what values should be present.
+</p>
+
+<p>
+  The resolution of this mismatch is one of the primary responsibilities of the startup sequence. Before application
+  logic can safely execute, memory must be brought into a predictable state. Certain regions must be cleared. Others
+  must be populated with known values. Only then can variables behave as the programmer expects.
+</p>
+
+<div class="emphasis-line">
+  The runtime environment is not discovered at startup. It is constructed.
+</div>
+
+<p>
+  Some variables are expected to begin with zero values. Others are defined with explicit initial data. These
+  expectations are not automatically satisfied by hardware. They must be established through explicit instructions
+  executed before <code>main()</code> ever runs.
+</p>
+
+<p>
+  This early phase of execution is therefore less about performing computations and more about creating a stable
+  universe in which computations can occur. Memory transitions from an undefined electrical state to an organized
+  program state, enabling deterministic behaviour.
+</p>
+
+<p>
+  Two particularly important transformations occur during this process: regions intended to start at zero are cleared,
+  and regions containing predefined values are initialized. Understanding these mechanisms reveals why variables
+  appear to exist seamlessly when the program begins its visible execution.
+</p>
+
+<h2>Zeroing Memory: The Origin of Predictable State</h2>
+
+<p>
+  One of the earliest responsibilities of the startup sequence is establishing a predictable baseline for memory.
+  Certain variables are expected to begin execution with a value of zero. This expectation is deeply embedded in how
+  programs are written, yet the hardware itself does not automatically guarantee such a state.
+</p>
+
+<p>
+  After a reset, RAM contents are undefined. If execution were to proceed directly into application logic, variables
+  intended to start at zero could contain arbitrary values. The program’s behaviour would then depend on residual
+  memory conditions rather than deterministic rules.
+</p>
+
+<div class="emphasis-line">
+  Predictable execution requires memory to be explicitly placed into a known state.
+</div>
+
+<p>
+  To enforce this predictability, the startup code deliberately clears specific regions of RAM before
+  <code>main()</code> executes. Each location within these regions is written with zero. This is not an optimization
+  or a convenience feature. It is a foundational requirement for reliable program behaviour.
+</p>
+
+<p>
+  Variables that belong to this category are those for which the program specifies no explicit initial value. Their
+  defined starting condition is simply zero. Rather than storing zeros in non-volatile memory and copying them at
+  runtime, the system performs a more efficient operation: it directly writes zeros into the relevant RAM region.
+</p>
+
+<div class="emphasis-line">
+  Memory is cleared because the program defines meaning, not because RAM begins empty.
+</div>
+
+<p>
+  From the programmer’s viewpoint, this process is invisible. By the time execution reaches <code>main()</code>,
+  variables expected to be zero appear correctly initialized. The underlying mechanism — a sequence of memory writes
+  performed during startup — is rarely observed unless one inspects the earliest stages of execution.
+</p>
+
+<p>
+  This clearing operation transforms part of RAM from an undefined electrical state into a deterministic program
+  state. Only after this transformation can variables be safely assumed to hold meaningful values.
+</p>
+
+<p>
+  Not all variables, however, belong to this category. Some are defined with explicit initial values that must also be
+  established before application logic begins.
+</p>
+<h2>Initializing Memory: How Values Appear in RAM</h2>
+
+<p>
+  While some variables are expected to begin execution with zero values, others are defined with explicit initial
+  data. A variable assigned a starting value by the program presents a very different challenge at startup. Unlike
+  program memory, RAM cannot permanently store these predefined values across power cycles.
+</p>
+
+<p>
+  Yet, when execution reaches <code>main()</code>, such variables appear correctly initialized. Their values are
+  already present, as though RAM had preserved them. The mechanism behind this behaviour lies in the cooperation
+  between non-volatile memory and the startup sequence.
+</p>
+
+<div class="emphasis-line">
+  Initial values do not originate in RAM. They are transferred into RAM during startup.
+</div>
+
+<p>
+  The compiled program, stored in Flash memory, contains not only instructions but also the predefined data associated
+  with initialized variables. Flash provides persistence, ensuring that these values remain intact even when power is
+  removed. At reset, however, RAM contains no reliable representation of this data.
+</p>
+
+<p>
+  To reconcile this, the startup code performs a deliberate copying operation. A designated region of Flash, holding
+  the initial values, is read sequentially. The retrieved data is then written into the corresponding locations in
+  RAM. Through this process, the runtime memory image is constructed.
+</p>
+
+<div class="emphasis-line">
+  RAM is populated with meaning before application logic begins.
+</div>
+
+<p>
+  From the processor’s perspective, this operation is simply a sequence of reads and writes within the address space.
+  But from the programmer’s viewpoint, it produces the illusion that variables have always possessed their assigned
+  values. By the time <code>main()</code> executes, the transfer is complete and invisible.
+</p>
+
+<p>
+  This initialization step is fundamental to predictable program behaviour. Without it, variables defined with
+  starting values would instead reflect undefined RAM contents, breaking the assumptions upon which the program’s
+  logic is built.
+</p>
+
+<p>
+  At this stage, RAM has undergone two critical transformations. Regions requiring zero values have been cleared.
+  Regions requiring predefined data have been populated. The memory environment is now approaching a state suitable
+  for structured execution.
+</p>
+
+<p>
+  One essential component, however, is still missing. For functions to execute reliably, the program requires a valid
+  stack.
+</p>
+
+<h2>Establishing the Stack: Creating Space for Execution</h2>
+
+<p>
+  Even with memory cleared and initialized, the program is not yet ready for structured execution. High-level
+  languages allow functions to be called, local variables to be created, and intermediate state to be maintained.
+  These operations require a disciplined mechanism for managing temporary data during execution.
+</p>
+
+<p>
+  This mechanism is the stack. Despite its central role, the stack is not a pre-existing entity waiting inside the
+  microcontroller. It is a region of RAM designated and prepared during startup to support function execution.
+</p>
+
+<div class="emphasis-line">
+  The stack is not a special hardware structure. It is a carefully managed area of memory.
+</div>
+
+<p>
+  When the processor resets, no valid stack context is guaranteed. The CPU may contain a reset-defined stack pointer
+  value, but the memory region it refers to has not yet been meaningfully integrated into the program’s runtime
+  environment. Before functions can safely execute, this pointer must refer to a known and appropriate memory
+  location.
+</p>
+
+<p>
+  The startup sequence therefore performs another crucial step. It assigns the stack pointer to a predefined address
+  within RAM. This address typically corresponds to the upper boundary of a reserved memory region. From this point
+  onward, stack operations follow deterministic rules.
+</p>
+
+<div class="emphasis-line">
+  Stack behavior emerges from pointer movement within RAM.
+</div>
+
+<p>
+  Each function call, return address, and local variable allocation is implemented through systematic adjustments of
+  this pointer. The processor does not “create” stack frames in an abstract sense. It simply reads and writes memory
+  at locations relative to the stack pointer.
+</p>
+
+<p>
+  This explains why the stack is intimately tied to RAM usage. Stack growth consumes memory just like any other data
+  structure. Excessive stack use or uncontrolled recursion does not trigger a graceful degradation. It risks
+  overwriting adjacent memory regions, leading to unpredictable program behaviour.
+</p>
+
+<p>
+  From the programmer’s viewpoint, this entire process is invisible. By the time execution reaches
+  <code>main()</code>, the stack appears as a natural component of the environment. Internally, however, it is the
+  result of deliberate runtime construction.
+</p>
+
+<p>
+  With the stack established, memory initialized, and processor state prepared, the program environment is finally
+  capable of supporting application logic.
+</p>
+
+<h2>Understanding RAM Through the Idea of Spaces</h2>
+
+<p>
+  By the time execution approaches <code>main()</code>, RAM is no longer in the undefined state that exists immediately
+  after reset. Portions of memory have been cleared, others initialized, and a region prepared to support function
+  execution. Although RAM is physically a uniform resource, the runtime environment assigns distinct roles to different
+  areas within it.
+</p>
+
+<p>
+  A useful way to understand this organization is to think of RAM as a collection of logical spaces. These spaces are
+  not separate hardware structures. They are conceptual divisions imposed by the program to ensure predictable
+  behaviour. Each space exists because the running system requires memory to serve different purposes simultaneously.
+</p>
+
+<div class="emphasis-line">
+  RAM is one physical memory, but the program treats it as multiple purposeful regions.
+</div>
+
+<p>
+  Some variables are defined with explicit initial values. These values are stored in non-volatile memory as part of the
+  compiled program and must be transferred into RAM during startup. The region designated to hold such variables forms
+  what is commonly referred to as the <code>.data</code> space.
+</p>
+
+<div class="emphasis-line">
+  The <code>.data</code> space holds variables whose initial values are defined by the program.
+</div>
+
+<p>
+  Other variables are expected to begin execution with a value of zero, despite having no explicit initializer. Instead
+  of storing zeros in program memory, the startup sequence clears a dedicated region of RAM by writing zeros directly.
+  This region becomes the <code>.bss</code> space.
+</p>
+
+<div class="emphasis-line">
+  The <code>.bss</code> space holds variables whose initial state is implicitly zero.
+</div>
+
+<p>
+  A third space supports an entirely different requirement. Function execution generates temporary state , return
+  addresses, local variables, and intermediate data , whose lifetimes are tied to the flow of execution. This dynamic
+  storage requirement is handled by the stack space, a region of RAM managed through systematic pointer movement.
+</p>
+
+<div class="emphasis-line">
+  The stack space holds the evolving context of function execution.
+</div>
+
+<p>
+  Although these spaces serve very different roles, they coexist within the same RAM. Their separation reflects logical
+  organization rather than physical distinction. Understanding this layout is essential because interactions between
+  these regions directly influence program behaviour and failure modes.
+</p>
+
+<style>
+  .image-block{
+    border: 2px dashed rgba(148,18,54,0.35);
+    border-radius: 18px;
+    padding: 16px;
+    background: linear-gradient(135deg, #fff8de, #fdeecb);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  .title{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 800;
+    fill: #5b0b19;
+    letter-spacing: 0.2px;
+  }
+  .sub{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 520;
+    fill: rgba(91,11,25,0.85);
+  }
+  .label{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 750;
+    fill: #5b0b19;
+  }
+  .note{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 600;
+    fill: rgba(91,11,25,0.78);
+  }
+  .mono{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    fill: rgba(91,11,25,0.75);
+  }
+
+  .card{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 18; ry: 18;
+  }
+  .ram{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 16; ry: 16;
+  }
+  .seg{
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 14; ry: 14;
+  }
+
+  .arrow{
+    stroke: rgba(148,18,54,0.92);
+    stroke-width: 3.2;
+    fill: none;
+    marker-end: url(#arrowHead);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tick{
+    stroke: rgba(91,11,25,0.20);
+    stroke-width: 2;
+  }
+
+  .hatch-line{
+    stroke: rgba(148,18,54,0.10);
+    stroke-width: 2;
+  }
+</style>
+
+<div class="image-block">
+<svg viewBox="0 0 1200 520" style="width:100%; height:auto;" role="img"
+     aria-label="RAM divided into data, bss, free space, and stack with growth direction">
+
+  <defs>
+    <filter id="softShadow" x="-20%" y="-30%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="rgba(0,0,0,0.14)"/>
+    </filter>
+
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="rgba(148,18,54,0.92)"/>
+    </marker>
+
+    <linearGradient id="gData" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ead3c1"></stop>
+      <stop offset="100%" stop-color="#f3e1d2"></stop>
+    </linearGradient>
+
+    <linearGradient id="gBss" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffaf0"></stop>
+      <stop offset="100%" stop-color="#ffffff"></stop>
+    </linearGradient>
+
+    <linearGradient id="gStack" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6eaaf"></stop>
+      <stop offset="100%" stop-color="#fff1bf"></stop>
+    </linearGradient>
+
+    <pattern id="freeHatch" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 0 10 L 10 0" class="hatch-line"></path>
+    </pattern>
+  </defs>
+
+  <!-- Outer card -->
+  <rect x="30" y="24" width="1140" height="472" class="card" filter="url(#softShadow)"></rect>
+
+  <!-- Title -->
+  <text x="70" y="78" class="title" font-size="26">RAM as One Block, Split into Logical Spaces</text>
+  <text x="70" y="108" class="sub" font-size="20">
+    A typical runtime view: globals live in .data / .bss, stack grows downward, and the gap is your free headroom
+  </text>
+
+  <!-- RAM frame -->
+  <rect x="200" y="155" width="320" height="300" class="ram"></rect>
+  <text x="360" y="190" class="label" font-size="20" text-anchor="middle">SRAM (RAM)</text>
+
+  <!-- Address labels -->
+  <text x="185" y="172" class="mono" font-size="20" text-anchor="end">High addr</text>
+  <text x="185" y="458" class="mono" font-size="20" text-anchor="end">Low addr</text>
+
+  <!-- Inner block -->
+  <rect x="300" y="210" width="120" height="220" class="seg" fill="#fff"></rect>
+
+  <!-- Segments (top to bottom) -->
+  <!-- Stack -->
+  <rect x="300" y="215" width="120" height="70" class="seg" fill="url(#gStack)"></rect>
+  <text x="360" y="248" class="label" font-size="20" text-anchor="middle">STACK</text>
+  <text x="360" y="268" class="note" font-size="18" text-anchor="middle">locals, calls</text>
+
+  <!-- Free Space -->
+  <rect x="300" y="285" width="120" height="75" class="seg" fill="#fff"></rect>
+  <rect x="300" y="285" width="120" height="75" class="seg" fill="url(#freeHatch)"></rect>
+  <text x="360" y="325" class="label" font-size="20" text-anchor="middle">FREE</text>
+  <text x="360" y="343" class="note" font-size="18" text-anchor="middle">headroom</text>
+
+  <!-- .bss -->
+  <rect x="300" y="360" width="120" height="40" class="seg" fill="url(#gBss)"></rect>
+  <text x="360" y="385" class="label" font-size="20" text-anchor="middle">.bss</text>
+
+  <!-- .data -->
+  <rect x="300" y="400" width="120" height="30" class="seg" fill="url(#gData)"></rect>
+  <text x="360" y="421" class="label" font-size="20" text-anchor="middle">.data</text>
+
+  <!-- Growth arrow (stack downward) -->
+  <path d="M 445 235 C 495 235, 495 265, 445 265" class="arrow"></path>
+  <text x="150" y="255" class="note" font-size="18">stack grows ↓</text>
+
+  <!-- Right explanation -->
+  <text x="580" y="210" class="label" font-size="20">What each region means</text>
+
+  <text x="580" y="242" class="sub" font-size="16">
+    <tspan class="mono">.data</tspan> → global/static variables with initial values (copied from Flash at boot)
+  </text>
+
+  <text x="580" y="272" class="sub" font-size="16">
+    <tspan class="mono">.bss</tspan> → global/static variables that start at zero (zeroed at boot)
+  </text>
+
+  <text x="580" y="302" class="sub" font-size="16">
+    <tspan class="mono">free space</tspan> → remaining RAM available for stack growth and temporary buffers
+  </text>
+
+  <text x="580" y="332" class="sub" font-size="16">
+    <tspan class="mono">stack</tspan> → call frames + locals; overflow here causes crashes/corruption
+  </text>
+
+  <text x="550" y="374" class="sub" font-size="20">
+    Key danger: large locals or deep calls can eat the free region quickly.
+  </text>
+
+  <!-- Footer note -->
+  <text x="170" y="475" class="sub" font-size="20">
+    Conceptual map — actual ordering and alignment are controlled by the linker script and startup code.
+  </text>
+
+</svg>
+</div>
+
+
+<p>
+  Seen from this perspective, terms such as <code>.data</code>, <code>.bss</code>, and stack do not describe different
+  kinds of memory hardware. They describe how the runtime environment assigns meaning and responsibility to portions of
+  a single memory resource.
+</p>
+
+<h2>A Concrete Example: Watching Memory Come Alive</h2>
+
+<p>
+  To make these ideas tangible, consider a very small program. The goal is not to study language syntax, but to observe
+  how different portions of memory must be prepared before execution reaches <code>main()</code>.
+</p>
+
+<pre>
+int counter = 7;
+int total;
+ 
+int main()
+{
+    int temp = counter;
+    while (1) { }
+}
+</pre>
+
+<p>
+  At the programming level, this example appears trivial. One variable is explicitly initialized, another is not, and a
+  local variable is created inside <code>main()</code>. Yet from the system’s perspective, several carefully ordered
+  operations are required before this logic can execute predictably.
+</p>
+
+<p>
+  The variable <code>counter</code> has an explicit initial value. That value must exist when the program begins
+  execution. However, RAM cannot preserve values across power cycles. The initial value therefore resides in program
+  memory as part of the compiled image.
+</p>
+
+<div class="emphasis-line">
+  The initial value of <code>counter</code> is stored in non-volatile memory and copied into RAM during startup.
+</div>
+
+<p>
+  The variable <code>total</code>, by contrast, has no explicit initializer. Its defined starting state is zero. Rather
+  than storing zeros in Flash, the startup sequence clears the memory region assigned to such variables, ensuring that
+  <code>total</code> begins with a predictable value.
+</p>
+
+<div class="emphasis-line">
+  Variables without explicit initializers are placed into a region that is cleared to zero at startup.
+</div>
+
+<p>
+  When execution finally enters <code>main()</code>, another memory space becomes active. The local variable
+  <code>temp</code> is not stored alongside global variables. Its lifetime is tied to function execution, and its
+  storage is allocated from the stack space established earlier.
+</p>
+
+<div class="emphasis-line">
+  Local variables are created by adjusting the stack pointer within RAM.
+</div>
+
+<p>
+  Despite the simplicity of the source code, the runtime environment has already performed several invisible
+  transformations. Predefined values have been transferred from program memory. Certain RAM regions have been cleared.
+  A stack region has been designated. Only after these steps does the program behave as the programmer expects.
+</p>
+
+<style>
+  .image-block{
+    border: 2px dashed rgba(148,18,54,0.35);
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, #fff8de, #fdeecb);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  .title{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 800;
+    fill: #5b0b19;
+  }
+  .label{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 720;
+    fill: #5b0b19;
+  }
+  .sub{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 520;
+    fill: rgba(91,11,25,0.85);
+  }
+  .mono{
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    fill: rgba(91,11,25,0.75);
+  }
+
+  .frame{
+    fill: white;
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 16;
+  }
+
+  .seg{
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 10;
+  }
+
+  .arrow{
+    stroke: rgba(148,18,54,0.9);
+    stroke-width: 3;
+    fill: none;
+    marker-end: url(#arrowHead);
+    stroke-linecap: round;
+  }
+</style>
+
+<div class="image-block">
+<svg viewBox="0 0 1200 420" style="width:100%; height:auto;" role="img"
+     aria-label="Memory state transition showing Flash to RAM initialization">
+
+  <defs>
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="rgba(148,18,54,0.9)"/>
+    </marker>
+
+    <linearGradient id="flashGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6eaaf"/>
+      <stop offset="100%" stop-color="#fff1bf"/>
+    </linearGradient>
+
+    <linearGradient id="dataGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ead3c1"/>
+      <stop offset="100%" stop-color="#f3e1d2"/>
+    </linearGradient>
+
+    <linearGradient id="stackGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fffaf0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Title -->
+  <text x="70" y="70" class="title" font-size="26">
+    Program Startup: Memory State Transition
+  </text>
+
+  <!-- Flash -->
+  <rect x="90" y="140" width="300" height="120" class="frame" fill="url(#flashGrad)"/>
+  <text x="110" y="175" class="label" font-size="20">FLASH (Non-Volatile)</text>
+  <text x="110" y="200" class="mono" font-size="20">counter = 7</text>
+
+  <!-- Arrow -->
+  <path d="M 390 200 C 470 200, 490 200, 570 200" class="arrow"/>
+  <text x="400" y="180" class="sub" font-size="16">
+    startup copy (.data init)
+  </text>
+
+  <!-- RAM -->
+  <rect x="570" y="90" width="360" height="240" class="frame"/>
+
+  <text x="590" y="120" class="label" font-size="20">RAM (SRAM)</text>
+
+  <!-- .data -->
+  <rect x="600" y="140" width="300" height="45" class="seg" fill="url(#dataGrad)"/>
+  <text x="615" y="168" class="mono" font-size="16">.data → counter = 7</text>
+
+  <!-- .bss -->
+  <rect x="600" y="190" width="300" height="45" class="seg" fill="url(#dataGrad)"/>
+  <text x="615" y="218" class="mono" font-size="16">.bss → total = 0</text>
+  <!-- Stack -->
+  <rect x="600" y="240" width="300" height="45" class="seg" fill="url(#stackGrad)"/>
+  <text x="615" y="268" class="mono" font-size="16">stack → temp = counter</text>
+
+ 
+</svg>
+</div>
+
+
+<p>
+  This example illustrates an essential principle of embedded execution. A program does not merely start running. The
+  memory universe it depends upon is actively constructed before visible logic begins.
+</p>
+<h3>Scope and Intent of This Discussion</h3>
+
+<p>
+  The example above is intentionally minimal. Its purpose is not to exhaustively describe every memory region or runtime
+  mechanism, but to build a clear mental picture of what must occur before <code>main()</code> can begin executing.
+  Many important details have been simplified so that the underlying ideas remain visible rather than obscured by
+  technical machinery.
+</p>
+
+<p>
+  In particular, we have focused only on the memory spaces required to understand basic runtime construction:
+  initialized data, zero-initialized data, and the stack. These regions are sufficient to reveal the central theme of
+  this chapter — that the execution environment is actively prepared by the system before application logic begins.
+</p>
+
+<div class="emphasis-line">
+  The objective here is to understand how a program becomes runnable, not to catalog every memory mechanism.
+</div>
+
+<p>
+  Readers familiar with embedded systems may notice the absence of another important region: the heap. This omission is
+  deliberate. Dynamic allocation introduces additional concepts that are best explored after the foundational runtime
+  model is firmly established. The heap, its behaviour, and its interactions with other memory regions will be examined
+  in later discussions.
+</p>
+
+<p>
+  Similarly, terms such as <code>.data</code> and <code>.bss</code> have been introduced only at an intuitive level.
+  Their precise definitions, placement rules, and relationships to the linker will be treated in much greater detail in
+  subsequent chapters. For now, they serve as conceptual tools rather than formal technical constructs.
+</p>
+
+<div class="emphasis-line">
+  This chapter concerns what happens before <code>main()</code>, because that is where the runtime universe is constructed.
+</div>
+
+<p>
+  Once this perspective is internalized, later explorations of memory layout, linker behaviour, stack dynamics, and
+  allocation strategies become far easier to reason about. The mechanisms differ, but the governing idea remains the
+  same: memory state is engineered into existence.
+</p>
+
+<h2>Entering main(): When Program Logic Truly Begins</h2>
+
+<p>
+  By the time execution reaches <code>main()</code>, the program is already running within a carefully prepared
+  environment. Memory regions have been cleared, predefined values transferred, and a stack space established. What
+  appears as the beginning of the program’s logic is, in reality, the continuation of a much earlier sequence of
+  machine-driven events.
+</p>
+
+<p>
+  From the programmer’s viewpoint, <code>main()</code> represents the starting point of meaningful behaviour. From the
+  processor’s viewpoint, it is simply another address within the instruction stream. The distinction is important. The
+  system does not begin executing at <code>main()</code>; it arrives there only after constructing the conditions
+  necessary for predictable execution.
+</p>
+
+<div class="emphasis-line">
+  <code>main()</code> does not create the runtime environment. It assumes its existence.
+</div>
+
+<p>
+  This explains why variables appear correctly initialized, why function calls behave consistently, and why execution
+  proceeds deterministically. The runtime universe has already been assembled. Application logic now operates within a
+  stable memory landscape rather than an undefined electrical state.
+</p>
+
+<p>
+  Seen from this perspective, the early stages of execution reveal an essential truth of embedded systems. Programs do
+  not merely run on hardware. They depend upon a sequence of invisible preparation steps that transform raw memory into
+  a structured computational environment.
+</p>
+
+<div class="emphasis-line">
+  Before program logic begins, memory must be made meaningful.
+</div>
+
+<p>
+  With this foundation established, we are now prepared to examine how these memory regions are defined, arranged, and
+  managed. Instead of asking how execution starts, we turn to a complementary question: how does the program’s memory
+  layout come into existence?
+</p>
+
+
+        <!-- COMMENTS SECTION -->
+        <hr class="section-divider">
+
+        <section id="comments" class="comments-section">
+          <h2>Comments</h2>
+
+          <script src="https://giscus.app/client.js"
+                  data-repo="adimd/AMD_Website"
+                  data-repo-id="R_kgDOQlniOw"
+                  data-category="General"
+                  data-category-id="DIC_kwDOQlniO84CzoR1"
+                  data-mapping="pathname"
+                  data-strict="0"
+                  data-reactions-enabled="1"
+                  data-emit-metadata="0"
+                  data-input-position="bottom"
+                  data-theme="preferred_color_scheme"
+                  data-lang="en"
+                  crossorigin="anonymous"
+                  async>
+          </script>
+        </section>
+
+      </article>
+
+      <!-- SIDEBAR -->
+      <aside class="blog-sidebar">
+        <div class="sidebar-card">
+          <h2 class="sidebar-title">More in this series</h2>
+          <div id="series-posts"></div>
+        </div>
+
+        <div class="sidebar-card">
+          <h3 class="sidebar-title-sm">Other recent posts</h3>
+          <div id="recent-posts"></div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- Dynamic sidebar data + logic -->
+  <script src="/posts.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (typeof BLOG_POSTS === "undefined") return;
+
+      const articleEl = document.querySelector(".blog-card");
+      if (!articleEl) return;
+
+      const currentId = articleEl.dataset.postId;
+      const currentSeriesId = articleEl.dataset.seriesId;
+
+      const currentPost = BLOG_POSTS.find(p => p.id === currentId);
+      if (!currentPost) return;
+
+      const sameSeries = BLOG_POSTS
+        .filter(p => p.seriesId === currentSeriesId && p.id !== currentId)
+        .sort((a, b) => (a.part || 0) - (b.part || 0));
+
+      const recent = BLOG_POSTS
+        .filter(p => p.id !== currentId)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 4);
+
+      const seriesContainer = document.getElementById("series-posts");
+      const recentContainer = document.getElementById("recent-posts");
+
+      if (sameSeries.length === 0) {
+        seriesContainer.innerHTML =
+          '<p class="sidebar-empty">More parts in this series are on the way.</p>';
+      } else {
+        seriesContainer.innerHTML = sameSeries.map(p => `
+          <a class="sidebar-link" href="${p.url}">
+            <div class="sidebar-link-title">
+              Part ${p.part}: ${p.title.replace(/^Part\\s*\\d+\\s*[–-]\\s*/, "")}
+            </div>
+            <div class="sidebar-link-meta">
+              ${p.date}
+            </div>
+          </a>
+        `).join("");
+      }
+
+      recentContainer.innerHTML = recent.map(p => `
+        <a class="sidebar-link" href="${p.url}">
+          <div class="sidebar-link-title-sm">${p.title}</div>
+          <div class="sidebar-link-meta">${p.date}</div>
+        </a>
+      `).join("");
+    });
+  </script>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Lightbox / image zoom logic
+    const modal = document.getElementById("image-modal");
+    const modalImg = document.getElementById("image-modal-img");
+    const modalCaption = document.getElementById("image-modal-caption");
+    const modalClose = document.querySelector(".image-modal-close");
+
+    if (!modal || !modalImg || !modalCaption || !modalClose) return;
+
+    // Any <img> inside .image-frame becomes zoomable
+    document.querySelectorAll(".image-frame img").forEach(function (img) {
+      img.style.cursor = "zoom-in";
+      img.addEventListener("click", function () {
+        modalImg.src = img.src;
+        modalImg.alt = img.alt || "";
+
+        // Use the nearest .image-caption if available
+        const captionEl = img.closest(".image-block")?.querySelector(".image-caption");
+        modalCaption.textContent = captionEl
+          ? captionEl.textContent.trim()
+          : (img.alt || "");
+
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+      });
+    });
+
+    function closeModal() {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      modalImg.src = "";
+      modalCaption.textContent = "";
+    }
+
+    modalClose.addEventListener("click", closeModal);
+
+    // Click on dark background closes too
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // ESC key closes
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && modal.classList.contains("open")) {
+        closeModal();
+      }
+    });
+  });
+  </script>
+
+</body>
+</html>
