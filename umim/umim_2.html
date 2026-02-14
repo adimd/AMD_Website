@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>A Bird’s-Eye View of Memory </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../style.css">
+
+    <script>
+  MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)'], ['$', '$']]
+    }
+  };
+</script>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+  async>
+</script>
+  <!-- Theme colors:
+       #f6eaaf (light yellow), #ead3c1 (soft peach), #941236 (deep maroon) -->
+  <style>
+    :root {
+      --bg-main: #f6eaaf;
+      --bg-card: #ffffff;
+      --bg-soft: #ead3c1;
+      --accent:  #941236;
+      --text-main: #222222;
+      --text-muted: #555555;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, #ffffff, var(--bg-main));
+      color: var(--text-main);
+      line-height: 1.7;
+    }
+
+    .page-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 3.5rem;
+    }
+
+    /* Main layout: article + sidebar */
+    .blog-layout {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+
+    .blog-card {
+      background: var(--bg-card);
+      border-radius: 1.25rem;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+      padding: 2.5rem 2.75rem;
+      border-top: 6px solid var(--accent);
+      flex: 3;
+    }
+
+    .blog-sidebar {
+      flex: 1.2;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .blog-layout {
+        flex-direction: column;
+      }
+
+      .blog-sidebar {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .blog-card {
+        padding: 1.75rem 1.5rem;
+        border-radius: 1rem;
+      }
+    }
+
+    .blog-meta {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .series-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      background: var(--bg-soft);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .series-tag-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-size: 2.1rem;
+      margin: 0.4rem 0 0.75rem;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    .blog-subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-bottom: 1.8rem;
+    }
+
+    h2 {
+      font-size: 1.7rem;
+      margin-top: 2.25rem;
+      margin-bottom: 0.6rem;
+      color: var(--accent);
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      margin-top: 1.6rem;
+      margin-bottom: 0.4rem;
+      color: #7a0f29;
+    }
+
+    p {
+      margin: 0.5rem 0 0.9rem;
+      font-size: 1.2rem;
+    }
+
+    strong {
+      color: #3a111c;
+    }
+
+    .emphasis-line {
+      padding: 0.7rem 1rem;
+      border-left: 4px solid var(--accent);
+      background: #fff8e7;
+      border-radius: 0.6rem;
+      font-size: 1.2rem;
+      margin: 1rem 0 1.4rem;
+    }
+
+    .timeline-callout {
+      background: var(--bg-soft);
+      border-radius: 0.9rem;
+      padding: 1rem 1.1rem;
+      margin: 1.4rem 0;
+      font-size: 0.93rem;
+    }
+
+    .timeline-callout-title {
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.14em;
+    }
+
+    ul {
+      padding-left: 1.3rem;
+      margin: 0.25rem 0 1rem;
+    }
+
+    li {
+      margin: 0.2rem 0;
+      font-size: 1.2rem;
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    .inline-question {
+      font-style: italic;
+      color: #4a222b;
+    }
+
+    .section-divider {
+      margin: 2.2rem 0 1.8rem;
+      height: 1px;
+      border: none;
+      background: linear-gradient(to right, transparent, #d7b2a3, transparent);
+    }
+
+    /* Sidebar cards + links */
+    .sidebar-card {
+      background: #fffdf7;
+      border-radius: 1rem;
+      padding: 1.1rem 1.1rem 1.2rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+      border: 1px solid rgba(148, 18, 54, 0.08);
+    }
+
+    .sidebar-title {
+      font-size: 1.1rem;
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+    }
+
+    .sidebar-title-sm {
+      font-size: 0.98rem;
+      margin: 0 0 0.6rem;
+      color: #7a0f29;
+    }
+
+    .sidebar-link {
+      display: block;
+      padding: 0.5rem 0.4rem;
+      border-radius: 0.6rem;
+      text-decoration: none;
+      background: transparent;
+      transition: background 0.18s ease, transform 0.12s ease;
+    }
+
+    .sidebar-link + .sidebar-link {
+      margin-top: 0.15rem;
+    }
+
+    .sidebar-link:hover {
+      background: rgba(234, 211, 193, 0.5);
+      transform: translateX(2px);
+    }
+
+    .sidebar-link-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #3a111c;
+    }
+
+    .sidebar-link-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .sidebar-link-title-sm {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #3a111c;
+    }
+
+    .sidebar-empty {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Image blocks inside article */
+    .image-block {
+      margin: 1.6rem 0 1.3rem;
+    }
+
+    .image-frame {
+      width: 100%;
+      max-width: 780px;
+      height: 260px;
+      margin: 0 auto;
+      border-radius: 0.9rem;
+      border: 2px dashed rgba(148, 18, 54, 0.35);
+      background: linear-gradient(
+        135deg,
+        rgba(246, 234, 175, 0.5),
+        rgba(234, 211, 193, 0.6)
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      cursor: zoom-in; 
+    }
+
+    .image-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .image-placeholder-text {
+      font-size: 0.9rem;
+      color: #5c2a33;
+      text-align: center;
+      padding: 0 1.5rem;
+    }
+
+    .image-placeholder-label {
+      position: absolute;
+      bottom: 10px;
+      right: 12px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: rgba(148, 18, 54, 0.8);
+      background: rgba(255, 255, 255, 0.75);
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+    }
+
+    .image-caption {
+      max-width: 780px;
+      margin: 0.5rem auto 0.2rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* Image zoom modal */
+    .image-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .image-modal.open {
+      display: flex;
+    }
+
+    .image-modal-inner {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+    }
+
+    .image-modal-img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 1rem;
+      transform: scale(1.1);   
+      transform-origin: center;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5);
+      background: #ffffff;
+    }
+
+    .image-modal-caption {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: #f6eaaf;
+      text-align: center;
+    }
+
+    .image-modal-close {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      border: none;
+      background: #ffffff;
+      color: #941236;
+      border-radius: 999px;
+      width: 28px;
+      height: 28px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+
+    @media (max-width: 768px) {
+      .image-frame {
+        height: 210px;
+      }
+      .image-placeholder-text {
+        font-size: 0.85rem;
+        padding: 0 1rem;
+      }
+    }
+
+    /* Comments section */
+    .comments-section {
+      margin-top: 3rem;
+    }
+
+    .comments-section h2 {
+      font-size: 1.4rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Image zoom modal -->
+  <div id="image-modal" class="image-modal" aria-hidden="true">
+    <div class="image-modal-inner">
+      <button class="image-modal-close" aria-label="Close image">&times;</button>
+      <img id="image-modal-img" class="image-modal-img" alt="">
+      <p id="image-modal-caption" class="image-modal-caption"></p>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+   <header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">AM</span>
+      <span class="brand-text">Adithya MD</span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="../index.html">Home</a>
+      <a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a>
+      <a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+
+      <div class="dropdown">
+        <button class="dropbtn">Teaching &amp; Outreach ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+
+      <a href="../contact.html">Contact</a>
+    </nav>
+  </div>
+</header>
+
+  <div class="page-wrapper">
+    <div class="blog-layout">
+
+      <!-- MAIN ARTICLE -->
+      <article class="blog-card"
+               data-post-id="{{POST_ID}}"
+               data-series-id="{{SERIES_ID}}">
+
+        <div class="blog-meta">
+          <span class="series-tag">
+            <span class="series-tag-dot"></span>
+           Understanding Memory in Microcontrollers
+          </span>
+        </div>
+
+        <h1>A Bird’s-Eye View of Memory </h1>
+        <p class="blog-subtitle">
+          {{BLOG_SUBTITLE}}
+        </p>
+
+        <!-- BLOG CONTENT GOES HERE -->
+      <h2>Program Memory (Flash): What the Device Is</h2>
+
+<p>
+  A microcontroller, before anything else, is a device that executes instructions. Unlike a mechanical system whose
+  behaviour is fixed by its physical construction, a microcontroller is defined by the program stored inside it.
+  Without that program, the chip is merely a collection of circuits with no meaningful behaviour. The presence of
+  firmware is what gives the device its identity.
+</p>
+
+<p>
+  This immediately raises a practical question. Where does this program live? The microcontroller must have a place
+  to store its instructions in a way that survives power loss. When the device is switched off and later powered
+  again, the program should not vanish. Otherwise, every restart would require reloading the entire logic of the
+  system.
+</p>
+
+<p>
+  To solve this, microcontrollers include a form of non-volatile memory commonly referred to as Flash. The defining
+  property of this memory is persistence. Its contents remain intact even when the device has no power. The program
+  written into Flash effectively becomes part of the device until it is explicitly replaced.
+</p>
+
+<div class="emphasis-line">
+  Flash memory is not working space. It is long-term residence for the program itself.
+</div>
+
+<p>
+  When firmware is compiled and uploaded, the resulting machine instructions are stored in this region. From that
+  moment onward, whenever the microcontroller starts executing, it fetches instructions from Flash. In a very real
+  sense, Flash contains the behaviour of the device. Change the contents of Flash, and you change what the device is.
+</p>
+
+<p>
+  It is important to separate this idea from how we casually think about variables. Flash is not where values change
+  during execution. It is not where temporary results are computed. Instead, Flash holds the fixed instruction stream
+  that guides the processor. The program counter advances through this memory, reading one instruction after another,
+  forming the sequence of operations that define the system’s logic.
+</p>
+
+<p>
+  This distinction explains why program memory is treated differently from runtime memory. The program stored in Flash
+  is expected to remain stable. It represents what the device has been designed to do. The dynamic aspects of execution such as
+   changing values, intermediate states, temporary data belong elsewhere.
+</p>
+
+<style>
+  .image-block{
+    border: 2px dashed rgba(148,18,54,0.35);
+    border-radius: 16px;
+    padding: 14px;
+    background: linear-gradient(135deg, #fff8de, #fdeecb);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+  }
+
+  .title{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 700;
+    fill: #5b0b19;
+  }
+
+  .label{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 600;
+    fill: #5b0b19;
+  }
+
+  .sub{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 500;
+    fill: rgba(91,11,25,0.85);
+  }
+
+  .box{
+    fill: white;
+    stroke: rgba(148,18,54,0.25);
+    stroke-width: 2;
+    rx: 18;
+  }
+
+  .mem{
+    fill: #f6eaaf;
+    stroke: rgba(148,18,54,0.25);
+    stroke-width: 2;
+    rx: 14;
+  }
+
+  .arrow{
+    stroke: rgba(148,18,54,0.9);
+    stroke-width: 3;
+    fill: none;
+    marker-end: url(#arrowHead);
+    stroke-linecap: round;
+  }
+
+  .mono{
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    fill: rgba(91,11,25,0.75);
+    font-size: 14px;
+  }
+</style>
+
+<div class="image-block">
+<svg viewBox="0 0 1100 420" style="width:100%; height:auto;" role="img"
+     aria-label="Microcontroller fetching instructions from Flash memory">
+
+  <defs>
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="rgba(148,18,54,0.9)"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="60" y="70" class="title" font-size="24">
+    Instruction Fetch from Flash Memory
+  </text>
+
+  <text x="60" y="100" class="sub" font-size="16">
+    Program memory acts as persistent instruction storage
+  </text>
+
+  <!-- Flash Memory -->
+  <rect x="80" y="150" width="260" height="160" class="mem"/>
+  <text x="210" y="195" text-anchor="middle" class="label" font-size="18">
+    FLASH
+  </text>
+  <text x="210" y="220" text-anchor="middle" class="sub" font-size="14">
+    Program Instructions
+  </text>
+  <text x="210" y="245" text-anchor="middle" class="mono">
+    reset, main(), loops …
+  </text>
+
+  <!-- MCU Core -->
+  <rect x="520" y="130" width="300" height="200" class="box"/>
+  <text x="670" y="175" text-anchor="middle" class="label" font-size="18">
+    MICROCONTROLLER CORE
+  </text>
+  <text x="670" y="205" text-anchor="middle" class="sub" font-size="14">
+    CPU / Control Unit
+  </text>
+
+  <!-- Arrow -->
+  <path d="M 340 230 C 420 230, 450 230, 520 230" class="arrow"/>
+
+  <text x="400" y="215" class="sub" font-size="14">
+    instruction fetch
+  </text>
+
+  <!-- Execution Hint -->
+  <text x="670" y="250" text-anchor="middle" class="sub" font-size="14">
+    decode → execute → repeat
+  </text>
+
+</svg>
+</div>
+
+<h2>Data Memory (RAM): What the Device Is Doing</h2>
+
+<p>
+  If Flash memory defines what the device is, then RAM reflects what the device is doing at any given moment. A running
+  program is not a static entity. Values change continuously. Sensor readings are acquired. Calculations produce
+  intermediate results. Variables hold temporary state. None of this dynamic information belongs in program memory.
+</p>
+
+<p>
+  For a microcontroller to execute meaningful computations, it requires a region of memory that supports rapid read and
+  write operations. This working space is provided by RAM, a volatile form of memory whose contents exist only while the
+  device is powered. Unlike Flash, RAM does not retain information when power is removed. Every restart begins with RAM
+  in an undefined state.
+</p>
+
+<div class="emphasis-line">
+  RAM is not long-term storage. It is the program’s workspace during execution.
+</div>
+
+<p>
+  Whenever the processor performs operations, the data involved must temporarily reside somewhere accessible. Arithmetic
+  results, temporary buffers, function-local variables, and global runtime state all occupy RAM. Even mechanisms that
+  programmers rarely think about explicitly, such as the call stack, are carved out of this same limited region.
+</p>
+
+<p>
+  This volatility is not a limitation but a deliberate design choice. RAM is optimized for speed and flexibility. It
+  allows values to be modified freely as the program runs. The trade-off is persistence. When the device loses power,
+  the workspace is cleared, and the program must rebuild its runtime state from scratch.
+</p>
+
+<p>
+  This distinction between Flash and RAM introduces a useful way to think about memory behaviour. Flash contains the
+  instructions that describe what should happen. RAM contains the data that makes those instructions meaningful during
+  execution. One holds the blueprint; the other holds the evolving state of the system.
+</p>
+
+<div class="emphasis-line">
+  A program lives in Flash but breathes through RAM.
+</div>
+
+<p>
+  Because RAM is shared by many components of the running program, its usage becomes critically important in small
+  systems. Global variables, local variables, temporary buffers, and dynamic allocations all compete for the same finite
+  space. Exceeding available RAM does not simply slow the system. It often leads to corruption, instability, or
+  unpredictable behaviour.
+</p>
+
+<p>
+  Understanding RAM therefore means more than knowing that it exists. It means recognizing that nearly every dynamic
+  aspect of program execution is ultimately constrained by this region. Later discussions of stack growth, heap usage,
+  and memory layout are all rooted in this simple reality.
+</p>
+
+
+
+<h2>Non-Volatile Data Storage: What the Device Remembers</h2>
+
+<p>
+  A running program constantly produces and modifies data. Some of this information is temporary and only relevant during
+  execution, which is why it naturally belongs in RAM. But not all data is meant to disappear when the device loses power.
+  Many embedded systems rely on values that must persist across resets and restarts.
+</p>
+
+<p>
+  Consider simple examples. A configuration parameter chosen by a user, a calibration value determined during setup, or a
+  counter that tracks long-term usage. If such values were stored only in RAM, they would vanish every time the device was
+  turned off. The system would effectively forget its own history.
+</p>
+
+<p>
+  Microcontrollers therefore provide memory regions designed specifically for persistence. These regions are non-volatile,
+  meaning their contents survive power cycles. Unlike Flash program memory, which typically stores instructions, these
+  areas are intended for data that must be retained over time.
+</p>
+
+<div class="emphasis-line">
+  Non-volatile data memory exists so that the device can preserve state, not just behaviour.
+</div>
+
+<p>
+  Depending on the microcontroller family, this storage may appear as dedicated EEPROM, special Flash sectors, or other
+  forms of persistent memory. The underlying technology is less important here than the conceptual role it plays. It
+  allows the program to write information that will remain available even after resets.
+</p>
+
+<p>
+  This introduces a useful separation of responsibilities within the device. Program memory defines what the system is
+  designed to do. RAM supports what the system is currently doing. Non-volatile data storage captures what the system
+  chooses to remember.
+</p>
+
+<div class="emphasis-line">
+  Behaviour lives in Flash. Activity lives in RAM. Memory of past state lives in non-volatile storage.
+</div>
+
+<p>
+  This distinction becomes especially important in real systems. Persistent storage is typically slower to write, may have
+  endurance limits, and is used more carefully than RAM. Programs often treat it as long-term record keeping rather than
+  a workspace. Values are updated intentionally rather than continuously.
+</p>
+
+<p>
+  With this, we arrive at three conceptually different forms of memory inside a microcontroller. Each exists for a
+  different purpose, each behaves differently, and each shapes how programs must be designed.
+</p>
+
+<h2>A Unifying Mental Model</h2>
+
+<p>
+  At this point, we have identified three broad categories of memory inside a typical microcontroller. Program memory
+  stores instructions. RAM provides working space during execution. Non-volatile data storage preserves information
+  across resets. While these distinctions are useful, they can still feel like separate facts unless tied together
+  through a single coherent viewpoint.
+</p>
+
+<p>
+  A helpful way to unify these ideas is to think of memory not only in terms of persistence, but also in terms of how
+  quickly it can be accessed and modified. In microcontrollers, speed of read and write operations is not merely a
+  performance concern. It fundamentally shapes how each memory type is used.
+</p>
+
+<div class="emphasis-line">
+  Different memory regions exist not just because of what they store, but because of how fast they can be read and written.
+</div>
+
+<p>
+  RAM is designed for rapid access. Both reading and writing occur at high speed, allowing the processor to freely modify
+  values as the program runs. This makes RAM ideal for temporary data, intermediate computations, and runtime state.
+  Variables that change frequently naturally belong here because the cost of modification is minimal.
+</p>
+
+<p>
+  Program memory, commonly implemented using Flash, behaves differently. Reading instructions from Flash is typically
+  fast enough for continuous execution, which is why programs can run directly from it. Writing, however, is a much more
+  deliberate operation. Updating Flash memory is slower, often requires special procedures, and is not something that
+  occurs constantly during normal execution.
+</p>
+
+<div class="emphasis-line">
+  Flash is optimized for stable storage and frequent reading, not continuous rewriting.
+</div>
+
+<p>
+  Non-volatile data storage follows a similar pattern. These regions are intended for persistence rather than speed.
+  Reads are usually straightforward, but writes are comparatively slow and often limited in endurance. As a result,
+  programs treat such memory as long-term record keeping rather than working space.
+</p>
+
+<p>
+  When viewed together, a consistent picture emerges. Memory regions differ along two essential axes: whether their
+  contents survive power loss, and how efficiently they support read and write operations. The program memory provides
+  permanence for instructions. RAM provides speed and flexibility for live data. Persistent data memory provides
+  durability for important state.
+</p>
+
+<div class="emphasis-line">
+  Behaviour is stored where permanence matters. Activity is stored where speed matters. History is stored where persistence matters.
+</div>
+
+<p>
+  This model explains why a running program relies so heavily on RAM despite Flash being present. Execution demands
+  constant modification of values, and only RAM supports such activity efficiently. It also clarifies why writes to
+  Flash or EEPROM are treated as special events rather than routine operations.
+</p>
+
+<p>
+  Thinking about memory through this combined lens,  persistence and access speed  provides a stable foundation for
+  understanding more advanced topics. Stack growth, heap allocation, linker placement, and variable behaviour are all
+  consequences of how these memory regions are structured and accessed.
+</p>
+
+<style>
+  .image-block{
+    border: 2px dashed rgba(148,18,54,0.35);
+    border-radius: 18px;
+    padding: 14px;
+    background: linear-gradient(135deg, #fff8de, #fdeecb);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  .t-title{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 800;
+    fill: #5b0b19;
+  }
+  .t-sub{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 520;
+    fill: rgba(91,11,25,0.85);
+  }
+  .t-label{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 750;
+    fill: #5b0b19;
+  }
+  .t-note{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 600;
+    fill: rgba(91,11,25,0.78);
+  }
+  .mono{
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    fill: rgba(91,11,25,0.75);
+  }
+
+  .card{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.20);
+    stroke-width: 2;
+    rx: 18;
+  }
+  .panel{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.18);
+    stroke-width: 1.8;
+    rx: 16;
+  }
+  .membox{
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 16;
+  }
+
+  .bar-bg{
+    fill: rgba(148,18,54,0.08);
+    rx: 999;
+  }
+  .bar-fill{
+    rx: 999;
+  }
+</style>
+
+<div class="image-block">
+<svg viewBox="0 0 1200 520" style="width:100%; height:auto;" role="img"
+     aria-label="Unified memory comparison: RAM, Flash, and non-volatile data">
+
+  <defs>
+    <filter id="softShadow" x="-20%" y="-30%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="rgba(0,0,0,0.16)"/>
+    </filter>
+
+    <linearGradient id="gRAM" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fffaf0"/>
+    </linearGradient>
+
+    <linearGradient id="gFLASH" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6eaaf"/>
+      <stop offset="100%" stop-color="#fff1bf"/>
+    </linearGradient>
+
+    <linearGradient id="gNVM" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ead3c1"/>
+      <stop offset="100%" stop-color="#f3e1d2"/>
+    </linearGradient>
+
+    <linearGradient id="gBar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="rgba(148,18,54,0.12)"/>
+      <stop offset="100%" stop-color="rgba(148,18,54,0.45)"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="30" y="24" width="1140" height="472" class="card" filter="url(#softShadow)"/>
+
+  <text x="70" y="78" class="t-title" font-size="26">Unified Memory Comparison</text>
+  <text x="70" y="108" class="t-sub" font-size="16">
+    RAM, Flash, and non-volatile storage compared by speed and persistence
+  </text>
+
+  <text x="120" y="160" class="t-label" font-size="16">Memory Type</text>
+  <text x="620" y="160" class="t-label" font-size="16">Characteristics</text>
+
+  <!-- RAM -->
+  <rect x="70" y="182" width="1060" height="92" class="panel"/>
+
+  <rect x="95" y="200" width="360" height="56" class="membox" fill="url(#gRAM)"/>
+  <text x="275" y="234" class="t-label" font-size="18" text-anchor="middle">RAM (SRAM)</text>
+
+  <rect x="620" y="206" width="240" height="14" class="bar-bg"/>
+  <rect x="620" y="206" width="215" height="14" class="bar-fill" fill="url(#gBar)"/>
+  <text x="600" y="218" class="t-note" font-size="12" text-anchor="end">Speed</text>
+
+  <rect x="620" y="232" width="240" height="14" class="bar-bg"/>
+  <rect x="620" y="232" width="40" height="14" class="bar-fill" fill="url(#gBar)"/>
+  <text x="600" y="244" class="t-note" font-size="12" text-anchor="end">Persistence</text>
+
+  <text x="620" y="262" class="mono" font-size="12">Volatile • Lost on power off</text>
+
+  <!-- Flash -->
+  <rect x="70" y="288" width="1060" height="92" class="panel"/>
+
+  <rect x="95" y="306" width="360" height="56" class="membox" fill="url(#gFLASH)"/>
+  <text x="275" y="340" class="t-label" font-size="18" text-anchor="middle">Flash (Program)</text>
+
+  <rect x="620" y="312" width="240" height="14" class="bar-bg"/>
+  <rect x="620" y="312" width="135" height="14" class="bar-fill" fill="url(#gBar)"/>
+  <text x="600" y="324" class="t-note" font-size="12" text-anchor="end">Speed</text>
+
+  <rect x="620" y="338" width="240" height="14" class="bar-bg"/>
+  <rect x="620" y="338" width="215" height="14" class="bar-fill" fill="url(#gBar)"/>
+  <text x="600" y="350" class="t-note" font-size="12" text-anchor="end">Persistence</text>
+
+  <text x="620" y="368" class="mono" font-size="12">Non-volatile • Writes slower</text>
+
+  <!-- NVM -->
+  <rect x="70" y="394" width="1060" height="92" class="panel"/>
+
+  <rect x="95" y="412" width="360" height="56" class="membox" fill="url(#gNVM)"/>
+  <text x="275" y="446" class="t-label" font-size="18" text-anchor="middle">Non-Volatile Data</text>
+
+  <rect x="620" y="418" width="240" height="14" class="bar-bg"/>
+  <rect x="620" y="418" width="90" height="14" class="bar-fill" fill="url(#gBar)"/>
+  <text x="600" y="430" class="t-note" font-size="12" text-anchor="end">Speed</text>
+
+  <rect x="620" y="444" width="240" height="14" class="bar-bg"/>
+  <rect x="620" y="444" width="225" height="14" class="bar-fill" fill="url(#gBar)"/>
+  <text x="600" y="456" class="t-note" font-size="12" text-anchor="end">Persistence</text>
+
+  <text x="620" y="474" class="mono" font-size="12">Persistent • Limited write endurance</text>
+
+  <text x="70" y="520" class="t-sub" font-size="20">
+    Conceptual comparison — exact values depend on MCU technology and memory architecture
+  </text>
+
+</svg>
+</div>
+
+
+
+<h3>Why Are Memory Speeds Different?</h3>
+
+<p>
+  A natural question at this stage is why the various memory regions inside a microcontroller exhibit such different
+  read and write characteristics. From a programmer’s viewpoint, they may all appear as simple addressable storage.
+  From a hardware design perspective, however, these memories are built using fundamentally different structures,
+  each optimized for a specific purpose.
+</p>
+
+<p>
+  Memory design is always an exercise in trade-offs. Speed, persistence, silicon area, power consumption, and cost
+  are tightly coupled. Improving one property almost always impacts another. As a result, a single “perfect” memory
+  technology does not exist. Instead, microcontrollers incorporate multiple memory types, each engineered to serve a
+  distinct role within the system.
+</p>
+
+<div class="emphasis-line">
+  Memory technologies differ because hardware constraints make it impractical to optimize everything simultaneously.
+</div>
+
+<p>
+  RAM, for instance, is designed for fast and frequent modification. It must support continuous reading and writing as
+  the processor executes instructions and updates data. To enable this, RAM cells are constructed to allow rapid state
+  changes. The hardware prioritizes speed and flexibility, which is why RAM operations are typically very fast.
+</p>
+
+<p>
+  This performance comes at a cost. RAM consumes valuable silicon area and requires constant power to maintain its
+  contents. Because microcontrollers are designed to be compact and cost-effective, the amount of RAM is often limited.
+  The memory is intentionally kept small but fast, making it suitable for active computation rather than long-term
+  storage.
+</p>
+
+<p>
+  Flash memory follows a very different design philosophy. Its primary objective is persistence. The stored information
+  must remain intact even when power is removed. Achieving this stability requires memory cells that retain state
+  without continuous power, which involves mechanisms that are inherently slower to modify.
+</p>
+
+<div class="emphasis-line">
+  Flash is optimized for density and persistence, not rapid rewriting.
+</div>
+
+<p>
+  Flash can store large amounts of information relative to its silicon footprint, making it economical for holding
+  program instructions. Reads are typically efficient enough for execution, but writes are slower and treated as
+  deliberate operations. This asymmetry is not accidental; it is a direct consequence of the underlying hardware
+  trade-offs.
+</p>
+
+<p>
+  Non-volatile data storage regions exhibit similar behaviour. These memories are intended for retaining important
+  state across resets and power cycles. Their write mechanisms are carefully controlled, both for reliability and for
+  endurance. Frequent rewriting would not only be slow but could also reduce memory lifespan, which is why programs use
+  these regions selectively.
+</p>
+
+<div class="emphasis-line">
+  Different memory regions reflect different economic and physical design priorities: speed, density, persistence, and cost.
+</div>
+
+<p>
+  Seen from this perspective, the memory organization of a microcontroller is a deliberate architectural compromise.
+  Fast but limited RAM supports runtime activity. Dense and persistent Flash stores the program. Specialized
+  non-volatile regions preserve long-term data. Each exists because the hardware cannot provide all desirable
+  properties within a single memory structure without unacceptable cost or complexity.
+</p>
+
+<p>
+  For embedded programmers, the exact circuit-level details are less important than the practical implication:
+  memory behaviour is shaped by hardware realities. Understanding these trade-offs helps explain why certain operations
+  are fast, why others are slow, and why memory usage patterns strongly influence system design.
+</p>
+
+<h3>Closing Thoughts</h3>
+
+<p>
+  At a glance, the memory inside a microcontroller may appear as a collection of separate regions with different names
+  and behaviours. Program memory, RAM, non-volatile storage — each seems like an independent concept to be learned and
+  remembered. But viewed more carefully, these distinctions reflect a single underlying idea: memory is structured to
+  balance competing constraints.
+</p>
+
+<p>
+  Some parts of memory prioritize persistence, allowing the device to retain its program and important state across
+  power cycles. Other parts prioritize speed, enabling the rapid and continuous modification required during execution.
+  The program itself, the data it manipulates, and the information it preserves over time are therefore distributed
+  across regions designed for fundamentally different roles.
+</p>
+
+<div class="emphasis-line">
+  Memory organization is not an arbitrary feature of microcontrollers. It is a direct consequence of hardware trade-offs.
+</div>
+
+<p>
+  Developing an intuition for this structure is one of the most valuable steps in understanding embedded systems.
+  Many behaviours that initially feel surprising — variable lifetimes, initialization requirements, performance
+  differences, and even common failure modes — begin to make sense once memory is seen as a constrained and carefully
+  engineered landscape.
+</p>
+
+<p>
+  With this bird’s-eye view, we now have a stable foundation for exploring deeper questions. How does the processor
+  actually view these memory regions? How are they represented internally? How does a program refer to specific
+  locations within them?
+</p>
+
+<p>
+  In the next article, we move from memory as a collection of regions to memory as a space of addresses ,  the uniform
+  perspective through which the processor interacts with everything stored inside the device.
+</p>
+
+
+        <!-- COMMENTS SECTION -->
+        <hr class="section-divider">
+
+        <section id="comments" class="comments-section">
+          <h2>Comments</h2>
+
+          <script src="https://giscus.app/client.js"
+                  data-repo="adimd/AMD_Website"
+                  data-repo-id="R_kgDOQlniOw"
+                  data-category="General"
+                  data-category-id="DIC_kwDOQlniO84CzoR1"
+                  data-mapping="pathname"
+                  data-strict="0"
+                  data-reactions-enabled="1"
+                  data-emit-metadata="0"
+                  data-input-position="bottom"
+                  data-theme="preferred_color_scheme"
+                  data-lang="en"
+                  crossorigin="anonymous"
+                  async>
+          </script>
+        </section>
+
+      </article>
+
+      <!-- SIDEBAR -->
+      <aside class="blog-sidebar">
+        <div class="sidebar-card">
+          <h2 class="sidebar-title">More in this series</h2>
+          <div id="series-posts"></div>
+        </div>
+
+        <div class="sidebar-card">
+          <h3 class="sidebar-title-sm">Other recent posts</h3>
+          <div id="recent-posts"></div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- Dynamic sidebar data + logic -->
+  <script src="/posts.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (typeof BLOG_POSTS === "undefined") return;
+
+      const articleEl = document.querySelector(".blog-card");
+      if (!articleEl) return;
+
+      const currentId = articleEl.dataset.postId;
+      const currentSeriesId = articleEl.dataset.seriesId;
+
+      const currentPost = BLOG_POSTS.find(p => p.id === currentId);
+      if (!currentPost) return;
+
+      const sameSeries = BLOG_POSTS
+        .filter(p => p.seriesId === currentSeriesId && p.id !== currentId)
+        .sort((a, b) => (a.part || 0) - (b.part || 0));
+
+      const recent = BLOG_POSTS
+        .filter(p => p.id !== currentId)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 4);
+
+      const seriesContainer = document.getElementById("series-posts");
+      const recentContainer = document.getElementById("recent-posts");
+
+      if (sameSeries.length === 0) {
+        seriesContainer.innerHTML =
+          '<p class="sidebar-empty">More parts in this series are on the way.</p>';
+      } else {
+        seriesContainer.innerHTML = sameSeries.map(p => `
+          <a class="sidebar-link" href="${p.url}">
+            <div class="sidebar-link-title">
+              Part ${p.part}: ${p.title.replace(/^Part\\s*\\d+\\s*[–-]\\s*/, "")}
+            </div>
+            <div class="sidebar-link-meta">
+              ${p.date}
+            </div>
+          </a>
+        `).join("");
+      }
+
+      recentContainer.innerHTML = recent.map(p => `
+        <a class="sidebar-link" href="${p.url}">
+          <div class="sidebar-link-title-sm">${p.title}</div>
+          <div class="sidebar-link-meta">${p.date}</div>
+        </a>
+      `).join("");
+    });
+  </script>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Lightbox / image zoom logic
+    const modal = document.getElementById("image-modal");
+    const modalImg = document.getElementById("image-modal-img");
+    const modalCaption = document.getElementById("image-modal-caption");
+    const modalClose = document.querySelector(".image-modal-close");
+
+    if (!modal || !modalImg || !modalCaption || !modalClose) return;
+
+    // Any <img> inside .image-frame becomes zoomable
+    document.querySelectorAll(".image-frame img").forEach(function (img) {
+      img.style.cursor = "zoom-in";
+      img.addEventListener("click", function () {
+        modalImg.src = img.src;
+        modalImg.alt = img.alt || "";
+
+        // Use the nearest .image-caption if available
+        const captionEl = img.closest(".image-block")?.querySelector(".image-caption");
+        modalCaption.textContent = captionEl
+          ? captionEl.textContent.trim()
+          : (img.alt || "");
+
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+      });
+    });
+
+    function closeModal() {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      modalImg.src = "";
+      modalCaption.textContent = "";
+    }
+
+    modalClose.addEventListener("click", closeModal);
+
+    // Click on dark background closes too
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // ESC key closes
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && modal.classList.contains("open")) {
+        closeModal();
+      }
+    });
+  });
+  </script>
+
+</body>
+</html>
