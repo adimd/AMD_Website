@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>{{BLOG_TITLE}}</title>
+  <title>RAM Anatomy: Understanding Runtime Memory in Microcontrollers</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="../style.css">
 
@@ -458,13 +458,1521 @@
           </span>
         </div>
 
-        <h1>{{BLOG_TITLE}}</h1>
+        <h1>RAM Anatomy: Understanding Runtime Memory in Microcontrollers</h1>
         <p class="blog-subtitle">
-          {{BLOG_SUBTITLE}}
+          Stack, heap, and the negotiation for limited memory
         </p>
 
         <!-- BLOG CONTENT GOES HERE -->
-      
+      <h2>A Conceptual Layout of RAM</h2>
+
+<p>
+  RAM is often introduced simply as “data memory,” a place where variables live during execution. While technically
+  correct, this description hides an important reality. RAM is not merely storage. It is the active workspace of the
+  running program, continuously reshaped as execution unfolds.
+</p>
+
+<p>
+  Unlike Flash memory, whose contents remain stable unless explicitly rewritten, RAM is defined by volatility and speed.
+  Values appear, change, and disappear as the processor executes instructions. The same physical memory region may hold
+  entirely different data at different moments in time.
+</p>
+
+<div class="emphasis-line">
+  RAM is best understood as a dynamic landscape rather than a passive container.
+</div>
+
+<p>
+  Although RAM is physically uniform, the runtime environment imposes structure upon it. Different portions of RAM are
+  assigned distinct roles so that long-lived program data, temporary execution state, and dynamically requested memory
+  can coexist without ambiguity. This organization is not visible in source code, yet it governs nearly every aspect of
+  program behaviour.
+</p>
+
+<p>
+  A useful mental model is to imagine RAM as a bounded region within the address space. Within this region, certain
+  areas are reserved for globally accessible variables, others for function execution state, and others for memory whose
+  usage evolves during runtime.
+</p>
+
+<style>
+  .image-block{
+    border: 2px dashed rgba(148,18,54,0.35);
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, #fff8de, #fdeecb);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  .title{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 800;
+    fill: #5b0b19;
+    letter-spacing: 0.2px;
+  }
+  .sub{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 520;
+    fill: rgba(91,11,25,0.85);
+  }
+  .label{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 740;
+    fill: #5b0b19;
+  }
+  .mono{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    fill: rgba(91,11,25,0.75);
+  }
+
+  .card{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.20);
+    stroke-width: 2;
+    rx: 18; ry: 18;
+  }
+
+  .ram{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 16; ry: 16;
+  }
+
+  .seg{
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 12; ry: 12;
+  }
+
+  .arrow{
+    stroke: rgba(148,18,54,0.92);
+    stroke-width: 3.2;
+    fill: none;
+    marker-end: url(#arrowHead);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .hatch-line{
+    stroke: rgba(148,18,54,0.10);
+    stroke-width: 2;
+  }
+</style>
+
+<div class="image-block">
+<svg viewBox="0 0 1200 520" style="width:100%; height:auto;" role="img"
+     aria-label="RAM layout overview showing data, bss, free space, and stack">
+
+  <defs>
+    <filter id="softShadow" x="-20%" y="-30%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="rgba(0,0,0,0.14)"/>
+    </filter>
+
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="rgba(148,18,54,0.92)"/>
+    </marker>
+
+    <linearGradient id="gData" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ead3c1"></stop>
+      <stop offset="100%" stop-color="#f3e1d2"></stop>
+    </linearGradient>
+
+    <linearGradient id="gStack" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6eaaf"></stop>
+      <stop offset="100%" stop-color="#fff1bf"></stop>
+    </linearGradient>
+
+    <pattern id="freeHatch" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 0 10 L 10 0" class="hatch-line"></path>
+    </pattern>
+  </defs>
+
+  <!-- Outer card -->
+  <rect x="30" y="24" width="1140" height="472" class="card" filter="url(#softShadow)"></rect>
+
+  <!-- Title -->
+  <text x="70" y="78" class="title" font-size="26">RAM Layout Overview</text>
+  <text x="70" y="108" class="sub" font-size="20">
+    Lower addresses: .data + .bss • Upper addresses: stack • The gap in between is your available headroom
+  </text>
+
+  <!-- RAM frame -->
+  <rect x="260" y="150" width="280" height="320" class="ram"></rect>
+  <text x="400" y="185" class="label" font-size="18" text-anchor="middle">SRAM</text>
+
+  <!-- Address labels -->
+  <text x="240" y="170" class="mono" font-size="20" text-anchor="end">High addr</text>
+  <text x="240" y="468" class="mono" font-size="20" text-anchor="end">Low addr</text>
+
+  <!-- Stack (top) -->
+  <rect x="305" y="205" width="190" height="70" class="seg" fill="url(#gStack)"></rect>
+  <text x="400" y="242" class="label" font-size="20" text-anchor="middle">STACK</text>
+
+
+  <!-- Free space -->
+  <rect x="305" y="275" width="190" height="110" class="seg" fill="#fff"></rect>
+  <rect x="305" y="275" width="190" height="110" class="seg" fill="url(#freeHatch)"></rect>
+  <text x="400" y="332" class="label" font-size="20" text-anchor="middle">FREE SPACE</text>
+
+
+  <!-- .bss -->
+  <rect x="305" y="385" width="190" height="40" class="seg" fill="#fff"></rect>
+  <text x="400" y="410" class="label" font-size="20" text-anchor="middle">.bss</text>
+
+
+  <!-- .data -->
+  <rect x="305" y="425" width="190" height="35" class="seg" fill="url(#gData)"></rect>
+  <text x="400" y="448" class="label" font-size="20" text-anchor="middle">.data</text>
+
+
+  <!-- Stack growth arrow -->
+  <path d="M 520 230 C 575 230, 575 262, 520 262" class="arrow"></path>
+  <text x="190" y="250" class="mono" font-size="20">stack grows ↓</text>
+
+
+
+</svg>
+</div>
+
+
+<p>
+  This conceptual division does not imply separate memories. All regions occupy the same RAM. The distinctions reflect
+  differing lifetimes, responsibilities, and access patterns rather than hardware boundaries.
+</p>
+
+<p>
+  With this broad spatial picture in mind, we can now examine the kinds of data that inhabit RAM and how their presence
+  influences runtime behaviour.
+</p>
+
+<h2>Global and Static Variables: Permanent Residents</h2>
+
+<p>
+  Within the RAM landscape, some data enjoys a remarkably stable existence. These are the variables whose lifetime spans
+  the entire execution of the program. They do not appear and disappear with function calls, nor do they depend on the
+  flow of control. Once initialized during system startup, they remain present for as long as the device is powered.
+</p>
+
+<p>
+  The most familiar members of this category are global variables. Defined outside all functions, they are accessible
+  throughout the program and retain their values across all execution paths. Their memory is allocated before
+  <code>main()</code> begins and remains reserved until execution ends.
+</p>
+
+<p>
+  Static variables share this same longevity, even though their visibility rules differ. A static variable defined inside
+  a function is created only once, not each time the function executes. Its scope may be local, but its lifetime is
+  global.
+</p>
+
+<div class="emphasis-line">
+  Lifetime and visibility are independent properties of a variable.
+</div>
+
+<p>
+  From the perspective of memory organization, both global and static variables behave identically. Their storage must
+  exist before execution begins. Their addresses must remain fixed. Their values must persist predictably. These
+  requirements naturally place them into RAM regions reserved for long-lived program state.
+</p>
+
+<p>
+  Some of these variables begin with explicit initial values, while others start as zero. Although their initialization
+  mechanisms differ, their runtime behaviour is the same: they occupy stable memory locations that do not move or
+  fluctuate during execution.
+</p>
+
+<p>
+  This stability is critical for program correctness. Because these variables have fixed addresses, any part of the
+  program may reference them safely. Their existence does not depend on stack depth, calling history, or execution
+  timing.
+</p>
+
+<p>
+  Yet not all data in RAM behaves with such predictability. Many variables possess lifetimes tied directly to execution,
+  expanding and contracting as functions run. To understand this more fluid form of memory usage, we must examine the
+  stack.
+</p>
+
+<h2>The Stack: Automatic and Dangerous</h2>
+
+<p>
+  Not all memory within RAM is reserved for the entire lifetime of the program. Many variables exist only while a
+  function is executing. They appear when execution enters a function and disappear when execution leaves. This
+  constantly shifting region of memory is known as the stack.
+</p>
+
+<p>
+  The defining characteristic of stack memory is its automatic nature. The programmer does not explicitly allocate or
+  free this space. Instead, the processor adjusts the stack as part of normal instruction execution. Function calls
+  expand it. Function returns contract it.
+</p>
+
+<div class="emphasis-line">
+  Stack memory is created and reclaimed purely by the flow of execution.
+</div>
+
+<p>
+  Each time a function begins execution, the system reserves space for its local variables, bookkeeping information,
+  and intermediate state. This collection of data is often called a stack frame. When the function finishes, the entire
+  frame is removed in a single step, restoring the previous memory state.
+</p>
+
+<p>
+  This behaviour makes the stack extremely efficient. Allocation requires no search, no tracking structures, and no
+  complex management logic. Memory grows and shrinks in a strict, predictable order that mirrors function invocation.
+</p>
+
+<p>
+  Yet this efficiency comes with constraints. Stack memory is limited by the fixed size of RAM. Every function call
+  consumes additional space. Deep call chains, large local arrays, or uncontrolled recursion can rapidly exhaust the
+  available region.
+</p>
+
+<style>
+  .image-block{
+    border: 2px dashed rgba(148,18,54,0.35);
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, #fff8de, #fdeecb);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  .title{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 800;
+    fill: #5b0b19;
+  }
+  .sub{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 520;
+    fill: rgba(91,11,25,0.85);
+  }
+  .label{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 740;
+    fill: #5b0b19;
+  }
+  .mono{
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    fill: rgba(91,11,25,0.75);
+  }
+
+  .card{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.20);
+    stroke-width: 2;
+    rx: 18;
+  }
+
+  .panel{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.18);
+    stroke-width: 2;
+    rx: 16;
+  }
+
+  .stackBox{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 16;
+  }
+
+  .frame{
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 12;
+  }
+
+  .frameA{ fill: #f6eaaf; }
+  .frameB{ fill: #ead3c1; }
+  .frameC{ fill: #ffffff; }
+
+  .free{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.12);
+    stroke-width: 2;
+    rx: 12;
+  }
+
+  .dashedGone{
+    fill: none;
+    stroke: rgba(148,18,54,0.35);
+    stroke-width: 2.5;
+    stroke-dasharray: 7 7;
+    rx: 12;
+  }
+
+  .arrow{
+    stroke: rgba(148,18,54,0.92);
+    stroke-width: 3.2;
+    fill: none;
+    marker-end: url(#arrowHead);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .spLine{
+    stroke: rgba(91,11,25,0.55);
+    stroke-width: 2;
+    stroke-dasharray: 5 6;
+  }
+
+  .spDot{
+    fill: rgba(148,18,54,0.92);
+  }
+</style>
+
+<div class="image-block">
+<svg viewBox="0 0 1200 560" style="width:100%; height:auto;" role="img"
+     aria-label="Stack growth: frames created on call and destroyed on return">
+
+  <defs>
+    <filter id="softShadow" x="-20%" y="-30%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="rgba(0,0,0,0.14)"/>
+    </filter>
+
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="rgba(148,18,54,0.92)"/>
+    </marker>
+  </defs>
+
+  <!-- Outer card -->
+  <rect x="30" y="24" width="1140" height="512" class="card" filter="url(#softShadow)"></rect>
+
+  <!-- Title -->
+  <text x="70" y="78" class="title" font-size="26">Stack Frames: Created on Call, Removed on Return</text>
+  <text x="70" y="108" class="sub" font-size="16">
+    The stack pointer moves downward as calls happen, and moves back up when functions return
+  </text>
+
+  <!-- Three step panels -->
+  <rect x="70" y="150" width="340" height="320" class="panel"></rect>
+  <rect x="430" y="150" width="340" height="320" class="panel"></rect>
+  <rect x="790" y="150" width="340" height="320" class="panel"></rect>
+
+  <text x="90" y="182" class="label" font-size="20">Step 1: in main()</text>
+  <text x="450" y="182" class="label" font-size="20">Step 2: call foo()</text>
+  <text x="810" y="182" class="label" font-size="20">Step 3: foo() returns</text>
+
+  <!-- Stack boxes coordinates -->
+  <!-- Each stack area is same size for visual consistency -->
+  <!-- (x, y) = (120, 210), (480, 210), (840, 210) -->
+  <!-- width=280 height=230 -->
+  <rect x="120" y="210" width="240" height="230" class="stackBox"></rect>
+  <rect x="480" y="210" width="240" height="230" class="stackBox"></rect>
+  <rect x="840" y="210" width="240" height="230" class="stackBox"></rect>
+
+  <!-- Address labels -->
+  <text x="110" y="225" class="mono" font-size="15" text-anchor="end">high</text>
+  <text x="110" y="440" class="mono" font-size="15" text-anchor="end">low</text>
+
+  <text x="470" y="225" class="mono" font-size="15" text-anchor="end">high</text>
+  <text x="470" y="440" class="mono" font-size="15" text-anchor="end">low</text>
+
+  <text x="830" y="225" class="mono" font-size="15" text-anchor="end">high</text>
+  <text x="830" y="440" class="mono" font-size="15" text-anchor="end">low</text>
+
+  <!-- Step 1 frames -->
+  <rect x="490" y="220" width="0" height="0" fill="none"></rect>
+  <rect x="130" y="240" width="220" height="55" class="frame frameA"></rect>
+  <text x="240" y="270" class="label" font-size="20" text-anchor="middle">main() frame</text>
+
+  <rect x="130" y="300" width="220" height="130" class="free"></rect>
+  <text x="240" y="370" class="mono" font-size="20" text-anchor="middle">free stack space</text>
+
+  <!-- SP for step 1 (below main frame) -->
+  <line x1="130" y1="295" x2="350" y2="295" class="spLine"></line>
+  <circle cx="350" cy="295" r="4.5" class="spDot"></circle>
+  <text x="365" y="299" class="mono" font-size="20">SP</text>
+
+  <!-- Step 2 frames (main + foo) -->
+  <rect x="490" y="240" width="220" height="55" class="frame frameA"></rect>
+  <text x="600" y="270" class="label" font-size="20" text-anchor="middle">main() frame</text>
+
+  <rect x="490" y="300" width="220" height="55" class="frame frameB"></rect>
+  <text x="600" y="330" class="label" font-size="20" text-anchor="middle">foo() frame</text>
+
+  <rect x="490" y="360" width="220" height="70" class="free"></rect>
+  <text x="600" y="403" class="mono" font-size="20" text-anchor="middle">free stack space</text>
+
+  <!-- SP for step 2 (below foo frame) -->
+  <line x1="490" y1="355" x2="710" y2="355" class="spLine"></line>
+  <circle cx="710" cy="355" r="4.5" class="spDot"></circle>
+  <text x="715" y="359" class="mono" font-size="20">SP</text>
+
+  <!-- Step 3: foo frame removed (dashed placeholder), SP returns up -->
+  <rect x="850" y="240" width="220" height="55" class="frame frameA"></rect>
+  <text x="960" y="270" class="label" font-size="20" text-anchor="middle">main() frame</text>
+
+  <!-- dashed "was foo frame here" -->
+  <rect x="850" y="300" width="220" height="55" class="dashedGone"></rect>
+  <text x="960" y="333" class="mono" font-size="20" text-anchor="middle">foo() frame freed</text>
+
+  <rect x="850" y="360" width="220" height="70" class="free"></rect>
+  <text x="960" y="403" class="mono" font-size="20" text-anchor="middle">free stack space</text>
+
+  <!-- SP for step 3 returns to below main frame -->
+  <line x1="850" y1="295" x2="1070" y2="295" class="spLine"></line>
+  <circle cx="1070" cy="295" r="4.5" class="spDot"></circle>
+  <text x="1075" y="299" class="mono" font-size="20">SP</text>
+
+  <!-- Call + return arrows between panels -->
+  <path d="M 410 310 C 425 310, 425 310, 430 310" class="arrow"></path>
+  <text x="380" y="350" class="mono" font-size="18">call foo()</text>
+
+  <path d="M 770 310 C 785 310, 785 310, 790 310" class="arrow"></path>
+  <text x="750" y="350" class="mono" font-size="18">return</text>
+
+  <!-- Footer -->
+  <text x="70" y="512" class="sub" font-size="20">
+    Returning from a function doesn’t “erase” bytes — it simply moves SP upward, making that space available again.
+  </text>
+
+</svg>
+</div>
+
+
+<p>
+  Unlike global variables, whose memory remains stable, stack memory is inherently transient. Addresses used by one
+  function may later be reused by another. Data stored on the stack therefore has a strictly bounded lifetime tied to
+  execution context.
+</p>
+
+<div class="emphasis-line">
+  Using stack memory beyond its lifetime leads to undefined behaviour.
+</div>
+
+<p>
+  The stack is also vulnerable to a more severe failure mode. If its growth exceeds the available RAM, it may overwrite
+  other memory regions, corrupting program state in ways that are often difficult to diagnose. These risks make stack
+  usage one of the most critical considerations in embedded system design.
+</p>
+
+<p>
+  While the stack is managed implicitly by execution, another region of RAM follows very different rules. Its usage is
+  flexible, explicitly controlled, and potentially more hazardous. This region is known as the heap.
+</p>
+
+<h2>The Heap: Flexible but Risky</h2>
+
+<p>
+  Unlike stack memory, whose growth and contraction are governed entirely by the flow of execution, the heap represents
+  a region of RAM managed through explicit requests. Memory is not automatically reserved when functions execute.
+  Instead, the program asks for space when needed and returns it when no longer required.
+</p>
+
+<p>
+  This model enables a different kind of flexibility. Data structures whose size cannot be determined at compile time,
+  buffers whose lifetimes extend beyond a single function, or objects created conditionally during execution can all be
+  accommodated within heap memory.
+</p>
+
+<div class="emphasis-line">
+  Heap memory exists to support dynamic and unpredictable storage requirements.
+</div>
+
+<p>
+  Allocation from the heap is performed through runtime mechanisms rather than simple pointer adjustments. The system
+  must search for available regions, track used blocks, and maintain internal bookkeeping structures. Unlike the stack,
+  where memory follows a strict last-in-first-out discipline, heap usage may fragment over time.
+</p>
+
+<p>
+  This flexibility comes at a cost. Allocation and deallocation introduce computational overhead. Memory may become
+  divided into non-contiguous free regions. Predicting the exact state of the heap at an arbitrary moment becomes
+  difficult.
+</p>
+
+<style>
+  .image-block{
+    border: 2px dashed rgba(148,18,54,0.35);
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, #fff8de, #fdeecb);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  .title{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 850;
+    fill: #5b0b19;
+    letter-spacing: 0.2px;
+  }
+  .sub{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 520;
+    fill: rgba(91,11,25,0.86);
+  }
+  .label{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 760;
+    fill: #5b0b19;
+  }
+  .mono{
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    fill: rgba(91,11,25,0.78);
+  }
+
+  .card{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.18);
+    stroke-width: 2;
+    rx: 18; ry: 18;
+  }
+  .rowTitle{
+    fill: rgba(148,18,54,0.08);
+    stroke: rgba(148,18,54,0.14);
+    stroke-width: 2;
+    rx: 14; ry: 14;
+  }
+  .panel{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.18);
+    stroke-width: 2;
+    rx: 16; ry: 16;
+  }
+
+  .memBox{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 16; ry: 16;
+  }
+
+  .blk{
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 10; ry: 10;
+  }
+  .A{ fill: #f6eaaf; }
+  .B{ fill: #ead3c1; }
+  .C{ fill: #fffaf0; }
+  .D{ fill: #ffffff; }
+
+  .free{
+    fill: none;
+    stroke: rgba(148,18,54,0.55);
+    stroke-width: 2.6;
+    stroke-dasharray: 7 7;
+    rx: 10; ry: 10;
+  }
+
+  .spLine{
+    stroke: rgba(91,11,25,0.55);
+    stroke-width: 2.2;
+    stroke-dasharray: 6 6;
+  }
+  .hpLine{
+    stroke: rgba(91,11,25,0.55);
+    stroke-width: 2.2;
+    stroke-dasharray: 6 6;
+  }
+  .dot{ fill: rgba(148,18,54,0.92); }
+
+  .arrow{
+    stroke: rgba(148,18,54,0.92);
+    stroke-width: 3.2;
+    fill: none;
+    marker-end: url(#arrowHead);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .tag{
+    fill: rgba(148,18,54,0.10);
+    stroke: rgba(148,18,54,0.18);
+    stroke-width: 2;
+    rx: 999; ry: 999;
+  }
+
+  .xMark{
+    stroke: rgba(148,18,54,0.65);
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+</style>
+
+<div class="image-block">
+<svg viewBox="0 0 1400 720" style="width:100%; height:auto;" role="img"
+     aria-label="Clear comparison: Stack is LIFO; Heap alloc/free causes fragmentation">
+
+  <defs>
+    <filter id="softShadow" x="-20%" y="-30%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="rgba(0,0,0,0.14)"/>
+    </filter>
+
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="rgba(148,18,54,0.92)"/>
+    </marker>
+  </defs>
+
+  <!-- Outer card -->
+  <rect x="30" y="24" width="1340" height="672" class="card" filter="url(#softShadow)"></rect>
+
+  <!-- Title -->
+  <text x="70" y="78" class="title" font-size="28">Heap vs Stack (Clear Mental Model)</text>
+  <text x="70" y="110" class="sub" font-size="18">
+    Stack grows/shrinks in one clean direction (LIFO). Heap can allocate/free in any order → holes (fragmentation).
+  </text>
+
+  <!-- Column headers (Step 1/2/3) -->
+  <rect x="360" y="140" width="250" height="40" class="tag"></rect>
+  <rect x="645" y="140" width="250" height="40" class="tag"></rect>
+  <rect x="930" y="140" width="250" height="40" class="tag"></rect>
+
+  <text x="485" y="166" class="label" font-size="20" text-anchor="middle">Step 1</text>
+  <text x="770" y="166" class="label" font-size="20" text-anchor="middle">Step 2</text>
+  <text x="1055" y="166" class="label" font-size="20" text-anchor="middle">Step 3</text>
+
+  <!-- Row titles -->
+  <rect x="70" y="195" width="280" height="210" class="rowTitle"></rect>
+  <text x="95" y="235" class="label" font-size="20">STACK (LIFO)</text>
+  <text x="95" y="262" class="sub" font-size="20">call → frame pushed</text>
+  <text x="95" y="286" class="sub" font-size="20">return → frame popped</text>
+
+  <rect x="70" y="435" width="280" height="210" class="rowTitle"></rect>
+  <text x="95" y="475" class="label" font-size="20">HEAP (irregular)</text>
+  <text x="95" y="502" class="sub" font-size="20">malloc → block placed</text>
+  <text x="95" y="526" class="sub" font-size="20">free → holes can appear</text>
+
+  <!-- Panels: STACK row -->
+  <rect x="360" y="195" width="250" height="210" class="panel"></rect>
+  <rect x="645" y="195" width="250" height="210" class="panel"></rect>
+  <rect x="930" y="195" width="250" height="210" class="panel"></rect>
+
+  <!-- Panels: HEAP row -->
+  <rect x="360" y="435" width="250" height="210" class="panel"></rect>
+  <rect x="645" y="435" width="250" height="210" class="panel"></rect>
+  <rect x="930" y="435" width="250" height="210" class="panel"></rect>
+
+  <!-- ===== STACK STEP 1 ===== -->
+  <text x="375" y="220" class="mono" font-size="20">State: in main()</text>
+  <rect x="405" y="235" width="160" height="150" class="memBox"></rect>
+  <text x="395" y="250" class="mono" font-size="16" text-anchor="end">high</text>
+  <text x="395" y="383" class="mono" font-size="16" text-anchor="end">low</text>
+
+  <rect x="417" y="260" width="136" height="40" class="blk A"></rect>
+  <text x="485" y="286" class="label" font-size="20" text-anchor="middle">main()</text>
+
+  <rect x="417" y="305" width="136" height="70" class="blk D"></rect>
+  <text x="485" y="345" class="mono" font-size="20" text-anchor="middle">free space</text>
+
+  <line x1="417" y1="300" x2="553" y2="300" class="spLine"></line>
+  <circle cx="553" cy="300" r="4" class="dot"></circle>
+  <text x="558" y="304" class="mono" font-size="20">SP</text>
+
+  <!-- ===== STACK STEP 2 ===== -->
+  <text x="660" y="220" class="mono" font-size="20">Action: call foo()</text>
+  <rect x="690" y="235" width="160" height="150" class="memBox"></rect>
+  <text x="680" y="250" class="mono" font-size="16" text-anchor="end">high</text>
+  <text x="680" y="383" class="mono" font-size="16" text-anchor="end">low</text>
+
+  <rect x="702" y="260" width="136" height="40" class="blk A"></rect>
+  <text x="770" y="286" class="label" font-size="20" text-anchor="middle">main()</text>
+
+  <rect x="702" y="305" width="136" height="40" class="blk B"></rect>
+  <text x="770" y="331" class="label" font-size="20" text-anchor="middle">foo()</text>
+
+  <rect x="702" y="350" width="136" height="25" class="blk D"></rect>
+  <text x="770" y="366" class="mono" font-size="20" text-anchor="middle">free</text>
+
+  <line x1="702" y1="345" x2="838" y2="345" class="spLine"></line>
+  <circle cx="838" cy="345" r="4" class="dot"></circle>
+  <text x="843" y="349" class="mono" font-size="20">SP</text>
+
+  <!-- ===== STACK STEP 3 ===== -->
+  <text x="945" y="220" class="mono" font-size="20">Action: return from foo()</text>
+  <rect x="975" y="235" width="160" height="150" class="memBox"></rect>
+  <text x="965" y="250" class="mono" font-size="16" text-anchor="end">high</text>
+  <text x="965" y="383" class="mono" font-size="16" text-anchor="end">low</text>
+
+  <rect x="987" y="260" width="136" height="40" class="blk A"></rect>
+  <text x="1055" y="286" class="label" font-size="20" text-anchor="middle">main()</text>
+
+  <!-- show freed frame as dashed outline -->
+  <rect x="987" y="305" width="136" height="40" class="free"></rect>
+  <text x="1055" y="331" class="mono" font-size="16" text-anchor="middle">foo() freed</text>
+
+  <rect x="987" y="350" width="136" height="25" class="blk D"></rect>
+  <text x="1055" y="366" class="mono" font-size="16" text-anchor="middle">free</text>
+
+  <line x1="987" y1="300" x2="1123" y2="300" class="spLine"></line>
+  <circle cx="1123" cy="300" r="4" class="dot"></circle>
+  <text x="1128" y="304" class="mono" font-size="20">SP</text>
+
+  <!-- Stack arrows between steps -->
+  <path d="M 610 300 C 630 300, 630 300, 645 300" class="arrow"></path>
+  <path d="M 895 300 C 915 300, 915 300, 930 300" class="arrow"></path>
+
+  <!-- ===== HEAP STEP 1 ===== -->
+  <text x="375" y="460" class="mono" font-size="20">Start: empty heap</text>
+  <rect x="405" y="475" width="160" height="150" class="memBox"></rect>
+  <text x="395" y="490" class="mono" font-size="16" text-anchor="end">low</text>
+  <text x="395" y="623" class="mono" font-size="16" text-anchor="end">high</text>
+
+  <rect x="417" y="500" width="136" height="110" class="blk D"></rect>
+  <text x="485" y="560" class="mono" font-size="20" text-anchor="middle">free space</text>
+  <line x1="417" y1="610" x2="553" y2="610" class="hpLine"></line>
+  <circle cx="553" cy="610" r="4" class="dot"></circle>
+  <text x="558" y="614" class="mono" font-size="16">heap end</text>
+
+  <!-- ===== HEAP STEP 2 ===== -->
+  <text x="660" y="460" class="mono" font-size="14">malloc A, malloc B, malloc C</text>
+  <rect x="690" y="475" width="160" height="150" class="memBox"></rect>
+  <text x="680" y="490" class="mono" font-size="16" text-anchor="end">low</text>
+  <text x="680" y="623" class="mono" font-size="16" text-anchor="end">high</text>
+
+  <rect x="702" y="500" width="136" height="28" class="blk A"></rect>
+  <text x="770" y="519" class="mono" font-size="12" text-anchor="middle">A</text>
+
+  <rect x="702" y="532" width="136" height="28" class="blk B"></rect>
+  <text x="770" y="551" class="mono" font-size="12" text-anchor="middle">B</text>
+
+  <rect x="702" y="564" width="136" height="28" class="blk C"></rect>
+  <text x="770" y="583" class="mono" font-size="12" text-anchor="middle">C</text>
+
+  <rect x="702" y="596" width="136" height="18" class="blk D"></rect>
+  <text x="770" y="610" class="mono" font-size="10" text-anchor="middle">free</text>
+
+  <line x1="702" y1="614" x2="838" y2="614" class="hpLine"></line>
+  <circle cx="838" cy="614" r="4" class="dot"></circle>
+  <text x="843" y="618" class="mono" font-size="16">heap end</text>
+
+  <!-- ===== HEAP STEP 3 ===== -->
+  <text x="945" y="460" class="mono" font-size="15">free(B) then malloc D (small)</text>
+  <rect x="975" y="475" width="160" height="150" class="memBox"></rect>
+  <text x="965" y="490" class="mono" font-size="11" text-anchor="end">low</text>
+  <text x="965" y="623" class="mono" font-size="11" text-anchor="end">high</text>
+
+  <rect x="987" y="500" width="136" height="28" class="blk A"></rect>
+  <text x="1055" y="519" class="mono" font-size="11" text-anchor="middle">A</text>
+
+  <!-- Hole where B was -->
+  <rect x="987" y="532" width="136" height="28" class="free"></rect>
+  <text x="1055" y="551" class="mono" font-size="11" text-anchor="middle">hole</text>
+
+  <rect x="987" y="564" width="136" height="28" class="blk C"></rect>
+  <text x="1055" y="583" class="mono" font-size="11" text-anchor="middle">C</text>
+
+  <!-- D allocated elsewhere (could not fit / allocator chose end) -->
+  <rect x="987" y="596" width="82" height="18" class="blk B"></rect>
+  <text x="1028" y="610" class="mono" font-size="10" text-anchor="middle">D</text>
+
+  <!-- show fragmentation meaning: remaining free is split -->
+  <line x1="1072" y1="596" x2="1123" y2="596" class="xMark"></line>
+  <line x1="1072" y1="614" x2="1123" y2="596" class="xMark"></line>
+
+  <line x1="987" y1="614" x2="1123" y2="614" class="hpLine"></line>
+  <circle cx="1123" cy="614" r="4" class="dot"></circle>
+  <text x="1128" y="618" class="mono" font-size="11">heap end</text>
+
+  <!-- Heap arrows between steps -->
+  <path d="M 610 560 C 630 560, 630 560, 645 560" class="arrow"></path>
+  <path d="M 895 560 C 915 560, 915 560, 930 560" class="arrow"></path>
+
+  <!-- Bottom punchline -->
+  <text x="70" y="680" class="sub" font-size="17">
+    Key contrast: stack “undoes” allocations automatically on return; heap needs bookkeeping, can fragment, and may fail even when total free bytes look “enough”.
+  </text>
+
+</svg>
+</div>
+
+
+<p>
+  In embedded systems, these characteristics require careful consideration. RAM is limited, execution timing may be
+  critical, and memory fragmentation can lead to failures that appear non-deterministic. A program may request memory
+  successfully many times, only to fail later despite substantial total free space.
+</p>
+
+<div class="emphasis-line">
+  Heap failures are often caused by fragmentation rather than exhaustion.
+</div>
+
+<p>
+  Yet the heap is not inherently problematic. It is a necessary mechanism for certain classes of problems. Its risks
+  arise not from its existence, but from misuse, misunderstanding, or inappropriate reliance in constrained
+  environments.
+</p>
+
+<p>
+  Importantly, both stack and heap draw from the same underlying RAM. Their boundaries are not enforced by separate
+  hardware, but by conventions established during linking and runtime initialization. Under certain conditions, these
+  regions may collide.
+</p>
+
+<h2>When Stack and Heap Collide</h2>
+
+<p>
+  Although the stack and heap are discussed as distinct regions of memory, they are not separate physical entities.
+  Both occupy the same RAM. Their apparent separation exists only because the runtime environment assigns them
+  different starting points and growth conventions.
+</p>
+
+<p>
+  In many microcontroller systems, the stack begins near the upper boundary of RAM and grows downward. The heap begins
+  near the lower boundary and grows upward. Between them lies a region of uncommitted space, memory that either side
+  may eventually consume.
+</p>
+
+<div class="emphasis-line">
+  Stack and heap are opposing claimants on a shared resource.
+</div>
+
+<p>
+  Under normal conditions, this arrangement works invisibly. Function calls expand and contract the stack. Dynamic
+  allocations expand and contract the heap. As long as sufficient space remains between them, the system behaves
+  predictably.
+</p>
+
+<p>
+  The danger emerges when growth assumptions fail. A deeply nested call sequence, a large local buffer, or unexpected
+  recursion may drive the stack downward beyond anticipated limits. Similarly, repeated dynamic allocations may push
+  the heap upward.
+</p>
+
+<p>
+  Because neither region is typically aware of the other’s instantaneous position, nothing inherently prevents their
+  boundaries from crossing. When this happens, memory corruption begins silently.
+</p>
+
+<style>
+  .image-block{
+    border: 2px dashed rgba(148,18,54,0.35);
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, #fff8de, #fdeecb);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+  }
+
+  .title{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 850;
+    fill: #5b0b19;
+  }
+
+  .label{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 740;
+    fill: #5b0b19;
+  }
+
+  .mono{
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    fill: rgba(91,11,25,0.75);
+  }
+
+  .mem{
+    fill: white;
+    stroke: rgba(148,18,54,0.25);
+    stroke-width: 2;
+    rx: 16;
+  }
+
+  .heap{ fill: #ead3c1; }
+  .stack{ fill: #f6eaaf; }
+  .free{ fill: #ffffff; }
+
+  .danger{
+    fill: rgba(255, 80, 80, 0.18);
+    stroke: rgba(200,0,0,0.45);
+    stroke-width: 2;
+    stroke-dasharray: 6 6;
+  }
+
+  .arrow{
+    stroke: rgba(148,18,54,0.9);
+    stroke-width: 3;
+    marker-end: url(#arrowHead);
+    fill: none;
+  }
+</style>
+
+<div class="image-block">
+<svg viewBox="0 0 1200 520" style="width:100%; height:auto;" role="img"
+     aria-label="Stack Heap collision showing opposing growth directions">
+
+  <defs>
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="rgba(148,18,54,0.9)"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="60" y="70" class="title" font-size="28">
+    Stack – Heap Collision
+  </text>
+
+  <!-- Time labels -->
+  <text x="170" y="110" class="label" font-size="20">Early Execution</text>
+  <text x="510" y="110" class="label" font-size="20">Memory Pressure</text>
+  <text x="870" y="110" class="label" font-size="20">Collision</text>
+
+  <!-- ===== EARLY ===== -->
+  <rect x="120" y="140" width="220" height="300" class="mem"/>
+
+  <rect x="140" y="380" width="180" height="40" class="heap"/>
+  <text x="230" y="405" class="mono" font-size="20" text-anchor="middle">Heap</text>
+
+  <rect x="140" y="160" width="180" height="40" class="stack"/>
+  <text x="230" y="185" class="mono" font-size="20" text-anchor="middle">Stack</text>
+
+  <rect x="140" y="210" width="180" height="160" class="free"/>
+  <text x="230" y="295" class="mono" font-size="20" text-anchor="middle">Free Space</text>
+
+  <!-- ===== PRESSURE ===== -->
+  <rect x="470" y="140" width="220" height="300" class="mem"/>
+
+  <rect x="490" y="340" width="180" height="80" class="heap"/>
+  <text x="580" y="385" class="mono" font-size="20" text-anchor="middle">Heap Growing</text>
+
+  <rect x="490" y="160" width="180" height="80" class="stack"/>
+  <text x="580" y="205" class="mono" font-size="20" text-anchor="middle">Stack Growing</text>
+
+  <rect x="490" y="250" width="180" height="80" class="free"/>
+  <text x="580" y="295" class="mono" font-size="16" text-anchor="middle">Shrinking Free Space</text>
+
+  <!-- Growth arrows -->
+  <path d="M 700 370 C 730 370, 730 410, 700 410" class="arrow"/>
+  <path d="M 700 200 C 730 200, 730 160, 700 160" class="arrow"/>
+
+  <!-- ===== COLLISION ===== -->
+  <rect x="820" y="140" width="220" height="300" class="mem"/>
+
+  <rect x="840" y="160" width="180" height="120" class="stack"/>
+  <rect x="840" y="280" width="180" height="120" class="heap"/>
+
+  <!-- Overlap danger -->
+  <rect x="840" y="260" width="180" height="40" class="danger"/>
+  <text x="930" y="287" class="label" font-size="20" text-anchor="middle">
+    Memory Corruption
+  </text>
+
+</svg>
+</div>
+
+
+<p>
+  What makes this failure mode particularly insidious is its unpredictability. The system may operate correctly for long
+  periods before exhibiting faults. Minor variations in execution path, interrupt timing, or input data may influence
+  whether a collision occurs.
+</p>
+
+<div class="emphasis-line">
+  Stack–heap collisions often manifest as non-deterministic failures.
+</div>
+
+<p>
+  Unlike high-level computing environments, microcontrollers typically lack hardware-enforced memory protection.
+  Overwrites therefore do not trigger immediate exceptions. Instead, unrelated variables change unexpectedly,
+  return addresses become corrupted, and program flow destabilizes.
+</p>
+
+<p>
+  For this reason, embedded system design treats RAM not merely as capacity but as a carefully budgeted structure.
+  Stack depth, allocation strategy, and memory margins become critical engineering concerns rather than secondary
+  implementation details.
+</p>
+
+<p>
+  To reason effectively about these risks, we must next examine how the boundaries of RAM are defined and how the
+  runtime environment interprets them.
+</p>
+
+<h2>Who Defines These Boundaries?</h2>
+
+<p>
+  The stack and heap do not choose their starting positions dynamically. Their locations are determined long before the
+  program ever executes. What appears during runtime as organic memory growth is, in reality, governed by decisions made
+  during the build process.
+</p>
+
+<p>
+  A microcontroller’s RAM is a finite address range. Within this range, the program’s various regions must be arranged
+  so that initialized variables, zero-initialized variables, stack space, and optional heap space can coexist without
+  ambiguity. This arrangement is not inferred automatically from source code.
+</p>
+
+<div class="emphasis-line">
+  Memory boundaries are defined by the program’s linked memory layout.
+</div>
+
+<p>
+  During linking, program sections are assigned precise addresses based on the memory map of the device. Regions for
+  global data are fixed. Space for the stack is reserved. If heap usage is enabled, an allocation region is also
+  designated. These boundaries reflect design choices rather than runtime discoveries.
+</p>
+
+<p>
+  The runtime system merely operates within this predefined structure. When a function executes, stack growth occurs
+  within the allocated stack region. When memory is requested dynamically, allocations draw from the designated heap
+  area. Neither region expands beyond RAM; both are constrained by layout decisions already embedded in the program
+  image.
+</p>
+
+<!-- Drop-in SVG block: RAM boundary definition (stack at TOP, heap below .bss) -->
+<style>
+  .image-block{
+    border: 2px dashed rgba(148,18,54,0.35);
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, #fff8de, #fdeecb);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  .title{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 850;
+    fill: #5b0b19;
+    letter-spacing: 0.2px;
+  }
+  .sub{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 520;
+    fill: rgba(91,11,25,0.86);
+  }
+  .label{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 760;
+    fill: #5b0b19;
+  }
+  .mono{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    fill: rgba(91,11,25,0.78);
+  }
+
+  .card{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.18);
+    stroke-width: 2;
+    rx: 18; ry: 18;
+  }
+
+  .ram{
+    fill: #ffffff;
+    stroke: rgba(148,18,54,0.25);
+    stroke-width: 2.2;
+    rx: 18; ry: 18;
+  }
+
+  .seg{
+    stroke: rgba(148,18,54,0.22);
+    stroke-width: 2;
+    rx: 12; ry: 12;
+  }
+
+  .dataFill{ fill: #ead3c1; }
+  .bssFill{ fill: #f6eaaf; }
+  .stackFill{ fill: #f6eaaf; }
+  .heapFill{ fill: #ead3c1; }
+
+  .freeFill{ fill: #ffffff; }
+
+  .boundary{
+    stroke: rgba(148,18,54,0.55);
+    stroke-width: 2;
+    stroke-dasharray: 7 7;
+  }
+
+  .arrow{
+    stroke: rgba(148,18,54,0.9);
+    stroke-width: 3.2;
+    fill: none;
+    marker-end: url(#arrowHead);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .noteBox{
+    fill: rgba(148,18,54,0.06);
+    stroke: rgba(148,18,54,0.14);
+    stroke-width: 2;
+    rx: 14; ry: 14;
+  }
+
+  .hatch-line{
+    stroke: rgba(148,18,54,0.10);
+    stroke-width: 2;
+  }
+</style>
+
+<div class="image-block">
+<svg viewBox="0 0 1200 560" style="width:100%; height:auto;" role="img"
+     aria-label="RAM boundary definition showing .data, .bss, heap start, stack top, and fixed RAM limits">
+
+  <defs>
+    <filter id="softShadow" x="-20%" y="-30%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="rgba(0,0,0,0.14)"/>
+    </filter>
+
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="rgba(148,18,54,0.9)"/>
+    </marker>
+
+    <pattern id="freeHatch" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 0 10 L 10 0" class="hatch-line"></path>
+    </pattern>
+  </defs>
+
+  <!-- Outer card -->
+  <rect x="30" y="24" width="1140" height="512" class="card" filter="url(#softShadow)"></rect>
+
+  <!-- Title -->
+  <text x="70" y="78" class="title" font-size="26">RAM Boundary Definition (Linker View)</text>
+  <text x="70" y="108" class="sub" font-size="20">
+    .data/.bss sit at low addresses • heap grows upward • stack starts at the top of RAM and grows downward
+  </text>
+
+  <!-- RAM container -->
+  <rect x="140" y="140" width="340" height="360" class="ram"></rect>
+
+  <!-- Fixed RAM limits -->
+  <text x="540" y="160" class="mono" font-size="20" text-anchor="end">RAM_START</text>
+  <text x="520" y="498" class="mono" font-size="20" text-anchor="end">RAM_END</text>
+
+  <!-- Boundary: stack top at very top of RAM -->
+  <line x1="160" y1="165" x2="460" y2="165" class="boundary"></line>
+  <text x="00" y="170" class="mono" font-size="14">__stack_top (initial SP)</text>
+
+  <!-- Stack used region at top -->
+  <rect x="160" y="175" width="300" height="55" class="seg stackFill"></rect>
+  <text x="310" y="205" class="label" font-size="20" text-anchor="middle">STACK (in use)</text>
+  <text x="310" y="224" class="mono" font-size="18" text-anchor="middle">grows ↓</text>
+
+  <!-- Arrow: stack grows downward -->
+  <path d="M 485 205 C 540 205, 540 260, 485 260" class="arrow"></path>
+  <text x="50" y="238" class="mono" font-size="16">stack growth</text>
+
+  <!-- .data -->
+  <rect x="160" y="395" width="300" height="45" class="seg dataFill"></rect>
+  <text x="310" y="422" class="label" font-size="20" text-anchor="middle">.data</text>
+  <text x="310" y="440" class="mono" font-size="16" text-anchor="middle">initialized globals</text>
+
+  <!-- .bss -->
+  <rect x="160" y="345" width="300" height="45" class="seg bssFill"></rect>
+  <text x="310" y="372" class="label" font-size="20" text-anchor="middle">.bss</text>
+  <text x="310" y="390" class="mono" font-size="16" text-anchor="middle">zeroed globals</text>
+
+  <!-- Boundary: heap start just after .bss -->
+  <line x1="160" y1="335" x2="460" y2="335" class="boundary"></line>
+  <text x="50" y="340" class="mono" font-size="16">__heap_start</text>
+
+  <!-- Heap (in use) near low side -->
+  <rect x="160" y="285" width="300" height="45" class="seg heapFill"></rect>
+  <text x="310" y="312" class="label" font-size="20" text-anchor="middle">HEAP (in use)</text>
+  <text x="310" y="330" class="mono" font-size="16" text-anchor="middle">grows ↑</text>
+
+  <!-- Arrow: heap grows upward -->
+  <path d="M 485 312 C 540 312, 540 285, 485 285" class="arrow"></path>
+  <text x="50" y="300" class="mono" font-size="16">heap growth</text>
+
+  <!-- Free space between heap and stack -->
+  <rect x="160" y="235" width="300" height="45" class="seg freeFill"></rect>
+  <rect x="160" y="235" width="300" height="45" class="seg" fill="url(#freeHatch)"></rect>
+  <text x="310" y="263" class="label" font-size="20" text-anchor="middle">FREE SPACE</text>
+
+  <!-- Small address direction hints -->
+  <text x="170" y="158" class="mono" font-size="16">high addr</text>
+  <text x="170" y="492" class="mono" font-size="16">low addr</text>
+
+  <!-- Notes panel -->
+  <rect x="560" y="170" width="560" height="210" class="noteBox"></rect>
+  <text x="585" y="205" class="label" font-size="20">What the linker “defines”</text>
+
+  <text x="585" y="235" class="sub" font-size="16">
+    <tspan class="mono">RAM_START / RAM_END</tspan> come from the MEMORY region in the linker script.
+  </text>
+  <text x="585" y="262" class="sub" font-size="16">
+    <tspan class="mono">__stack_top</tspan> is usually set to the top of RAM (initial stack pointer).
+  </text>
+  <text x="585" y="289" class="sub" font-size="16">
+    <tspan class="mono">__heap_start</tspan> is usually set just after <tspan class="mono">.bss</tspan> (end of statics).
+  </text>
+  <text x="585" y="316" class="sub" font-size="16">
+    Heap and stack share the remaining space — collision means memory corruption.
+  </text>
+
+  <!-- Footer -->
+  <text x="70" y="520" class="sub" font-size="18">
+    Note: “Stack (in use)” and “Heap (in use)” show current usage; the boundaries are fixed by the linker, usage grows at runtime.
+  </text>
+
+</svg>
+</div>
+
+
+<p>
+  From this perspective, memory behavior becomes easier to reason about. Stack overflows, heap exhaustion, and region
+  collisions are not mysterious runtime anomalies. They are consequences of how RAM was partitioned relative to program
+  demands.
+</p>
+
+<p>
+  Understanding this layout is therefore not an academic exercise. It is a practical requirement for predicting system
+  stability, especially in memory-constrained embedded environments.
+</p>
+
+<p>
+  To make this reasoning more concrete, we now examine how these regions appear within the RAM address space and how
+  their sizes influence one another.
+</p>
+
+<h2>A Spatial View of RAM Regions</h2>
+
+<p>
+  To reason clearly about stack, heap, and global data, it is useful to momentarily step away from variables and consider
+  RAM purely as an address space. From the processor’s perspective, RAM is simply a continuous sequence of numbered
+  locations. Every byte occupies a unique address. Every access refers to one of these numerical positions.
+</p>
+
+<p>
+  This continuity is fundamental. RAM is not divided by physical walls separating sections. The distinctions between
+  regions exist only because certain address ranges are assigned specific responsibilities by the program’s memory
+  layout.
+</p>
+
+<div class="emphasis-line">
+  Memory regions are logical interpretations of a continuous address range.
+</div>
+
+<p>
+  Imagine RAM as a long strip of addresses beginning at a lower boundary and ending at an upper boundary. Within this
+  strip, portions are reserved for different purposes. Some ranges hold global variables. Some ranges serve dynamic
+  allocation. Some ranges accommodate stack frames generated by execution.
+</p>
+
+<style>
+  .image-block{
+    border: 2px dashed rgba(148,18,54,0.35);
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, #fff8de, #fdeecb);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+  }
+
+  .title{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 850;
+    fill: #5b0b19;
+  }
+
+  .label{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-weight: 740;
+    fill: #5b0b19;
+  }
+
+  .mono{
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    fill: rgba(91,11,25,0.75);
+  }
+
+  .ram{
+    fill: white;
+    stroke: rgba(148,18,54,0.25);
+    stroke-width: 2.2;
+    rx: 18;
+  }
+
+  .seg{
+    stroke: rgba(148,18,54,0.18);
+    stroke-width: 2;
+    rx: 10;
+  }
+
+  .data{ fill: #ead3c1; }
+  .bss{ fill: #f6eaaf; }
+  .heap{ fill: #ead3c1; }
+  .stack{ fill: #f6eaaf; }
+  .free{ fill: #ffffff; }
+
+  .arrow{
+    stroke: rgba(148,18,54,0.85);
+    stroke-width: 3;
+    fill: none;
+    marker-end: url(#arrowHead);
+  }
+</style>
+
+<div class="image-block">
+<svg viewBox="0 0 900 520" style="width:100%; height:auto;" role="img"
+     aria-label="Linear RAM address model showing stack and heap growth">
+
+  <defs>
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="rgba(148,18,54,0.85)"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="60" y="60" class="title" font-size="26">
+    Linear RAM Address Model
+  </text>
+
+  <!-- RAM container -->
+  <rect x="140" y="90" width="220" height="380" class="ram"/>
+
+  <!-- Address direction -->
+  <text x="180" y="110" class="mono" font-size="24" text-anchor="end">High Address</text>
+  <text x="180" y="470" class="mono" font-size="24" text-anchor="end">Low Address</text>
+
+  <!-- Stack (top) -->
+  <rect x="160" y="120" width="180" height="70" class="seg stack"/>
+  <text x="250" y="160" class="label" font-size="20" text-anchor="middle">Stack</text>
+
+  <!-- Free space -->
+  <rect x="160" y="195" width="180" height="90" class="seg free"/>
+  <text x="250" y="245" class="mono" font-size="20" text-anchor="middle">Free Space</text>
+
+  <!-- Heap -->
+  <rect x="160" y="290" width="180" height="55" class="seg heap"/>
+  <text x="250" y="322" class="label" font-size="20" text-anchor="middle">Heap</text>
+
+  <!-- .bss -->
+  <rect x="160" y="350" width="180" height="55" class="seg bss"/>
+  <text x="250" y="382" class="label" font-size="20" text-anchor="middle">.bss</text>
+
+  <!-- .data -->
+  <rect x="160" y="410" width="180" height="45" class="seg data"/>
+  <text x="250" y="438" class="label" font-size="20" text-anchor="middle">.data</text>
+
+  <!-- Growth arrows -->
+  <path d="M 390 155 C 430 155, 430 200, 390 200" class="arrow"/>
+  <text x="440" y="200" class="mono" font-size="20">Stack grows ↓</text>
+
+  <path d="M 390 318 C 430 318, 430 290, 390 290" class="arrow"/>
+  <text x="440" y="305" class="mono" font-size="20">Heap grows ↑</text>
+
+</svg>
+</div>
+
+
+<p>
+  The placement of these regions is not arbitrary. Global data typically occupies lower addresses, forming a stable base
+  that does not change during execution. The stack, by contrast, often begins near the upper boundary and moves as
+  functions execute. The heap may grow upward from the data region depending on allocation demands.
+</p>
+
+<p>
+  What matters most is that all regions share the same underlying memory. When the stack grows, it consumes addresses
+  previously unused. When the heap expands, it claims from the same pool. The processor itself sees only addresses being
+  read and written, unaware of the conceptual labels programmers attach to them.
+</p>
+
+<div class="emphasis-line">
+  Stack and heap movement is simply pointer movement within the same address space.
+</div>
+
+<p>
+  This spatial perspective removes much confusion. Overflows, collisions, and corruption are not mysterious events. They
+  are direct consequences of one region advancing into addresses expected to belong to another.
+</p>
+
+<p>
+  With this address-based model established, we can now examine how memory consumption decisions influence system
+  stability and why embedded engineers pay close attention to region sizes.
+</p>
+
+<h2>Why Region Sizes Matter</h2>
+
+<p>
+  Once RAM is understood as a shared and continuous address space, an immediate implication follows. Every byte assigned
+  to one region is a byte unavailable to others. Memory allocation is therefore not merely descriptive; it is
+  competitive.
+</p>
+
+<p>
+  Global variables consume fixed portions of RAM. Stack frames consume space dynamically as functions execute. Heap
+  allocations reserve memory whose lifetime depends on program behaviour. These demands coexist within strict physical
+  limits defined by the device.
+</p>
+
+<div class="emphasis-line">
+  RAM capacity is finite, but runtime demands are often variable.
+</div>
+
+<p>
+  Consider stack usage. Each function call introduces a new stack frame containing local variables and execution state.
+  A program with deep call chains or large local buffers may require significant stack space. If insufficient memory is
+  reserved, stack growth may encroach upon neighbouring regions.
+</p>
+
+<p>
+  Heap usage presents a different challenge. Dynamic allocation patterns may be difficult to predict precisely. Fragmented
+  allocation and deallocation behaviour can gradually reduce usable memory even when total free space appears
+  adequate.
+</p>
+
+<p>
+  These interactions mean that region sizing is not independent. Increasing global data reduces available stack and heap
+  space. Reserving large stack margins constrains dynamic allocation. Excessive heap usage limits execution depth.
+</p>
+
+
+<p>
+  Unlike high-level computing environments, microcontrollers typically lack mechanisms that automatically expand memory
+  resources. There is no virtual memory fallback, no transparent reallocation, and often no hardware protection against
+  boundary violations. The memory layout must therefore anticipate worst-case behaviour.
+</p>
+
+<div class="emphasis-line">
+  Stable systems depend on conservative memory budgeting.
+</div>
+
+<p>
+  Embedded engineers consequently treat RAM planning as a design activity rather than an afterthought. Stack depth is
+  estimated. Global data is audited. Heap usage is justified. Margins are introduced to tolerate unexpected execution
+  paths.
+</p>
+
+<p>
+  With these constraints recognized, we can now examine how programs actually use RAM during execution and how memory
+  activity evolves over time.
+</p>
+
+<h2>Reframing RAM as a Runtime Resource</h2>
+
+<p>
+  RAM is often described in terms of capacity — a specification measured in kilobytes or megabytes. Yet from the
+  program’s perspective, RAM is defined less by size than by behaviour. It is the medium within which execution state,
+  persistent variables, and dynamic data structures must coexist.
+</p>
+
+<p>
+  The distinctions between global data, stack frames, and heap allocations are not artifacts of hardware separation but
+  interpretations imposed upon a continuous address space. Stability, volatility, and movement arise from how the
+  runtime environment uses memory rather than how memory itself is constructed.
+</p>
+
+<div class="emphasis-line">
+  Memory errors are rarely random; they are consequences of violated spatial assumptions.
+</div>
+
+<p>
+  Stack overflows, heap fragmentation, and region collisions are therefore not isolated anomalies. They are direct
+  manifestations of how RAM is partitioned relative to program demands. Understanding this structure transforms memory
+  behaviour from a mysterious runtime phenomenon into a predictable engineering concern.
+</p>
+
+<p>
+  This perspective forms the foundation for deeper exploration. Having established how RAM regions coexist and compete,
+  the next step is to examine how these regions are defined, initialized, and managed before the program’s primary logic
+  even begins.
+</p>
+
+
 
 
         <!-- COMMENTS SECTION -->
