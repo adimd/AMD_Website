@@ -2,2672 +2,411 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Why Raw Dot Products Aren’t Enough</title>
+  <title>Why Raw Dot Products Aren't Enough | Adithya MD</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="../style.css">
-
-    <script>
-  MathJax = {
-    tex: {
-      inlineMath: [['\\(', '\\)'], ['$', '$']]
-    }
-  };
-</script>
-
-<script
-  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
-  async>
-</script>
-  <!-- Theme colors:
-       #f6eaaf (light yellow), #ead3c1 (soft peach), #941236 (deep maroon) -->
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>MathJax={tex:{inlineMath:[['\\(','\\)'],['$','$']]}};</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
   <style>
-    :root {
-      --bg-main: #f6eaaf;
-      --bg-card: #ffffff;
-      --bg-soft: #ead3c1;
-      --accent:  #941236;
-      --text-main: #222222;
-      --text-muted: #555555;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top left, #ffffff, var(--bg-main));
-      color: var(--text-main);
-      line-height: 1.7;
-    }
-
-    .page-wrapper {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 2.5rem 1.25rem 3.5rem;
-    }
-
-    /* Main layout: article + sidebar */
-    .blog-layout {
-      display: flex;
-      gap: 2rem;
-      align-items: flex-start;
-    }
-
-    .blog-card {
-      background: var(--bg-card);
-      border-radius: 1.25rem;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
-      padding: 2.5rem 2.75rem;
-      border-top: 6px solid var(--accent);
-      flex: 3;
-    }
-
-    .blog-sidebar {
-      flex: 1.2;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    @media (max-width: 900px) {
-      .blog-layout {
-        flex-direction: column;
-      }
-
-      .blog-sidebar {
-        width: 100%;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .blog-card {
-        padding: 1.75rem 1.5rem;
-        border-radius: 1rem;
-      }
-    }
-
-    .blog-meta {
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--text-muted);
-      margin-bottom: 0.75rem;
-    }
-
-    .series-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.25rem 0.7rem;
-      border-radius: 999px;
-      background: var(--bg-soft);
-      color: var(--accent);
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    .series-tag-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--accent);
-    }
-
-    h1 {
-      font-size: 2.1rem;
-      margin: 0.4rem 0 0.75rem;
-      color: var(--accent);
-      letter-spacing: 0.02em;
-    }
-
-    .blog-subtitle {
-      font-size: 1rem;
-      color: var(--text-muted);
-      margin-bottom: 1.8rem;
-    }
-
-    h2 {
-      font-size: 1.7rem;
-      margin-top: 2.25rem;
-      margin-bottom: 0.6rem;
-      color: var(--accent);
-    }
-
-    h3 {
-      font-size: 1.3rem;
-      margin-top: 1.6rem;
-      margin-bottom: 0.4rem;
-      color: #7a0f29;
-    }
-
-    p {
-      margin: 0.5rem 0 0.9rem;
-      font-size: 1.2rem;
-    }
-
-    strong {
-      color: #3a111c;
-    }
-
-    .emphasis-line {
-      padding: 0.7rem 1rem;
-      border-left: 4px solid var(--accent);
-      background: #fff8e7;
-      border-radius: 0.6rem;
-      font-size: 1.2rem;
-      margin: 1rem 0 1.4rem;
-    }
-
-    .timeline-callout {
-      background: var(--bg-soft);
-      border-radius: 0.9rem;
-      padding: 1rem 1.1rem;
-      margin: 1.4rem 0;
-      font-size: 0.93rem;
-    }
-
-    .timeline-callout-title {
-      font-weight: 600;
-      color: var(--accent);
-      margin-bottom: 0.35rem;
-      text-transform: uppercase;
-      font-size: 0.8rem;
-      letter-spacing: 0.14em;
-    }
-
-    ul {
-      padding-left: 1.3rem;
-      margin: 0.25rem 0 1rem;
-    }
-
-    li {
-      margin: 0.2rem 0;
-      font-size: 1.2rem;
-    }
-
-    .muted {
-      color: var(--text-muted);
-    }
-
-    .inline-question {
-      font-style: italic;
-      color: #4a222b;
-    }
-
-    .section-divider {
-      margin: 2.2rem 0 1.8rem;
-      height: 1px;
-      border: none;
-      background: linear-gradient(to right, transparent, #d7b2a3, transparent);
-    }
-
-    /* Sidebar cards + links */
-    .sidebar-card {
-      background: #fffdf7;
-      border-radius: 1rem;
-      padding: 1.1rem 1.1rem 1.2rem;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
-      border: 1px solid rgba(148, 18, 54, 0.08);
-    }
-
-    .sidebar-title {
-      font-size: 1.1rem;
-      margin: 0 0 0.75rem;
-      color: var(--accent);
-    }
-
-    .sidebar-title-sm {
-      font-size: 0.98rem;
-      margin: 0 0 0.6rem;
-      color: #7a0f29;
-    }
-
-    .sidebar-link {
-      display: block;
-      padding: 0.5rem 0.4rem;
-      border-radius: 0.6rem;
-      text-decoration: none;
-      background: transparent;
-      transition: background 0.18s ease, transform 0.12s ease;
-    }
-
-    .sidebar-link + .sidebar-link {
-      margin-top: 0.15rem;
-    }
-
-    .sidebar-link:hover {
-      background: rgba(234, 211, 193, 0.5);
-      transform: translateX(2px);
-    }
-
-    .sidebar-link-title {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #3a111c;
-    }
-
-    .sidebar-link-meta {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    .sidebar-link-title-sm {
-      font-size: 0.88rem;
-      font-weight: 500;
-      color: #3a111c;
-    }
-
-    .sidebar-empty {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    /* Image blocks inside article */
-    .image-block {
-      margin: 1.6rem 0 1.3rem;
-    }
-
-    .image-frame {
-      width: 100%;
-      max-width: 780px;
-      height: 260px;
-      margin: 0 auto;
-      border-radius: 0.9rem;
-      border: 2px dashed rgba(148, 18, 54, 0.35);
-      background: linear-gradient(
-        135deg,
-        rgba(246, 234, 175, 0.5),
-        rgba(234, 211, 193, 0.6)
-      );
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      position: relative;
-      cursor: zoom-in; 
-    }
-
-    .image-frame img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-    }
-
-    .image-placeholder-text {
-      font-size: 0.9rem;
-      color: #5c2a33;
-      text-align: center;
-      padding: 0 1.5rem;
-    }
-
-    .image-placeholder-label {
-      position: absolute;
-      bottom: 10px;
-      right: 12px;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: rgba(148, 18, 54, 0.8);
-      background: rgba(255, 255, 255, 0.75);
-      padding: 0.25rem 0.55rem;
-      border-radius: 999px;
-    }
-
-    .image-caption {
-      max-width: 780px;
-      margin: 0.5rem auto 0.2rem;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      text-align: center;
-    }
-
-    /* Image zoom modal */
-    .image-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .image-modal.open {
-      display: flex;
-    }
-
-    .image-modal-inner {
-      position: relative;
-      max-width: 90vw;
-      max-height: 90vh;
-    }
-
-    .image-modal-img {
-      max-width: 100%;
-      max-height: 100%;
-      border-radius: 1rem;
-      transform: scale(1.1);   
-      transform-origin: center;
-      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5);
-      background: #ffffff;
-    }
-
-    .image-modal-caption {
-      margin-top: 0.5rem;
-      font-size: 0.9rem;
-      color: #f6eaaf;
-      text-align: center;
-    }
-
-    .image-modal-close {
-      position: absolute;
-      top: -10px;
-      right: -10px;
-      border: none;
-      background: #ffffff;
-      color: #941236;
-      border-radius: 999px;
-      width: 28px;
-      height: 28px;
-      font-size: 1.1rem;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-    }
-
-    @media (max-width: 768px) {
-      .image-frame {
-        height: 210px;
-      }
-      .image-placeholder-text {
-        font-size: 0.85rem;
-        padding: 0 1rem;
-      }
-    }
-
-    /* Comments section */
-    .comments-section {
-      margin-top: 3rem;
-    }
-
-    .comments-section h2 {
-      font-size: 1.4rem;
-      color: var(--accent);
-      margin-bottom: 1rem;
-    }
+    :root{--bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;--ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;--accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);--border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);--display:'Instrument Serif',Georgia,serif;--sans:'Source Sans 3',sans-serif;--hand:'Caveat',cursive;--radius:14px}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.78;font-size:19px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}.d1{animation-delay:.08s}.d2{animation-delay:.16s}
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.85);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:var(--ink)}.brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}.brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}.nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}.nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}.nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}.dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}.dropbtn:hover{color:var(--ink)}.dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}.dropdown:hover .dropdown-content{display:block}.dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}.dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}.dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}.hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}.hamburger.active span:nth-child(2){opacity:0}.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.95);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}.mobile-overlay.active{display:flex}.mobile-overlay a,.mobile-overlay button{font-family:var(--display);font-size:1.5rem;color:var(--body);background:none;border:none;cursor:pointer;padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}.mobile-overlay a:hover,.mobile-overlay button:hover{color:var(--accent)}.mobile-overlay .mobile-sub{display:flex;flex-direction:column;align-items:center}.mobile-overlay .mobile-sub a{font-size:1.15rem;color:var(--muted);padding:.4rem 1.5rem}
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 4rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.4rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.08rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.55rem;color:var(--ink);margin:2.5rem 0 .8rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.35rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.18rem;font-weight:300;margin-bottom:1.15rem}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.95em;background:rgba(237,232,224,.08);padding:.15rem .4rem;border-radius:4px;color:var(--ink)}
+    .callout{margin:1.5rem 0;padding:1.3rem 1.6rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.2rem 0}
+    .dia-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:1.8rem 0 2rem}
+    .dia-head{padding:1rem 1.3rem .7rem;border-bottom:1px solid var(--border)}
+    .dia-title{font-weight:600;color:var(--accent);font-size:.95rem;margin-bottom:.15rem}
+    .dia-sub{font-size:.85rem;color:var(--muted)}
+    .dia-body{padding:.8rem}
+    .dia-body svg{width:100%;height:auto;display:block}
+    .dia-foot{padding:.6rem 1.3rem .8rem;border-top:1px solid var(--border);font-size:.88rem;color:var(--muted);font-style:italic}
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.1rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}.sidebar-link+.sidebar-link{margin-top:.15rem}.sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.9rem;font-weight:500;color:var(--ink)}.sidebar-link-note{font-size:.75rem;color:var(--muted);margin-top:.15rem}
+    .comments-section{margin-top:2.5rem}.comments-section h2{font-family:var(--display);font-size:1.3rem;color:var(--ink);margin-bottom:1rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}.footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}.footer-copy{font-size:.88rem;color:var(--muted)}
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static;width:100%}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.25rem 3rem}.article{padding:2rem 1.5rem;border-radius:12px}.article h1{font-size:1.85rem}}
   </style>
 </head>
-
 <body>
-  <!-- Image zoom modal -->
-  <div id="image-modal" class="image-modal" aria-hidden="true">
-    <div class="image-modal-inner">
-      <button class="image-modal-close" aria-label="Close image">&times;</button>
-      <img id="image-modal-img" class="image-modal-img" alt="">
-      <p id="image-modal-caption" class="image-modal-caption"></p>
-    </div>
-  </div>
 
-  <!-- NAVBAR -->
-   <header class="site-header">
-  <div class="nav-container">
-    <a href="../index.html" class="brand">
-      <span class="brand-mark">AM</span>
-      <span class="brand-text">Adithya MD</span>
-    </a>
+<header class="site-header"><div class="nav-container"><a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a><nav class="nav-links"><a href="../index.html">Home</a><a href="../about.html">About</a><a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a><a href="../startup.html">Moisture Meter</a><div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button><div class="dropdown-content"><a href="../teaching.html">Teaching Roles</a><a href="../workshops.html">Workshops</a><a href="../talks.html">Talks</a></div></div><a href="../contact.html">Contact</a></nav><button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button></div></header>
+<div class="mobile-overlay" id="mobileMenu"><a href="../index.html">Home</a><a href="../about.html">About</a><a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a><a href="../startup.html">Moisture Meter</a><div class="mobile-sub"><button style="color:var(--ink);font-size:1.3rem">Beyond the Desk</button><a href="../teaching.html">Teaching Roles</a><a href="../workshops.html">Workshops</a><a href="../talks.html">Talks</a></div><a href="../contact.html">Contact</a></div>
 
-    <nav class="nav-links">
-      <a href="../index.html">Home</a>
-      <a href="../about.html">About</a>
-      <a href="../blogs.html">Blogs</a>
-      <a href="../projects.html">Projects</a>
-      <a href="../startup.html">Moisture Meter</a>
+<div class="page-wrap"><div class="blog-layout">
+<main class="blog-main anim d1"><article class="article">
 
-      <div class="dropdown">
-        <button class="dropbtn">Teaching &amp; Outreach ▾</button>
-        <div class="dropdown-content">
-          <a href="../teaching.html">Teaching Roles</a>
-          <a href="../workshops.html">Workshops</a>
-          <a href="../talks.html">Talks</a>
-        </div>
-      </div>
+<span class="series-tag"><span class="series-dot"></span> Architecting Intelligence: LLMs From First Principles</span>
+<h1>Why Raw Dot Products Aren't Enough</h1>
+<p class="blog-subtitle">How scores become probabilities that let contexts compete.</p>
 
-      <a href="../contact.html">Contact</a>
-    </nav>
-  </div>
-</header>
+<!-- ════════ CONTENT ════════ -->
 
-  <div class="page-wrapper">
-    <div class="blog-layout">
-
-      <!-- MAIN ARTICLE -->
-      <article class="blog-card"
-               data-post-id="{{POST_ID}}"
-               data-series-id="{{SERIES_ID}}">
-
-        <div class="blog-meta">
-          <span class="series-tag">
-            <span class="series-tag-dot"></span>
-            Architecting Intelligence: Building LLMs From First Principle
-          </span>
-        </div>
-
-        <h1>Why Raw Dot Products Aren’t Enough</h1>
-        <p class="blog-subtitle">
-          How scores become probabilities that let contexts compete
-        </p>
-
-        <!-- BLOG CONTENT GOES HERE -->
-       <h3>Picking Up the Thread</h3>
+<h2>Picking up the thread</h2>
 
 <p>
-At the end of the previous blog, we arrived at a quiet but important conclusion.
-The massive V by V co-occurrence table had disappeared, yet nothing essential had been lost.
-Instead of storing relationships explicitly, we allowed them to live as geometry.
-Each word existed as a vector, and the old table survived only implicitly,
-expressed through interactions between center vectors and context vectors.
+Last time, we got the dot product working as a compatibility signal between centre and context vectors. Larger values suggest stronger association. As sentences accumulate, vectors drift and meaning appears as structure. It feels like learning.
 </p>
 
 <p>
-From that point on, the core operation became deceptively simple.
-Choose a center word, choose a context word, and compute a single number.
-That number came from a dot product.
-Larger values suggested stronger compatibility.
-Smaller values suggested weaker association.
-As sentences accumulated, these tiny numerical signals nudged vectors around,
-and meaning began to appear as structure.
-Words with similar usage histories drifted into similar regions of space.
-Clusters emerged without ever being explicitly declared.
+But the raw dot product is a surprisingly awkward object to build learning around. Three problems surface the moment you look closely.
 </p>
 
-<!-- Recap SVG: V×V grid → V and C matrices → dot product score (higher contrast) -->
-<div class="image-block">
-  <svg viewBox="0 0 1150 360" role="img"
-       aria-label="Recap of V by V grid collapsing into center and context matrices and a dot product score"
-       style="width:100%; height:auto;">
+<p>
+<strong>First, the score is unbounded.</strong> There's no ceiling and no floor. If vector magnitudes grow, the score grows automatically. The model can inflate its numbers just by stretching the geometry, even if the underlying relationships stay poorly structured.
+</p>
 
-    <defs>
-      <linearGradient id="bgGradRecapStrong" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
+<p>
+<strong>Second, the sign is ambiguous.</strong> The score freely crosses zero. What does a negative value actually mean? Active opposition? Weak association? How much worse is −3 than −1? The number itself doesn't answer.
+</p>
 
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .small { font-size:12px; fill:#5a3b3b; }
-        .title { font-size:14px; font-weight:700; fill:#941236; }
+<!-- UNBOUNDED + SIGN PROBLEM (consolidated into one diagram) -->
+<div class="dia-card">
+  <div class="dia-head"><div class="dia-title">Dot-product scores live on an unbounded number line</div><div class="dia-sub">No natural bounds, no built-in meaning for the sign.</div></div>
+  <div class="dia-body">
+    <svg viewBox="0 0 1000 200" role="img" aria-label="Unbounded number line with dot product values">
+      <rect x="0" y="0" width="1000" height="200" rx="14" fill="rgba(35,34,32,.6)"/>
+      <!-- Number line -->
+      <line x1="80" y1="100" x2="920" y2="100" stroke="rgba(232,168,76,.5)" stroke-width="3" stroke-linecap="round"/>
+      <!-- Arrows -->
+      <polygon points="75,100 90,94 90,106" fill="rgba(232,168,76,.5)"/><polygon points="925,100 910,94 910,106" fill="rgba(232,168,76,.5)"/>
+      <!-- Zero -->
+      <line x1="500" y1="75" x2="500" y2="125" stroke="var(--accent)" stroke-width="3"/><text x="500" y="150" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--accent)">0</text>
+      <!-- Points -->
+      <circle cx="180" cy="100" r="6" fill="rgba(232,168,76,.5)"/><text x="180" y="80" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--muted)">−3.7</text>
+      <circle cx="310" cy="100" r="6" fill="rgba(232,168,76,.7)"/><text x="310" y="80" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--muted)">−1.2</text>
+      <circle cx="540" cy="100" r="6" fill="rgba(232,168,76,.5)"/><text x="540" y="80" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--muted)">0.4</text>
+      <circle cx="700" cy="100" r="6" fill="rgba(232,168,76,.7)"/><text x="700" y="80" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--muted)">2.9</text>
+      <circle cx="870" cy="100" r="6" fill="rgba(232,168,76,.5)"/><text x="870" y="80" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--muted)">7.8</text>
+      <!-- Region labels -->
+      <text x="280" y="170" text-anchor="middle" font-family="var(--sans)" font-size="11" font-weight="600" fill="var(--muted)">negative region</text>
+      <text x="720" y="170" text-anchor="middle" font-family="var(--sans)" font-size="11" font-weight="600" fill="var(--muted)">positive region</text>
+    </svg>
+  </div>
+  <div class="dia-foot">Scores grow by stretching vector norms. "Negative" doesn't automatically mean "unlikely."</div>
+</div>
 
-        .dash  { stroke: #941236; stroke-width:3;
-                 stroke-dasharray:10 8; stroke-linecap:round; }
+<p>
+<strong>Third, and deepest: scores are independent.</strong> When we compute the score between a centre word and one context word, that calculation has no awareness of any other possible context. Nothing forces different contexts to compete. Nothing says that increasing the plausibility of one should decrease the plausibility of another.
+</p>
 
-        .grid  { stroke: rgba(148,18,54,0.25); stroke-width:1.2; }
+<!-- INDEPENDENT SCORES DIAGRAM -->
+<div class="dia-card">
+  <div class="dia-head"><div class="dia-title">Independent scores: contexts don't compete</div><div class="dia-sub">Each context gets a separate dot product — nothing forces normalisation.</div></div>
+  <div class="dia-body">
+    <svg viewBox="0 0 900 280" role="img" aria-label="Centre word love connected to multiple contexts with independent scores">
+      <rect x="0" y="0" width="900" height="280" rx="14" fill="rgba(35,34,32,.6)"/>
+      <!-- Centre node -->
+      <rect x="370" y="115" width="160" height="50" rx="16" fill="rgba(237,232,224,.06)" stroke="rgba(232,168,76,.4)" stroke-width="2"/><text x="450" y="146" text-anchor="middle" font-family="var(--sans)" font-size="15" font-weight="700" fill="var(--ink)">centre: "love"</text>
+      <!-- Context nodes + edges + score bubbles -->
+      <!-- dog -->
+      <line x1="450" y1="115" x2="200" y2="60" stroke="rgba(232,168,76,.25)" stroke-width="2"/><rect x="150" y="35" width="100" height="38" rx="12" fill="rgba(237,232,224,.05)" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/><text x="200" y="60" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="600" fill="var(--ink)">dog</text><circle cx="320" cy="85" r="14" fill="rgba(232,168,76,.15)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/><text x="320" y="90" text-anchor="middle" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--accent)">2.4</text>
+      <!-- my -->
+      <line x1="450" y1="115" x2="450" y2="40" stroke="rgba(232,168,76,.25)" stroke-width="2"/><rect x="400" y="10" width="100" height="38" rx="12" fill="rgba(237,232,224,.05)" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/><text x="450" y="35" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="600" fill="var(--ink)">my</text><circle cx="465" cy="72" r="14" fill="rgba(232,168,76,.15)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/><text x="465" y="77" text-anchor="middle" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--accent)">3.1</text>
+      <!-- movie -->
+      <line x1="530" y1="120" x2="700" y2="60" stroke="rgba(232,168,76,.25)" stroke-width="2"/><rect x="650" y="35" width="110" height="38" rx="12" fill="rgba(237,232,224,.05)" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/><text x="705" y="60" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="600" fill="var(--ink)">movie</text><circle cx="620" cy="85" r="14" fill="rgba(232,168,76,.15)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/><text x="620" y="90" text-anchor="middle" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--accent)">0.8</text>
+      <!-- pizza -->
+      <line x1="370" y1="150" x2="180" y2="200" stroke="rgba(232,168,76,.25)" stroke-width="2"/><rect x="120" y="185" width="120" height="38" rx="12" fill="rgba(237,232,224,.05)" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/><text x="180" y="210" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="600" fill="var(--ink)">pizza</text><circle cx="270" cy="180" r="14" fill="rgba(232,168,76,.15)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/><text x="270" y="185" text-anchor="middle" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--accent)">−0.7</text>
+      <!-- weekend -->
+      <line x1="450" y1="165" x2="450" y2="230" stroke="rgba(232,168,76,.25)" stroke-width="2"/><rect x="390" y="230" width="120" height="38" rx="12" fill="rgba(237,232,224,.05)" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/><text x="450" y="255" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="600" fill="var(--ink)">weekend</text><circle cx="435" cy="200" r="14" fill="rgba(232,168,76,.15)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/><text x="435" y="205" text-anchor="middle" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--accent)">3.6</text>
+      <!-- friends -->
+      <line x1="530" y1="155" x2="700" y2="210" stroke="rgba(232,168,76,.25)" stroke-width="2"/><rect x="650" y="195" width="120" height="38" rx="12" fill="rgba(237,232,224,.05)" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/><text x="710" y="220" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="600" fill="var(--ink)">friends</text><circle cx="620" cy="185" r="14" fill="rgba(232,168,76,.15)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/><text x="620" y="190" text-anchor="middle" font-family="var(--sans)" font-size="11" font-weight="700" fill="var(--accent)">1.9</text>
+    </svg>
+  </div>
+  <div class="dia-foot">The score answers whether two vectors align, but not which context should be preferred among all possibilities.</div>
+</div>
 
-        .mat   { fill: #ffffff;
-                 stroke: #941236; stroke-width:2.5; }
+<p>
+The score tells us whether two vectors align, but it doesn't tell us which context should be <em>preferred</em> among all possibilities. There's no distribution. No conservation of plausibility. Each score floats on its own.
+</p>
 
-        .arrow { stroke: #941236; stroke-width:3.5;
-                 fill:none; marker-end:url(#arrowRight); }
+<div class="callout">
+A dot product is unbounded, sign-ambiguous, and isolated. It can react to data, but it can't support judgment or learning.
+</div>
 
-        .score { fill: #f6d6dc;
-                 stroke: #941236; stroke-width:2.5; }
-      </style>
+<hr class="sep">
 
-      <marker id="arrowHeadStrong" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-        <path d="M0,0 L10,5 L0,10 Z" fill="#941236"/>
-      </marker>
-    </defs>
+<h2>Fixing the sign: why scores must become positive</h2>
 
-    <!-- Card -->
-    <rect x="24" y="20" width="1102" height="320" rx="26" fill="url(#bgGradRecapStrong)"/>
-    <rect x="24" y="20" width="1102" height="320" rx="26" fill="none" class="dash"/>
+<p>
+If we want scores to act as plausibility signals, they need to live on a single, interpretable scale. They need to be positive. Not because negativity is mathematically invalid, but because learning needs a notion of <em>strength</em>, not opposition.
+</p>
 
-    <!-- ===== V×V grid (left) ===== -->
-    <g transform="translate(90,90)">
-      <rect x="0" y="0" width="180" height="180" rx="16"
-            fill="#ffffff" stroke="#941236" stroke-width="2"/>
+<p>
+The fix is the exponential function. We take the raw dot product and pass it through \(\exp(\cdot)\). Two properties make this almost unavoidable. First, it maps every real number to a positive value. No matter how negative the score, the output is still greater than zero. Second, it preserves relative differences. If one score exceeds another by a fixed amount, the exponential guarantees a fixed multiplicative ratio between their outputs. A gap of 1 unit always means a factor of \(e\), regardless of where on the number line it occurs.
+</p>
 
-      <!-- grid lines -->
-      <g class="grid">
-        <line x1="30" y1="0" x2="30" y2="180"/>
-        <line x1="60" y1="0" x2="60" y2="180"/>
-        <line x1="90" y1="0" x2="90" y2="180"/>
-        <line x1="120" y1="0" x2="120" y2="180"/>
-        <line x1="150" y1="0" x2="150" y2="180"/>
-
-        <line x1="0" y1="30" x2="180" y2="30"/>
-        <line x1="0" y1="60" x2="180" y2="60"/>
-        <line x1="0" y1="90" x2="180" y2="90"/>
-        <line x1="0" y1="120" x2="180" y2="120"/>
-        <line x1="0" y1="150" x2="180" y2="150"/>
+<!-- EXP PLOT -->
+<div class="dia-card">
+  <div class="dia-head"><div class="dia-title">Reshaping scores with exp(x)</div><div class="dia-sub">Negative values shrink toward zero. Positive values expand rapidly.</div></div>
+  <div class="dia-body">
+    <svg viewBox="0 0 900 260" role="img" aria-label="Plot of y=exp(x)">
+      <rect x="0" y="0" width="900" height="260" rx="14" fill="rgba(35,34,32,.6)"/>
+      <!-- Axes -->
+      <line x1="200" y1="210" x2="750" y2="210" stroke="rgba(232,168,76,.4)" stroke-width="2.5"/><line x1="400" y1="230" x2="400" y2="50" stroke="rgba(232,168,76,.4)" stroke-width="2.5"/>
+      <!-- Ticks -->
+      <g font-family="var(--sans)" font-size="11" fill="var(--muted)" text-anchor="middle">
+        <line x1="280" y1="205" x2="280" y2="215" stroke="rgba(232,168,76,.25)" stroke-width="1.5"/><text x="280" y="230">−2</text>
+        <line x1="340" y1="205" x2="340" y2="215" stroke="rgba(232,168,76,.25)" stroke-width="1.5"/><text x="340" y="230">−1</text>
+        <text x="400" y="230" font-weight="700" fill="var(--accent)">0</text>
+        <line x1="460" y1="205" x2="460" y2="215" stroke="rgba(232,168,76,.25)" stroke-width="1.5"/><text x="460" y="230">1</text>
+        <line x1="520" y1="205" x2="520" y2="215" stroke="rgba(232,168,76,.25)" stroke-width="1.5"/><text x="520" y="230">2</text>
       </g>
-
-      <text x="90" y="-14" text-anchor="middle" class="label title">V × V</text>
-    </g>
-
-
-    <!-- ===== Center & Context matrices ===== -->
-    <g transform="translate(440,90)">
-      <!-- Center -->
-      <rect x="0" y="0" width="70" height="180" rx="12" class="mat"/>
-      <text x="35" y="-14" text-anchor="middle" class="label title">V</text>
-      <text x="35" y="202" text-anchor="middle" class="label small">center</text>
-
-      <!-- Context -->
-      <rect x="120" y="0" width="70" height="180" rx="12" class="mat"/>
-      <text x="155" y="-14" text-anchor="middle" class="label title">C</text>
-      <text x="155" y="202" text-anchor="middle" class="label small">context</text>
-    </g>
-
- 
-
-    <!-- ===== Dot product score ===== -->
-    <g transform="translate(800,145)">
-      <circle cx="45" cy="35" r="30" class="score"/>
-      <text x="45" y="42" text-anchor="middle"
-            class="label title" style="font-size:22px;">·</text>
-      <text x="45" y="86" text-anchor="middle" class="label small">score</text>
-    </g>
-
-  </svg>
+      <!-- Curve -->
+      <path d="M240 204 C280 202,320 200,340 197 C360 194,380 189,400 182 C420 175,445 158,470 135 C495 112,520 88,540 68" stroke="var(--accent)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <!-- Key points -->
+      <circle cx="340" cy="197" r="5" fill="var(--accent)"/><circle cx="400" cy="182" r="5" fill="var(--accent)"/><circle cx="460" cy="135" r="5" fill="var(--accent)"/><circle cx="520" cy="88" r="5" fill="var(--accent)"/>
+      <!-- Annotations -->
+      <rect x="80" y="110" width="170" height="55" rx="10" fill="rgba(237,232,224,.04)" stroke="rgba(237,232,224,.1)"/><text x="95" y="133" font-family="var(--sans)" font-size="11" font-weight="600" fill="var(--accent)">x &lt; 0</text><text x="95" y="150" font-family="var(--sans)" font-size="11" fill="var(--muted)">small but never negative</text>
+      <rect x="620" y="80" width="200" height="55" rx="10" fill="rgba(237,232,224,.04)" stroke="rgba(237,232,224,.1)"/><text x="635" y="103" font-family="var(--sans)" font-size="11" font-weight="600" fill="var(--accent)">x &gt; 0</text><text x="635" y="120" font-family="var(--sans)" font-size="11" fill="var(--muted)">differences magnified exponentially</text>
+      <!-- Label -->
+      <text x="545" y="65" font-family="var(--sans)" font-size="12" font-weight="700" fill="var(--accent)">y = exp(x)</text>
+    </svg>
+  </div>
+  <div class="dia-foot">Equal score gaps → equal ratios after exp. Only relative differences matter.</div>
 </div>
 
-
-<p>
-Seen this way, it is tempting to believe that the dot product score is the destination.
-After all, it seems to respond correctly to data.
-When words co-occur, the score tends to increase.
-When they do not, the score tends to decrease.
-It feels like learning.
-It feels like progress.
-But this is precisely where the cracks begin to show,
-because a raw score is a surprisingly awkward object to build learning around.
-</p>
-
-<p>
-The first issue is that the score is unbounded.
-There is no natural ceiling and no natural floor.
-If vector magnitudes grow, the score grows automatically.
-Nothing prevents the model from improving its numbers simply by stretching the geometry,
-even if the underlying relationships remain poorly structured.
-A larger score does not necessarily mean a sharper distinction.
-It may only mean that the vectors have become longer.
-</p>
-
-<!-- Unbounded dot-product score: infinite number line with marked values -->
-<div class="image-block">
-  <svg viewBox="0 0 1150 360" role="img"
-       aria-label="A number line extending infinitely in both directions with dot product values and no bounds"
-       style="width:100%; height:auto;">
-
-    <defs>
-      <linearGradient id="bgGradUnboundedStrong" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:18px; font-weight:700; fill:#941236; }
-        .small { font-size:15px; fill:#5a3b3b; }
-
-        .dash  { stroke:#941236; stroke-width:3;
-                 stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .axis  { stroke:#941236; stroke-width:4.5; stroke-linecap:round; }
-        .tick  { stroke: rgba(148,18,54,0.65); stroke-width:3; stroke-linecap:round; }
-
-        .pt    { fill:#941236; }
-        .ptSoft{ fill: rgba(148,18,54,0.65); }
-
-        .bubble { fill:#ffffff; stroke:#941236; stroke-width:2.5; }
-      </style>
-
-      <!-- Proper arrowheads -->
-      <marker id="arrowRight" markerWidth="14" markerHeight="14"
-              refX="12" refY="7" orient="auto">
-        <path d="M0,0 L14,7 L0,14 Z" fill="#941236"/>
-      </marker>
-
-      <marker id="arrowLeft" markerWidth="14" markerHeight="14"
-              refX="2" refY="7" orient="auto">
-        <path d="M14,0 L0,7 L14,14 Z" fill="#941236"/>
-      </marker>
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="1102" height="320" rx="26" fill="url(#bgGradUnboundedStrong)"/>
-    <rect x="24" y="20" width="1102" height="320" rx="26" fill="none" class="dash"/>
-
-    <!-- Title -->
-    <text x="70" y="70" class="label title">
-      Dot-product scores live on an unbounded number line
-    </text>
-    <text x="70" y="98" class="label small">
-      There is no natural minimum or maximum — scores grow by stretching vector norms.
-    </text>
-
-    <!-- Number line -->
-    <line x1="130" y1="210" x2="1020" y2="210"
-          class="axis"
-          marker-start="url(#arrowLeft)"
-          marker-end="url(#arrowRight)"/>
-
-    <!-- Ticks (no endpoints) -->
-    <line x1="250" y1="196" x2="250" y2="224" class="tick"/>
-    <line x1="370" y1="196" x2="370" y2="224" class="tick"/>
-    <line x1="490" y1="196" x2="490" y2="224" class="tick"/>
-    <line x1="610" y1="196" x2="610" y2="224" class="tick"/>
-    <line x1="730" y1="196" x2="730" y2="224" class="tick"/>
-    <line x1="850" y1="196" x2="850" y2="224" class="tick"/>
-
-    <!-- Dot-product values -->
-    <g>
-      <!-- negative -->
-      <circle cx="220" cy="210" r="8" class="ptSoft"/>
-      <circle cx="310" cy="210" r="8" class="pt"/>
-      <circle cx="410" cy="210" r="8" class="ptSoft"/>
-
-      <!-- near zero -->
-      <circle cx="560" cy="210" r="8" class="pt"/>
-
-      <!-- positive -->
-      <circle cx="690" cy="210" r="8" class="ptSoft"/>
-      <circle cx="800" cy="210" r="8" class="pt"/>
-      <circle cx="940" cy="210" r="8" class="ptSoft"/>
-    </g>
-
-    <!-- Numeric labels -->
-    <g class="label small">
-      <text x="200" y="255">−3.7</text>
-      <text x="290" y="175">−1.2</text>
-      <text x="545" y="255">0.4</text>
-      <text x="780" y="175">2.9</text>
-      <text x="915" y="255">7.8</text>
-    </g>
-
-    <!-- Callout -->
-    <g transform="translate(740,120)">
-      <rect x="0" y="0" width="300" height="64" rx="18" class="bubble"/>
-      <text x="20" y="28" class="label small">
-        No visible bounds
-      </text>
-      <text x="20" y="48" class="label small">
-        scores can increase indefinitely
-      </text>
-    </g>
-
-  </svg>
-</div>
-
-
-<p>
-The second issue is that the score freely crosses zero.
-Positive, negative, large, small.
-Geometrically, this is perfectly reasonable.
-Semantically, it is ambiguous.
-What does a negative score actually represent.
-Is it the absence of a relationship, or an active opposition.
-How much worse is −3 compared to −1.
-The number itself does not answer these questions.
-It is not a probability.
-It is not a confidence.
-It is simply a signed measurement with no built-in interpretation.
-</p>
-
-<!-- Score sign ambiguity: number line with zero highlighted -->
-<div class="image-block">
-  <svg viewBox="0 0 1150 360" role="img"
-       aria-label="Number line with zero highlighted separating positive and negative dot product regions"
-       style="width:100%; height:auto;">
-
-    <defs>
-      <linearGradient id="bgGradZero" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:18px; font-weight:700; fill:#941236; }
-        .small { font-size:15px; fill:#5a3b3b; }
-
-        .dash  { stroke:#941236; stroke-width:3;
-                 stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .axis  { stroke:#941236; stroke-width:4.5; stroke-linecap:round; }
-        .tick  { stroke: rgba(148,18,54,0.65); stroke-width:3; stroke-linecap:round; }
-
-        .pt    { fill:#941236; }
-        .ptSoft{ fill: rgba(148,18,54,0.65); }
-
-        .zeroLine { stroke:#941236; stroke-width:5; stroke-linecap:round; }
-        .zeroGlow { fill: rgba(148,18,54,0.10); }
-
-        .region { fill: rgba(148,18,54,0.06); }
-        .bubble { fill:#ffffff; stroke:#941236; stroke-width:2.5; }
-      </style>
-
-      <!-- Proper arrowheads -->
-      <marker id="arrowRightZ" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto">
-        <path d="M0,0 L14,7 L0,14 Z" fill="#941236"/>
-      </marker>
-      <marker id="arrowLeftZ" markerWidth="14" markerHeight="14" refX="2" refY="7" orient="auto">
-        <path d="M14,0 L0,7 L14,14 Z" fill="#941236"/>
-      </marker>
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="1102" height="320" rx="26" fill="url(#bgGradZero)"/>
-    <rect x="24" y="20" width="1102" height="320" rx="26" fill="none" class="dash"/>
-
-    <!-- Title -->
-    <text x="70" y="70" class="label title">The sign problem: scores cross zero with no built-in meaning</text>
-    <text x="70" y="98" class="label small">Negative and positive are geometric regions, not semantic labels.</text>
-
-    <!-- Regions (subtle shading) -->
-    <!-- Left region -->
-    <rect x="130" y="150" width="445" height="120" rx="20" class="region"/>
-    <!-- Right region -->
-    <rect x="575" y="150" width="445" height="120" rx="20" class="region" opacity="0.75"/>
-
-    <!-- Number line -->
-    <line x1="130" y1="210" x2="1020" y2="210"
-          class="axis"
-          marker-start="url(#arrowLeftZ)"
-          marker-end="url(#arrowRightZ)"/>
-
-    <!-- Ticks -->
-    <line x1="250" y1="196" x2="250" y2="224" class="tick"/>
-    <line x1="370" y1="196" x2="370" y2="224" class="tick"/>
-    <line x1="490" y1="196" x2="490" y2="224" class="tick"/>
-    <line x1="610" y1="196" x2="610" y2="224" class="tick"/>
-    <line x1="730" y1="196" x2="730" y2="224" class="tick"/>
-    <line x1="850" y1="196" x2="850" y2="224" class="tick"/>
-
-    <!-- Zero highlight -->
-    <g>
-      <!-- glow -->
-      <ellipse cx="575" cy="210" rx="46" ry="46" class="zeroGlow"/>
-      <!-- zero line -->
-      <line x1="575" y1="175" x2="575" y2="245" class="zeroLine"/>
-      <text x="575" y="268" text-anchor="middle" class="label small" style="font-weight:700; fill:#941236;">0</text>
-    </g>
-
-    <!-- Points -->
-    <g>
-      <!-- negative -->
-      <circle cx="220" cy="210" r="8" class="ptSoft"/>
-      <circle cx="310" cy="210" r="8" class="pt"/>
-      <circle cx="410" cy="210" r="8" class="ptSoft"/>
-
-      <!-- around zero -->
-      <circle cx="545" cy="210" r="8" class="pt"/>
-      <circle cx="610" cy="210" r="8" class="ptSoft"/>
-
-      <!-- positive -->
-      <circle cx="740" cy="210" r="8" class="pt"/>
-      <circle cx="860" cy="210" r="8" class="ptSoft"/>
-      <circle cx="940" cy="210" r="8" class="pt"/>
-    </g>
-
-    <!-- Region labels (no semantics, just sign) -->
-    <text x="250" y="145" class="label small" style="font-weight:700; fill:#941236;">negative region</text>
-    <text x="770" y="145" class="label small" style="font-weight:700; fill:#941236;">positive region</text>
-
-    <!-- Callout: no semantics -->
-    <g transform="translate(700,255)">
-      <rect x="0" y="0" width="340" height="62" rx="18" class="bubble"/>
-      <text x="18" y="28" class="label small">No built-in semantics:</text>
-      <text x="18" y="48" class="label small">“negative” doesn’t automatically mean “unlikely”.</text>
-    </g>
-
-  </svg>
-</div>
-
-<p>
-The deepest problem, however, is more subtle.
-A dot product score is produced in isolation.
-When we compute the score between a center word and a single context word,
-that calculation has no awareness of any other possible contexts.
-Nothing forces different context words to compete with one another.
-Nothing enforces the idea that increasing the plausibility of one context
-should decrease the plausibility of another.
-</p>
-
-<p>
-In other words, the score answers the wrong question.
-It tells us whether two vectors align,
-but it does not tell us which context should be preferred among all possibilities.
-There is no notion of a distribution.
-No conservation of plausibility.
-No global comparison.
-Each score floats on its own, disconnected from the rest.
-</p>
-
-<!-- Scores don't compete: center word with independent context scores (no normalization) -->
-<div class="image-block">
-  <svg viewBox="0 0 1150 360" role="img"
-       aria-label="Center word connected to multiple context words with independent scores and no normalization"
-       style="width:100%; height:auto;">
-
-    <defs>
-      <linearGradient id="bgGradNoNorm" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:18px; font-weight:700; fill:#941236; }
-        .small { font-size:15px; fill:#5a3b3b; }
-
-        .dash  { stroke:#941236; stroke-width:3; stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .node  { fill:#ffffff; stroke:#941236; stroke-width:2.5; }
-        .nodeCenter { fill:#ffffff; stroke:#941236; stroke-width:3.2; }
-
-        .edge  { stroke: rgba(148,18,54,0.55); stroke-width:3.2; stroke-linecap:round; }
-
-        .score { fill:#f6d6dc; stroke:#941236; stroke-width:2.5; }
-        .scoreText { font-size:14px; font-weight:800; fill:#941236; }
-
-        .callout { fill:#ffffff; stroke:#941236; stroke-width:2.5; }
-      </style>
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="1102" height="320" rx="26" fill="url(#bgGradNoNorm)"/>
-    <rect x="24" y="20" width="1102" height="320" rx="26" fill="none" class="dash"/>
-
-    <!-- Title -->
-    <text x="70" y="70" class="label title">Independent scores: contexts don’t compete</text>
-    <text x="70" y="98" class="label small">Each context gets a separate dot-product score — but nothing forces normalization.</text>
-
-    <!-- Center node -->
-    <g transform="translate(575,200)">
-      <rect x="-80" y="-26" width="160" height="52" rx="18" class="nodeCenter"/>
-      <text x="0" y="7" text-anchor="middle" class="label" style="font-size:16px; font-weight:800;">center: "love"</text>
-    </g>
-
-    <!-- Context nodes (around) -->
-    <!-- Top -->
-    <g transform="translate(575,110)">
-      <rect x="-80" y="-22" width="160" height="44" rx="16" class="node"/>
-      <text x="0" y="7" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">"dog"</text>
-    </g>
-
-    <!-- Top-left -->
-    <g transform="translate(410,135)">
-      <rect x="-90" y="-22" width="180" height="44" rx="16" class="node"/>
-      <text x="0" y="7" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">"music"</text>
-    </g>
-
-    <!-- Left -->
-    <g transform="translate(345,205)">
-      <rect x="-90" y="-22" width="180" height="44" rx="16" class="node"/>
-      <text x="0" y="7" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">"pizza"</text>
-    </g>
-
-    <!-- Bottom-left -->
-    <g transform="translate(410,275)">
-      <rect x="-100" y="-22" width="200" height="44" rx="16" class="node"/>
-      <text x="0" y="7" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">"stories"</text>
-    </g>
-
-    <!-- Bottom -->
-    <g transform="translate(575,300)">
-      <rect x="-100" y="-22" width="200" height="44" rx="16" class="node"/>
-      <text x="0" y="7" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">"weekend"</text>
-    </g>
-
-    <!-- Right -->
-    <g transform="translate(805,205)">
-      <rect x="-100" y="-22" width="200" height="44" rx="16" class="node"/>
-      <text x="0" y="7" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">"friends"</text>
-    </g>
-
-    <!-- Top-right -->
-    <g transform="translate(740,135)">
-      <rect x="-95" y="-22" width="190" height="44" rx="16" class="node"/>
-      <text x="0" y="7" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">"movie"</text>
-    </g>
-
-    <!-- ===== Edges + score bubbles placed along edges ===== -->
-
-    <!-- to dog -->
-    <line x1="575" y1="174" x2="575" y2="132" class="edge"/>
-    <g transform="translate(575,150)">
-      <circle r="16" class="score"/>
-      <text y="5" text-anchor="middle" class="label scoreText">2.4</text>
-    </g>
-
-    <!-- to music -->
-    <line x1="505" y1="186" x2="445" y2="150" class="edge"/>
-    <g transform="translate(475,166)">
-      <circle r="16" class="score"/>
-      <text y="5" text-anchor="middle" class="label scoreText">1.1</text>
-    </g>
-
-    <!-- to pizza -->
-    <line x1="495" y1="205" x2="415" y2="205" class="edge"/>
-    <g transform="translate(455,205)">
-      <circle r="16" class="score"/>
-      <text y="5" text-anchor="middle" class="label scoreText">-0.7</text>
-    </g>
-
-    <!-- to stories -->
-    <line x1="505" y1="225" x2="445" y2="260" class="edge"/>
-    <g transform="translate(475,244)">
-      <circle r="16" class="score"/>
-      <text y="5" text-anchor="middle" class="label scoreText">0.2</text>
-    </g>
-
-    <!-- to weekend -->
-    <line x1="575" y1="226" x2="575" y2="280" class="edge"/>
-    <g transform="translate(575,255)">
-      <circle r="16" class="score"/>
-      <text y="5" text-anchor="middle" class="label scoreText">3.6</text>
-    </g>
-
-    <!-- to friends -->
-    <line x1="655" y1="205" x2="725" y2="205" class="edge"/>
-    <g transform="translate(690,205)">
-      <circle r="16" class="score"/>
-      <text y="5" text-anchor="middle" class="label scoreText">1.9</text>
-    </g>
-
-    <!-- to movie -->
-    <line x1="645" y1="186" x2="705" y2="150" class="edge"/>
-    <g transform="translate(675,166)">
-      <circle r="16" class="score"/>
-      <text y="5" text-anchor="middle" class="label scoreText">0.8</text>
-    </g>
-
-    <!-- Callout box -->
-    
-
-  </svg>
-</div>
-
-
-<p>
-What we actually want is something stronger.
-Given a center word, we want the model to express a preference over the entire vocabulary.
-We want it to behave as if it is making a choice.
-Among all possible context words, which ones make sense here,
-and which ones should be unlikely.
-The moment we ask for this, the problem changes shape.
-</p>
-
-<p>
-Now contexts must compete.
-If one context becomes more plausible, others must become less so.
-Plausibility must be shared, not created out of thin air.
-This single requirement introduces structure that the raw dot product alone cannot provide.
-</p>
-
-
-
-<p>
-The dot product does not disappear at this point.
-It simply changes role.
-It stops being the final answer and becomes a raw ingredient,
-a compatibility signal that must be reshaped into something that supports comparison,
-normalization, and learning.
-</p>
-
-<p>
-In the rest of this blog, we will build that transformation carefully.
-We will see how raw scores are turned into probabilities,
-why this step is conceptually necessary rather than cosmetic,
-and how it quietly prepares the ground for loss functions
-and the practical mechanisms that make large-scale learning possible.
-</p>
-<div class="emphasis-line">
-<strong>Why the raw score is not enough.</strong>
-
-<p>
-A dot product score is <strong>unbounded</strong>, so it can grow larger without becoming
-more meaningful.
-It carries <strong>sign without interpretation</strong>, making negative and positive values
-hard to read.
-And most critically, each score exists <strong>in isolation</strong>, with no notion of
-<strong>preference or competition</strong> among possible contexts.
-</p>
-
-<p>
-Until these issues are resolved, the score can <strong>react to data</strong>,
-but it cannot support <strong>judgment or learning</strong>.
-</p>
-</div>
-
-
-
-<h3>Fixing the Sign Problem: Why Scores Must Become Positive</h3>
-
-<p>
-Let us begin with the most immediate problem of raw dot product scores.
-They freely cross zero.
-Positive values, negative values, large magnitudes, small magnitudes.
-From a geometric point of view, this is perfectly acceptable.
-From a learning point of view, it is deeply inconvenient.
-</p>
-
-<p>
-A negative score does not clearly tell us what went wrong.
-Does it mean the context is actively incompatible.
-Does it mean the relationship is simply weak.
-Is −4 twice as bad as −2.
-Nothing in the number itself answers these questions.
-The sign carries direction, but not meaning.
-</p>
-
-<p>
-If we want scores to behave like plausibility signals,
-the first requirement is simple.
-They must live on a single, interpretable scale.
-In particular, they must be positive.
-Not because negativity is mathematically invalid,
-but because learning needs a notion of strength, not opposition.
-</p>
-
-<div class="emphasis-line">
-Before scores can compete, they must first speak the same language.
-</div>
-
-<p>
-This leads us to a very natural transformation.
-We take the raw dot product score and pass it through the exponential function.
-Nothing mysterious happens here.
-We are not adding information.
-We are reshaping the signal so that it becomes usable.
-</p>
-
-<p>
-The exponential has two properties that make it almost unavoidable.
-First, it maps every real number to a positive value.
-No matter how negative the score is, the output is still greater than zero.
-The sign ambiguity disappears.
-Every score now represents a non-negative degree of plausibility.
-</p>
-
-<!-- Clean exp(x) plot with corrected y-axis arrow and proper spacing -->
-<div class="image-block">
-  <svg viewBox="0 0 1150 380" role="img"
-       aria-label="Plot of y = exp(x) with corrected y-axis arrow and non-overlapping text"
-       style="width:100%; height:auto;">
-
-    <defs>
-      <linearGradient id="bgGradExpClean" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:19px; font-weight:800; fill:#941236; }
-        .small { font-size:15px; fill:#5a3b3b; }
-        .mono  { font-family: ui-monospace, Menlo, Consolas, monospace; }
-
-        .dash  { stroke:#941236; stroke-width:3; stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .axis  { stroke:#941236; stroke-width:4.2; stroke-linecap:round; }
-        .grid  { stroke: rgba(148,18,54,0.12); stroke-width:2; }
-
-        .curve { stroke:#941236; stroke-width:5; fill:none; stroke-linecap:round; }
-
-        .tick  { stroke:#941236; stroke-width:3; opacity:0.4; }
-        .zero  { stroke:#941236; stroke-width:4.2; }
-
-        .pt { fill:#941236; }
-
-        .noteBox { fill:#ffffff; stroke:#941236; stroke-width:2.4; }
-      </style>
-
-      <!-- Proper arrowheads -->
-      <marker id="arrowRightClean" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto">
-        <path d="M0,0 L14,7 L0,14 Z" fill="#941236"/>
-      </marker>
-
-      <marker id="arrowUpClean" markerWidth="14" markerHeight="14" refX="7" refY="2" orient="auto">
-        <path d="M0,14 L7,0 L14,14 Z" fill="#941236"/>
-      </marker>
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="1102" height="340" rx="26" fill="url(#bgGradExpClean)"/>
-    <rect x="24" y="20" width="1102" height="340" rx="26" fill="none" class="dash"/>
-
-    <!-- Header text band -->
-    <text x="70" y="70" class="label title">
-      Reshaping raw scores using <tspan class="mono">exp(x)</tspan>
-    </text>
-    <text x="70" y="98" class="label small">
-      Negative values shrink toward zero, while positive values expand rapidly.
-    </text>
-
-    <!-- ===== Plot area (pushed down) ===== -->
-
-    <!-- Axes origin at (440,290) -->
-    <!-- Grid -->
-    <line x1="240" y1="290" x2="980" y2="290" class="grid"/>
-    <line x1="440" y1="140" x2="440" y2="320" class="grid"/>
-
-    <!-- Axes -->
-    <line x1="240" y1="290" x2="960" y2="290"
-          class="axis" marker-end="url(#arrowRight)"/>
-    <line x1="440" y1="320" x2="440" y2="120"
-          class="axis" marker-end="url(#arrowUp)"/>
-
-    <!-- Axis labels -->
-    <text x="970" y="296" class="label small">x</text>
-    <text x="428" y="150" class="label small">y</text>
-
-    <!-- X ticks -->
-    <g class="label small">
-      <line x1="300" y1="280" x2="300" y2="300" class="tick"/>
-      <text x="300" y="325" text-anchor="middle">−2</text>
-
-      <line x1="370" y1="280" x2="370" y2="300" class="tick"/>
-      <text x="370" y="325" text-anchor="middle">−1</text>
-
-      <line x1="440" y1="275" x2="440" y2="305" class="zero"/>
-      <text x="440" y="325" text-anchor="middle" style="font-weight:800; fill:#941236;">0</text>
-
-      <line x1="510" y1="280" x2="510" y2="300" class="tick"/>
-      <text x="510" y="325" text-anchor="middle">1</text>
-
-      <line x1="580" y1="280" x2="580" y2="300" class="tick"/>
-      <text x="580" y="325" text-anchor="middle">2</text>
-    </g>
-
-    <!-- exp(x) curve -->
-    <path class="curve"
-          d="M 270 282
-             C 315 280, 345 278, 370 275
-             C 395 272, 420 267, 440 260
-             C 460 253, 485 235, 515 205
-             C 545 175, 570 145, 590 125" />
-
-    <!-- Highlighted points -->
-    <circle cx="370" cy="275" r="6" class="pt"/>
-    <circle cx="440" cy="260" r="6" class="pt"/>
-    <circle cx="510" cy="205" r="6" class="pt"/>
-    <circle cx="580" cy="145" r="6" class="pt"/>
-
-    <!-- Callouts (kept clear of curve) -->
-    <g transform="translate(90,175)">
-      <rect x="0" y="0" width="300" height="80" rx="18" class="noteBox"/>
-      <text x="18" y="30" class="label small" style="font-weight:800; fill:#941236;">x &lt; 0</text>
-      <text x="18" y="54" class="label small">values become small but</text>
-      <text x="18" y="74" class="label small">never negative</text>
-    </g>
-
-    <g transform="translate(690,170)">
-      <rect x="0" y="0" width="320" height="80" rx="18" class="noteBox"/>
-      <text x="18" y="30" class="label small" style="font-weight:800; fill:#941236;">x &gt; 0</text>
-      <text x="18" y="54" class="label small">differences are magnified</text>
-      <text x="18" y="74" class="label small">exponentially</text>
-    </g>
-
-    <!-- Function label -->
-    <text x="600" y="135" class="label small" style="font-weight:800; fill:#941236;">
-      y = exp(x)
-    </text>
-
-  </svg>
-</div>
-
-
-<p>
-Second, and more importantly, the exponential preserves relative differences.
-This is the subtle but crucial point.
-The exponential does not care about absolute values.
-It cares about gaps.
-</p>
-
-<p>
-If one score is larger than another by a fixed amount,
-the exponential guarantees a fixed multiplicative ratio between their transformed values.
-A difference of one unit always corresponds to the same relative advantage,
-regardless of where it occurs on the number line.
-</p>
-
-<p>
-For example, suppose two context words produce scores of 2 and 1.
-After exponentiation, their values become e² and e¹.
-The first is e times larger than the second.
-Now suppose the scores were −1 and −2.
-After exponentiation, we again get e⁻¹ and e⁻².
-Once more, the ratio is exactly e.
-</p>
-
-<div class="emphasis-line">
+<div class="callout">
 Exponentials convert additive differences into multiplicative preference.
 </div>
 
 <p>
-This is precisely what we want.
-Learning should respond to relative evidence, not absolute scale.
-If one context fits better than another by a certain margin,
-that margin should matter in the same way everywhere.
-Exponentiation enforces this consistency automatically.
+After this transformation, every score is positive. Negative scores become small plausibility; positive scores become large plausibility. The sign ambiguity is gone. But notice what hasn't happened: these values still don't compete. Each exponentiated score exists on its own. Fixing that requires looking at all contexts together.
 </p>
 
-<!-- Compact illustration: equal score gaps map to equal ratios after exp -->
-<div class="image-block">
-  <svg viewBox="0 0 900 420" role="img"
-       aria-label="Compact illustration showing equal score differences mapping to equal ratios after exponentiation"
-       style="width:100%; height:auto;">
+<hr class="sep">
 
-    <defs>
-      <linearGradient id="bgGradRatioCompact" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:19px; font-weight:800; fill:#941236; }
-        .small { font-size:15px; fill:#5a3b3b; }
-        .mono  { font-family: ui-monospace, Menlo, Consolas, monospace; }
-
-        .dash  { stroke:#941236; stroke-width:3; stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .panel { fill:#ffffff; stroke:#941236; stroke-width:2.6; }
-        .chip  { fill:#fff7f2; stroke:#941236; stroke-width:2.2; }
-        .ratio { fill:#f6d6dc; stroke:#941236; stroke-width:2.4; }
-
-        .gapLine { stroke: rgba(148,18,54,0.65); stroke-width:3; stroke-linecap:round; }
-
-        .arrow { stroke:#941236; stroke-width:3; fill:none; marker-end:url(#arrowDown); }
-
-        .emph { font-weight:850; fill:#941236; }
-      </style>
-
-      <marker id="arrowDown" markerWidth="14" markerHeight="14" refX="7" refY="12" orient="auto">
-        <path d="M0,0 L14,0 L7,14 Z" fill="#941236"/>
-      </marker>
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="852" height="380" rx="26" fill="url(#bgGradRatioCompact)"/>
-    <rect x="24" y="20" width="852" height="380" rx="26" fill="none" class="dash"/>
-
-    <!-- Title -->
-    <text x="70" y="70" class="label title">
-      Equal score gaps become equal ratios after <tspan class="mono">exp</tspan>
-    </text>
-    <text x="70" y="98" class="label small">
-      Only differences matter — not absolute score values.
-    </text>
-
-    <!-- ===== Pair A ===== -->
-    <g transform="translate(120,130)">
-      <rect x="0" y="0" width="660" height="110" rx="22" class="panel"/>
-
-      <!-- scores -->
-      <g transform="translate(30,22)">
-        <rect x="0" y="0" width="180" height="46" rx="16" class="chip"/>
-        <text x="16" y="30" class="label small">
-          scores: <tspan class="mono emph">2</tspan>, <tspan class="mono emph">4</tspan>
-        </text>
-
-        <line x1="200" y1="23" x2="250" y2="23" class="gapLine"/>
-        <text x="262" y="28" class="label small">
-          gap = <tspan class="mono emph">2</tspan>
-        </text>
-      </g>
-
-      <!-- arrow -->
-      <line x1="330" y1="72" x2="330" y2="96" class="arrow"/>
-
-      <!-- exp + ratio -->
-      <g transform="translate(200,72)">
-        <rect x="0" y="0" width="260" height="46" rx="16" class="ratio"/>
-        <text x="16" y="30" class="label small">
-          ratio = <tspan class="mono emph">e⁴ / e² = e²</tspan>
-        </text>
-      </g>
-    </g>
-
-    <!-- ===== Pair B ===== -->
-    <g transform="translate(120,260)">
-      <rect x="0" y="0" width="660" height="110" rx="22" class="panel"/>
-
-      <!-- scores -->
-      <g transform="translate(30,22)">
-        <rect x="0" y="0" width="180" height="46" rx="16" class="chip"/>
-        <text x="16" y="30" class="label small">
-          scores: <tspan class="mono emph">−1</tspan>, <tspan class="mono emph">1</tspan>
-        </text>
-
-        <line x1="200" y1="23" x2="250" y2="23" class="gapLine"/>
-        <text x="262" y="28" class="label small">
-          gap = <tspan class="mono emph">2</tspan>
-        </text>
-      </g>
-
-      <!-- arrow -->
-      <line x1="330" y1="72" x2="330" y2="96" class="arrow"/>
-
-      <!-- exp + ratio -->
-      <g transform="translate(200,72)">
-        <rect x="0" y="0" width="260" height="46" rx="16" class="ratio"/>
-        <text x="16" y="30" class="label small">
-          ratio = <tspan class="mono emph">e¹ / e⁻¹ = e²</tspan>
-        </text>
-      </g>
-    </g>
-
-  </svg>
-</div>
-
+<h2>When contexts begin to compete</h2>
 
 <p>
-After this transformation, the score has changed character.
-It is no longer a signed geometric measurement.
-It has become a positive signal that expresses relative strength.
-Negative scores are not banned.
-They are simply translated into small plausibility.
-Positive scores become large plausibility.
+Consider <code>I love my dog</code>. When "love" appears, many context words are theoretically possible. "My" is plausible. "The" is plausible. But in the actual sentence, only "my" appears. Its presence is also an exclusion. Every observed word implicitly says: <em>this happened, and everything else did not.</em>
 </p>
 
-<p>
-This fixes our first problem cleanly.
-The ambiguity of sign is gone.
-Every score now lives on a shared, positive scale.
-But notice what has not yet happened.
-These values still do not compete.
-Each exponentiated score still exists on its own.
-Nothing yet forces them to relate to one another.
-</p>
-
-<p>
-That remaining issue is deeper.
-And fixing it will require us to look at all contexts together,
-not one at a time.
-That is the next step.
-</p>
-
-<div class="emphasis-line">
-<strong>What exponentiation fixes and what it does not.</strong>
-
-<p>
-The exponential removes <strong>sign ambiguity</strong> and ensures that all scores are
-<strong>positive and comparable</strong>.
-It also preserves <strong>relative differences</strong>,
-so stronger evidence grows faster than weaker evidence.
-</p>
-
-<p>
-But exponentiation alone does <strong>not</strong> create preference.
-Each score still exists <strong>independently</strong>.
-Nothing yet forces different contexts to <strong>compete</strong>.
-</p>
-</div>
-
-<h3>When Contexts Begin to Compete</h3>
-
-<p>
-At this point, something important is still missing.
-Even after exponentiation, even after we have ensured that every score is positive
-and that relative differences matter, the model remains strangely comfortable.
-Nothing forces it to feel pressure.
-Nothing forces it to choose.
-</p>
-
-<p>
-To see why this matters, it helps to return to actual language.
-Consider the sentence:
-</p>
-
-<p>
-<em>I love my dog</em>
-</p>
-
-<p>
-When the word <em>love</em> appears, many context words are theoretically possible.
-“My” is plausible.
-“So” is plausible.
-“The” is plausible.
-But in the real sentence, only one of these words actually occurs.
-The presence of <em>my</em> is not just information.
-It is exclusion.
-Once <em>my</em> appears, countless alternatives did not.
-</p>
-
-<!-- Sentence view: center word "love" highlighted; only "my" selected as context; others fade -->
-<div class="image-block">
-  <svg viewBox="0 0 1150 380" role="img"
-       aria-label='Sentence view showing center word "love" with multiple candidate contexts; only "my" selected'
-       style="width:100%; height:auto;">
-
-    <defs>
-      <linearGradient id="bgGradSentence" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:19px; font-weight:800; fill:#941236; }
-        .small { font-size:15px; fill:#5a3b3b; }
-
-        .dash  { stroke:#941236; stroke-width:3; stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .token { fill:#ffffff; stroke:#941236; stroke-width:2.4; }
-        .centerTok { fill:#ffffff; stroke:#941236; stroke-width:3.4; }
-        .selectedTok { fill:#f6d6dc; stroke:#941236; stroke-width:3.0; }
-
-        .faded { opacity:0.35; }
-
-        .edge { stroke: rgba(148,18,54,0.55); stroke-width:3; stroke-linecap:round; }
-        .edgeFade { stroke: rgba(148,18,54,0.22); stroke-width:3; stroke-linecap:round; }
-
-        .badge { fill:#ffffff; stroke:#941236; stroke-width:2.3; }
-        .badgeText { font-size:13px; font-weight:900; fill:#941236; letter-spacing:0.4px; }
-
-        .callout { fill:#ffffff; stroke:#941236; stroke-width:2.5; }
-      </style>
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="1102" height="340" rx="26" fill="url(#bgGradSentence)"/>
-    <rect x="24" y="20" width="1102" height="340" rx="26" fill="none" class="dash"/>
-
-    <!-- Title -->
-    <text x="70" y="70" class="label title">One center word, many possible contexts — but only one is selected</text>
-    <text x="70" y="98" class="label small">Here the center is “love”; the training example selects “my” as the context.</text>
-
-    <!-- Sentence row -->
-    <g transform="translate(150,140)">
-      <!-- tokens: I love my dog -->
-      <g>
-        <rect x="0" y="0" width="120" height="52" rx="16" class="token"/>
-        <text x="60" y="34" text-anchor="middle" class="label" style="font-size:18px; font-weight:700;">I</text>
-      </g>
-
-      <g transform="translate(150,0)">
-        <rect x="0" y="0" width="160" height="52" rx="16" class="centerTok"/>
-        <text x="80" y="34" text-anchor="middle" class="label" style="font-size:18px; font-weight:900; fill:#941236;">love</text>
-      </g>
-
-      <g transform="translate(340,0)">
-        <rect x="0" y="0" width="140" height="52" rx="16" class="token"/>
-        <text x="70" y="34" text-anchor="middle" class="label" style="font-size:18px; font-weight:900; fill:#941236;">my</text>
-
-        <!-- selected badge -->
-
-      </g>
-
-      <g transform="translate(510,0)">
-        <rect x="0" y="0" width="140" height="52" rx="16" class="token"/>
-        <text x="70" y="34" text-anchor="middle" class="label" style="font-size:18px; font-weight:700;">dog</text>
-      </g>
-    </g>
-
-    <!-- Candidate context neighborhood around "love" -->
-    <!-- center point near love token -->
-    <g>
-      <!-- anchor for love -->
-      <circle cx="150+150+80" cy="140+26" r="0" fill="none"/>
-    </g>
-
-    <!-- We'll hardcode love center coordinates -->
-    <!-- love center at (150+150+80=380, 140+26=166) -->
-    <!-- Candidate nodes -->
-    <!-- Top-left candidate: I (faded) -->
-    <line x1="380" y1="166" x2="285" y2="250" class="edgeFade"/>
-    <g transform="translate(235,236)" class="faded">
-      <rect x="" y="0" width="110" height="44" rx="16" class="token"/>
-      <text x="55" y="30" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">I</text>
-    </g>
-
-    <!-- Bottom-left candidate: pizza (faded) -->
-    <line x1="380" y1="166" x2="335" y2="300" class="edgeFade"/>
-    <g transform="translate(270,286)" class="faded">
-      <rect x="0" y="0" width="130" height="44" rx="16" class="token"/>
-      <text x="65" y="30" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">pizza</text>
-    </g>
-
-    <!-- Top-right candidate: dog (faded) -->
-    <line x1="380" y1="166" x2="520" y2="250" class="edgeFade"/>
-    <g transform="translate(475,236)" class="faded">
-      <rect x="0" y="0" width="120" height="44" rx="16" class="token"/>
-      <text x="60" y="30" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">dog</text>
-    </g>
-
-    <!-- Right candidate: friends (faded) -->
-    <line x1="380" y1="166" x2="600" y2="230" class="edgeFade"/>
-    <g transform="translate(600,170)" class="faded">
-      <rect x="0" y="55" width="150" height="44" rx="16" class="token"/>
-      <text x="75" y="80" text-anchor="middle" class="label" style="font-size:16px; font-weight:700;">friends</text>
-    </g>
-
-    <!-- Selected candidate: my (bright, emphasized) -->
-    <line x1="380" y1="166" x2="515" y2="300" class="edge"/>
-    <g transform="translate(520,142)">
-      <rect x="0" y="150" width="120" height="44" rx="16" class="selectedTok"/>
-      <text x="60" y="180" text-anchor="middle" class="label" style="font-size:16px; font-weight:900; fill:#941236;">my</text>
-    </g>
-
-    <!-- Callout -->
-    <g transform="translate(760,250)">
-      <rect x="0" y="0" width="320" height="86" rx="20" class="callout"/>
-      <text x="18" y="34" class="label small" style="font-weight:900; fill:#941236;">Interpretation</text>
-      <text x="18" y="58" class="label small">The model sees many candidates,</text>
-      <text x="18" y="78" class="label small">but learning uses one observed context.</text>
-    </g>
-
-  </svg>
-</div>
-
-
-<p>
-This is what tension means in language.
-Every observed word implicitly says:
-this happened, and everything else did not.
-</p>
-
-<div class="emphasis-line">
-<strong>Language creates meaning by choosing one alternative and rejecting many others.</strong>
+<div class="callout">
+Language creates meaning by choosing one alternative and rejecting many others.
 </div>
 
 <p>
-As long as our scores are independent, this tension cannot exist.
-The model is free to assign high plausibility to <em>my</em>, <em>the</em>, <em>a</em>,
-and <em>your</em> simultaneously.
-Nothing forces it to prefer one over the others.
-But this is not how text behaves.
+As long as our scores are independent, this tension can't exist. The model can assign high plausibility to "my," "the," "a," and "your" simultaneously. Nothing forces preference. So instead of asking whether a single context fits, we ask: given a fixed centre word, how should plausibility be <em>distributed</em> across all possible context words?
 </p>
 
 <p>
-So instead of asking whether a single context word fits a center word,
-we must ask a stronger question.
-Given a fixed center word, how should plausibility be distributed
-across <em>all</em> possible context words?
+We take all exponentiated scores and sum them:
+</p>
+
+<p style="text-align:center;">
+\( Z(\mathbf{v}) = \sum_{j=1}^{V} \exp(\mathbf{v} \cdot \mathbf{c}_j) \)
 </p>
 
 <p>
-This is where the idea of normalization enters,
-not as a mathematical trick,
-but as a structural necessity.
+This total forces the model to look at the entire vocabulary at once. Now each context must be read as a fraction of the whole:
 </p>
 
-<p>
-Let the center word be represented by a vector \( \mathbf{v} \),
-and let each possible context word be represented by vectors
-\( \mathbf{c}_1, \mathbf{c}_2, \dots, \mathbf{c}_V \).
-After exponentiation, we obtain a collection of positive values:
+<p style="text-align:center;">
+\( P(i \mid \mathbf{v}) = \frac{\exp(\mathbf{v} \cdot \mathbf{c}_i)}{Z(\mathbf{v})} \)
 </p>
 
-<p>
-\[
-\exp(\mathbf{v} \cdot \mathbf{c}_1),
-\exp(\mathbf{v} \cdot \mathbf{c}_2),
-\dots,
-\exp(\mathbf{v} \cdot \mathbf{c}_V)
-\]
-</p>
-
-<!-- Bar chart: exponentiated scores (all positive, still independent) -->
-<div class="image-block">
-  <svg viewBox="0 0 1150 380" role="img"
-       aria-label="Bar chart of exponentiated scores for multiple context words; all positive and independent"
-       style="width:100%; height:auto;">
-
-    <defs>
-      <linearGradient id="bgGradBarsExp" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:19px; font-weight:800; fill:#941236; }
-        .small { font-size:15px; fill:#5a3b3b; }
-        .mono  { font-family: ui-monospace, Menlo, Consolas, monospace; }
-
-        .dash  { stroke:#941236; stroke-width:3; stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .axis  { stroke:#941236; stroke-width:4.2; stroke-linecap:round; }
-        .grid  { stroke: rgba(148,18,54,0.12); stroke-width:2; }
-
-        .bar   { fill:#ffffff; stroke:#941236; stroke-width:2.6; }
-        .barHi { fill:#f6d6dc; stroke:#941236; stroke-width:3.0; }
-
-        .callout { fill:#ffffff; stroke:#941236; stroke-width:2.5; }
-      </style>
-
-
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="1102" height="340" rx="26" fill="url(#bgGradBarsExp)"/>
-    <rect x="24" y="20" width="1102" height="340" rx="26" fill="none" class="dash"/>
-
-    <!-- Title -->
-    <text x="70" y="70" class="label title">
-      Exponentiated scores: all positive, still independent
-    </text>
-    <text x="70" y="98" class="label small">
-      After <tspan class="mono">exp(score)</tspan>, everything is &gt; 0 — but nothing yet forces them to sum to 1.
-    </text>
-
-    <!-- Plot area -->
-    <!-- origin at (170,310); y up -->
-    <line x1="170" y1="310" x2="980" y2="310" class="axis" marker-end="url(#arrowRightBars)"/>
-    <line x1="170" y1="330" x2="170" y2="150" class="axis" marker-end="url(#arrowUpBars)"/>
-
-    <!-- Grid lines -->
-    <line x1="170" y1="270" x2="980" y2="270" class="grid"/>
-    <line x1="170" y1="230" x2="980" y2="230" class="grid"/>
-    <line x1="170" y1="190" x2="980" y2="190" class="grid"/>
-
-    <!-- Axis labels -->
-    <text x="992" y="316" class="label small">contexts</text>
-    <text x="15" y="160" class="label small" transform="rotate(-90 145,160)">exp(score)</text>
-
-    <!-- Bars -->
-    <!-- Bar baseline y=310 -->
-    <!-- Heights chosen for visual contrast -->
-    <!-- my (highlight) -->
-    <g transform="translate(250,0)">
-      <rect x="0" y="180" width="95" height="130" rx="14" class="barHi"/>
-      <text x="47.5" y="332" text-anchor="middle" class="label small" style="font-weight:800; fill:#941236;">my</text>
-    </g>
-
-    <g transform="translate(370,0)">
-      <rect x="0" y="235" width="95" height="75" rx="14" class="bar"/>
-      <text x="47.5" y="332" text-anchor="middle" class="label small">dog</text>
-    </g>
-
-    <g transform="translate(490,0)">
-      <rect x="0" y="255" width="95" height="55" rx="14" class="bar"/>
-      <text x="47.5" y="332" text-anchor="middle" class="label small">I</text>
-    </g>
-
-    <g transform="translate(610,0)">
-      <rect x="0" y="210" width="95" height="100" rx="14" class="bar"/>
-      <text x="47.5" y="332" text-anchor="middle" class="label small">friends</text>
-    </g>
-
-    <g transform="translate(730,0)">
-      <rect x="0" y="270" width="95" height="40" rx="14" class="bar"/>
-      <text x="47.5" y="332" text-anchor="middle" class="label small">pizza</text>
-    </g>
-
-    <g transform="translate(850,0)">
-      <rect x="0" y="245" width="95" height="65" rx="14" class="bar"/>
-      <text x="47.5" y="332" text-anchor="middle" class="label small">music</text>
-    </g>
-
-    <!-- Callout -->
-    <g transform="translate(700,140)">
-      <rect x="0" y="0" width="410" height="86" rx="20" class="callout"/>
-      <text x="18" y="34" class="label small" style="font-weight:900; fill:#941236;">Still missing</text>
-      <text x="18" y="58" class="label small">These are positive “weights”, but they do not form</text>
-      <text x="18" y="78" class="label small">a probability distribution yet (no normalization).</text>
-    </g>
-
-  </svg>
-</div>
-
-<p>
-Each of these numbers reflects how compatible the center word is
-with a particular context word.
-But taken together, they still do not express preference.
-They simply coexist.
-</p>
-
-<p>
-To introduce tension, these values must share a constraint.
-They must be tied together.
-We do this by summing over all possible contexts:
-</p>
-
-<p>
-\[
-Z(\mathbf{v}) = \sum_{j=1}^{V} \exp(\mathbf{v} \cdot \mathbf{c}_j)
-\]
-</p>
-
-<!-- Exponentiated bars flowing into a shared normalization pool Z(v) -->
-<div class="image-block">
-  <svg viewBox="0 0 1000 380" role="img"
-       aria-label="Exponentiated bars flowing into a shared total Z(v) forming a normalization pool"
-       style="width:100%; height:auto;">
-
-    <defs>
-      <linearGradient id="bgGradZ" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <linearGradient id="poolGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#f6d6dc"/>
-        <stop offset="100%" stop-color="#ffffff"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:18px; font-weight:800; fill:#941236; }
-        .small { font-size:15px; fill:#5a3b3b; }
-        .mono  { font-family: ui-monospace, Menlo, Consolas, monospace; }
-
-        .dash  { stroke:#941236; stroke-width:3; stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .bar   { fill:#ffffff; stroke:#941236; stroke-width:2.4; }
-        .barHi { fill:#f6d6dc; stroke:#941236; stroke-width:3.0; }
-
-        .flow  { stroke: rgba(148,18,54,0.55); stroke-width:3.2; fill:none; }
-
-        .pool  { fill:url(#poolGrad); stroke:#941236; stroke-width:3; }
-
-        .callout { fill:#ffffff; stroke:#941236; stroke-width:2.4; }
-      </style>
-
-      <marker id="arrowDownZ" markerWidth="12" markerHeight="12" refX="6" refY="10" orient="auto">
-        <path d="M0,0 L12,0 L6,12 Z" fill="#941236"/>
-      </marker>
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="952" height="340" rx="26" fill="url(#bgGradZ)"/>
-    <rect x="24" y="20" width="952" height="340" rx="26" fill="none" class="dash"/>
-
-    <!-- Title -->
-    <text x="70" y="70" class="label title">
-      All exponentiated scores must share a single normalizer
-    </text>
-    <text x="70" y="98" class="label small">
-      They now interact by contributing to the same total: <tspan class="mono">Z(v)</tspan>
-    </text>
-
-    <!-- Bars (top row) -->
-    <!-- Baseline y = 200 -->
-    <g transform="translate(120,0)">
-      <rect x="0" y="120" width="70" height="80" rx="14" class="barHi"/>
-      <text x="35" y="220" text-anchor="middle" class="label small" style="font-weight:800; fill:#941236;">my</text>
-    </g>
-
-    <g transform="translate(220,0)">
-      <rect x="0" y="145" width="70" height="55" rx="14" class="bar"/>
-      <text x="35" y="220" text-anchor="middle" class="label small">dog</text>
-    </g>
-
-    <g transform="translate(320,0)">
-      <rect x="0" y="155" width="70" height="45" rx="14" class="bar"/>
-      <text x="35" y="220" text-anchor="middle" class="label small">I</text>
-    </g>
-
-    <g transform="translate(420,0)">
-      <rect x="0" y="135" width="70" height="65" rx="14" class="bar"/>
-      <text x="35" y="220" text-anchor="middle" class="label small">friends</text>
-    </g>
-
-    <g transform="translate(520,0)">
-      <rect x="0" y="165" width="70" height="35" rx="14" class="bar"/>
-      <text x="35" y="220" text-anchor="middle" class="label small">pizza</text>
-    </g>
-
-    <g transform="translate(620,0)">
-      <rect x="0" y="150" width="70" height="50" rx="14" class="bar"/>
-      <text x="35" y="220" text-anchor="middle" class="label small">music</text>
-    </g>
-
-    <!-- Flow arrows -->
-    <path d="M155 200 C 155 235, 260 245, 360 255" class="flow" marker-end="url(#arrowDownZ)"/>
-    <path d="M255 200 C 260 235, 320 245, 360 255" class="flow" marker-end="url(#arrowDownZ)"/>
-    <path d="M355 200 C 360 235, 360 245, 360 255" class="flow" marker-end="url(#arrowDownZ)"/>
-    <path d="M455 200 C 440 235, 400 245, 360 255" class="flow" marker-end="url(#arrowDownZ)"/>
-    <path d="M555 200 C 520 235, 440 245, 360 255" class="flow" marker-end="url(#arrowDownZ)"/>
-    <path d="M655 200 C 600 235, 480 245, 360 255" class="flow" marker-end="url(#arrowDownZ)"/>
-
-    <!-- Pool -->
-    <g transform="translate(260,255)">
-      <rect x="0" y="0" width="300" height="70" rx="26" class="pool"/>
-      <text x="150" y="45" text-anchor="middle" class="label" style="font-size:18px; font-weight:900; fill:#941236;">
-        Z(v) = Σ exp(score)
-      </text>
-    </g>
-
-    <!-- Callout -->
-    <g transform="translate(600,250)">
-      <rect x="0" y="0" width="320" height="86" rx="20" class="callout"/>
-      <text x="18" y="34" class="label small" style="font-weight:900; fill:#941236;">Key shift</text>
-      <text x="18" y="58" class="label small">Previously independent values</text>
-      <text x="18" y="78" class="label small">are now tied together.</text>
-    </g>
-
-  </svg>
-</div>
-
-
-<p>
-This quantity does not encode meaning by itself.
-Its role is more subtle.
-It forces the model to look at the entire vocabulary at once.
-Every possible context word is now present in the calculation,
-even the ones that fit poorly.
-</p>
-
-<p>
-Once this total exists, the interpretation of each score changes.
-No context word can be judged in isolation.
-Each one must now be read as a fraction of the whole:
-</p>
-
-<p>
-\[
-P(i \mid \mathbf{v}) =
-\frac{\exp(\mathbf{v} \cdot \mathbf{c}_i)}{Z(\mathbf{v})}
-\]
-</p>
-
-<!-- Normalized bars: probabilities sum to one -->
-<div class="image-block">
-  <svg viewBox="0 0 900 380" role="img"
-       aria-label="Normalized bars whose total height sums to one, showing redistribution rather than growth"
-       style="width:100%; height:auto;">
-
-    <defs>
-      <linearGradient id="bgGradNorm" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:19px; font-weight:800; fill:#941236; }
-        .small { font-size:15px; fill:#5a3b3b; }
-        .mono  { font-family: ui-monospace, Menlo, Consolas, monospace; }
-
-        .dash  { stroke:#941236; stroke-width:3; stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .axis  { stroke:#941236; stroke-width:4; stroke-linecap:round; }
-
-        .bar   { fill:#ffffff; stroke:#941236; stroke-width:2.6; }
-        .barHi { fill:#f6d6dc; stroke:#941236; stroke-width:3.2; }
-
-        .sumLine { stroke:#941236; stroke-width:3.6; stroke-dasharray:6 6; }
-
-        .callout { fill:#ffffff; stroke:#941236; stroke-width:2.4; }
-      </style>
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="852" height="340" rx="26" fill="url(#bgGradNorm)"/>
-    <rect x="24" y="20" width="852" height="340" rx="26" fill="none" class="dash"/>
-
-    <!-- Title -->
-    <text x="70" y="70" class="label title">
-      After normalization, scores become a distribution
-    </text>
-    <text x="70" y="98" class="label small">
-      The total is fixed at <tspan class="mono">1</tspan>. Increasing one bar must reduce the others.
-    </text>
-
-    <!-- Plot area -->
-    <!-- Baseline y = 290 -->
-    <line x1="160" y1="290" x2="780" y2="290" class="axis"/>
-
-    <!-- Sum-to-one line -->
-    <line x1="160" y1="140" x2="780" y2="140" class="sumLine"/>
-    <text x="790" y="145" class="label small" style="font-weight:900; fill:#941236;">total = 1</text>
-
-    <!-- Bars (normalized heights) -->
-    <!-- Heights chosen so tops align with sum line -->
-    <!-- my (largest) -->
-    <g transform="translate(200,0)">
-      <rect x="0" y="180" width="80" height="110" rx="14" class="barHi"/>
-      <text x="40" y="320" text-anchor="middle" class="label small" style="font-weight:900; fill:#941236;">my</text>
-      <text x="40" y="170" text-anchor="middle" class="label small">0.42</text>
-    </g>
-
-    <g transform="translate(310,0)">
-      <rect x="0" y="215" width="80" height="75" rx="14" class="bar"/>
-      <text x="40" y="320" text-anchor="middle" class="label small">dog</text>
-      <text x="40" y="205" text-anchor="middle" class="label small">0.29</text>
-    </g>
-
-    <g transform="translate(420,0)">
-      <rect x="0" y="245" width="80" height="45" rx="14" class="bar"/>
-      <text x="40" y="320" text-anchor="middle" class="label small">friends</text>
-      <text x="40" y="235" text-anchor="middle" class="label small">0.17</text>
-    </g>
-
-    <g transform="translate(530,0)">
-      <rect x="0" y="265" width="80" height="25" rx="14" class="bar"/>
-      <text x="40" y="320" text-anchor="middle" class="label small">music</text>
-      <text x="40" y="255" text-anchor="middle" class="label small">0.09</text>
-    </g>
-
-    <g transform="translate(640,0)">
-      <rect x="0" y="275" width="80" height="15" rx="14" class="bar"/>
-      <text x="40" y="320" text-anchor="middle" class="label small">pizza</text>
-      <text x="40" y="265" text-anchor="middle" class="label small">0.03</text>
-    </g>
-
-    <!-- Callout -->
-    <g transform="translate(110,210)">
-      <rect x="400" y="-60" width="360" height="80" rx="20" class="callout"/>
-      <text x="420" y="-40" class="label small" style="font-weight:900; fill:#941236;">What changed?</text>
-      <text x="420" y="-20" class="label small">
-        We no longer grow values. We redistribute belief.
-      </text>
-      <text x="420" y="-00" class="label small">
-        This is a probability distribution.
-      </text>
-    </g>
-
-  </svg>
-</div>
-
-
-<p>
-This single division introduces dependency.
-If the compatibility between <em>love</em> and <em>my</em> increases,
-the numerator grows.
-But as it grows, the denominator grows as well.
-And as the denominator grows,
-the relative share available to <em>the</em>, <em>a</em>, and <em>your</em> shrinks.
-</p>
-
-<p>
-This is the mathematical expression of linguistic tension.
-To favor one context, the model must implicitly disfavor others.
-Plausibility is no longer free.
-It is conserved.
-</p>
-
-<div class="emphasis-line">
-<strong>Preference emerges only when plausibility is shared.</strong>
-</div>
-
-<p>
-As this competition intensifies, another behavior becomes visible.
-The context word with the largest dot product
-naturally claims the largest share of the total.
-Smaller dot products receive smaller shares.
-</p>
-
-<p>
-In the extreme case, if one dot product
-\( \mathbf{v} \cdot \mathbf{c}_k \)
-is much larger than all others, then:
-</p>
-
-<p>
-\[
-P(k \mid \mathbf{v}) \rightarrow 1,
-\quad
-P(i \mid \mathbf{v}) \rightarrow 0
-\text{ for } i \neq k
-\]
-</p>
-
-<!-- Softmax sharpening: distribution becomes peaked but never collapses -->
-<div class="image-block">
-  <svg viewBox="0 0 1000 380" role="img"
-       aria-label="Distribution becoming increasingly peaked on one context, approaching a hard maximum without collapsing"
-       style="width:100%; height:auto;">
-
-    <defs>
-      <linearGradient id="bgGradPeak" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:18px; font-weight:800; fill:#941236; }
-        .small { font-size:14px; fill:#5a3b3b; }
-
-        .dash  { stroke:#941236; stroke-width:3; stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .axis  { stroke:#941236; stroke-width:3.6; stroke-linecap:round; }
-        .sumLine { stroke:#941236; stroke-width:3; stroke-dasharray:6 6; }
-
-        .bar   { fill:#ffffff; stroke:#941236; stroke-width:2.2; }
-        .barHi { fill:#f6d6dc; stroke:#941236; stroke-width:3.0; }
-
-        .panel { fill:#ffffff; stroke:#941236; stroke-width:2.4; }
-      </style>
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="952" height="340" rx="26" fill="url(#bgGradPeak)"/>
-    <rect x="24" y="20" width="952" height="340" rx="26" fill="none" class="dash"/>
-
-    <!-- Title -->
-    <text x="70" y="68" class="label title">
-      Softmax sharpens toward a maximum — but never becomes one
-    </text>
-    <text x="70" y="94" class="label small">
-      Increasing score gaps make one option dominant, while others remain nonzero.
-    </text>
-
-    <!-- ===== Panel 1: diffuse ===== -->
-    <g transform="translate(80,120)">
-      <rect x="0" y="0" width="250" height="200" rx="20" class="panel"/>
-      <text x="125" y="26" text-anchor="middle" class="label small" style="font-weight:900; fill:#941236;">
-        early
-      </text>
-
-      <!-- baseline -->
-      <line x1="30" y1="160" x2="220" y2="160" class="axis"/>
-      <line x1="30" y1="60" x2="220" y2="60" class="sumLine"/>
-
-      <!-- bars -->
-      <rect x="45" y="95" width="30" height="65" rx="8" class="barHi"/>
-      <rect x="85" y="105" width="30" height="55" rx="8" class="bar"/>
-      <rect x="125" y="115" width="30" height="45" rx="8" class="bar"/>
-      <rect x="165" y="120" width="30" height="40" rx="8" class="bar"/>
-    </g>
-
-    <!-- ===== Panel 2: sharpening ===== -->
-    <g transform="translate(370,120)">
-      <rect x="0" y="0" width="250" height="200" rx="20" class="panel"/>
-      <text x="125" y="26" text-anchor="middle" class="label small" style="font-weight:900; fill:#941236;">
-        sharpening
-      </text>
-
-      <!-- baseline -->
-      <line x1="30" y1="160" x2="220" y2="160" class="axis"/>
-      <line x1="30" y1="60" x2="220" y2="60" class="sumLine"/>
-
-      <!-- bars -->
-      <rect x="45" y="75" width="30" height="85" rx="8" class="barHi"/>
-      <rect x="85" y="115" width="30" height="45" rx="8" class="bar"/>
-      <rect x="125" y="130" width="30" height="30" rx="8" class="bar"/>
-      <rect x="165" y="135" width="30" height="25" rx="8" class="bar"/>
-    </g>
-
-    <!-- ===== Panel 3: very peaked ===== -->
-    <g transform="translate(660,120)">
-      <rect x="0" y="0" width="250" height="200" rx="20" class="panel"/>
-      <text x="125" y="26" text-anchor="middle" class="label small" style="font-weight:900; fill:#941236;">
-        very peaked
-      </text>
-
-      <!-- baseline -->
-      <line x1="30" y1="160" x2="220" y2="160" class="axis"/>
-      <line x1="30" y1="60" x2="220" y2="60" class="sumLine"/>
-
-      <!-- bars -->
-      <rect x="45" y="65" width="30" height="95" rx="8" class="barHi"/>
-      <rect x="85" y="140" width="30" height="20" rx="8" class="bar"/>
-      <rect x="125" y="145" width="30" height="15" rx="8" class="bar"/>
-      <rect x="165" y="148" width="30" height="12" rx="8" class="bar"/>
-    </g>
-
-    <!-- Footer note -->
-    <text x="500" y="345" text-anchor="middle" class="label small">
-      Softmax approaches an argmax as score gaps grow — but probabilities never become exactly zero.
-    </text>
-
-  </svg>
-</div>
-
-<p>
-The operation behaves like a maximum.
-But it never collapses abruptly.
-Near alternatives retain nonzero probability.
-Uncertainty is preserved.
-</p>
-
-<p>
-This is why the transformation is called a <em>soft</em> maximum.
-It prefers without committing absolutely.
-It chooses while still remembering the alternatives.
-</p>
-
-<div class="emphasis-line">
-<strong>The max has been softened into belief.</strong>
-</div>
-
-<p>
-At this point, the numbers acquire a new identity.
-Each \( P(i \mid \mathbf{v}) \) is non-negative,
-and when we sum over all possible contexts, we obtain:
-</p>
-
-<p>
-\[
-\sum_{i=1}^{V} P(i \mid \mathbf{v}) = 1
-\]
-</p>
-
-<!-- Probability mass conservation: all context probabilities sum to one -->
-<div class="image-block">
-  <svg viewBox="0 0 1000 380" role="img"
-       aria-label="Probability mass conserved across all context words, visually summing to one"
-       style="width:100%; height:auto;">
-
-    <defs>
-      <linearGradient id="bgGradMass" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#fff3c4"/>
-        <stop offset="100%" stop-color="#f6e1cf"/>
-      </linearGradient>
-
-      <linearGradient id="tankGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#f6d6dc"/>
-        <stop offset="100%" stop-color="#ffffff"/>
-      </linearGradient>
-
-      <style>
-        .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#2a1f1f; }
-        .title { font-size:18px; font-weight:800; fill:#941236; }
-        .small { font-size:14px; fill:#5a3b3b; }
-
-        .dash  { stroke:#941236; stroke-width:3; stroke-dasharray:10 8; stroke-linecap:round; }
-
-        .bin   { fill:#ffffff; stroke:#941236; stroke-width:2.4; }
-        .binHi { fill:#f6d6dc; stroke:#941236; stroke-width:3.0; }
-
-        .flow  { stroke: rgba(148,18,54,0.55); stroke-width:3.2; fill:none; }
-
-        .tank  { fill:url(#tankGrad); stroke:#941236; stroke-width:3; }
-
-        .tick  { stroke:#941236; stroke-width:3; }
-      </style>
-
-      <marker id="arrowDownMass" markerWidth="12" markerHeight="12" refX="6" refY="10" orient="auto">
-        <path d="M0,0 L12,0 L6,12 Z" fill="#941236"/>
-      </marker>
-    </defs>
-
-    <!-- Card -->
-    <rect x="24" y="20" width="952" height="340" rx="26" fill="url(#bgGradMass)"/>
-    <rect x="24" y="20" width="952" height="340" rx="26" fill="none" class="dash"/>
-
-    <!-- Title -->
-    <text x="70" y="68" class="label title">
-      Probability mass is conserved across all contexts
-    </text>
-    <text x="70" y="94" class="label small">
-      Mass is redistributed, but the total always remains exactly one.
-    </text>
-
-    <!-- Context bins (top) -->
-    <g transform="translate(120,120)">
-      <rect x="0" y="0" width="90" height="60" rx="16" class="binHi"/>
-      <text x="45" y="38" text-anchor="middle" class="label small" style="font-weight:900; fill:#941236;">my</text>
-      <text x="45" y="80" text-anchor="middle" class="label small">0.42</text>
-    </g>
-
-    <g transform="translate(240,120)">
-      <rect x="0" y="0" width="90" height="60" rx="16" class="bin"/>
-      <text x="45" y="38" text-anchor="middle" class="label small">dog</text>
-      <text x="45" y="80" text-anchor="middle" class="label small">0.29</text>
-    </g>
-
-    <g transform="translate(360,120)">
-      <rect x="0" y="0" width="90" height="60" rx="16" class="bin"/>
-      <text x="45" y="38" text-anchor="middle" class="label small">friends</text>
-      <text x="45" y="80" text-anchor="middle" class="label small">0.17</text>
-    </g>
-
-    <g transform="translate(480,120)">
-      <rect x="0" y="0" width="90" height="60" rx="16" class="bin"/>
-      <text x="45" y="38" text-anchor="middle" class="label small">music</text>
-      <text x="45" y="80" text-anchor="middle" class="label small">0.09</text>
-    </g>
-
-    <g transform="translate(600,120)">
-      <rect x="0" y="0" width="90" height="60" rx="16" class="bin"/>
-      <text x="45" y="38" text-anchor="middle" class="label small">pizza</text>
-      <text x="45" y="80" text-anchor="middle" class="label small">0.03</text>
-    </g>
-
-    <!-- Flow arrows -->
-    <path d="M165 180 C 165 220, 360 235, 500 250" class="flow" marker-end="url(#arrowDownMass)"/>
-    <path d="M285 180 C 300 220, 400 235, 500 250" class="flow" marker-end="url(#arrowDownMass)"/>
-    <path d="M405 180 C 420 220, 460 235, 500 250" class="flow" marker-end="url(#arrowDownMass)"/>
-    <path d="M525 180 C 510 220, 500 235, 500 250" class="flow" marker-end="url(#arrowDownMass)"/>
-    <path d="M645 180 C 610 220, 540 235, 500 250" class="flow" marker-end="url(#arrowDownMass)"/>
-
-    <!-- Tank -->
-    <g transform="translate(380,250)">
-      <rect x="0" y="0" width="240" height="80" rx="26" class="tank"/>
-
-      <!-- fill level -->
-      <rect x="0" y="20" width="240" height="60" rx="0" fill="url(#tankGrad)"/>
-
-      <!-- top tick -->
-      <line x1="0" y1="20" x2="240" y2="20" class="tick"/>
-      <text x="120" y="16" text-anchor="middle" class="label small" style="font-weight:900; fill:#941236;">
-        total = 1.0
-      </text>
-    </g>
-
-    <!-- Footer note -->
-    <text x="500" y="345" text-anchor="middle" class="label small">
-      Softmax enforces a conservation law over probability mass.
-    </text>
-
-  </svg>
-</div>
-
-
-<p>
-Without explicitly setting out to do so,
-we have crossed into probability.
-For a fixed center word,
-these values form a probability mass function
-over the vocabulary.
-</p>
-
-<p>
-Probability mass is conserved.
-It cannot be created or destroyed.
-It can only move from one context word to another
-as the geometry of the vectors changes.
-</p>
-
-<p>
-Meaning now lives not in individual scores,
-but in how belief is distributed across alternatives.
-Only now does it make sense to ask
-whether the model placed its belief
-where real language places it.
-</p>
-
-<p>
-That question is where learning truly begins.
-</p>
-
-
-<h3>Slowing Down and Making Sense of the Math</h3>
-
-<p>
-Before moving ahead, this is a good moment to slow the pace on purpose.
-Up to now, ideas have been flowing naturally from one to the next.
-Here, the goal is different.
-This section exists to gently unpack what the mathematics is actually doing,
-without assuming comfort or fluency.
-Nothing new is being introduced.
-We are only making explicit what is already implicit.
-</p>
-
-<div class="emphasis-line">
-<strong>This is a pause for understanding, not a jump forward.</strong>
-</div>
-
-<p>
-We begin with the idea of normalization.
-Despite how technical the word sounds, the idea behind it is very simple.
-Normalization is about taking several quantities
-and forcing them to live together as parts of a whole.
-Once normalized, no value is allowed to exist on its own.
-Every value must be understood relative to the others.
-</p>
-
-<p>
-At this point in the story, we already have a collection of numbers.
-For a fixed center word represented by a vector \( \mathbf{v} \),
-we compute dot products with every context vector
-\( \mathbf{c}_1, \mathbf{c}_2, \dots, \mathbf{c}_V \).
-After passing these through the exponential function,
-we obtain a set of positive values:
-</p>
-
-<p>
-\[
-\exp(\mathbf{v} \cdot \mathbf{c}_1),
-\exp(\mathbf{v} \cdot \mathbf{c}_2),
-\dots,
-\exp(\mathbf{v} \cdot \mathbf{c}_V)
-\]
-</p>
-
-<p>
-Each of these numbers expresses how compatible one context word is
-with the chosen center word.
-However, at this stage, they still do not speak to one another.
-Each value answers its own private question.
-None of them yet knows how strong it is compared to the rest.
-</p>
-
-<p>
-To change this, we gather all of these values together
-and add them up:
-</p>
-
-<p>
-\[
-Z(\mathbf{v}) = \sum_{j=1}^{V} \exp(\mathbf{v} \cdot \mathbf{c}_j)
-\]
-</p>
-
-<p>
-This quantity is simply the total amount of plausibility
-available across the entire vocabulary
-for this single center word.
-Nothing mysterious is happening here.
-We are only measuring how much compatibility exists in total.
-</p>
-
-<p>
-Once this total exists, we can finally ask a more meaningful question.
-Instead of asking whether a context fits,
-we can ask how much it fits relative to all other possibilities.
-This is done by dividing:
-</p>
-
-<p>
-\[
-P(i \mid \mathbf{v}) =
-\frac{\exp(\mathbf{v} \cdot \mathbf{c}_i)}{Z(\mathbf{v})}
-\]
-</p>
-
-<p>
-The symbol \( P \) stands for probability.
-The vertical bar should be read as “given.”
-So this expression means:
-the probability of observing context word \( i \),
-given the center word represented by \( \mathbf{v} \).
-</p>
-
-<p>
-What makes this expression special is not its name,
-but its behavior.
-Every value is positive.
-And when we add up the probabilities for all possible contexts,
-the total is exactly one:
-</p>
-
-<p>
-\[
-\sum_{i=1}^{V} P(i \mid \mathbf{v}) = 1
-\]
-</p>
-
-<p>
-This single property changes everything.
-It means plausibility is no longer created freely.
-If one context becomes more likely,
-others must become less so.
-A quiet tension is introduced.
-The contexts are now competing for the same finite mass.
-</p>
-
-<div class="emphasis-line">
-<strong>Probability appears because plausibility is forced to be shared.</strong>
-</div>
-
-<p>
-To see this in concrete terms, consider a very small example.
-Imagine only three possible context words.
-Suppose their dot products with the center vector are:
-</p>
-
-<p>
-\[
-\mathbf{v} \cdot \mathbf{c}_1 = 2,
-\quad
-\mathbf{v} \cdot \mathbf{c}_2 = 1,
-\quad
-\mathbf{v} \cdot \mathbf{c}_3 = 0
-\]
-</p>
-
-<p>
-After exponentiation, these values become:
-</p>
-
-<p>
-\[
-\exp(2) \approx 7.39,
-\quad
-\exp(1) \approx 2.72,
-\quad
-\exp(0) = 1
-\]
-</p>
-
-<p>
-Their total is:
-</p>
-
-<p>
-\[
-Z = 7.39 + 2.72 + 1 = 11.11
-\]
-</p>
-
-<p>
-Dividing each value by this total gives:
-</p>
-
-<p>
-\[
-P(1 \mid \mathbf{v}) \approx 0.66,
-\quad
-P(2 \mid \mathbf{v}) \approx 0.24,
-\quad
-P(3 \mid \mathbf{v}) \approx 0.09
-\]
-</p>
-
-<p>
-Nothing about the ordering has changed.
-The strongest match remains strongest.
-What has changed is interpretation.
-These numbers now express belief.
-They describe how plausibility is distributed,
-not just how large a score happens to be.
-</p>
-
-<p>
-This transformation is called the softmax
-because it behaves like a softened version of a maximum.
-Large values still dominate,
-but smaller values are not erased.
-Every option remains visible,
-even if its share becomes small.
-</p>
-
-<p>
-At this point, the model is no longer producing raw scores.
-It is expressing a conditional probability distribution.
-And distributions can be compared to reality.
-</p>
-
-<p>
-That comparison is where learning finally becomes possible.
-</p>
-
-<p>
-This is a good place to stop and take a breath.
-We started with a simple score,
-a dot product between a center vector and a context vector.
-Step by step, we asked what that number could and could not tell us.
-By addressing its limitations,
-we arrived at something more structured.
-The score did not disappear.
-It was reshaped into a probability.
-</p>
-
-<p>
-Nothing here was added arbitrarily.
-Each transformation was motivated by a problem we encountered along the way.
-The need to remove ambiguity,
-the need to compare alternatives,
-and finally the need to express belief in a shared, constrained form.
-Seen together, these steps explain how we moved
-from raw compatibility scores
-to a conditional probability distribution over context words.
-</p>
-
-<div class="emphasis-line">
-<strong>If this reasoning feels natural, then the foundation is in place.</strong>
-</div>
-
-<p>
-In the next blog, we will move forward with this probability view firmly in hand.
-We will ask how these probabilities should behave
-when they meet real data,
-and how disagreement between belief and observation
-creates the pressure that drives learning.
-</p>
-
-
-
-        <!-- COMMENTS SECTION -->
-        <hr class="section-divider">
-
-        <section id="comments" class="comments-section">
-          <h2>Comments</h2>
-
-          <script src="https://giscus.app/client.js"
-                  data-repo="adimd/AMD_Website"
-                  data-repo-id="R_kgDOQlniOw"
-                  data-category="General"
-                  data-category-id="DIC_kwDOQlniO84CzoR1"
-                  data-mapping="pathname"
-                  data-strict="0"
-                  data-reactions-enabled="1"
-                  data-emit-metadata="0"
-                  data-input-position="bottom"
-                  data-theme="preferred_color_scheme"
-                  data-lang="en"
-                  crossorigin="anonymous"
-                  async>
-          </script>
-        </section>
-
-      </article>
-
-      <!-- SIDEBAR -->
-      <aside class="blog-sidebar">
-        <div class="sidebar-card">
-          <h2 class="sidebar-title">More in this series</h2>
-          <div id="series-posts"></div>
-        </div>
-
-        <div class="sidebar-card">
-          <h3 class="sidebar-title-sm">Other recent posts</h3>
-          <div id="recent-posts"></div>
-        </div>
-      </aside>
-
-    </div>
+<!-- NORMALISATION: bars before and after -->
+<div class="dia-card">
+  <div class="dia-head"><div class="dia-title">From independent scores to a probability distribution</div><div class="dia-sub">Dividing by Z forces scores to share a fixed total of 1.</div></div>
+  <div class="dia-body">
+    <svg viewBox="0 0 1000 300" role="img" aria-label="Bar chart showing normalisation from exp scores to probabilities">
+      <rect x="0" y="0" width="1000" height="300" rx="14" fill="rgba(35,34,32,.6)"/>
+      <!-- LEFT: exp scores -->
+      <text x="130" y="35" font-family="var(--sans)" font-size="13" font-weight="600" fill="var(--accent)">exp(scores) — independent</text>
+      <line x1="60" y1="230" x2="440" y2="230" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/>
+      <rect x="80" y="100" width="50" height="130" rx="8" fill="rgba(232,168,76,.5)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/><text x="105" y="250" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--muted)">my</text>
+      <rect x="145" y="145" width="50" height="85" rx="8" fill="rgba(232,168,76,.3)" stroke="rgba(232,168,76,.2)" stroke-width="1.5"/><text x="170" y="250" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--muted)">dog</text>
+      <rect x="210" y="170" width="50" height="60" rx="8" fill="rgba(232,168,76,.25)" stroke="rgba(232,168,76,.15)" stroke-width="1.5"/><text x="235" y="250" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--muted)">friends</text>
+      <rect x="275" y="195" width="50" height="35" rx="8" fill="rgba(232,168,76,.18)" stroke="rgba(232,168,76,.12)" stroke-width="1.5"/><text x="300" y="250" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--muted)">music</text>
+      <rect x="340" y="210" width="50" height="20" rx="8" fill="rgba(232,168,76,.12)" stroke="rgba(232,168,76,.1)" stroke-width="1.5"/><text x="365" y="250" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--muted)">pizza</text>
+      <!-- Arrow -->
+      <text x="490" y="150" font-family="var(--sans)" font-size="22" fill="var(--accent)">→</text>
+      <text x="478" y="175" font-family="var(--sans)" font-size="10" fill="var(--muted)">÷ Z(v)</text>
+      <!-- RIGHT: probabilities -->
+      <text x="650" y="35" font-family="var(--sans)" font-size="13" font-weight="600" fill="var(--accent)">probabilities — sum to 1</text>
+      <line x1="560" y1="230" x2="940" y2="230" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/>
+      <!-- sum=1 line -->
+      <line x1="560" y1="80" x2="940" y2="80" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 5"/><text x="948" y="84" font-family="var(--sans)" font-size="10" font-weight="600" fill="var(--accent)">1</text>
+      <rect x="580" y="100" width="55" height="130" rx="8" fill="rgba(232,168,76,.5)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/><text x="607" y="250" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--muted)">my</text><text x="607" y="93" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--ink)">0.42</text>
+      <rect x="650" y="145" width="55" height="85" rx="8" fill="rgba(232,168,76,.3)" stroke="rgba(232,168,76,.2)" stroke-width="1.5"/><text x="677" y="250" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--muted)">dog</text><text x="677" y="138" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--ink)">0.29</text>
+      <rect x="720" y="175" width="55" height="55" rx="8" fill="rgba(232,168,76,.22)" stroke="rgba(232,168,76,.15)" stroke-width="1.5"/><text x="747" y="250" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--muted)">friends</text><text x="747" y="168" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--ink)">0.17</text>
+      <rect x="790" y="200" width="55" height="30" rx="8" fill="rgba(232,168,76,.15)" stroke="rgba(232,168,76,.1)" stroke-width="1.5"/><text x="817" y="250" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--muted)">music</text><text x="817" y="193" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--ink)">0.09</text>
+      <rect x="860" y="215" width="55" height="15" rx="8" fill="rgba(232,168,76,.1)" stroke="rgba(232,168,76,.08)" stroke-width="1.5"/><text x="887" y="250" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--muted)">pizza</text><text x="887" y="208" text-anchor="middle" font-family="var(--sans)" font-size="10" fill="var(--ink)">0.03</text>
+    </svg>
   </div>
+  <div class="dia-foot">We no longer grow values. We redistribute belief. This is a probability distribution.</div>
+</div>
 
-  <!-- Dynamic sidebar data + logic -->
-  <script src="/posts.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      if (typeof BLOG_POSTS === "undefined") return;
+<p>
+This single division introduces dependency. If "love"–"my" compatibility increases, the numerator grows, but the denominator grows too, and the share available to "the," "a," and "your" shrinks. To favour one context, the model must implicitly disfavour others. Plausibility is no longer free. It's conserved.
+</p>
 
-      const articleEl = document.querySelector(".blog-card");
-      if (!articleEl) return;
+<div class="callout">
+Preference emerges only when plausibility is shared.
+</div>
 
-      const currentId = articleEl.dataset.postId;
-      const currentSeriesId = articleEl.dataset.seriesId;
+<p>
+As score gaps widen, the context with the largest dot product claims a larger share. In the extreme, if one score dominates, its probability approaches 1 while the rest approach 0. But they never reach exactly zero. Near alternatives retain nonzero probability. Uncertainty is preserved. This is why the transformation is called a <em>soft</em> maximum: it prefers without committing absolutely.
+</p>
 
-      const currentPost = BLOG_POSTS.find(p => p.id === currentId);
-      if (!currentPost) return;
+<!-- SOFTMAX SHARPENING -->
+<div class="dia-card">
+  <div class="dia-head"><div class="dia-title">Softmax sharpens toward a maximum — but never becomes one</div><div class="dia-sub">Increasing score gaps make one option dominant while others remain nonzero.</div></div>
+  <div class="dia-body">
+    <svg viewBox="0 0 900 220" role="img" aria-label="Three panels showing softmax sharpening from diffuse to peaked">
+      <rect x="0" y="0" width="900" height="220" rx="14" fill="rgba(35,34,32,.6)"/>
+      <!-- Panel 1: diffuse -->
+      <g transform="translate(40,20)"><rect width="250" height="180" rx="12" fill="rgba(237,232,224,.03)" stroke="rgba(237,232,224,.08)"/><text x="125" y="24" text-anchor="middle" font-family="var(--sans)" font-size="12" font-weight="600" fill="var(--accent)">early</text><line x1="30" y1="145" x2="220" y2="145" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/><line x1="30" y1="50" x2="220" y2="50" stroke="var(--accent)" stroke-width="1" stroke-dasharray="4 4"/>
+      <rect x="45" y="80" width="30" height="65" rx="6" fill="rgba(232,168,76,.45)"/><rect x="90" y="90" width="30" height="55" rx="6" fill="rgba(232,168,76,.3)"/><rect x="135" y="100" width="30" height="45" rx="6" fill="rgba(232,168,76,.22)"/><rect x="180" y="105" width="30" height="40" rx="6" fill="rgba(232,168,76,.18)"/></g>
+      <!-- Panel 2: sharpening -->
+      <g transform="translate(325,20)"><rect width="250" height="180" rx="12" fill="rgba(237,232,224,.03)" stroke="rgba(237,232,224,.08)"/><text x="125" y="24" text-anchor="middle" font-family="var(--sans)" font-size="12" font-weight="600" fill="var(--accent)">sharpening</text><line x1="30" y1="145" x2="220" y2="145" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/><line x1="30" y1="50" x2="220" y2="50" stroke="var(--accent)" stroke-width="1" stroke-dasharray="4 4"/>
+      <rect x="45" y="60" width="30" height="85" rx="6" fill="rgba(232,168,76,.5)"/><rect x="90" y="100" width="30" height="45" rx="6" fill="rgba(232,168,76,.25)"/><rect x="135" y="115" width="30" height="30" rx="6" fill="rgba(232,168,76,.15)"/><rect x="180" y="120" width="30" height="25" rx="6" fill="rgba(232,168,76,.12)"/></g>
+      <!-- Panel 3: very peaked -->
+      <g transform="translate(610,20)"><rect width="250" height="180" rx="12" fill="rgba(237,232,224,.03)" stroke="rgba(237,232,224,.08)"/><text x="125" y="24" text-anchor="middle" font-family="var(--sans)" font-size="12" font-weight="600" fill="var(--accent)">very peaked</text><line x1="30" y1="145" x2="220" y2="145" stroke="rgba(237,232,224,.1)" stroke-width="1.5"/><line x1="30" y1="50" x2="220" y2="50" stroke="var(--accent)" stroke-width="1" stroke-dasharray="4 4"/>
+      <rect x="45" y="52" width="30" height="93" rx="6" fill="rgba(232,168,76,.6)"/><rect x="90" y="125" width="30" height="20" rx="6" fill="rgba(232,168,76,.15)"/><rect x="135" y="130" width="30" height="15" rx="6" fill="rgba(232,168,76,.1)"/><rect x="180" y="133" width="30" height="12" rx="6" fill="rgba(232,168,76,.08)"/></g>
+    </svg>
+  </div>
+  <div class="dia-foot">Softmax approaches argmax as score gaps grow — but probabilities never become exactly zero.</div>
+</div>
 
-      const sameSeries = BLOG_POSTS
-        .filter(p => p.seriesId === currentSeriesId && p.id !== currentId)
-        .sort((a, b) => (a.part || 0) - (b.part || 0));
+<p>
+At this point, the numbers have a new identity. Each \(P(i \mid \mathbf{v})\) is non-negative, and they sum to 1:
+</p>
 
-      const recent = BLOG_POSTS
-        .filter(p => p.id !== currentId)
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 4);
+<p style="text-align:center;">
+\( \sum_{i=1}^{V} P(i \mid \mathbf{v}) = 1 \)
+</p>
 
-      const seriesContainer = document.getElementById("series-posts");
-      const recentContainer = document.getElementById("recent-posts");
+<p>
+Without setting out to do so, we've crossed into probability. For a fixed centre word, these values form a probability mass function over the vocabulary. Probability mass is conserved. It can only move from one context word to another as the geometry changes. Meaning now lives not in individual scores, but in how belief is distributed across alternatives.
+</p>
 
-      if (sameSeries.length === 0) {
-        seriesContainer.innerHTML =
-          '<p class="sidebar-empty">More parts in this series are on the way.</p>';
-      } else {
-        seriesContainer.innerHTML = sameSeries.map(p => `
-          <a class="sidebar-link" href="${p.url}">
-            <div class="sidebar-link-title">
-              Part ${p.part}: ${p.title.replace(/^Part\\s*\\d+\\s*[–-]\\s*/, "")}
-            </div>
-            <div class="sidebar-link-meta">
-              ${p.date}
-            </div>
-          </a>
-        `).join("");
-      }
+<hr class="sep">
 
-      recentContainer.innerHTML = recent.map(p => `
-        <a class="sidebar-link" href="${p.url}">
-          <div class="sidebar-link-title-sm">${p.title}</div>
-          <div class="sidebar-link-meta">${p.date}</div>
-        </a>
-      `).join("");
-    });
-  </script>
+<h2>Making sense of the math</h2>
 
-  <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Lightbox / image zoom logic
-    const modal = document.getElementById("image-modal");
-    const modalImg = document.getElementById("image-modal-img");
-    const modalCaption = document.getElementById("image-modal-caption");
-    const modalClose = document.querySelector(".image-modal-close");
+<p>
+Let's slow down and walk through a concrete example. Three possible context words. Dot products with the centre vector:
+</p>
 
-    if (!modal || !modalImg || !modalCaption || !modalClose) return;
+<p style="text-align:center;">
+\(\mathbf{v} \cdot \mathbf{c}_1 = 2, \quad \mathbf{v} \cdot \mathbf{c}_2 = 1, \quad \mathbf{v} \cdot \mathbf{c}_3 = 0\)
+</p>
 
-    // Any <img> inside .image-frame becomes zoomable
-    document.querySelectorAll(".image-frame img").forEach(function (img) {
-      img.style.cursor = "zoom-in";
-      img.addEventListener("click", function () {
-        modalImg.src = img.src;
-        modalImg.alt = img.alt || "";
+<p>
+After exponentiation:
+</p>
 
-        // Use the nearest .image-caption if available
-        const captionEl = img.closest(".image-block")?.querySelector(".image-caption");
-        modalCaption.textContent = captionEl
-          ? captionEl.textContent.trim()
-          : (img.alt || "");
+<p style="text-align:center;">
+\(\exp(2) \approx 7.39, \quad \exp(1) \approx 2.72, \quad \exp(0) = 1\)
+</p>
 
-        modal.classList.add("open");
-        modal.setAttribute("aria-hidden", "false");
-      });
-    });
+<p>
+The total:
+</p>
 
-    function closeModal() {
-      modal.classList.remove("open");
-      modal.setAttribute("aria-hidden", "true");
-      modalImg.src = "";
-      modalCaption.textContent = "";
-    }
+<p style="text-align:center;">
+\(Z = 7.39 + 2.72 + 1 = 11.11\)
+</p>
 
-    modalClose.addEventListener("click", closeModal);
+<p>
+Divide each by \(Z\):
+</p>
 
-    // Click on dark background closes too
-    modal.addEventListener("click", function (e) {
-      if (e.target === modal) {
-        closeModal();
-      }
-    });
+<p style="text-align:center;">
+\(P(1 \mid \mathbf{v}) \approx 0.66, \quad P(2 \mid \mathbf{v}) \approx 0.24, \quad P(3 \mid \mathbf{v}) \approx 0.09\)
+</p>
 
-    // ESC key closes
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && modal.classList.contains("open")) {
-        closeModal();
-      }
-    });
-  });
-  </script>
+<p>
+The ordering hasn't changed. The strongest match is still strongest. What's changed is the interpretation. These numbers express <em>belief</em>. They describe how plausibility is distributed, not just how large a score happens to be. And they sum to 1, which means increasing one must decrease the others.
+</p>
 
+<div class="callout">
+Probability appears because plausibility is forced to be shared.
+</div>
+
+<p>
+The model is no longer producing raw scores. It's expressing a conditional probability distribution over the vocabulary. And distributions can be compared to reality. That comparison is where learning truly begins.
+</p>
+
+<hr class="sep">
+
+<h2>Where we go next</h2>
+
+<p>
+We started with a raw dot product. Step by step, we asked what it could and couldn't tell us. By addressing its limitations — removing sign ambiguity, forcing comparison, expressing belief in a shared form — we arrived at a probability distribution over context words.
+</p>
+
+<p>
+Nothing was added arbitrarily. Each transformation was motivated by a problem we ran into. The next blog will ask how these probabilities should behave when they meet real data, and how disagreement between belief and observation creates the pressure that drives learning.
+</p>
+
+<!-- ════════ CONTENT END ════════ -->
+
+<hr class="sep">
+<section id="comments" class="comments-section">
+  <h2>Comments</h2>
+  <script src="https://giscus.app/client.js" data-repo="adimd/AMD_Website" data-repo-id="R_kgDOQlniOw" data-category="General" data-category-id="DIC_kwDOQlniO84CzoR1" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="dark" data-lang="en" crossorigin="anonymous" async></script>
+</section>
+
+</article></main>
+
+<!-- SIDEBAR -->
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">More in this series</h2>
+    <a class="sidebar-link" href="https://adimd.github.io/AMD_Website/llm/center-context-alignment.html">
+      <div class="sidebar-link-title">Part 5: What the Dot Product Really Measures</div>
+      <div class="sidebar-link-note">How centre and context recognise each other.</div>
+    </a>
+    <a class="sidebar-link" href="https://adimd.github.io/AMD_Website/llm/model-vs-data-distributions.html">
+      <div class="sidebar-link-title">Part 7: Model vs Data Distributions</div>
+      <div class="sidebar-link-note">When the model's beliefs meet reality.</div>
+    </a>
+
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer"><p class="footer-tagline">Thanks for reading.</p><p class="footer-copy">© <span id="year"></span> Adithya MD</p></footer>
+<script>
+document.getElementById("year").textContent=new Date().getFullYear();
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':''});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow=''}));
+</script>
 </body>
 </html>
