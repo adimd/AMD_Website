@@ -4,578 +4,458 @@
   <meta charset="UTF-8">
   <title>Moisture Meter | Adithya MD</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <link rel="stylesheet" href="style.css">
-
-  <!-- Page-specific styling -->
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    .page-container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 2.5rem 1.5rem 3rem;
-    }
+    :root{--bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;--ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;--accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);--border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);--display:'Instrument Serif',Georgia,serif;--sans:'Source Sans 3',sans-serif;--hand:'Caveat',cursive;--radius:14px}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.75;font-size:19px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes lineGrow{from{width:0}to{width:48px}}
+    .anim{animation:rise .8s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}.d3{animation-delay:.3s}.d4{animation-delay:.42s}.d5{animation-delay:.55s}.d6{animation-delay:.68s}
 
-    .mm-hero {
-      display: grid;
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2.5fr);
-      gap: 2rem;
-      align-items: center;
-      margin-bottom: 2.5rem;
-    }
+    /* NAV */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.85);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1180px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:var(--ink)}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}.dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}.dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}.dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}.hamburger.active span:nth-child(2){opacity:0}.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.95);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a,.mobile-overlay button{font-family:var(--display);font-size:1.5rem;color:var(--body);background:none;border:none;cursor:pointer;padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover,.mobile-overlay button:hover{color:var(--accent)}
+    .mobile-overlay .mobile-sub{display:flex;flex-direction:column;align-items:center}
+    .mobile-overlay .mobile-sub a{font-size:1.15rem;color:var(--muted);padding:.4rem 1.5rem}
 
-    .mm-hero-tag {
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      font-size: 0.75rem;
-      color: var(--accent-strong);
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-    }
+    /* PAGE TITLE */
+    .page-title{max-width:1060px;margin:0 auto;padding:4.5rem 2rem 1.5rem;text-align:center}
+    .page-title .label{font-family:var(--hand);font-size:1.5rem;color:var(--accent);display:block;margin-bottom:.4rem}
+    .page-title h1{font-family:var(--display);font-weight:400;font-size:3rem;color:var(--ink);letter-spacing:-.03em;margin-bottom:.6rem}
+    .page-title .sub{font-size:1.12rem;font-weight:300;color:var(--muted)}
+    .accent-line{display:block;width:48px;height:2px;background:var(--accent);margin:1.2rem auto 0;border-radius:2px;animation:lineGrow .6s .4s ease both}
 
-    .mm-hero h1 {
-      margin: 0 0 0.75rem;
-      font-size: clamp(2.1rem, 2.6vw + 1rem, 2.6rem);
-    }
+    /* SLIDER (compact, below title) */
+    .slider-wrap{max-width:860px;margin:1.5rem auto 0;padding:0 2rem}
+    .slider{position:relative}
+    .slider-window{overflow:hidden;border-radius:var(--radius);border:1px solid var(--border)}
+    .slider-track{display:flex;transition:transform .5s cubic-bezier(.22,1,.36,1)}
+    .slide{flex:0 0 100%;position:relative}
+    .slide img{width:100%;display:block;max-height:440px;object-fit:cover}
+    .slide-cap{position:absolute;bottom:0;left:0;right:0;padding:.8rem 1.2rem;background:linear-gradient(transparent,rgba(26,25,23,.85));font-size:.92rem;color:var(--ink);font-weight:300;font-style:italic}
+    .slider-btn{position:absolute;top:50%;transform:translateY(-50%);border:none;background:rgba(232,168,76,.25);color:var(--accent);width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all .25s;backdrop-filter:blur(8px)}
+    .slider-btn:hover{background:rgba(232,168,76,.4)}
+    .slider-btn.prev{left:10px}.slider-btn.next{right:10px}
+    .dots{display:flex;justify-content:center;gap:.5rem;margin-top:.8rem}
+    .dot{width:8px;height:8px;border-radius:50%;border:1px solid var(--muted);background:transparent;cursor:pointer;padding:0;transition:all .25s}
+    .dot.active{background:var(--accent);border-color:var(--accent)}
 
-    .mm-hero p {
-      font-size: 0.98rem;
-      color: var(--text-muted);
-      max-width: 34rem;
-    }
+    /* CONTENT */
+    .content{max-width:1060px;margin:0 auto;padding:2.5rem 2rem 4rem}
+    .content p{font-size:1.18rem;font-weight:300;margin-bottom:1.15rem}
+    .content strong{color:var(--ink);font-weight:500}
+    .content h2{font-family:var(--display);font-weight:400;font-size:1.85rem;color:var(--ink);margin-top:.5rem;margin-bottom:.9rem;letter-spacing:-.02em}
+    .divider{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.8rem 0}
+    .content ul{list-style:none;padding:0;margin:.6rem 0 1rem}
+    .content ul li{position:relative;padding-left:1.4rem;margin-bottom:.55rem;font-size:1.1rem;font-weight:300}
+    .content ul li::before{content:'';position:absolute;left:0;top:.65rem;width:6px;height:6px;border-radius:50%;background:var(--accent)}
 
-    .mm-hero-card {
-      background: radial-gradient(circle at top left, #ffffff 0, #f6eaaf 55%, #ead3c1 100%);
-      border-radius: var(--radius-lg);
-      padding: 1.5rem 1.4rem;
-      box-shadow: var(--shadow-soft);
-      border: 1px solid rgba(148, 18, 54, 0.06);
-    }
+    /* HIGHLIGHT BOX */
+    .highlight{margin:1.8rem 0;padding:1.5rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.35rem;font-style:italic;color:var(--ink);line-height:1.55}
 
-    .mm-hero-card h2 {
-      font-size: 1rem;
-      margin-top: 0;
-      margin-bottom: 0.5rem;
-    }
+    /* IMPACT STATS */
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin:1.5rem 0}
+    .stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center;transition:all .3s}
+    .stat:hover{border-color:var(--border-hover);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+    .stat .num{font-family:var(--display);font-size:2.2rem;color:var(--accent);display:block;margin-bottom:.3rem}
+    .stat .label{font-size:.92rem;color:var(--muted)}
 
-    .mm-hero-card p {
-      font-size: 0.9rem;
-      color: #444;
-      margin-bottom: 0.7rem;
-    }
+    /* PEOPLE */
+    .people-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1rem}
+    .pcard{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem;transition:all .3s}
+    .pcard:hover{border-color:var(--border-hover);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+    .pcard .name{font-family:var(--display);font-size:1.15rem;color:var(--ink);margin-bottom:.25rem}
+    .pcard .role{font-family:var(--hand);font-size:1.08rem;color:var(--accent);margin-bottom:.4rem}
+    .pcard p{font-size:1rem;margin-bottom:0}
 
-    .mm-hero-meta {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
+    /* DEVICE + STEPS */
+    .device-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:2.5rem;align-items:start;margin-top:.5rem}
+    .device-img{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .device-img img{width:100%;display:block}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:1.2rem}
+    .step{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem;transition:all .3s}
+    .step:hover{border-color:var(--border-hover);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+    .step .snum{font-family:var(--hand);font-size:1.7rem;color:var(--accent);display:block;margin-bottom:.3rem}
+    .step h3{font-family:var(--display);font-size:1.15rem;color:var(--ink);margin-bottom:.4rem}
+    .step p{font-size:1rem;font-weight:300}
 
-    .mm-hero-image {
-      margin-top: 0.8rem;
-      border-radius: 14px;
-      overflow: hidden;
-      border: 1px solid var(--border-subtle);
-      background: #fff;
-    }
+    /* VIDEO */
+    .vid-section{text-align:center;margin-top:.5rem}
+    .vid-wrap{max-width:860px;margin:1rem auto 0;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:#000;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+    .vid-wrap video{width:100%;display:block}
+    .vid-cap{padding:.8rem 1.2rem;background:var(--bg-card);font-size:.95rem;color:var(--muted);font-style:italic;font-weight:300;text-align:center;border-top:1px solid var(--border)}
 
-    .mm-hero-image img {
-      width: 100%;
-      display: block;
-    }
+    /* CTA */
+    .cta{margin-top:2.5rem;text-align:center;padding:2.5rem 2rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius)}
+    .cta h2{font-family:var(--display);font-size:1.85rem;color:var(--ink);margin-bottom:.7rem}
+    .cta p{font-size:1.1rem;font-weight:300;margin-bottom:1.2rem}
+    .btn{display:inline-flex;align-items:center;padding:.75rem 1.75rem;border-radius:8px;font-size:.95rem;font-weight:500;transition:all .3s;cursor:pointer;border:none;font-family:var(--sans)}
+    .btn.primary{background:var(--accent);color:var(--bg)}.btn.primary:hover{background:#f0be6e;transform:translateY(-1px);box-shadow:0 4px 20px rgba(232,168,76,.25)}
+    .cta-sub{font-size:.95rem;color:var(--muted);margin-top:1.1rem}
 
-    .mm-section {
-      margin-top: 2.75rem;
-    }
+    /* FOOTER */
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
 
-    .mm-section h2 {
-      margin: 0 0 0.75rem;
-      font-size: 1.4rem;
-    }
-
-    .mm-section p {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      max-width: 800px;
-    }
-
-    .mm-two-col {
-      display: grid;
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2.3fr);
-      gap: 1.8rem;
-      align-items: flex-start;
-    }
-
-    .mm-list {
-      margin-top: 0.75rem;
-      padding-left: 1.2rem;
-      font-size: 0.95rem;
-      color: var(--text-muted);
-    }
-
-    .mm-list li + li {
-      margin-top: 0.35rem;
-    }
-
-    .mm-feature-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1.4rem;
-      margin-top: 1.4rem;
-    }
-
-    .mm-feature {
-      background: #fff;
-      border-radius: var(--radius-md);
-      padding: 1rem 1rem;
-      border: 1px solid var(--border-subtle);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.03);
-      font-size: 0.9rem;
-    }
-
-    .mm-feature h3 {
-      margin-top: 0;
-      font-size: 0.98rem;
-      margin-bottom: 0.4rem;
-    }
-
-    .mm-gallery {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.9rem;
-      margin-top: 1.1rem;
-    }
-
-    .mm-gallery img {
-      width: 100%;
-      border-radius: 10px;
-      border: 1px solid var(--border-subtle);
-      object-fit: cover;
-      height: 400px;
-    }
-
-    .mm-cta {
-      margin-top: 3rem;
-      text-align: center;
-    }
-
-    .mm-cta-sub {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 0.7rem;
-    }
-
-    @media (max-width: 880px) {
-      .mm-hero { grid-template-columns: 1fr; }
-      .mm-two-col { grid-template-columns: 1fr; }
-      .mm-feature-grid { grid-template-columns: 1fr; }
-      .mm-gallery { grid-template-columns: repeat(2, 1fr); }
-    }
+    @media(max-width:820px){.device-grid{grid-template-columns:1fr}.steps{grid-template-columns:1fr}.people-grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-title{padding:3.5rem 1.25rem 1.2rem}.page-title h1{font-size:2.2rem}.content{padding:2rem 1.25rem 3rem}.slider-wrap{padding:0 1.25rem}.slider-btn.prev{left:6px}.slider-btn.next{right:6px}}
   </style>
 </head>
-
 <body>
 
-<!-- NAVBAR -->
+<!-- NAV -->
 <header class="site-header">
   <div class="nav-container">
-    <a href="index.html" class="brand">
-      <span class="brand-mark">AM</span>
-      <span class="brand-text">Adithya MD</span>
-    </a>
-<nav class="nav-links">
-  <a href="index.html">Home</a>
-  <a href="about.html">About</a>
-  <a href="blogs.html">Blogs</a>
-  <a href="projects.html">Projects</a>
-  <a href="startup.html">Moisture Meter</a>
-
-  <div class="dropdown">
-    <button class="dropbtn">Teaching &amp; Outreach ▾</button>
-    <div class="dropdown-content">
-      <a href="teaching.html">Teaching Roles</a>
-      <a href="workshops.html">Workshops</a>
-      <a href="talks.html">Talks</a>
-    </div>
+    <a href="index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a><a href="about.html">About</a><a href="blogs.html">Blogs</a><a href="projects.html">Projects</a><a href="startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button><div class="dropdown-content"><a href="teaching.html">Teaching Roles</a><a href="workshops.html">Workshops</a><a href="talks.html">Talks</a></div></div>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
   </div>
-
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="index.html">Home</a><a href="about.html">About</a><a href="blogs.html">Blogs</a><a href="projects.html">Projects</a><a href="startup.html">Moisture Meter</a>
+  <div class="mobile-sub"><button style="color:var(--ink);font-size:1.3rem">Beyond the Desk</button><a href="teaching.html">Teaching Roles</a><a href="workshops.html">Workshops</a><a href="talks.html">Talks</a></div>
   <a href="contact.html">Contact</a>
-</nav>
-  </div>
-</header>
+</div>
 
-
-  </div>
-</header>
-<main>
-  <div class="page-container">
-
-    <!-- HERO -->
-    <section class="mm-hero">
-      <div>
-        <div class="mm-hero-tag">Practical hardware · Built by trial, error & caffeine</div>
-        <h1>Moisture Meter for Cashew Processing</h1>
-        <p>
-          A purpose-built, field-ready moisture meter designed for measuring moisture in
-          <strong>Raw Cashew Nuts (RCN)</strong> and <strong>Natural Wholes (NW)</strong>.
-          Basically: a device so processors don’t have to guess moisture using wisdom,
-          intuition, or feelings.
-        </p>
-        <p>
-          Somehow, despite many prototypes that almost made us give up,
-          this device is now used in <strong>100+ processing units</strong> across
-          <strong>India and Africa</strong>. We’re still surprised too.
-        </p>
-      </div>
-
-      <aside class="mm-hero-card">
-        <h2>The short version</h2>
-        <p>
-          A <strong>cashew-specific moisture meter</strong> built for actual factories —
-          stable readings, repeatable results, and simple enough to use without a manual
-          (or calling an engineer every time). Not for roasted or broken grades — we’re not magicians.
-        </p>
-        <p class="mm-hero-meta">
-          • Built under IXE Tronics Pvt. Ltd.<br>
-          • Designed using real field feedback & real mistakes<br>
-          
-        </p>
-        <div class="mm-hero-image">
-          <img src="assets/Moisture_Meter/MM1.svg" alt="Moisture meter device on a workbench">
-        </div>
-      </aside>
-    </section>
-
-    <!-- PROBLEM -->
-    <section class="mm-section">
-      <h2>The problem</h2>
-      <div class="mm-two-col">
-        <div>
-          <p>
-            Moisture affects cutting quality, yield, roasting, and storage. But most processors
-            rely on “experience”, gut feeling, or grain meters that guess worse than the weather forecast.
-            It works sometimes… until it doesn’t.
-          </p>
-          <ul class="mm-list">
-            <li>No tool built specifically for cashews</li>
-            <li>Grain meters give unstable readings and emotional roller-coasters</li>
-            <li>Lab testing is accurate but slower than the drying process itself</li>
-          </ul>
-        </div>
-        <figure class="mm-figure">
-          <img src="assets/moisture/drying-yard.jpg" alt="Cashew drying yard">
-          <figcaption>Decisions depend on “judgment” — this meter tries to help that judgment.</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <!-- SOLUTION -->
-    <section class="mm-section">
-      <h2>What we built</h2>
-      <div class="mm-two-col">
-        <div>
-          <p>
-            A moisture meter specifically for <strong>RCN</strong> and <strong>Natural Whole kernels</strong>.
-            Portable, repeatable, and designed to withstand factory conditions including dust,
-            dropped tools, and occasionally frustrated operators.
-          </p>
-          <ul class="mm-list">
-            <li>Simple operation (even for people who absolutely refuse to read manuals)</li>
-            <li>Stable readings across batches</li>
-            <li>Survives dust, rough handling, and voltage that fluctuates like exam results</li>
-            <li>Affordable and repairable (because things <em>will</em> break eventually)</li>
-          </ul>
-        </div>
-        <figure class="mm-figure">
-          <img src="assets/moisture/device-on-table.jpg" alt="Moisture meter close-up"> 
-          <figcaption>One of the few versions that didn’t involve last-minute fixes with tape.</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <!-- HOW IT WORKS -->
-    <section class="mm-section">
-      <h2>How it works (the non-dramatic version)</h2>
-      <div class="mm-feature-grid">
-        <div class="mm-feature">
-          <h3>1. Sampling</h3>
-          <p>Put a fixed quantity of RCN or NW in the chamber. No rituals required.</p>
-        </div>
-        <div class="mm-feature">
-          <h3>2. Measurement</h3>
-          <p>Electrical response correlates with moisture — physics doing its thing.</p>
-        </div>
-        <div class="mm-feature">
-          <h3>3. Reading & decisions</h3>
-          <p>Compare trays & batches, decide when to dry or cut — with fewer arguments.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- USE CASES -->
-    <section class="mm-section">
-      <h2>Where it is used</h2>
-      <div class="mm-spec-grid">
-        <div>
-          <h3>Use-cases</h3>
-          <ul>
-            <li>RCN drying & steaming QC</li>
-            <li>Natural Wholes before roasting or cutting</li>
-            <li>Tray-wise & batch-wise consistency checks</li>
-            <li>Checking storage readiness (aka mould prevention)</li>
-          </ul>
-        </div>
-        <div>
-          <h3>Design priorities</h3>
-          <ul>
-            <li>Optimized for RCN & NW only (no all-in-one magical box nonsense)</li>
-            <li>Portable, rugged and repeatable</li>
-            <li>Repairable — not a black box mystery device</li>
-            <li>Works for small, medium, and giant factories alike</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- GALLERY -->
-<section class="mm-section" style="margin-top:3rem;">
-
-  <h2 style="text-align:center; margin-bottom:1.5rem;">Snapshots from the journey</h2>
-<p style="text-align:center;">
-  A few moments captured while building, testing and repairing prototypes in real factories.
-</p>
-
-  <!-- Slider styles (you can move this <style> to style.css later if you like) -->
-  <style>
-    .mm-slider {
-      max-width: 900px;
-      margin: 0 auto;
-      position: relative;
-    }
-
-    .mm-slider-window {
-      overflow: hidden;
-      border-radius: 10px;
-    }
-
-    .mm-slider-track {
-      display: flex;
-      transition: transform 0.4s ease;
-    }
-
-    .mm-slide {
-      flex: 0 0 100%;
-      text-align: center;
-      padding: 0.5rem 1rem 1rem;
-      box-sizing: border-box;
-    }
-
-    .mm-slide img {
-      width: 100%;
-      max-width: 500px; /* image width */
-      border-radius: 10px;
-      display: block;
-      margin: 0 auto;
-    }
-
-    .mm-slide p {
-      font-size: 0.9rem;
-      color: #555;
-      margin-top: 0.6rem;
-    }
-
-    .mm-slider-btn {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      border: none;
-      background: rgba(0, 0, 0, 0.6);
-      color: #fff;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.1rem;
-    }
-
-    .mm-slider-btn:hover {
-      background: rgba(0, 0, 0, 0.8);
-    }
-
-    .mm-slider-btn.mm-prev {
-      left: 8px;
-    }
-
-    .mm-slider-btn.mm-next {
-      right: 8px;
-    }
-
-    .mm-slider-dots {
-      display: flex;
-      justify-content: center;
-      gap: 0.4rem;
-      margin-top: 0.75rem;
-    }
-
-    .mm-slider-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      border: none;
-      background: #ccc;
-      cursor: pointer;
-      padding: 0;
-    }
-
-    .mm-slider-dot.mm-active {
-      background: #333;
-    }
-  </style>
-
-  <div class="mm-slider">
-    <button class="mm-slider-btn mm-prev" type="button" aria-label="Previous image">‹</button>
-
-    <div class="mm-slider-window">
-      <div class="mm-slider-track">
-
-        <!-- Slide 1 -->
-        <div class="mm-slide">
-          <img src="assets/Moisture_Meter/MM2.svg" alt="Early prototype testing">
-          <p>Testing at a dockyard — part of our “collect data everywhere” phase</p>
-        </div>
-
-        <!-- Slide 2 -->
-        <div class="mm-slide">
-          <img src="assets/Moisture_Meter/MM3.svg" alt="Calibration setup">
-          <p>Calibration and refinement of readings before deployment  couldn’t do this in a lab, so we literally baked in the sun for over a year.</p>
-        </div>
-
-        <!-- Slide 3 -->
-        <div class="mm-slide">
-          <img src="assets/Moisture_Meter/MM4.svg" alt="Field setup with real samples">
-          <p>Presenting our prototype to Bolas, one of the leading cashew processing companies, alongside our mentor Mr. Pramod Kamath for feedback and guidance.</p>
-        </div>
-
-      </div>
-    </div>
-
-    <button class="mm-slider-btn mm-next" type="button" aria-label="Next image">›</button>
-  </div>
-
-  <div class="mm-slider-dots" id="mm-slider-dots"></div>
-
-  <!-- Slider script (also can be moved to a separate JS file later) -->
-  <script>
-    (function () {
-      const track = document.querySelector('.mm-slider-track');
-      const slides = Array.from(document.querySelectorAll('.mm-slide'));
-      const prevBtn = document.querySelector('.mm-slider-btn.mm-prev');
-      const nextBtn = document.querySelector('.mm-slider-btn.mm-next');
-      const dotsContainer = document.getElementById('mm-slider-dots');
-
-      let currentIndex = 0;
-      const total = slides.length;
-
-      // Create dots
-      const dots = slides.map((_, i) => {
-        const dot = document.createElement('button');
-        dot.type = 'button';
-        dot.className = 'mm-slider-dot' + (i === 0 ? ' mm-active' : '');
-        dot.setAttribute('aria-label', 'Go to image ' + (i + 1));
-        dot.addEventListener('click', () => goToSlide(i));
-        dotsContainer.appendChild(dot);
-        return dot;
-      });
-
-      function updateSlidePosition() {
-        track.style.transform = 'translateX(' + (-currentIndex * 100) + '%)';
-        dots.forEach((dot, i) => {
-          dot.classList.toggle('mm-active', i === currentIndex);
-        });
-      }
-
-      function goToSlide(index) {
-        if (index < 0) {
-          currentIndex = total - 1;
-        } else if (index >= total) {
-          currentIndex = total - 1;
-        } else {
-          currentIndex = index;
-        }
-        updateSlidePosition();
-      }
-
-      function goNext() {
-        currentIndex = (currentIndex + 1) % total;
-        updateSlidePosition();
-      }
-
-      function goPrev() {
-        currentIndex = (currentIndex - 1 + total) % total;
-        updateSlidePosition();
-      }
-
-      nextBtn.addEventListener('click', goNext);
-      prevBtn.addEventListener('click', goPrev);
-
-      // Optional: swipe support for mobile
-      let startX = null;
-
-      track.addEventListener('touchstart', function (e) {
-        startX = e.touches[0].clientX;
-      });
-
-      track.addEventListener('touchend', function (e) {
-        if (startX === null) return;
-        const endX = e.changedTouches[0].clientX;
-        const diff = endX - startX;
-        if (Math.abs(diff) > 40) {
-          if (diff < 0) goNext();
-          else goPrev();
-        }
-        startX = null;
-      });
-
-      // Initial state
-      updateSlidePosition();
-    })();
-  </script>
-
+<!-- TITLE -->
+<section class="page-title anim d1">
+  <span class="label">Built from scratch for cashew processing</span>
+  <h1>The Moisture Meter</h1>
+  <p class="sub">A purpose built device for an industry that had been asking for one for years.</p>
+  <span class="accent-line"></span>
 </section>
 
-    <!-- CTA -->
-    <section class="mm-cta">
-      <h2>Interested in the moisture meter?</h2>
-      <p>
-        Visit our product page below — it contains slightly more formal information than this page.
-      </p>
-
-      <a href="https://moisture.ixetronics.com"
-         class="btn primary"
-         target="_blank"
-         rel="noopener noreferrer">
-        Visit Product Page →
-      </a>
-
-      <p class="mm-cta-sub">
-        For collaborations, questions, field tests, or constructive roasting:
-        <a href="mailto:adithyamd97@gmail.com"
-           style="color:var(--accent-strong); font-weight:600;">
-          adithyamd97@gmail.com
-        </a>
-      </p>
-    </section>
-
+<!-- SLIDER -->
+<div class="slider-wrap anim d2">
+  <div class="slider">
+    <button class="slider-btn prev" type="button" aria-label="Previous">&#8249;</button>
+    <div class="slider-window">
+      <div class="slider-track" id="sliderTrack">
+        <div class="slide"><img src="assets/Moisture_Meter/MM1.svg" alt="The moisture meter"><div class="slide-cap">The CULTI 7 moisture meter.</div></div>
+        <div class="slide"><img src="assets/Moisture_Meter/MM2.svg" alt="Dockyard testing"><div class="slide-cap">Field testing at a dockyard.</div></div>
+        <div class="slide"><img src="assets/Moisture_Meter/MM3.svg" alt="Calibration"><div class="slide-cap">Over a year of calibration under real conditions.</div></div>
+        <div class="slide"><img src="assets/Moisture_Meter/MM4.svg" alt="Presenting"><div class="slide-cap">Presenting to Bolas with Pramod Sir.</div></div>
+      </div>
+    </div>
+    <button class="slider-btn next" type="button" aria-label="Next">&#8250;</button>
   </div>
-</main>
+  <div class="dots" id="sliderDots"></div>
+</div>
 
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- ═══ THE PROBLEM ═══ -->
+  <section class="anim d3">
+    <h2>The problem</h2>
+
+    <p>
+      Moisture is one of the most critical variables in cashew processing. It directly affects
+      how cleanly the shell cuts, how much usable kernel you get from a batch, how well it
+      roasts, and how long it lasts in storage. When the moisture is off, you get poor cuts,
+      lower yield, uneven roasting, and in the worst case, mould that ruins entire batches.
+      For an industry that operates on thin margins, these aren't small problems. They're the
+      difference between a profitable season and a bad one.
+    </p>
+
+    <p>
+      And yet, for the longest time, there was no reliable way to measure it on the factory
+      floor. The standard method in most processing units was simple: grab a handful of raw
+      cashew nuts, toss them, and listen to the sound they make. Experienced processors could
+      tell from the sound whether the moisture was in the right range. It sounds crude, but
+      people with decades of practice were genuinely good at it.
+    </p>
+
+    <p>
+      The problem is that this skill takes years to develop. A new worker can't learn it in
+      a week. On a bad day, or with an unfamiliar batch from a different origin, even the most
+      experienced person can get it wrong. And when someone with thirty years of experience
+      retires, that knowledge disappears with them. There was nothing to fall back on.
+    </p>
+
+    <p>
+      Some factories had tried using grain moisture meters, but those were built for rice and
+      wheat, not cashews. The readings were wildly inconsistent and most processors eventually
+      gave up on them. Lab testing (oven drying method) was accurate but took hours, which
+      made it useless for the kind of real time decisions that happen on the factory floor
+      every few minutes.
+    </p>
+
+    <div class="highlight">
+      An entire industry making decisions worth lakhs of rupees every day, based on the sound
+      of cashews being tossed in someone's hands. That's the gap we walked into.
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ HOW IT STARTED ═══ -->
+  <section class="anim d3">
+    <h2>How we got into this</h2>
+
+    <p>
+      I was attending a talk where industry leaders were speaking to small startups, sharing
+      real problems and hoping someone in the room would take them seriously. During one of
+      those sessions, someone from the cashew industry asked a straightforward question: can
+      anyone build a reliable moisture meter for cashews?
+    </p>
+
+    <p>
+      They explained that nothing purpose built existed. That they'd been asking for years.
+      That the available tools weren't designed for their needs and didn't give trustworthy
+      results. I didn't fully grasp the scale of the problem at that point. I didn't understand
+      how deeply moisture affects every stage of processing. That understanding came later,
+      gradually, from spending time on factory floors and seeing firsthand what goes wrong
+      when moisture decisions are off.
+    </p>
+
+    <p>
+      But the question stuck with me. I started visiting factories, talking to people,
+      watching how they worked. And the more I learned, the more obvious it became that
+      this was a real problem that nobody had solved properly.
+    </p>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ THE SOLUTION ═══ -->
+  <section class="anim d4">
+    <h2>What we built</h2>
+
+    <p>
+      We built a moisture meter from scratch, specifically for <strong>Raw Cashew Nuts
+      (RCN)</strong> and <strong>Natural Whole kernels (NW)</strong>. Not a modified grain
+      meter. Not a lab instrument. A portable, field ready device designed to give stable,
+      repeatable moisture readings under the conditions that actually exist in a cashew
+      processing factory: dust, heat, rough handling, unstable power, and operators who
+      don't have time to read a manual.
+    </p>
+
+    <div class="device-grid">
+      <div>
+        <p>What the device gets right:</p>
+        <ul>
+          <li>Consistent, repeatable readings across different batches and origins</li>
+          <li>Simple enough that anyone can use it without training</li>
+          <li>Built to survive the reality of a factory floor</li>
+          <li>Handles dust, drops, and voltage that fluctuates throughout the day</li>
+          <li>Designed to be opened and repaired, not thrown away when something breaks</li>
+          <li>Priced for small and mid sized processing units, not just large factories</li>
+        </ul>
+
+        <p>Using it takes three steps:</p>
+        <div class="steps">
+          <div class="step">
+            <span class="snum">01</span>
+            <h3>Sample</h3>
+            <p>Place a fixed quantity of RCN or NW into the chamber. No preparation needed.</p>
+          </div>
+          <div class="step">
+            <span class="snum">02</span>
+            <h3>Measure</h3>
+            <p>The device reads the electrical response, which correlates with moisture content.</p>
+          </div>
+          <div class="step">
+            <span class="snum">03</span>
+            <h3>Decide</h3>
+            <p>Compare readings across trays and batches. Know when to dry more, cut, or store.</p>
+          </div>
+        </div>
+      </div>
+      <div class="device-img">
+        <img src="assets/Moisture_Meter/MM1.svg" alt="Moisture meter device">
+      </div>
+    </div>
+
+    <p style="margin-top:1.5rem;">
+      The calibration alone took over a year. You can't calibrate a device like this in a lab
+      because cashews vary by origin, season, storage conditions, and processing method. We
+      had to collect data from real factories, godowns, and dockyards under every condition we
+      could find. We went through many prototypes, some of which failed in ways we didn't
+      catch until they were already in someone's hands. Each failure taught us something that
+      made the next version better.
+    </p>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ THE IMPACT ═══ -->
+  <section class="anim d4">
+    <h2>The impact</h2>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="num">100+</span>
+        <span class="label">Processing units using the device</span>
+      </div>
+      <div class="stat">
+        <span class="num">2</span>
+        <span class="label">Continents: India and Africa</span>
+      </div>
+
+    </div>
+
+    <p>
+      Every unit out there got there because someone used the device, trusted the readings,
+      and recommended it to someone else. That's it. No marketing budget, no distributor
+      network, no sales pitch. Just one processor telling another that this thing actually works.
+    </p>
+
+    <p>
+      What changed on the ground is simple but significant. Processors who used to argue about
+      moisture on the factory floor now check the reading and move on. Purchasing decisions on
+      raw material that used to depend entirely on one experienced person's judgement can now
+      be verified by anyone. Small and mid sized factories that couldn't afford lab testing
+      finally have a way to check moisture before it becomes an expensive problem.
+    </p>
+
+    <p>
+      The disagreements got fewer. The drying decisions got better. The cutting results got more
+      consistent. Storage losses went down because people could verify readiness instead of
+      guessing. None of this is flashy. But for the people who work in this industry every day,
+      it's the kind of change that actually matters.
+    </p>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ VIDEO ═══ -->
+  <section class="vid-section anim d5">
+    <h2>See it in action</h2>
+    <p>A processor explains how the device fits into their daily work.</p>
+    <div class="vid-wrap">
+      <video controls preload="metadata">
+        <source src="assets/moisture-meter-demo.mp4" type="video/mp4">
+      </video>
+      <div class="vid-cap">Real feedback from a processor using the device in their warehouse.</div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ THE PEOPLE ═══ -->
+  <section class="anim d5">
+    <h2>The people behind this</h2>
+
+    <p>
+      <strong>Pramod Sir</strong> (Mr. Pramod Kamath) is the person who made this product
+      possible. When I started, I was an engineer with no understanding of the cashew
+      industry. I could build circuits but I didn't know the first thing about what happens
+      on a processing floor or what the people running these operations actually need. Pramod
+      Sir filled every one of those gaps. He didn't advise from a distance. He ran experiments
+      with us, spent time in the field collecting data, helped us understand why our readings
+      didn't make sense, connected us with factory owners willing to test rough prototypes,
+      and told us clearly when our work wasn't good enough. A lot of the early trust we earned
+      came from his reputation, not ours. And this isn't past tense. He's still involved, still
+      helping, still pushing us to make the device better.
+    </p>
+
+    <p>
+      Beyond Pramod Sir, a lot of other people showed up at different stages and helped in
+      ways that mattered. This wasn't built by one person having a clever idea. It was built
+      by a network of people being generous with their time and knowledge.
+    </p>
+
+    <div class="people-grid">
+      <div class="pcard">
+        <div class="name">Mr. Pramod Kamath</div>
+        <div class="role">Mentor, collaborator, still involved</div>
+        <p>Ran experiments with us, taught us the industry, connected us to our first users, and continues to help improve the device today. This product carries his fingerprints as much as anyone's.</p>
+      </div>
+      <div class="pcard">
+        <div class="name">Friends &amp; former colleagues</div>
+        <div class="role">The people who showed up</div>
+        <p>Late night circuit debugging, borrowed equipment, honest design reviews. More people than I can list here, and I owe each of them.</p>
+      </div>
+      <div class="pcard">
+        <div class="name">Factory owners &amp; operators</div>
+        <div class="role">Our most honest teachers</div>
+        <p>Let us test rough prototypes on live production lines and gave us feedback we didn't always want to hear but always needed.</p>
+      </div>
+      <div class="pcard">
+        <div class="name">IXE Tronics Pvt. Ltd.</div>
+        <div class="role">The company behind the product</div>
+        <p>Manufacturing, field support, and everything that keeps the device running in the hands of the people who use it.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ CTA ═══ -->
+  <section class="cta anim d6">
+    <h2>Want the full specs?</h2>
+    <p>This page is the story. The product page has pricing, specifications, and everything formal.</p>
+    <a href="https://moisture.ixetronics.com" class="btn primary" target="_blank" rel="noopener noreferrer">Visit Product Page</a>
+    <p class="cta-sub">Or reach out directly at <a href="mailto:adithya@ixetronics.com">adithya@ixetronics.com</a></p>
+  </section>
+
+</div>
+
+<!-- FOOTER -->
 <footer class="site-footer">
-  <p>© <span id="year"></span> Adithya MD — learning by building, mostly by fixing what I broke.</p>
+  <p class="footer-tagline">Built by many hands.</p>
+  <p class="footer-copy">© <span id="year"></span> Adithya MD</p>
 </footer>
 
 <script>
-  document.getElementById("year").textContent = new Date().getFullYear();
-</script>
+  document.getElementById("year").textContent=new Date().getFullYear();
 
+  // Hamburger
+  const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+  hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':''});
+  mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow=''}));
+
+  // Slider with auto-advance
+  (function(){
+    const track=document.getElementById('sliderTrack'),slides=track.querySelectorAll('.slide'),db=document.getElementById('sliderDots');
+    const prev=document.querySelector('.slider-btn.prev'),next=document.querySelector('.slider-btn.next');
+    let c=0,n=slides.length;
+    const dots=Array.from(slides).map((_,i)=>{const d=document.createElement('button');d.type='button';d.className='dot'+(i===0?' active':'');d.addEventListener('click',()=>{c=i;u();r()});db.appendChild(d);return d});
+    function u(){track.style.transform='translateX('+(-c*100)+'%)';dots.forEach((d,i)=>d.classList.toggle('active',i===c))}
+    function f(){c=(c+1)%n;u()}function b(){c=(c-1+n)%n;u()}
+    next.addEventListener('click',()=>{f();r()});prev.addEventListener('click',()=>{b();r()});
+    let t=setInterval(f,4000);
+    const s=document.querySelector('.slider');
+    s.addEventListener('mouseenter',()=>clearInterval(t));s.addEventListener('mouseleave',()=>{t=setInterval(f,4000)});
+    function r(){clearInterval(t);t=setInterval(f,4000)}
+    let sx=null;track.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;clearInterval(t)});
+    track.addEventListener('touchend',e=>{if(sx===null)return;const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>40){d<0?f():b()}sx=null;r()});
+  })();
+
+  // Scroll animations
+  const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.style.animationPlayState='running';obs.unobserve(e.target)}})},{threshold:.1});
+  document.querySelectorAll('.content > section').forEach(el=>{el.style.animationPlayState='paused';obs.observe(el)});
+</script>
 </body>
 </html>
