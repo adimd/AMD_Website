@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Creating the Learning Signal | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>MathJax={tex:{inlineMath:[['\\(','\\)'],['$','$']]}};</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --purple:#c084fc;--purple-dim:rgba(192,132,252,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* ── VIZ 1: softmax derivative heatmap ───────────────────────────────── */
+    .hm-wrap{display:flex;flex-direction:column;gap:1rem}
+    .hm-top{display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start}
+    .hm-sliders{display:flex;flex-direction:column;gap:.5rem;min-width:260px;flex:1}
+    .hm-slider-row{display:flex;align-items:center;gap:.6rem;font-family:'Courier New',monospace;font-size:.8rem}
+    .hm-slider-row .label{min-width:50px;color:var(--muted);text-align:right}
+    .hm-slider-row input{flex:1;accent-color:var(--accent)}
+    .hm-slider-row .val{min-width:45px;text-align:right;color:var(--accent)}
+    .hm-grid{display:flex;justify-content:center;flex:1}
+    .hm-table{border-collapse:separate;border-spacing:3px;font-family:'Courier New',monospace;font-size:.78rem}
+    .hm-table th{color:var(--muted);font-weight:500;padding:.3rem;text-align:center;font-size:.72rem}
+    .hm-table th.rowh{text-align:right;padding-right:.5rem}
+    .hm-table td{width:58px;height:38px;text-align:center;border-radius:5px;transition:all .2s;color:var(--ink);cursor:default}
+    .hm-diag{outline:1.5px solid rgba(232,168,76,.3)}
+    .hm-presets{display:flex;gap:.45rem;flex-wrap:wrap}
+    .hm-preset{padding:.35rem .85rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.8rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .hm-preset:hover{border-color:var(--accent);color:var(--accent)}
+    .hm-probs{display:flex;gap:.5rem;flex-wrap:wrap;padding:.55rem .85rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-family:'Courier New',monospace;font-size:.82rem}
+    .hm-probs .item{display:inline-flex;gap:.3rem;align-items:baseline}
+    .hm-probs .item .w{color:var(--muted)}
+    .hm-probs .item .v{color:var(--ink);font-weight:600}
+
+    /* ── VIZ 2: score-push simulator ─────────────────────────────────────── */
+    .sp-wrap{display:flex;flex-direction:column;gap:1rem}
+    .sp-top{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:820px){.sp-top{grid-template-columns:1fr}}
+    .sp-col{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem}
+    .sp-col-title{font-family:var(--display);font-size:1.1rem;color:var(--ink);margin-bottom:.75rem}
+    .sp-true-picker{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.8rem}
+    .sp-true-btn{padding:.3rem .7rem;border-radius:6px;background:var(--bg-elevated);border:1px solid var(--border-hover);color:var(--muted);font-size:.8rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .sp-true-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .sp-score-rows{display:flex;flex-direction:column;gap:.4rem}
+    .sp-score-row{display:flex;align-items:center;gap:.5rem;font-family:'Courier New',monospace;font-size:.82rem}
+    .sp-score-row .w{min-width:50px;color:var(--body);text-align:right}
+    .sp-score-row input{flex:1;accent-color:var(--accent)}
+    .sp-score-row .v{min-width:48px;text-align:right;color:var(--accent)}
+    .sp-signal-rows{display:flex;flex-direction:column;gap:.4rem}
+    .sp-signal-row{display:grid;grid-template-columns:50px 1fr 55px;gap:.5rem;align-items:center;font-family:'Courier New',monospace;font-size:.82rem;padding:.3rem 0}
+    .sp-signal-row .w{text-align:right;color:var(--body)}
+    .sp-signal-row .w.true{color:var(--accent);font-weight:700}
+    .sp-signal-bar{position:relative;height:22px;background:rgba(237,232,224,.04);border-radius:4px}
+    .sp-signal-zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(237,232,224,.2)}
+    .sp-signal-fill{position:absolute;top:0;bottom:0;border-radius:3px;transition:all .35s cubic-bezier(.22,1,.36,1)}
+    .sp-signal-fill.up{background:rgba(127,255,107,.75);border:1px solid rgba(127,255,107,.4)}
+    .sp-signal-fill.down{background:rgba(255,107,107,.75);border:1px solid rgba(255,107,107,.4)}
+    .sp-signal-val{text-align:right;font-weight:600}
+    .sp-signal-val.up{color:var(--green)}
+    .sp-signal-val.down{color:var(--red)}
+    .sp-prob-rows{display:flex;flex-direction:column;gap:.35rem;margin-top:.7rem;padding-top:.7rem;border-top:1px solid var(--border)}
+    .sp-prob-row{display:grid;grid-template-columns:50px 1fr 50px;gap:.5rem;align-items:center;font-family:'Courier New',monospace;font-size:.78rem}
+    .sp-prob-row .w{text-align:right;color:var(--muted)}
+    .sp-prob-row .w.true{color:var(--accent)}
+    .sp-prob-bar{height:14px;background:rgba(237,232,224,.04);border-radius:3px;overflow:hidden}
+    .sp-prob-fill{height:100%;border-radius:3px;background:rgba(232,168,76,.7);transition:all .3s}
+    .sp-prob-fill.target{background:rgba(232,168,76,.95)}
+    .sp-prob-val{text-align:right;color:var(--body)}
+    .sp-bottom{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center}
+    .sp-btn{padding:.5rem 1rem;border-radius:8px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--muted);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .sp-btn.primary{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .sp-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .sp-status{font-size:.85rem;color:var(--body);font-family:'Courier New',monospace}
+    .sp-status strong{color:var(--accent)}
+    .sp-loss-badge{padding:.45rem .9rem;background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.25);border-radius:999px;font-family:'Courier New',monospace;font-size:.82rem;color:var(--red)}
+    .sp-loss-badge.good{background:rgba(127,255,107,.08);border-color:rgba(127,255,107,.25);color:var(--green)}
+
+    /* ── VIZ 3: low-p rescue ──────────────────────────────────────────────── */
+    .lp-wrap{display:flex;flex-direction:column;gap:1rem}
+    #lpCanvas{width:100%;height:auto;background:#14130f;border-radius:10px;border:1px solid var(--border);display:block}
+    .lp-controls{display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+    .lp-slider-wrap{flex:1;min-width:260px;display:flex;flex-direction:column;gap:.3rem}
+    .lp-slider-label{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted)}
+    .lp-slider-label strong{color:var(--accent);font-family:'Courier New',monospace}
+    .lp-slider{width:100%;accent-color:var(--accent)}
+    .lp-legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+    .lp-legend span{display:inline-flex;align-items:center;gap:.4rem}
+    .lp-dot{width:12px;height:3px;border-radius:2px;display:inline-block}
+    .lp-readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.5rem}
+    .lp-card{padding:.6rem .85rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px}
+    .lp-card-label{font-size:.72rem;color:var(--muted);font-family:'Courier New',monospace;margin-bottom:.1rem}
+    .lp-card-val{font-family:'Courier New',monospace;font-size:1rem;font-weight:700}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}.hm-table td{width:42px;height:30px;font-size:.68rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Before Transformers: How Embeddings Learn Meaning</span>
+  <h1>Creating the Learning Signal</h1>
+  <p class="blog-subtitle">From a single scalar of surprise to a precise push on every score.</p>
+
+  <h2>A number is not enough</h2>
+
+  <p>Last post we landed on a loss: \(L = -\log p_y\). It says how surprised the model should be that the truth was \(y\), given how little probability it assigned to that outcome. Beautiful quantity. Mathematically clean. Practically useless on its own.</p>
+
+  <p>Say the loss on some example is 3.2. The model is wrong. Fine. But what does the model do with that number? Which knob should it turn? Should every parameter move a little? Move a lot? In which direction? The scalar 3.2 has no address on it.</p>
+
+  <div class="callout">A loss measures pain. Learning requires knowing where the pain is coming from.</div>
+
+  <p>Learning needs blame. The model has to trace the loss back through its own computations and figure out which internal quantities were responsible. Once it knows, it can nudge them in the direction that hurts less.</p>
+
+  <hr class="sep">
+
+  <h2>Where the blame actually goes</h2>
+
+  <p>Inside the model, probabilities are not free-standing variables. They come from scores, via softmax:</p>
+
+  <p style="text-align:center;">\(p_j = \dfrac{e^{s_j}}{\sum_m e^{s_m}}\)</p>
+
+  <p>And scores come from embeddings, via dot products. The computation chains:</p>
+
+  <p style="text-align:center;">embeddings → scores \(s_k\) → probabilities \(p_j\) → loss \(L\)</p>
+
+  <p>The model doesn't control \(p_j\) directly. It controls \(s_k\). So the useful question isn't "how does \(L\) react when \(p_j\) changes?" but "how does \(L\) react when \(s_k\) changes?" Since scores affect loss only through probabilities, the chain rule tells us to add up every path:</p>
+
+  <p style="text-align:center;">\(\dfrac{\partial L}{\partial s_k} = \displaystyle\sum_{j=1}^{K} \dfrac{\partial L}{\partial p_j} \cdot \dfrac{\partial p_j}{\partial s_k}\)</p>
+
+  <p>The sum isn't bureaucratic. Every probability depends on every score, because the softmax denominator is shared. Change one score and you've changed the entire distribution. That's what the sum is counting.</p>
+
+  <hr class="sep">
+
+  <h2>First piece: how the loss feels changes in probability</h2>
+
+  <p>Start with \(\partial L / \partial p_j\). The loss is \(L = -\log p_y\), where \(y\) is the true class. It depends on exactly one probability, \(p_y\), and not on the others.</p>
+
+  <p>Differentiate:</p>
+
+  <p style="text-align:center;">\(\dfrac{\partial L}{\partial p_y} = -\dfrac{1}{p_y}, \qquad \dfrac{\partial L}{\partial p_j} = 0 \ \text{ for all } j \ne y\)</p>
+
+  <p>Two things worth noticing. When \(p_y\) is large, the gradient is small. The model is already close to right, so don't push hard. When \(p_y\) is tiny, the gradient is huge. The model was confidently wrong, and the loss wants a strong correction. The sign is negative because we're measuring how \(L\) responds when \(p_y\) goes up, and increasing \(p_y\) decreases the surprise.</p>
+
+  <p>The loss listens to exactly one probability. Every other entry is ignored. This will matter in a minute.</p>
+
+  <hr class="sep">
+
+  <h2>Second piece: how one score shakes every probability</h2>
+
+  <p>Now the harder derivative, \(\partial p_j / \partial s_k\). Bump score \(s_k\) up by a hair. What happens to \(p_j\)?</p>
+
+  <p>Two effects fight for control. If \(j = k\), the numerator \(e^{s_j}\) grows. If \(j \ne k\), only the denominator grows. In both cases, the shared denominator couples everything together.</p>
+
+  <p>Working through the algebra (product rule on \(e^{s_j} / Z\), with \(Z = \sum_m e^{s_m}\)) gives a compact answer:</p>
+
+  <p style="text-align:center;">\(\dfrac{\partial p_j}{\partial s_k} = p_j \left(\delta_{jk} - p_k\right)\)</p>
+
+  <p>Where \(\delta_{jk}\) is 1 if \(j = k\) and 0 otherwise. Two cases live inside this formula.</p>
+
+  <p>When \(j = k\): \(\partial p_k / \partial s_k = p_k(1 - p_k)\). Positive but bounded. Raising a score raises its own probability, with diminishing returns as \(p_k\) approaches 1.</p>
+
+  <p>When \(j \ne k\): \(\partial p_j / \partial s_k = -p_j p_k\). Negative. Raising one score steals mass from every other class in proportion to how much mass they each had.</p>
+
+  <div class="callout">Changing one score never changes one probability. It redistributes them all.</div>
+
+  <!-- VIZ 1: softmax derivative heatmap -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">One score changes every probability at once</span></div>
+    <div class="viz-body">
+      <div class="hm-wrap">
+        <div class="hm-top">
+          <div class="hm-sliders">
+            <div style="font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem">Adjust raw scores</div>
+            <div id="hmSliders"></div>
+            <div class="hm-presets" id="hmPresets" style="margin-top:.5rem"></div>
+            <div class="hm-probs" id="hmProbs"></div>
+          </div>
+          <div class="hm-grid">
+            <table class="hm-table">
+              <thead>
+                <tr><th></th><th colspan="5" style="padding-top:.5rem">probability affected &nbsp;→</th></tr>
+                <tr><th></th><th>p₁</th><th>p₂</th><th>p₃</th><th>p₄</th><th>p₅</th></tr>
+              </thead>
+              <tbody id="hmBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="viz-note">The matrix shows ∂p<sub>j</sub>/∂s<sub>k</sub> for a five-class softmax. Each row is one score being nudged upward by a tiny amount. Each column is the probability that responds. Diagonal cells (outlined) are positive: raising a score helps its own probability. Off-diagonal cells are negative: every other probability takes a hit. Move the sliders to change the underlying distribution. The "balanced" preset is where the dynamics are strongest. Every bump redistributes real mass. The "sharp" preset shows softmax saturation: when one class already dominates, nothing much can move, because there's little mass left to redistribute. Notice that every row sums to exactly zero. Raising a score creates no probability, only shuffles it.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The collapse</h2>
+
+  <p>Two pieces in hand. Substitute them into the chain rule:</p>
+
+  <p style="text-align:center;">\(\dfrac{\partial L}{\partial s_k} = \displaystyle\sum_{j=1}^{K} \left(-\dfrac{q_j}{p_j}\right) \cdot p_j (\delta_{jk} - p_k)\)</p>
+
+  <p>Here I've written \(\partial L / \partial p_j = -q_j / p_j\), which generalises \(-1/p_y\): under a one-hot target, \(q_j = 1\) when \(j = y\) and 0 otherwise. Notice the \(p_j\) in the numerator of the softmax derivative and the \(p_j\) in the denominator of the loss derivative. They cancel.</p>
+
+  <p style="text-align:center;">\(\dfrac{\partial L}{\partial s_k} = \displaystyle\sum_{j=1}^{K} \left(-q_j\right)(\delta_{jk} - p_k)\)</p>
+
+  <p>Now split the sum into two:</p>
+
+  <p style="text-align:center;">\(\dfrac{\partial L}{\partial s_k} = -\displaystyle\sum_{j=1}^{K} q_j \delta_{jk} + p_k \sum_{j=1}^{K} q_j\)</p>
+
+  <p>Each piece simplifies cleanly. The first sum has \(\delta_{jk}\) selecting exactly one term, \(j = k\), giving \(-q_k\). The second sum is \(p_k\) times the sum of a probability distribution, which is 1. So:</p>
+
+  <p style="text-align:center;">\(\boxed{\dfrac{\partial L}{\partial s_k} = p_k - q_k}\)</p>
+
+  <div class="callout">The learning signal is just the gap: what the model believes about class k, minus what the truth says about class k.</div>
+
+  <p>That's the whole gradient. No logarithms left over. No reciprocals about to explode. Just a difference between two probabilities, one per class.</p>
+
+  <p>The cancellation is not an accident. The \(p_j\) that appeared in the loss derivative (from differentiating \(-\log p_y\)) is exactly the one that appeared in the softmax derivative (from the product rule on \(e^{s_j}/Z\)). Cross-entropy and softmax fit together so cleanly because one was designed to undo the other's complications. Using different functions would leave you with uglier algebra and worse gradients.</p>
+
+  <hr class="sep">
+
+  <h2>Reading the signal</h2>
+
+  <p>Once \(\partial L / \partial s_k = p_k - q_k\) is on the page, the whole training dynamic becomes easy to read.</p>
+
+  <p>For the true class \(k = y\): the target says \(q_y = 1\), so the gradient is \(p_y - 1\). Since \(p_y \le 1\), this is always negative (unless the model is already perfect). Gradient descent subtracts the gradient, so it adds \((1 - p_y)\) to \(s_y\). The true score goes up. The more underconfident the model was, the bigger the push.</p>
+
+  <p>For every wrong class \(k \ne y\): the target says \(q_k = 0\), so the gradient is just \(p_k\). Gradient descent subtracts this, pulling \(s_k\) down by exactly the probability the model had wasted on that wrong class. Classes the model already deemed unlikely barely move. Classes the model was dangerously confident about take a hard hit.</p>
+
+  <div class="callout">Pull the truth up by how far it fell short. Push every wrong answer down by how much it stole.</div>
+
+  <p>Total probability is preserved. The amount going up on the true class exactly balances the amount going down on the wrong classes, because \(\sum_k (p_k - q_k) = 1 - 1 = 0\). No probability mass is created or destroyed. Training just moves it to where it belongs.</p>
+
+  <!-- VIZ 2: score-push simulator -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Watch the push-pull land</span></div>
+    <div class="viz-body">
+      <div class="sp-wrap">
+        <div class="sp-top">
+          <div class="sp-col">
+            <div class="sp-col-title">Set up the model's guess</div>
+            <div class="sp-true-picker" id="spTruePicker"></div>
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem">Raw scores (logits)</div>
+            <div class="sp-score-rows" id="spScoreRows"></div>
+            <div class="sp-prob-rows" id="spProbRows"></div>
+          </div>
+          <div class="sp-col">
+            <div class="sp-col-title">Learning signal: p<sub>k</sub> − q<sub>k</sub></div>
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem">Each bar is the gradient for one score. Right = push down (wrong class). Left = push up (true class).</div>
+            <div class="sp-signal-rows" id="spSignalRows"></div>
+          </div>
+        </div>
+        <div class="sp-bottom">
+          <button class="sp-btn primary" id="spStep">Apply one step (η = 0.5)</button>
+          <button class="sp-btn" id="spConverge">Run until converged</button>
+          <button class="sp-btn" id="spReset">Reset</button>
+          <span class="sp-status">Step: <strong id="spStepCount">0</strong></span>
+          <span class="sp-loss-badge" id="spLoss">loss: —</span>
+        </div>
+      </div>
+      <p class="viz-note">Pick a true class, set your initial scores, and hit "Apply one step." Every score moves by η × (p<sub>k</sub> − q<sub>k</sub>). The true class gets a positive kick, every wrong class gets a proportional pullback. The probabilities on the left redistribute in real time. Run multiple steps or hit converge to watch the distribution slide toward a one-hot over the true class. Loss decreases monotonically. Nothing external coordinates this. Every score is just responding to its own personal gap from the truth.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Why small probabilities don't kill the learning</h2>
+
+  <p>There's a subtle worry lurking. The softmax-derivative formula said \(\partial p_k / \partial s_k = p_k(1 - p_k)\). When \(p_k\) is tiny, this is also tiny. That sounds bad. If the model assigned \(p_y = 0.001\) to the truth, the softmax gradient feels that true class "barely responds" to score changes. Learning should stall.</p>
+
+  <p>Except it doesn't. Because the loss gradient is \(-1/p_y\), which blows up exactly as fast as the softmax gradient shrinks. Watch the product:</p>
+
+  <p style="text-align:center;">\(\dfrac{\partial L}{\partial s_y} = \dfrac{\partial L}{\partial p_y} \cdot \dfrac{\partial p_y}{\partial s_y} = \left(-\dfrac{1}{p_y}\right) \cdot p_y(1 - p_y) = p_y - 1\)</p>
+
+  <p>The dangerous factor \(1/p_y\) cancels against the shrinking factor \(p_y\). What's left is bounded between −1 and 0. When the model is catastrophically wrong (\(p_y \to 0\)), the gradient on the true score goes to exactly \(-1\), the strongest correction possible. When the model is already right (\(p_y \to 1\)), the gradient goes to 0, as it should. No vanishing gradient, no exploding gradient, no saturation, no stall.</p>
+
+  <!-- VIZ 3: low-p rescue -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Two curves that misbehave. One that doesn't.</span></div>
+    <div class="viz-body">
+      <div class="lp-wrap">
+        <canvas id="lpCanvas" width="700" height="360"></canvas>
+        <div class="lp-controls">
+          <div class="lp-slider-wrap">
+            <div class="lp-slider-label">Probability on the true class: <strong id="lpPVal">0.50</strong></div>
+            <input type="range" id="lpSlider" class="lp-slider" min="1" max="999" step="1" value="500">
+          </div>
+        </div>
+        <div class="lp-legend">
+          <span><span class="lp-dot" style="background:var(--blue)"></span>∂p/∂s = p(1 − p)  <span style="color:var(--muted);font-style:italic">saturates near 0 and 1</span></span>
+          <span><span class="lp-dot" style="background:var(--red)"></span>∂L/∂p = −1/p  <span style="color:var(--muted);font-style:italic">blows up near 0</span></span>
+          <span><span class="lp-dot" style="background:var(--accent)"></span>∂L/∂s = p − 1  <span style="color:var(--muted);font-style:italic">stays bounded</span></span>
+        </div>
+        <div class="lp-readout" id="lpReadout"></div>
+      </div>
+      <p class="viz-note">Three functions on the same axis. The blue curve is the softmax's sensitivity to its own score: tiny near 0 and near 1, largest at p = 0.5. The red curve is the loss's sensitivity to probability: it explodes as p shrinks. Each one, alone, would produce pathological learning. Their product is the orange curve, and it's tame: a smooth line from −1 at the left edge to 0 at the right. Cross-entropy and softmax were made to cancel each other's worst tendencies. Drag the slider and watch the red curve tower while the orange one holds steady.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Putting it together</h2>
+
+  <p>We started with a scalar loss and one obvious question: how does each score need to change? The chain rule gave us a two-piece expression. The first piece said the loss only cares about the true class. The second piece said each score shakes every probability at once. Substituting them both into the chain rule, something collapsed. The probabilities in numerator and denominator cancelled. The sum over classes reduced to two terms, and both simplified. What was left was \(p_k - q_k\): a gap between what the model believes and what the truth requires.</p>
+
+  <p>That expression is more than a convenience. It is the entire meaning of a gradient step in a softmax-cross-entropy model. Every coordinate of every score update is just "how far off am I on this class, and in which direction." Nothing fancier is going on.</p>
+
+  <div class="callout">Training a softmax classifier is, mathematically, the process of closing a gap. One probability at a time.</div>
+
+  <hr class="sep">
+
+  <h2>Where we go next</h2>
+
+  <p>We now know how to update scores. But scores aren't parameters. They're computed from embeddings, via dot products of centre and context vectors. The gradient \(p_k - q_k\) tells us how each score should move. The remaining question is how that desired score movement translates into a change in the embedding matrices W and C. The next post walks through that one carefully: how a push on the score becomes a push on the geometry of the space.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Before Transformers: How Embeddings Learn Meaning</h2>
+    <a class="sidebar-link" href="text-and-meaning.html">
+      <div class="sidebar-link-title">Part 1: Text Was a Problem</div>
+      <div class="sidebar-link-note">Why tokenisation exists.</div>
+    </a>
+    <a class="sidebar-link" href="similarity-and-representation.html">
+      <div class="sidebar-link-title">Part 2: From Characters to Concepts</div>
+      <div class="sidebar-link-note">Why text alone isn't enough.</div>
+    </a>
+    <a class="sidebar-link" href="embeddings-from-first-principles.html">
+      <div class="sidebar-link-title">Part 3: From Words to Spaces</div>
+      <div class="sidebar-link-note">Language becomes geometry.</div>
+    </a>
+    <a class="sidebar-link" href="meaning-as-geometry.html">
+      <div class="sidebar-link-title">Part 4: From Counting to Learning</div>
+      <div class="sidebar-link-note">Meaning becomes geometry.</div>
+    </a>
+    <a class="sidebar-link" href="center-context-alignment.html">
+      <div class="sidebar-link-title">Part 5: What the Dot Product Measures</div>
+      <div class="sidebar-link-note">Centre and context.</div>
+    </a>
+    <a class="sidebar-link" href="from-scores-to-probabilities.html">
+      <div class="sidebar-link-title">Part 6: Why Raw Dot Products Aren't Enough</div>
+      <div class="sidebar-link-note">Scores to probabilities.</div>
+    </a>
+    <a class="sidebar-link" href="model-vs-data-distributions.html">
+      <div class="sidebar-link-title">Part 7: Two Distributions, One Goal</div>
+      <div class="sidebar-link-note">P_data and P_model.</div>
+    </a>
+    <a class="sidebar-link" href="why-neg-log.html">
+      <div class="sidebar-link-title">Part 8: Why −log P?</div>
+      <div class="sidebar-link-note">The shape of error.</div>
+    </a>
+    <a class="sidebar-link" href="learning-signal.html">
+      <div class="sidebar-link-title">Part 9: Creating the Learning Signal</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link active-topic" href="#">
+      <div class="sidebar-link-title">Part 10: From Signal to Geometry</div>
+      <div class="sidebar-link-note">Connecting back to the geometry of meaning</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Loss alone can't teach</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Chain rule as blame flow</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Softmax derivative: p<sub>j</sub>(δ − p<sub>k</sub>)</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The collapse to p<sub>k</sub> − q<sub>k</sub></div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Push-pull dynamics</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why saturation doesn't stall</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Shared: stable softmax
+// ═══════════════════════════════════════════════════════════════════════════
+function softmax(s){
+  const m=Math.max(...s);
+  const e=s.map(x=>Math.exp(x-m));
+  const Z=e.reduce((a,b)=>a+b,0);
+  return e.map(x=>x/Z);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: softmax derivative heatmap
+// ═══════════════════════════════════════════════════════════════════════════
+const HM_N=5;
+let hmScores=[2.0,1.0,0.5,0.0,-1.0];
+
+const HM_PRESETS={
+  'sharp':   [4.0,0.5,0.0,-0.5,-1.0],
+  'balanced':[0.5,0.3,0.0,-0.2,-0.4],
+  'flat':    [0.1,0.0,0.0,0.0,-0.1],
+  'two-peaks':[2.5,2.3,0.0,-1.0,-1.5]
+};
+
+function renderHMSliders(){
+  const host=document.getElementById('hmSliders');
+  host.innerHTML='';
+  for(let k=0;k<HM_N;k++){
+    const row=document.createElement('div');
+    row.className='hm-slider-row';
+    row.innerHTML=`
+      <span class="label">s<sub>${k+1}</sub></span>
+      <input type="range" min="-40" max="50" step="1" value="${Math.round(hmScores[k]*10)}" data-idx="${k}">
+      <span class="val" id="hmVal${k}">${hmScores[k].toFixed(1)}</span>
+    `;
+    host.appendChild(row);
+  }
+  host.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      const k=parseInt(e.target.dataset.idx);
+      hmScores[k]=parseFloat(e.target.value)/10;
+      drawHM();
+    });
+  });
+}
+function renderHMPresets(){
+  const host=document.getElementById('hmPresets');
+  host.innerHTML='';
+  Object.entries(HM_PRESETS).forEach(([k,v])=>{
+    const b=document.createElement('button');
+    b.className='hm-preset';
+    b.textContent=k.charAt(0).toUpperCase()+k.slice(1).replace('-',' ');
+    b.addEventListener('click',()=>{
+      hmScores=[...v];
+      drawHM();
+    });
+    host.appendChild(b);
+  });
+}
+function drawHM(){
+  // update slider values
+  for(let k=0;k<HM_N;k++){
+    const el=document.getElementById('hmVal'+k);
+    if(el)el.textContent=hmScores[k].toFixed(1);
+    const inp=document.querySelector(`#hmSliders input[data-idx="${k}"]`);
+    if(inp)inp.value=hmScores[k]*10;
+  }
+  const p=softmax(hmScores);
+
+  // build heatmap
+  const body=document.getElementById('hmBody');
+  body.innerHTML='';
+  // Find the max absolute value for colour scaling
+  let maxAbs=0;
+  const M=[];
+  for(let k=0;k<HM_N;k++){
+    const row=[];
+    for(let j=0;j<HM_N;j++){
+      const d=(j===k?1:0);
+      const v=p[j]*(d-p[k]);
+      row.push(v);
+      if(Math.abs(v)>maxAbs)maxAbs=Math.abs(v);
+    }
+    M.push(row);
+  }
+  if(maxAbs<1e-6)maxAbs=1;
+  for(let k=0;k<HM_N;k++){
+    const tr=document.createElement('tr');
+    const th=document.createElement('th');
+    th.className='rowh';
+    th.innerHTML=`s<sub>${k+1}</sub>  →`;
+    tr.appendChild(th);
+    for(let j=0;j<HM_N;j++){
+      const v=M[k][j];
+      const td=document.createElement('td');
+      if(j===k)td.className='hm-diag';
+      // color: positive -> green, negative -> red, intensity by |v|/maxAbs
+      const t=Math.min(1,Math.abs(v)/maxAbs);
+      if(v>0){
+        td.style.background=`rgba(127,255,107,${0.08+t*0.55})`;
+      }else if(v<0){
+        td.style.background=`rgba(255,107,107,${0.08+t*0.55})`;
+      }else{
+        td.style.background='rgba(237,232,224,.04)';
+      }
+      td.textContent=(v>=0?'+':'')+v.toFixed(3);
+      tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  }
+
+  // show current probabilities
+  const probsHost=document.getElementById('hmProbs');
+  probsHost.innerHTML=p.map((v,i)=>`<span class="item"><span class="w">p<sub>${i+1}</sub></span><span class="v">${v.toFixed(3)}</span></span>`).join('');
+}
+renderHMSliders();
+renderHMPresets();
+drawHM();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: score-push simulator
+// ═══════════════════════════════════════════════════════════════════════════
+const SP_WORDS=['love','dog','cat','friends','music'];
+let spScores=[1.5, 0.5, 0.3, 0.1, -0.5];
+let spInitScores=[...spScores];
+let spTrueIdx=0;
+let spStepCount=0;
+const SP_ETA=0.5;
+let spConvergeHandle=null;
+
+function spReset(){
+  spScores=[...spInitScores];
+  spStepCount=0;
+  if(spConvergeHandle){clearInterval(spConvergeHandle);spConvergeHandle=null;}
+  renderSP();
+}
+function renderSPTruePicker(){
+  const host=document.getElementById('spTruePicker');
+  host.innerHTML='';
+  SP_WORDS.forEach((w,i)=>{
+    const b=document.createElement('button');
+    b.className='sp-true-btn'+(i===spTrueIdx?' active':'');
+    b.textContent=w;
+    b.addEventListener('click',()=>{
+      spTrueIdx=i;
+      renderSPTruePicker();
+      renderSP();
+    });
+    host.appendChild(b);
+  });
+}
+function renderSPScores(){
+  const host=document.getElementById('spScoreRows');
+  host.innerHTML='';
+  spScores.forEach((s,i)=>{
+    const row=document.createElement('div');
+    row.className='sp-score-row';
+    row.innerHTML=`
+      <span class="w">${SP_WORDS[i]}</span>
+      <input type="range" min="-40" max="50" step="1" value="${Math.round(s*10)}" data-idx="${i}">
+      <span class="v">${s.toFixed(2)}</span>
+    `;
+    host.appendChild(row);
+  });
+  host.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      const k=parseInt(e.target.dataset.idx);
+      spScores[k]=parseFloat(e.target.value)/10;
+      spInitScores=[...spScores]; // user edit resets init
+      spStepCount=0;
+      renderSP();
+    });
+  });
+}
+function renderSPProbs(p){
+  const host=document.getElementById('spProbRows');
+  host.innerHTML='<div style="font-size:.72rem;color:var(--muted);margin-bottom:.25rem">Resulting probabilities</div>';
+  p.forEach((pv,i)=>{
+    const isTrue=i===spTrueIdx;
+    const row=document.createElement('div');
+    row.className='sp-prob-row';
+    row.innerHTML=`
+      <span class="w ${isTrue?'true':''}">${SP_WORDS[i]}</span>
+      <div class="sp-prob-bar"><div class="sp-prob-fill ${isTrue?'target':''}" style="width:${pv*100}%"></div></div>
+      <span class="sp-prob-val">${(pv*100).toFixed(1)}%</span>
+    `;
+    host.appendChild(row);
+  });
+}
+function renderSPSignals(p){
+  const host=document.getElementById('spSignalRows');
+  host.innerHTML='';
+  // find max absolute signal for scaling
+  const signals=p.map((pv,i)=>pv-(i===spTrueIdx?1:0));
+  const maxAbs=Math.max(...signals.map(s=>Math.abs(s)),0.01);
+  signals.forEach((g,i)=>{
+    const isTrue=i===spTrueIdx;
+    const row=document.createElement('div');
+    row.className='sp-signal-row';
+    // Scale: map g ∈ [-maxAbs, maxAbs] to [0%, 100%] with zero at 50%
+    const pct=(g/maxAbs)*48; // half width
+    const barHTML=(()=>{
+      if(g>0){
+        return `<div class="sp-signal-zero"></div><div class="sp-signal-fill down" style="left:50%;width:${pct}%"></div>`;
+      }else if(g<0){
+        return `<div class="sp-signal-zero"></div><div class="sp-signal-fill up" style="right:50%;width:${-pct}%"></div>`;
+      }
+      return `<div class="sp-signal-zero"></div>`;
+    })();
+    row.innerHTML=`
+      <span class="w ${isTrue?'true':''}">${SP_WORDS[i]}</span>
+      <div class="sp-signal-bar">${barHTML}</div>
+      <span class="sp-signal-val ${g>0?'down':(g<0?'up':'')}">${g>=0?'+':''}${g.toFixed(3)}</span>
+    `;
+    host.appendChild(row);
+  });
+}
+function renderSP(){
+  const p=softmax(spScores);
+  renderSPScores();
+  renderSPProbs(p);
+  renderSPSignals(p);
+
+  document.getElementById('spStepCount').textContent=spStepCount;
+  const loss=-Math.log(Math.max(1e-12,p[spTrueIdx]));
+  const badge=document.getElementById('spLoss');
+  badge.textContent='loss: '+loss.toFixed(3);
+  badge.classList.toggle('good',loss<0.5);
+}
+function spOneStep(){
+  const p=softmax(spScores);
+  const grad=p.map((pv,i)=>pv-(i===spTrueIdx?1:0));
+  for(let k=0;k<spScores.length;k++){
+    spScores[k]-=SP_ETA*grad[k];
+  }
+  spStepCount++;
+  renderSP();
+}
+
+document.getElementById('spStep').addEventListener('click',spOneStep);
+document.getElementById('spReset').addEventListener('click',spReset);
+document.getElementById('spConverge').addEventListener('click',()=>{
+  if(spConvergeHandle){clearInterval(spConvergeHandle);spConvergeHandle=null;document.getElementById('spConverge').textContent='Run until converged';return;}
+  document.getElementById('spConverge').textContent='Stop';
+  spConvergeHandle=setInterval(()=>{
+    spOneStep();
+    const p=softmax(spScores);
+    if(p[spTrueIdx]>0.995||spStepCount>500){
+      clearInterval(spConvergeHandle);
+      spConvergeHandle=null;
+      document.getElementById('spConverge').textContent='Run until converged';
+    }
+  },120);
+});
+renderSPTruePicker();
+renderSP();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: low-p rescue
+// ═══════════════════════════════════════════════════════════════════════════
+let lpP=0.5;
+
+function drawLP(){
+  const canvas=document.getElementById('lpCanvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth||700,H=360;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#14130f';ctx.fillRect(0,0,W,H);
+
+  const padL=65,padR=30,padT=30,padB=55;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  // y ranges: we want to show all three curves on comparable axes.
+  // ∂p/∂s = p(1-p) ∈ [0, 0.25]
+  // ∂L/∂p = -1/p ∈ (-∞, -1]
+  // ∂L/∂s = p - 1 ∈ [-1, 0]
+  // Use a symmetric log-ish range for the red curve: clip at -10 for display.
+  const Y_MIN=-10, Y_MAX=1;
+
+  // grid
+  ctx.strokeStyle='rgba(237,232,224,.06)';ctx.lineWidth=1;
+  for(let i=1;i<=10;i++){
+    const x=padL+(i/10)*plotW;
+    ctx.beginPath();ctx.moveTo(x,padT);ctx.lineTo(x,padT+plotH);ctx.stroke();
+  }
+  // zero line
+  const zeroY=padT+plotH*(Y_MAX/(Y_MAX-Y_MIN));
+  ctx.strokeStyle='rgba(237,232,224,.25)';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(padL,zeroY);ctx.lineTo(padL+plotW,zeroY);ctx.stroke();
+
+  // y labels
+  ctx.fillStyle='rgba(125,118,107,.7)';
+  ctx.font='10px "Courier New",monospace';
+  ctx.textAlign='right';
+  [1,0,-1,-2,-5,-10].forEach(yv=>{
+    const yy=padT+plotH*((Y_MAX-yv)/(Y_MAX-Y_MIN));
+    ctx.fillText(yv.toString(),padL-6,yy+3);
+    ctx.strokeStyle='rgba(237,232,224,.04)';
+    ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(padL+plotW,yy);ctx.stroke();
+  });
+  ctx.save();
+  ctx.translate(20,padT+plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center';
+  ctx.font='11px "Source Sans 3",sans-serif';
+  ctx.fillStyle='var(--muted)';
+  ctx.fillText('derivative value',0,0);
+  ctx.restore();
+
+  // x axis
+  ctx.strokeStyle='rgba(237,232,224,.2)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(padL,padT+plotH);ctx.lineTo(padL+plotW,padT+plotH);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(padL,padT);ctx.lineTo(padL,padT+plotH);ctx.stroke();
+
+  // x labels
+  ctx.textAlign='center';
+  ctx.font='10px "Courier New",monospace';
+  ctx.fillStyle='rgba(125,118,107,.7)';
+  for(let i=0;i<=10;i+=2){
+    const xx=padL+(i/10)*plotW;
+    ctx.fillText((i/10).toFixed(1),xx,padT+plotH+16);
+  }
+  ctx.font='11px "Source Sans 3",sans-serif';
+  ctx.fillStyle='var(--muted)';
+  ctx.fillText('p (probability on true class)',padL+plotW/2,padT+plotH+36);
+
+  // helper to plot
+  const X_MIN=0.001,X_MAX=1;
+  function plotCurve(fn,colour,label){
+    ctx.strokeStyle=colour;
+    ctx.lineWidth=2.5;
+    ctx.beginPath();
+    let first=true;
+    for(let i=0;i<=400;i++){
+      const p=X_MIN+(X_MAX-X_MIN)*i/400;
+      let v=fn(p);
+      if(v>Y_MAX)v=Y_MAX;
+      if(v<Y_MIN)v=Y_MIN;
+      const cx=padL+((p-X_MIN)/(X_MAX-X_MIN))*plotW;
+      const cy=padT+plotH*((Y_MAX-v)/(Y_MAX-Y_MIN));
+      if(first){ctx.moveTo(cx,cy);first=false;}
+      else{ctx.lineTo(cx,cy);}
+    }
+    ctx.stroke();
+  }
+  plotCurve(p=>p*(1-p),'#4ca8e8');
+  plotCurve(p=>-1/p,'#ff6b6b');
+  plotCurve(p=>p-1,'#e8a84c');
+
+  // vertical at current p
+  const xCur=padL+((lpP-X_MIN)/(X_MAX-X_MIN))*plotW;
+  ctx.strokeStyle='rgba(237,232,224,.3)';
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(xCur,padT);ctx.lineTo(xCur,padT+plotH);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // dots on each curve
+  const vals={
+    blue: lpP*(1-lpP),
+    red:  -1/lpP,
+    acc:  lpP-1
+  };
+  function drawDot(v,col){
+    let vv=v;
+    if(vv>Y_MAX)vv=Y_MAX;
+    if(vv<Y_MIN)vv=Y_MIN;
+    const cy=padT+plotH*((Y_MAX-vv)/(Y_MAX-Y_MIN));
+    ctx.fillStyle=col;
+    ctx.beginPath();ctx.arc(xCur,cy,5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#14130f';
+    ctx.lineWidth=2;
+    ctx.stroke();
+  }
+  drawDot(vals.blue,'#4ca8e8');
+  drawDot(vals.red,'#ff6b6b');
+  drawDot(vals.acc,'#e8a84c');
+
+  // readout cards
+  const host=document.getElementById('lpReadout');
+  host.innerHTML='';
+  const cards=[
+    {k:'∂p/∂s',v:vals.blue,col:'#4ca8e8'},
+    {k:'∂L/∂p',v:vals.red,col:'#ff6b6b'},
+    {k:'∂L/∂s',v:vals.acc,col:'#e8a84c'}
+  ];
+  cards.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='lp-card';
+    el.style.borderLeft='3px solid '+c.col;
+    const vstr=Math.abs(c.v)>100?c.v.toExponential(1):c.v.toFixed(3);
+    el.innerHTML=`<div class="lp-card-label">${c.k}</div><div class="lp-card-val" style="color:${c.col}">${vstr}</div>`;
+    host.appendChild(el);
+  });
+}
+document.getElementById('lpSlider').addEventListener('input',e=>{
+  lpP=parseFloat(e.target.value)/1000;
+  document.getElementById('lpPVal').textContent=lpP.toFixed(3);
+  drawLP();
+});
+drawLP();
+window.addEventListener('resize',drawLP);
+</script>
+</body>
+</html>

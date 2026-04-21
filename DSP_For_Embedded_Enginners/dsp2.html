@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sampling and the Nyquist Theorem | Adithya MD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;--ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;--accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);--border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);--display:'Instrument Serif',Georgia,serif;--sans:'Source Sans 3',sans-serif;--hand:'Caveat',cursive;--radius:14px}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.78;font-size:19px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}.d1{animation-delay:.08s}.d2{animation-delay:.16s}
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.85);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:var(--ink)}.brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}.brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}.nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}.nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}.nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}.dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}.dropbtn:hover{color:var(--ink)}.dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}.dropdown:hover .dropdown-content{display:block}.dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}.dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}.dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}.hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}.hamburger.active span:nth-child(2){opacity:0}.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.95);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}.mobile-overlay.active{display:flex}.mobile-overlay a,.mobile-overlay button{font-family:var(--display);font-size:1.5rem;color:var(--body);background:none;border:none;cursor:pointer;padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}.mobile-overlay a:hover,.mobile-overlay button:hover{color:var(--accent)}.mobile-overlay .mobile-sub{display:flex;flex-direction:column;align-items:center}.mobile-overlay .mobile-sub a{font-size:1.15rem;color:var(--muted);padding:.4rem 1.5rem}
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 4rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.4rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.08rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.55rem;color:var(--ink);margin:2.5rem 0 .8rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.35rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.18rem;font-weight:300;margin-bottom:1.15rem}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.95em;background:rgba(237,232,224,.08);padding:.15rem .4rem;border-radius:4px;color:var(--ink)}
+    .callout{margin:1.5rem 0;padding:1.3rem 1.6rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.2rem 0}
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.1rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}.sidebar-link+.sidebar-link{margin-top:.15rem}.sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.9rem;font-weight:500;color:var(--ink)}.sidebar-link-note{font-size:.75rem;color:var(--muted);margin-top:.15rem}
+    .comments-section{margin-top:2.5rem}.comments-section h2{font-family:var(--display);font-size:1.3rem;color:var(--ink);margin-bottom:1rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}.footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}.footer-copy{font-size:.88rem;color:var(--muted)}
+
+    .viz-block{margin:2rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.75rem 1.4rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.1rem;color:var(--accent)}
+    .viz-body{padding:1.2rem 1.4rem}
+    canvas{display:block;width:100%;border-radius:6px;background:#1e1c1a}
+    .viz-controls{display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap;margin-top:.9rem}
+    .viz-controls label{font-size:.88rem;color:var(--muted);display:flex;align-items:center;gap:.5rem}
+    .viz-controls input[type=range]{accent-color:var(--accent);width:130px;cursor:pointer}
+    .viz-val{font-family:'Courier New',monospace;font-size:.88rem;color:var(--accent);min-width:64px;display:inline-block}
+    .viz-legend{display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:.7rem}
+    .leg{display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted)}
+    .leg-line{width:22px;height:2px;border-radius:2px;flex-shrink:0}
+    .viz-note{font-size:.85rem;color:var(--muted);margin-top:.8rem;font-style:italic;line-height:1.55}
+    .status-bar{font-family:'Courier New',monospace;font-size:.82rem;margin-top:.5rem;min-height:1.2em}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.25rem 3rem}.article{padding:2rem 1.5rem}.article h1{font-size:1.85rem}.viz-controls{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+
+<header class="site-header"><div class="nav-container"><a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a><nav class="nav-links"><a href="../index.html">Home</a><a href="../about.html">About</a><a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a><a href="../startup.html">Moisture Meter</a><div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button><div class="dropdown-content"><a href="../teaching.html">Teaching Roles</a><a href="../workshops.html">Workshops</a><a href="../talks.html">Talks</a></div></div><a href="../contact.html">Contact</a></nav><button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button></div></header>
+<div class="mobile-overlay" id="mobileMenu"><a href="../index.html">Home</a><a href="../about.html">About</a><a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a><a href="../startup.html">Moisture Meter</a><div class="mobile-sub"><button style="color:var(--ink);font-size:1.3rem">Beyond the Desk</button><a href="../teaching.html">Teaching Roles</a><a href="../workshops.html">Workshops</a><a href="../talks.html">Talks</a></div><a href="../contact.html">Contact</a></div>
+
+<div class="page-wrap"><div class="blog-layout">
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>DSP for Embedded Engineers &mdash; Topic 2</span>
+  <h1>Sampling and the Nyquist Theorem</h1>
+  <p class="blog-subtitle">How many snapshots per second do you actually need — and why the answer is more subtle than any textbook admits.</p>
+
+  <h2>The goal is reconstruction, not just measurement</h2>
+
+  <p>There is a difference between measuring a signal and capturing it. Measuring means getting a number at a moment in time. Capturing means getting enough numbers that you could reconstruct the original smooth wave perfectly from nothing but that list. The second goal is what DSP demands. And the entire theory of sampling is built around answering one question: how many snapshots per second do you need to make that possible?</p>
+
+  <h2>A sine wave has exactly two unknowns</h2>
+
+  <p>Start with the simplest possible signal, a pure sine wave at a known frequency. A sine wave can be written as <strong>y = A · sin(2π · F · t + φ)</strong>. F is the frequency, which we treat as known. t is the time of each sample, which you also know because you control the clock. That leaves exactly two things unknown: A, the amplitude, meaning how tall the wave is, and φ, the phase, meaning where in its cycle the wave happens to be at time zero.</p>
+
+  <p>Two things. That is all. Two sine waves at the same frequency can still be completely different from each other if one is taller or if one is shifted in time relative to the other. Amplitude is the height. Phase is the shift. Feel that with the visual below before reading on.</p>
+
+  <!-- VISUAL 1: Two unknowns -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The two unknowns of any sine wave</span></div>
+    <div class="viz-body">
+      <canvas id="c1" height="160"></canvas>
+      <div class="viz-controls">
+        <label>Amplitude <input type="range" id="v1_amp" min="15" max="85" value="65"> <span class="viz-val" id="v1_ampv"></span></label>
+        <label>Phase <input type="range" id="v1_ph" min="0" max="360" value="0"> <span class="viz-val" id="v1_phv"></span></label>
+      </div>
+      <div class="viz-legend">
+        <div class="leg"><div class="leg-line" style="background:rgba(76,168,232,0.5)"></div>Reference (A=0.5, φ=0°)</div>
+        <div class="leg"><div class="leg-line" style="background:#e8a84c"></div>Your wave</div>
+      </div>
+      <p class="viz-note">Same frequency, but amplitude and phase make every wave unique. These are the two things your samples have to determine.</p>
+    </div>
+  </div>
+
+  <h2>Each sample is one equation — two unknowns need two samples</h2>
+
+  <p>When you take a sample at time t, you get a measured value. Plugging into the formula gives you one equation with two unknowns, A and φ. You cannot solve one equation for two unknowns. There are infinitely many combinations of amplitude and phase that could produce that exact reading at that exact moment.</p>
+
+  <p>Take a second sample at a different moment and you have two equations with two unknowns. That has exactly one solution. You have pinned down the wave completely. That is where 2F comes from — not from intuition, not from a rule someone chose, directly from the fact that a sine wave has two free parameters and you need one independent measurement per unknown.</p>
+
+  <h2>The zero crossing trap — why exactly 2F fails</h2>
+
+  <p>The theorem says strictly greater than 2F, not equal. Here is exactly why the equality case breaks. Imagine sampling a 100 Hz sine wave at exactly 200 Hz. If your first sample lands at the exact moment the wave crosses zero going upward, the next sample lands exactly half a cycle later at the zero crossing going downward. Both are zero. The one after that is zero again. Every sample forever is zero. You would conclude there is no signal at all, when a full amplitude wave was there the entire time. Your samples kept landing at the exact moments the wave crossed zero, and the wave never had a chance to show you its height.</p>
+
+  <p>This is a phase alignment problem. It has nothing to do with hardware. It is pure mathematics. Exactly 2F is the knife edge where this can happen. Greater than 2F means your sampling interval and the signal period are slightly misaligned, so samples drift across the wave's phase over time and you cannot stay stuck at zero forever.</p>
+
+  <!-- VISUAL 2: Zero crossing trap -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The zero crossing trap</span></div>
+    <div class="viz-body">
+      <canvas id="c2" height="190"></canvas>
+      <div class="viz-controls">
+        <label>Phase offset of sampler <input type="range" id="v2_ph" min="0" max="360" value="90"> <span class="viz-val" id="v2_phv"></span></label>
+        <label>Sampling rate <input type="range" id="v2_sr" min="200" max="800" value="200" step="5"> <span class="viz-val" id="v2_srv"></span></label>
+      </div>
+      <div class="viz-legend">
+        <div class="leg"><div class="leg-line" style="background:rgba(232,168,76,0.3)"></div>True 100 Hz signal</div>
+        <div class="leg"><div class="leg-line" style="background:#e8a84c;height:0;border-top:2px dashed #e8a84c"></div>Reconstructed from samples</div>
+        <div class="leg"><div class="leg-line" style="background:#4ca8e8;width:10px;height:10px;border-radius:50%"></div>Sample points</div>
+      </div>
+      <div class="status-bar" id="v2_status"></div>
+      <p class="viz-note">At exactly 200 Hz sampling, slide the phase offset to 0° or 180° and watch all samples collapse to zero. The wave is invisible. Increase the sampling rate and the problem disappears regardless of phase.</p>
+    </div>
+  </div>
+
+  <h2>Non-zero samples at barely above 2F — still not enough</h2>
+
+  <p>Here is the question that stopped me when I first learned this. If both my samples are non-zero, I have two non-zero equations and two unknowns, and I can solve them algebraically. So why do I need anything more than barely above 2F?</p>
+
+  <p>The answer is noise. Every sample your ADC gives you is the true value plus some small error. Quantization rounding, power supply noise, electrical interference — it is always there. There is no such thing as a perfectly clean sample.</p>
+
+  <p>When you sample at barely above 2F, your two samples per cycle are taken very close together in time. On a smooth curve, two points close in time have nearly the same value. Two nearly identical equations are almost as useless as one when solving for two unknowns, because tiny errors in either value wildly change the answer. Think of it like trying to determine the shape of a hill by taking two measurements one metre apart on the same slope. Any measurement error and you have completely the wrong hill. Take measurements on opposite sides and errors barely matter because the two points constrain the answer from completely different directions.</p>
+
+  <p>At 10F you have ten samples spread across the full cycle, catching the wave at many different points. Noise in any one sample barely moves the answer because nine others are holding it in place. The theorem gives you the floor for a perfect noiseless world. Noise gives you the real answer for your actual hardware.</p>
+
+  <!-- VISUAL 3: Noise stability -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Noise and reconstruction stability</span></div>
+    <div class="viz-body">
+      <canvas id="c3" height="200"></canvas>
+      <div class="viz-controls">
+        <label>Sampling rate <input type="range" id="v3_sr" min="220" max="2000" value="220" step="20"> <span class="viz-val" id="v3_srv"></span></label>
+        <label>Noise level <input type="range" id="v3_noise" min="0" max="40" value="12"> <span class="viz-val" id="v3_noisev"></span></label>
+      </div>
+      <div class="viz-legend">
+        <div class="leg"><div class="leg-line" style="background:rgba(232,168,76,0.25)"></div>True signal</div>
+        <div class="leg"><div class="leg-line" style="background:#4ca8e8;width:10px;height:10px;border-radius:50%"></div>Noisy samples</div>
+        <div class="leg"><div class="leg-line" style="background:#ff6b6b"></div>Best-fit reconstruction</div>
+      </div>
+      <div class="status-bar" id="v3_status"></div>
+      <p class="viz-note">At low sampling rates the noisy samples are bunched together and the reconstruction is wildly wrong. Increase the rate and samples spread across the wave — reconstruction stabilises even with the same amount of noise.</p>
+    </div>
+  </div>
+
+  <h2>Why real signals follow the same rules as sine waves</h2>
+
+  <p>Everything above assumed a pure sine wave. Real signals — a vibration from a motor bearing, audio from a microphone, a current sensor reading — look nothing like clean sine waves. So why does any of this apply?</p>
+
+  <p>Because of a fact called the Fourier theorem, which we will spend a full topic on later in this series. Any signal, no matter how complicated, can be broken down exactly into a sum of pure sine waves at different frequencies, amplitudes and phases. Not approximately. Exactly. A square wave, a noisy vibration trace, your voice recording, all of them are secretly just collections of sine waves added together.</p>
+
+  <p>This means capturing any signal faithfully is the same as capturing every sine wave component it contains. Each component needs 2F samples per second where F is that component's own frequency. The hardest one to capture is always the highest frequency component. So if you sample fast enough for the highest frequency, you automatically capture everything below it too. That is the complete justification for the Nyquist rule. Sample at at least twice the highest frequency in your signal.</p>
+
+  <hr class="sep">
+
+  <h2>The Nyquist frequency is a contract</h2>
+
+  <p>When you set your sampling rate you are making a commitment about your signal. You are saying: I will faithfully capture everything up to Fs divided by 2. That upper boundary is called the Nyquist frequency. For an Arduino sampling at 9600 Hz it is 4800 Hz. For an STM32 sampling a vibration sensor at 25600 Hz it is 12800 Hz. These are not soft guidelines. They are hard limits set by mathematics.</p>
+
+  <p>Most embedded engineers pick a sampling rate based on how fast their main loop runs, or what the example code used. That is the wrong instinct. The sampling rate should be chosen based on the signal — specifically, based on the highest frequency in that signal that you actually need to capture. Everything downstream follows from that one decision.</p>
+
+</p>
+
+  <h2>What happens above Nyquist — a warning for the next topic</h2>
+
+  <p>One thing worth naming before we close. Frequencies above your Nyquist frequency do not quietly disappear from your data. They fold back in, disguised as lower frequencies that were never in your original signal. This phenomenon is called aliasing, and it deserves its own full treatment. We will take it apart completely in Topic 4, where we will see exactly how it happens, what it looks like in real sensor data, and how to prevent it.</p>
+
+  <div class="callout">Sampling rate is not a performance setting. It is a contract with your signal about what you can and cannot faithfully represent. Choose it based on the physics of what you are measuring, not the speed of your main loop.</div>
+
+<hr class="sep">
+<section id="comments" class="comments-section">
+  <h2>Comments</h2>
+  <script src="https://giscus.app/client.js" data-repo="adimd/AMD_Website" data-repo-id="R_kgDOQlniOw" data-category="General" data-category-id="DIC_kwDOQlniO84CzoR1" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="dark" data-lang="en" crossorigin="anonymous" async></script>
+</section>
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">DSP for Embedded Engineers</h2>
+    <a class="sidebar-link" href="dsp_topic1_what_is_a_signal.html">
+      <div class="sidebar-link-title">Topic 1: What is a Signal?</div>
+      <div class="sidebar-link-note">Analog vs digital, quantization.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Topic 2: Sampling and Nyquist</div>
+      <div class="sidebar-link-note">You are here.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Topic 3: The ADC in Depth</div>
+      <div class="sidebar-link-note">Coming next.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Two unknowns → two samples</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The zero crossing trap</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why noise demands 10F</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Nyquist as a contract</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why real signals obey the same rules</div></a>
+  </div>
+</aside>
+</div></div>
+
+<footer class="site-footer"><p class="footer-tagline">Thanks for reading.</p><p class="footer-copy">© <span id="year"></span> Adithya MD</p></footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+const hb = document.getElementById('hamburger'), mo = document.getElementById('mobileMenu');
+hb.addEventListener('click', () => { hb.classList.toggle('active'); mo.classList.toggle('active'); document.body.style.overflow = mo.classList.contains('active') ? 'hidden' : ''; });
+mo.querySelectorAll('a').forEach(l => l.addEventListener('click', () => { hb.classList.remove('active'); mo.classList.remove('active'); document.body.style.overflow = ''; }));
+
+// ── Canvas helpers ──────────────────────────────────────────────────────────
+function getCanvas(id) {
+  const el = document.getElementById(id);
+  const dpr = window.devicePixelRatio || 1;
+  const W = el.clientWidth;
+  const H = parseInt(el.getAttribute('height'));
+  el.width  = W * dpr;
+  el.height = H * dpr;
+  el.style.height = H + 'px';
+  const ctx = el.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, W, H };
+}
+
+const C = { accent:'#e8a84c', blue:'#4ca8e8', red:'#ff6b6b', green:'#7fff6b',
+            surf:'#1e1c1a', grid:'rgba(237,232,224,0.05)', axis:'rgba(237,232,224,0.12)',
+            muted:'#7d766b' };
+
+function drawGrid(ctx, W, H) {
+  const cy = H / 2;
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  for (let y = 0; y <= H; y += H/4) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  ctx.strokeStyle = C.axis; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+}
+
+function sineY(cy, amp, F_norm, t_norm, phase_rad) {
+  // F_norm = cycles across full width, t_norm = [0,1], phase_rad = phase offset
+  return cy - amp * Math.sin(2 * Math.PI * F_norm * t_norm + phase_rad);
+}
+
+function drawSine(ctx, W, H, cy, amp, cycles, phase, color, alpha, lineW) {
+  ctx.beginPath();
+  ctx.strokeStyle = color; ctx.globalAlpha = alpha; ctx.lineWidth = lineW;
+  for (let x = 0; x <= W; x++) {
+    const y = sineY(cy, amp, cycles, x/W, phase);
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke(); ctx.globalAlpha = 1;
+}
+
+function drawDot(ctx, x, y, r, color, alpha=1) {
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fillStyle = color; ctx.globalAlpha = alpha; ctx.fill(); ctx.globalAlpha = 1;
+}
+
+// ── V1: Two unknowns ─────────────────────────────────────────────────────────
+function drawV1() {
+  const amp_pct = parseInt(document.getElementById('v1_amp').value) / 100;
+  const ph_deg  = parseInt(document.getElementById('v1_ph').value);
+  const ph_rad  = ph_deg * Math.PI / 180;
+  document.getElementById('v1_ampv').textContent = amp_pct.toFixed(2);
+  document.getElementById('v1_phv').textContent  = ph_deg + '°';
+
+  const { ctx, W, H } = getCanvas('c1');
+  ctx.fillStyle = C.surf; ctx.fillRect(0,0,W,H);
+  const cy = H/2, amp = H * 0.38;
+  drawGrid(ctx, W, H);
+  drawSine(ctx, W, H, cy, amp*0.5, 3, 0, C.blue, 0.45, 1.5);
+  drawSine(ctx, W, H, cy, amp*amp_pct, 3, ph_rad, C.accent, 1, 2.5);
+
+  ctx.fillStyle = C.accent; ctx.font = '12px "Courier New"';
+  ctx.fillText('A = ' + amp_pct.toFixed(2) + '  φ = ' + ph_deg + '°', 10, 16);
+}
+['v1_amp','v1_ph'].forEach(id => document.getElementById(id).addEventListener('input', drawV1));
+drawV1();
+
+// ── V2: Zero crossing trap ───────────────────────────────────────────────────
+function drawV2() {
+  const ph_deg = parseInt(document.getElementById('v2_ph').value);
+  const Fs_mult = parseInt(document.getElementById('v2_sr').value) / 100; // multiples of F
+  document.getElementById('v2_phv').textContent = ph_deg + '°';
+  document.getElementById('v2_srv').textContent = (Fs_mult).toFixed(1) + '×F';
+
+  const { ctx, W, H } = getCanvas('c2');
+  ctx.fillStyle = C.surf; ctx.fillRect(0,0,W,H);
+  const cy = H/2, amp = H * 0.36;
+  drawGrid(ctx, W, H);
+
+  // Signal: 2 full cycles across width = cycles=2
+  const sigCycles = 2;
+  drawSine(ctx, W, H, cy, amp, sigCycles, 0, C.accent, 0.25, 2);
+
+  // Samples: spaced at 1/(Fs_mult) cycles apart in normalised units
+  // Fs_mult = samples per cycle, so sample spacing in t_norm = 1/Fs_mult / sigCycles... 
+  // Actually: if signal is sigCycles cycles in width W,
+  // sample interval = W / (sigCycles * Fs_mult) pixels
+  const sampler_phase = ph_deg * Math.PI / 180;
+  const sampleSpacing = W / (sigCycles * Fs_mult); // px between samples
+  const nSamples = Math.floor(W / sampleSpacing) + 2;
+
+  const sxArr = [], syArr = [];
+  for (let i = 0; i < nSamples; i++) {
+    const x = i * sampleSpacing;
+    if (x < 0 || x > W) continue;
+    const t_norm = x / W;
+    // Sample lands at signal phase = 2π*sigCycles*t_norm, shifted by sampler_phase
+    const y = cy - amp * Math.sin(2 * Math.PI * sigCycles * t_norm + sampler_phase);
+    sxArr.push(x); syArr.push(y);
+  }
+
+  // Reconstructed: dashed line connecting samples
+  if (sxArr.length > 1) {
+    ctx.beginPath(); ctx.setLineDash([5,4]);
+    ctx.strokeStyle = C.accent; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.8;
+    sxArr.forEach((x,i) => i===0 ? ctx.moveTo(x,syArr[i]) : ctx.lineTo(x,syArr[i]));
+    ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  }
+
+  // Sample dots
+  sxArr.forEach((x,i) => drawDot(ctx, x, syArr[i], 5, C.blue));
+
+  // Check if all near zero
+  const allNearZero = syArr.every(y => Math.abs(y - cy) < amp * 0.05);
+  const status = document.getElementById('v2_status');
+  if (allNearZero) {
+    ctx.fillStyle = C.red; ctx.font = 'bold 12px "Source Sans 3"';
+    ctx.fillText('⚠  All samples ≈ 0 — the wave is completely invisible', 10, 22);
+    status.style.color = C.red;
+    status.textContent = 'Reconstruction impossible. Signal exists but samples see nothing.';
+  } else {
+    const maxDev = Math.max(...syArr.map(y => Math.abs(y - cy))) / amp;
+    status.style.color = C.green;
+    status.textContent = 'Max sample deviation: ' + Math.round(maxDev*100) + '% of amplitude — wave detectable.';
+  }
+}
+['v2_ph','v2_sr'].forEach(id => document.getElementById(id).addEventListener('input', drawV2));
+drawV2();
+
+// ── V3: Noise stability ──────────────────────────────────────────────────────
+// Uses a proper sinusoidal least-squares fit to show true reconstruction quality
+function fitSine(samples, sigCycles, W) {
+  // samples = [{x,y}], signal has sigCycles cycles across W
+  // Fit y = A*sin(wt) + B*cos(wt) + C using linear least squares
+  // where w = 2π*sigCycles/W in pixel units
+  const omega = 2 * Math.PI * sigCycles / W;
+  let Ss=0, Sc=0, S1=0, SSs=0, SSc=0, SS1=0, SsSc=0, SsS1=0, ScS1=0, Sy=0, Ssy=0, Scy=0;
+  const n = samples.length;
+  samples.forEach(({x,y}) => {
+    const s = Math.sin(omega*x), c = Math.cos(omega*x);
+    Ss+=s; Sc+=c; S1+=1;
+    SSs+=s*s; SSc+=c*c; SsSc+=s*c; SsS1+=s; ScS1+=c;
+    Sy+=y; Ssy+=s*y; Scy+=c*y;
+  });
+  // Solve 3x3 system [SSs SsSc Ss; SsSc SSc Sc; Ss Sc n] * [A;B;C] = [Ssy;Scy;Sy]
+  // Use simple approach: least squares via normal equations, solved by Cramer or direct
+  // For robustness just use pseudo-inverse style computation
+  const mat = [[SSs,SsSc,Ss],[SsSc,SSc,Sc],[Ss,Sc,n]];
+  const rhs = [Ssy,Scy,Sy];
+  // Gaussian elimination
+  const m = mat.map((r,i)=>[...r,rhs[i]]);
+  for (let col=0; col<3; col++) {
+    let maxR=col; for(let r=col+1;r<3;r++) if(Math.abs(m[r][col])>Math.abs(m[maxR][col])) maxR=r;
+    [m[col],m[maxR]]=[m[maxR],m[col]];
+    if (Math.abs(m[col][col]) < 1e-10) continue;
+    for(let r=0;r<3;r++) if(r!==col){const f=m[r][col]/m[col][col];for(let c=col;c<4;c++) m[r][c]-=f*m[col][c];}
+  }
+  const A = m[0][3]/m[0][0], B = m[1][3]/m[1][1], C_off = isNaN(m[2][3]/m[2][2]) ? 0 : m[2][3]/m[2][2];
+  return {A, B, C_off, omega};
+}
+
+let v3_seed = 42;
+function pseudoRand(seed) { return ((Math.sin(seed) * 43758.5453123) % 1 + 1) % 1; }
+
+function drawV3() {
+  const Fs_mult = parseInt(document.getElementById('v3_sr').value) / 100;
+  const noisePct = parseInt(document.getElementById('v3_noise').value) / 100;
+  document.getElementById('v3_srv').textContent = Fs_mult.toFixed(1) + '×F';
+  document.getElementById('v3_noisev').textContent = Math.round(noisePct*100) + '%';
+
+  const { ctx, W, H } = getCanvas('c3');
+  ctx.fillStyle = C.surf; ctx.fillRect(0,0,W,H);
+  const cy = H/2, amp = H * 0.35;
+  drawGrid(ctx, W, H);
+
+  const sigCycles = 2;
+  drawSine(ctx, W, H, cy, amp, sigCycles, 0, C.accent, 0.22, 2);
+
+  const sampleSpacing = W / (sigCycles * Fs_mult);
+  const nSamples = Math.max(2, Math.floor(W / sampleSpacing));
+  const samples = [];
+  for (let i = 0; i < nSamples; i++) {
+    const x = (i / (nSamples-1)) * W;
+    const trueVal = amp * Math.sin(2*Math.PI*sigCycles * x/W);
+    const noise   = (pseudoRand(v3_seed + i*7.3) * 2 - 1) * noisePct * amp;
+    samples.push({ x, y: cy - (trueVal + noise) });
+  }
+
+  // Draw noisy sample dots
+  samples.forEach(({x,y}) => drawDot(ctx, x, y, 5, C.blue));
+
+  // Fit and draw reconstructed sine
+  if (samples.length >= 3) {
+    const {A, B, C_off, omega} = fitSine(samples, sigCycles, W);
+    ctx.beginPath(); ctx.strokeStyle = C.red; ctx.lineWidth = 2; ctx.globalAlpha = 0.9;
+    for (let x = 0; x <= W; x++) {
+      const y = A * Math.sin(omega*x) + B * Math.cos(omega*x) + C_off;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke(); ctx.globalAlpha = 1;
+
+    // RMS error vs true
+    let errSum = 0;
+    for (let x = 0; x <= W; x+=4) {
+      const trueY = cy - amp * Math.sin(2*Math.PI*sigCycles*x/W);
+      const fitY  = A * Math.sin(omega*x) + B * Math.cos(omega*x) + C_off;
+      errSum += (trueY - fitY)**2;
+    }
+    const rmsErr = Math.sqrt(errSum / (W/4)) / amp * 100;
+    const status = document.getElementById('v3_status');
+    status.style.color = rmsErr > 20 ? C.red : rmsErr > 8 ? C.accent : C.green;
+    status.textContent = 'Reconstruction RMS error: ' + rmsErr.toFixed(1) + '%  |  ' + nSamples + ' samples across ' + sigCycles + ' cycles';
+  }
+}
+['v3_sr','v3_noise'].forEach(id => document.getElementById(id).addEventListener('input', () => { v3_seed = Math.random()*1000; drawV3(); }));
+drawV3();
+
+
+window.addEventListener('resize', () => {
+  drawV1(); drawV2(); drawV3();
+});
+</script>
+</body>
+</html>

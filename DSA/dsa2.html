@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>What Memory Actually Is | Adithya MD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;--ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;--accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);--border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);--display:'Instrument Serif',Georgia,serif;--sans:'Source Sans 3',sans-serif;--hand:'Caveat',cursive;--radius:14px}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.78;font-size:19px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}.d1{animation-delay:.08s}.d2{animation-delay:.16s}
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.85);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:var(--ink)}.brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}.brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}.nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}.nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}.nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}.dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}.dropbtn:hover{color:var(--ink)}.dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}.dropdown:hover .dropdown-content{display:block}.dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}.dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}.dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}.hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}.hamburger.active span:nth-child(2){opacity:0}.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.95);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}.mobile-overlay.active{display:flex}.mobile-overlay a,.mobile-overlay button{font-family:var(--display);font-size:1.5rem;color:var(--body);background:none;border:none;cursor:pointer;padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}.mobile-overlay a:hover,.mobile-overlay button:hover{color:var(--accent)}.mobile-overlay .mobile-sub{display:flex;flex-direction:column;align-items:center}.mobile-overlay .mobile-sub a{font-size:1.15rem;color:var(--muted);padding:.4rem 1.5rem}
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 4rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.4rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.08rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.55rem;color:var(--ink);margin:2.5rem 0 .8rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.35rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.18rem;font-weight:300;margin-bottom:1.15rem}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .callout{margin:1.5rem 0;padding:1.3rem 1.6rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .code-block{margin:1.4rem 0;border-radius:10px;overflow:hidden;border:1px solid rgba(237,232,224,.07)}
+    .code-label{background:#1a1917;padding:.4rem 1rem;font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid rgba(237,232,224,.07)}
+    pre{background:#151513;padding:1.3rem 1.4rem;overflow-x:auto;margin:0}
+    code{font-family:'JetBrains Mono','Fira Code','Courier New',monospace;font-size:.88rem;line-height:1.7;color:#c9c2b8}
+    .kw{color:#e8a84c}.cm{color:#5a5650;font-style:italic}.ty{color:#7ec8a4}.fn{color:#b8a4e8}.nm{color:#c9c2b8}.num{color:#e88c6c}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.2rem 0}
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.1rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}.sidebar-link+.sidebar-link{margin-top:.15rem}.sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.9rem;font-weight:500;color:var(--ink)}.sidebar-link-note{font-size:.75rem;color:var(--muted);margin-top:.15rem}
+    .comments-section{margin-top:2.5rem}.comments-section h2{font-family:var(--display);font-size:1.3rem;color:var(--ink);margin-bottom:1rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}.footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}.footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* ── Interactive visual wrapper (matches DSP series style) ── */
+    .visual-block{margin:1.8rem 0;border:1px solid rgba(237,232,224,.1);border-radius:12px;overflow:hidden;background:#1e1c1a}
+    .visual-title{font-family:var(--hand);font-size:1.1rem;color:var(--accent);padding:.7rem 1.2rem;border-bottom:1px solid rgba(237,232,224,.07)}
+    .visual-canvas{width:100%;display:block;cursor:default}
+    .visual-controls{padding:.8rem 1.2rem;display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap;border-top:1px solid rgba(237,232,224,.07)}
+    .vc-label{font-size:.85rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+    .vc-val{color:var(--accent);font-weight:600;min-width:60px;display:inline-block}
+    .vc-slider{-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:rgba(237,232,224,.15);outline:none;cursor:pointer;width:140px}
+    .vc-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer}
+    .visual-caption{padding:.7rem 1.2rem .9rem;font-family:var(--display);font-size:1rem;font-style:italic;color:var(--muted);line-height:1.5;border-top:1px solid rgba(237,232,224,.05)}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static;width:100%}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.25rem 3rem}.article{padding:2rem 1.5rem;border-radius:12px}.article h1{font-size:1.85rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a><a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a><a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button><div class="dropdown-content"><a href="../teaching.html">Teaching Roles</a><a href="../workshops.html">Workshops</a><a href="../talks.html">Talks</a></div></div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a><a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a><a href="../startup.html">Moisture Meter</a>
+  <div class="mobile-sub"><button style="color:var(--ink);font-size:1.3rem">Beyond the Desk</button><a href="../teaching.html">Teaching Roles</a><a href="../workshops.html">Workshops</a><a href="../talks.html">Talks</a></div>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>DSA from First Principles</span>
+  <h1>What Memory Actually Is</h1>
+  <p class="blog-subtitle">Before arrays, before pointers, before any of it — what are we actually working with?</p>
+
+  <h2>A long row of numbered boxes</h2>
+
+  <p>Forget code for a moment. Forget C, forget your microcontroller, forget everything you know about programming.</p>
+
+  <p>Imagine a very long street. Every house on this street looks identical. Every house has a unique number on the door. And inside every house there is room to store exactly one small piece of information. One byte.</p>
+
+  <p>That is memory. Not a metaphor for memory. That is what memory actually is.</p>
+
+  <p>Each box holds one byte. Each box has a unique address starting from zero. Your STM32F4 has 128KB of SRAM which means 131,072 of these boxes, their addresses starting at <code>0x20000000</code>. Your laptop has billions of them. The scale is completely different. The concept is identical.</p>
+
+  <p>The CPU has one job with respect to this row of boxes. It can point at a box by its address and <strong>read</strong> what is inside. Or it can point at a box and <strong>write</strong> something new into it. Read. Write. Nothing else. Everything your program ever does is ultimately one of those two operations at some address.</p>
+
+  <!-- VISUAL 1: Memory as a row of boxes -->
+  <div class="visual-block">
+    <div class="visual-title">Memory — a row of addressed boxes</div>
+    <canvas class="visual-canvas" id="cvMem" height="110"></canvas>
+    <div class="visual-controls">
+      <span class="vc-label">Hover a box to inspect it</span>
+    </div>
+    <div class="visual-caption">Every byte in RAM has a unique address. The CPU reads and writes by address. There is no deeper mechanism than this.</div>
+  </div>
+
+  <h2>The CPU cannot use memory directly</h2>
+
+  <p>Here is something that surprises most people. The CPU does not do arithmetic on bytes sitting in RAM. It physically cannot. It has to bring the data into itself first.</p>
+
+  <p>Inside the CPU there are a small number of extremely fast storage locations called <strong>registers</strong>. On your STM32 (ARM Cortex-M4) there are sixteen of them, each holding 32 bits. The CPU can only operate on what is currently sitting in a register. So even adding two numbers requires four steps.</p>
+
+  <div class="code-block">
+    <div class="code-label">What actually happens for int c = a + b</div>
+    <pre><code><span class="cm">; Step 1 — Load a from its address in memory into register R0</span>
+<span class="cm">; Step 2 — Load b from its address in memory into register R1</span>
+<span class="cm">; Step 3 — Add R0 and R1, put the result in R2     (this is fast)</span>
+<span class="cm">; Step 4 — Store R2 back to the address of c in memory</span></code></pre>
+  </div>
+
+  <p>Every computation follows this rhythm. Fetch from memory into registers. Operate on registers. Store result back to memory. Steps 1 and 4 touch RAM. Step 3 does not.</p>
+
+  <p>Now here is the problem. The CPU does step 3 in under one nanosecond. Fetching from RAM in steps 1 and 2 takes 60 to 100 nanoseconds. To put that in human terms: if the arithmetic took one second, the memory fetch would take nearly two minutes. The processor finishes its work almost instantly and then sits completely idle waiting for the data to arrive.</p>
+
+  <!-- VISUAL 2: CPU register cycle with timing -->
+  <div class="visual-block">
+    <div class="visual-title">The fetch-operate-store cycle</div>
+    <canvas class="visual-canvas" id="cvCpu" height="160"></canvas>
+    <div class="visual-controls">
+      <span class="vc-label">Click to step through</span>
+      <span class="vc-label" id="cpuStepLabel" style="color:var(--accent)">Step 1 of 4</span>
+    </div>
+    <div class="visual-caption">The CPU is fast. Memory is slow. Every program ever written is constrained by this gap.</div>
+  </div>
+
+  <div class="callout">This gap between compute speed and memory speed is the most important physical fact in all of computer science. It is the reason caches exist. It is the reason data structures exist. Everything in this series is ultimately about organizing data so the CPU spends as little time waiting for memory as possible.</div>
+
+  <p>If you have worked with FIR filters on an STM32, you already feel this. Keeping your coefficients in a tight contiguous array means the CPU can prefetch them all into cache before the multiply-accumulate loop begins. Scatter those coefficients across random addresses and the CPU stalls on every fetch. The math is identical. The memory access pattern is what makes it fast or slow.</p>
+
+  <h2>How that memory gets carved up</h2>
+
+  <p>Your program does not get one undifferentiated blob of memory. It is organized into regions, each with a specific purpose. This is where the microcontroller and OS pictures diverge, so let us look at both.</p>
+
+  <p>On a bare metal STM32 the memory map is fixed in hardware and printed in the datasheet. There is no operating system. What you see is what is physically there. On Linux the OS inserts a layer called virtual memory — your program sees a private address space that the OS maps to physical RAM invisibly. Two programs can use the same virtual address without interfering because the OS translates each one to a different physical location.</p>
+
+  <p>Despite that difference in mechanism, both worlds carve memory into the same four logical rooms. Click each region below to understand what lives there.</p>
+
+  <!-- VISUAL 3: Interactive memory map, both worlds side by side -->
+  <div class="visual-block">
+    <div class="visual-title">The four memory regions — microcontroller vs OS</div>
+    <canvas class="visual-canvas" id="cvMap" height="340"></canvas>
+    <div id="mapInfo" style="padding:.7rem 1.2rem;min-height:56px;font-size:.95rem;color:var(--body);font-weight:300;border-top:1px solid rgba(237,232,224,.07)">
+      <em style="color:var(--muted)">Click a region to learn what lives there.</em>
+    </div>
+    <div class="visual-caption">Same four rooms in both worlds. The walls are just made of different materials.</div>
+  </div>
+
+  <h2>What a variable actually is</h2>
+
+  <p>Now that you have the physical picture of memory, let us look at what happens when you write something as simple as this:</p>
+
+  <div class="code-block">
+    <div class="code-label">C</div>
+    <pre><code><span class="ty">int</span> x = <span class="num">42</span>;</code></pre>
+  </div>
+
+  <p>An <code>int</code> is 4 bytes. The compiler finds 4 consecutive boxes in memory and reserves them for <code>x</code>. Say it picks address 1000. Those four boxes now belong to <code>x</code> and the value 42 gets written into them.</p>
+
+  <p>Here is the important part. <strong>The name <code>x</code> does not exist at runtime.</strong> By the time your program is executing, the compiler has already replaced every use of <code>x</code> with the address 1000. When your code reads <code>x</code>, the CPU fetches 4 bytes starting at address 1000. When it writes to <code>x</code>, it writes 4 bytes to address 1000. The name was only ever for your benefit while writing the code.</p>
+
+  <p>You can see this yourself. The <code>&</code> operator in C means "give me the address of this variable."</p>
+
+  <div class="code-block">
+    <div class="code-label">C — run this and look at the output</div>
+    <pre><code><span class="kw">#include</span> <span class="nm">&lt;stdio.h&gt;</span>
+
+<span class="ty">int</span> <span class="fn">main</span>() {
+    <span class="ty">int</span> x = <span class="num">42</span>;
+    <span class="fn">printf</span>(<span class="nm">"value   : %d\n"</span>,  x);
+    <span class="fn">printf</span>(<span class="nm">"address : %p\n"</span>,  (<span class="ty">void</span>*)&x);
+    <span class="fn">printf</span>(<span class="nm">"size    : %zu\n"</span>, <span class="kw">sizeof</span>(x));
+    <span class="kw">return</span> <span class="num">0</span>;
+}</code></pre>
+  </div>
+
+  <p>That address in the output is real. It is where in your RAM those 4 bytes are sitting right now. On an STM32 it would be somewhere in SRAM starting at <code>0x20000000</code>. On Linux it will be on the stack. The address changes each run because the OS randomizes stack positions for security, but the size will always be 4 for an <code>int</code>.</p>
+
+  <p>Now change <code>int</code> to <code>char</code> and run it again. Size becomes 1. Change to <code>double</code> and it becomes 8. The type tells the compiler two things: how many bytes to reserve, and how to interpret those bytes when reading them back. The type is not stored in memory. Only the raw bytes are stored. That knowledge lives only in your source code and in the compiler.</p>
+
+  <!-- VISUAL 4: Variable in memory, interactive type switcher -->
+  <div class="visual-block">
+    <div class="visual-title">A variable is bytes at an address</div>
+    <canvas class="visual-canvas" id="cvVar" height="130"></canvas>
+    <div class="visual-controls">
+      <span class="vc-label">Type</span>
+      <select id="typeSelect" style="background:#2a2826;color:var(--ink);border:1px solid rgba(237,232,224,.15);border-radius:6px;padding:.3rem .6rem;font-size:.85rem;cursor:pointer">
+        <option value="char">char (1 byte)</option>
+        <option value="short">short (2 bytes)</option>
+        <option value="int" selected>int (4 bytes)</option>
+        <option value="double">double (8 bytes)</option>
+        <option value="pointer">pointer (8 bytes)</option>
+      </select>
+      <span class="vc-label">Value&nbsp;<input id="varVal" type="number" value="42" style="width:60px;background:#2a2826;color:var(--accent);border:1px solid rgba(237,232,224,.15);border-radius:6px;padding:.25rem .5rem;font-size:.85rem;font-family:'JetBrains Mono',monospace"></span>
+    </div>
+    <div class="visual-caption">The name exists only in your source. At runtime there is only an address and bytes. The type decides how many bytes and how to read them.</div>
+  </div>
+
+  <div class="callout">A variable is not a named box. It is a named address. The name is yours. The address is the machine's. When the program runs, only the machine's version exists.</div>
+
+  <h2>Why this is the foundation of everything that follows</h2>
+
+  <p>Every data structure in this series is built on exactly what you just learned.</p>
+
+  <p>An array is multiple values of the same type placed at consecutive addresses. Because they are consecutive, the address of any element can be calculated with simple arithmetic. That is why array access is instant. Not because of any special property of arrays as an abstract idea. Because of consecutive addresses and arithmetic on those addresses.</p>
+
+  <p>A pointer is a variable whose value is an address. Instead of storing 42 it stores 1000. Instead of holding data it holds a location. Once you see every variable as bytes at an address, a pointer is not mysterious at all. It is just a variable whose bytes represent another variable's address.</p>
+
+  <p>A linked list is a chain of structs scattered across the heap, each one holding the address of the next. The only thing connecting them is addresses stored inside addresses. No contiguity, no arithmetic shortcut. Just pointers chasing pointers through memory.</p>
+
+  <p>All of it comes back to this. Memory is a flat row of bytes. Variables are names for addresses. Every data structure is a decision about how to arrange those bytes and navigate between them.</p>
+
+  <hr class="sep">
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js" data-repo="adimd/AMD_Website" data-repo-id="R_kgDOQlniOw" data-category="General" data-category-id="DIC_kwDOQlniO84CzoR1" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="dark" data-lang="en" crossorigin="anonymous" async></script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">DSA from First Principles</h2>
+    <a class="sidebar-link" href="why-dsa.html"><div class="sidebar-link-title">Topic 1: Why DSA Exists</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Topic 2: What Memory Actually Is</div><div class="sidebar-link-note">You are here.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Topic 3: Pointers</div><div class="sidebar-link-note">Coming next.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Topic 4: Arrays</div><div class="sidebar-link-note">Coming soon.</div></a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas in this post</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Memory as a row of bytes</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The CPU register cycle</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The compute vs memory gap</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Four memory regions</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">MCU vs OS perspective</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A variable is an address</div></a>
+  </div>
+</aside>
+</div></div>
+
+<footer class="site-footer"><p class="footer-tagline">Thanks for reading.</p><p class="footer-copy">© <span id="year"></span> Adithya MD</p></footer>
+
+<script>
+document.getElementById("year").textContent = new Date().getFullYear();
+const hb = document.getElementById('hamburger'), mo = document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':''});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow=''}));
+
+const ACCENT = '#e8a84c';
+const MUTED  = '#7d766b';
+const INK    = '#ede8e0';
+const BG2    = '#232220';
+const GREEN  = '#7ec8a4';
+const PURPLE = '#b8a4e8';
+const DIM    = 'rgba(237,232,224,0.08)';
+
+function dpr(cv){ return window.devicePixelRatio||1; }
+function resize(cv,h){
+  const r=dpr(cv), w=cv.parentElement.clientWidth;
+  cv.width=w*r; cv.height=h*r;
+  cv.style.width=w+'px'; cv.style.height=h+'px';
+  cv.getContext('2d').scale(r,r);
+  return {w,h};
+}
+function rnd(ctx,x,y,w,h,r,fill,stroke){
+  ctx.beginPath();ctx.roundRect(x,y,w,h,r);
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}
+}
+function txt(ctx,t,x,y,size,color,align='left',font=''){
+  ctx.font=`${font}${size}px 'Source Sans 3',sans-serif`;
+  ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(t,x,y);
+}
+function mono(ctx,t,x,y,size,color,align='left'){
+  ctx.font=`${size}px 'JetBrains Mono','Courier New',monospace`;
+  ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(t,x,y);
+}
+
+// ── VISUAL 1: Memory row ──────────────────────────────────────────────────────
+(function(){
+  const cv = document.getElementById('cvMem');
+  const values = [0x1a,0xff,0x00,0x2b,0x42,0x00,0x00,0x00,0x7f,0x3c,0x08,0x00,0xe8,0xa8,0x4c,0xff];
+  const labels = ['','','','','x','','','','','','','','','','',''];
+  let hov = -1;
+  function draw(){
+    const {w,h} = resize(cv,110);
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0,0,w,h);
+    const N=16, pad=16, boxW=Math.floor((w-pad*2)/N)-3, boxH=52, startY=28;
+    txt(ctx,'Address',pad,18,11,MUTED);
+    for(let i=0;i<N;i++){
+      const x=pad+i*(boxW+3), isHov=(i===hov);
+      rnd(ctx,x,startY,boxW,boxH,4,isHov?'rgba(232,168,76,0.15)':BG2,isHov?ACCENT:DIM);
+      mono(ctx,'0x'+(i).toString(16).padStart(2,'0'),x+boxW/2,startY+14,9,isHov?ACCENT:MUTED,'center');
+      mono(ctx,values[i].toString(16).padStart(2,'0').toUpperCase(),x+boxW/2,startY+32,11,isHov?INK:GREEN,'center');
+      if(labels[i]) txt(ctx,labels[i],x+boxW/2,startY+boxH+13,10,ACCENT,'center');
+    }
+    if(hov>=0){
+      const x=pad+hov*(boxW+3);
+      txt(ctx,`addr: ${hov}  |  hex: 0x${values[hov].toString(16).padStart(2,'0').toUpperCase()}  |  dec: ${values[hov]}`,pad,h-6,10,MUTED);
+    }
+  }
+  draw();
+  cv.addEventListener('mousemove',e=>{
+    const r=cv.getBoundingClientRect(),mx=e.clientX-r.left;
+    const N=16,pad=16,boxW=Math.floor((cv.clientWidth-pad*2)/N)-3;
+    const i=Math.floor((mx-pad)/(boxW+3));
+    hov=(i>=0&&i<N)?i:-1; draw();
+  });
+  cv.addEventListener('mouseleave',()=>{hov=-1;draw();});
+  window.addEventListener('resize',draw);
+})();
+
+// ── VISUAL 2: CPU cycle stepper ───────────────────────────────────────────────
+(function(){
+  const cv = document.getElementById('cvCpu');
+  const lbl = document.getElementById('cpuStepLabel');
+  let step = 0;
+  const steps = [
+    {desc:'Load a from RAM into R0',  from:'ram', to:'r0',  time:'~80 ns',  active:'r0'},
+    {desc:'Load b from RAM into R1',  from:'ram', to:'r1',  time:'~80 ns',  active:'r1'},
+    {desc:'ADD R0 + R1 → R2',         from:'r0',  to:'r2',  time:'< 1 ns',  active:'r2'},
+    {desc:'Store R2 back to RAM (c)', from:'r2',  to:'ram', time:'~80 ns',  active:'ram'},
+  ];
+  const colors = ['< 1 ns','~80 ns'];
+  function draw(){
+    const {w,h} = resize(cv,160);
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0,0,w,h);
+    const s = steps[step];
+    lbl.textContent = `Step ${step+1} of 4`;
+
+    // RAM box
+    const ramX=20,ramY=30,ramW=90,ramH=90;
+    const ramActive=(s.active==='ram');
+    rnd(ctx,ramX,ramY,ramW,ramH,6,ramActive?'rgba(232,168,76,0.12)':BG2,ramActive?ACCENT:DIM);
+    txt(ctx,'RAM',ramX+ramW/2,ramY+22,11,ramActive?ACCENT:MUTED,'center','bold ');
+    mono(ctx,'addr 1000',ramX+ramW/2,ramY+40,9,MUTED,'center');
+    mono(ctx,'a = 10',   ramX+ramW/2,ramY+56,9,GREEN,'center');
+    mono(ctx,'b = 5',    ramX+ramW/2,ramY+70,9,GREEN,'center');
+    mono(ctx,'c = ?',    ramX+ramW/2,ramY+84,9,step>=3?GREEN:MUTED,'center');
+
+    // CPU box
+    const cpuX=w-180,cpuY=10,cpuW=160,cpuH=130;
+    rnd(ctx,cpuX,cpuY,cpuW,cpuH,6,'rgba(26,25,23,0.6)',DIM);
+    txt(ctx,'CPU',cpuX+cpuW/2,cpuY+18,11,MUTED,'center','bold ');
+
+    // Registers
+    const regs=[{name:'R0',val:step>=1?'10':'?',y:cpuY+28},{name:'R1',val:step>=2?'5':'?',y:cpuY+54},{name:'R2',val:step>=4?'15':(step>=3?'15':'?'),y:cpuY+80}];
+    regs.forEach(r=>{
+      const active=(s.active===r.name.toLowerCase());
+      rnd(ctx,cpuX+10,r.y,cpuW-20,22,4,active?'rgba(232,168,76,0.15)':BG2,active?ACCENT:DIM);
+      mono(ctx,r.name,cpuX+22,r.y+15,9,active?ACCENT:MUTED);
+      mono(ctx,r.val,cpuX+cpuW-20,r.y+15,10,active?INK:GREEN,'right');
+    });
+
+    // Arrow
+    const isStore=(s.from==='r2'&&s.to==='ram');
+    const isFetch=(s.to==='r0'||s.to==='r1');
+    const arrowColor = (s.time==='< 1 ns') ? GREEN : ACCENT;
+    const ax1=isFetch||isStore ? (isFetch?ramX+ramW:cpuX) : cpuX+20;
+    const ax2=isFetch||isStore ? (isFetch?cpuX:ramX+ramW) : cpuX+cpuW-20;
+    const ay = cpuY+40;
+    ctx.beginPath();ctx.moveTo(ax1,ay);ctx.lineTo(ax2,ay);
+    ctx.strokeStyle=arrowColor;ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);
+    const dir=ax2>ax1?1:-1;
+    ctx.beginPath();ctx.moveTo(ax2,ay);ctx.lineTo(ax2-dir*8,ay-5);ctx.lineTo(ax2-dir*8,ay+5);ctx.closePath();
+    ctx.fillStyle=arrowColor;ctx.fill();
+
+    // Timing badge
+    const tColor = s.time==='< 1 ns' ? GREEN : ACCENT;
+    const tBg    = s.time==='< 1 ns' ? 'rgba(126,200,164,0.12)' : 'rgba(232,168,76,0.12)';
+    const midX=(ax1+ax2)/2;
+    rnd(ctx,midX-36,ay-24,72,18,4,tBg,null);
+    mono(ctx,s.time,midX,ay-12,10,tColor,'center');
+
+    // Description
+    txt(ctx,`${step+1}. ${s.desc}`,20,h-10,12,INK);
+  }
+  draw();
+  cv.addEventListener('click',()=>{step=(step+1)%4;draw();});
+  window.addEventListener('resize',draw);
+})();
+
+// ── VISUAL 3: Memory map, side by side ───────────────────────────────────────
+(function(){
+  const cv  = document.getElementById('cvMap');
+  const inf = document.getElementById('mapInfo');
+  let sel = null;
+
+  const regions = [
+    {
+      id:'text',label:'Text / Flash',
+      mcu:'0x08000000 — Flash memory.\nYour compiled ARM instructions live here.\nNon-volatile, survives power loss.',
+      os:'Low virtual address — Text segment.\nLoaded from your executable by the OS.\nMarked read-only; two processes share it safely.',
+      info:'<strong style="color:var(--ink)">Text / Flash — your instructions.</strong> The compiled machine code lives here. The CPU reads from this region and executes what it finds. Nothing writes here at runtime. On the STM32 this is physical Flash memory that survives power loss. On Linux it is the text segment, loaded once and shared between processes.',
+      col:'rgba(184,164,232,0.15)', stroke:PURPLE,
+    },
+    {
+      id:'data',label:'Data / BSS',
+      mcu:'Initialized globals copied from Flash.\nUninitialized globals zeroed by startup code.\nBoth live in SRAM for the life of the program.',
+      os:'Data segment — initialized globals.\nBSS segment — uninitialized globals (zeroed).\nSet up by the OS loader when process starts.',
+      info:'<strong style="color:var(--ink)">Data and BSS — your globals.</strong> Variables declared outside functions and static variables live here. They exist from program start to program end. On the MCU, startup code copies initial values from Flash into SRAM and zeros BSS before main() runs. On Linux the OS loader does the equivalent.',
+      col:'rgba(126,200,164,0.12)', stroke:GREEN,
+    },
+    {
+      id:'heap',label:'Heap',
+      mcu:'Grows upward from the bottom of SRAM.\nManaged by a small allocator in your C runtime.\nFixed total size. Fragmentation is a real risk.',
+      os:'Grows upward in virtual address space.\nBacked by physical pages allocated on demand.\nCan grow large. Still your responsibility to free.',
+      info:'<strong style="color:var(--ink)">Heap — memory you control manually.</strong> This is where malloc lives. Memory here persists until you call free. You control the lifetime entirely. On the MCU it is a fixed block of SRAM managed by a small allocator — fragmentation can cause malloc to return NULL even when total free bytes exceed your request. On Linux the OS can grow it dynamically.',
+      col:'rgba(232,168,76,0.12)', stroke:ACCENT,
+    },
+    {
+      id:'stack',label:'Stack',
+      mcu:'Grows downward from the top of SRAM.\nEach function call pushes a frame.\nOverflow silently corrupts the heap. No guard.',
+      os:'Grows downward in virtual address space.\nOS places a guard page below it.\nOverflow gives a clean segfault instead of corruption.',
+      info:'<strong style="color:var(--ink)">Stack — your local variables.</strong> Every function call pushes a frame holding local variables and the return address. Every return pops it. Automatic, fast, temporary. The critical difference: on the MCU a stack overflow silently corrupts heap memory with no warning. On Linux a guard page below the stack catches it and gives you a clean crash.',
+      col:'rgba(232,100,80,0.12)', stroke:'#e86450',
+    },
+  ];
+
+  function draw(){
+    const {w,h} = resize(cv,340);
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0,0,w,h);
+    const col1=40, col2=w/2+10, colW=w/2-56, rowH=62, startY=16;
+    // headers
+    rnd(ctx,col1,startY,colW,24,4,'rgba(126,200,164,0.1)',null);
+    txt(ctx,'Microcontroller (STM32)',col1+colW/2,startY+16,11,GREEN,'center','bold ');
+    rnd(ctx,col2,startY,colW,24,4,'rgba(184,164,232,0.1)',null);
+    txt(ctx,'Linux Process',col2+colW/2,startY+16,11,PURPLE,'center','bold ');
+
+    regions.forEach((rg,i)=>{
+      const y = startY+28+i*rowH;
+      const isSel = sel===rg.id;
+      // MCU column
+      rnd(ctx,col1,y,colW,rowH-4,6,isSel?rg.col:'rgba(26,25,23,0.5)',isSel?rg.stroke:DIM);
+      txt(ctx,rg.label,col1+8,y+14,11,isSel?INK:MUTED,'left','bold ');
+      rg.mcu.split('\n').forEach((line,li)=>txt(ctx,line,col1+8,y+26+li*13,9,isSel?INK:MUTED));
+      // OS column
+      rnd(ctx,col2,y,colW,rowH-4,6,isSel?rg.col:'rgba(26,25,23,0.5)',isSel?rg.stroke:DIM);
+      txt(ctx,rg.label,col2+8,y+14,11,isSel?INK:MUTED,'left','bold ');
+      rg.os.split('\n').forEach((line,li)=>txt(ctx,line,col2+8,y+26+li*13,9,isSel?INK:MUTED));
+    });
+  }
+  draw();
+
+  cv.addEventListener('click',e=>{
+    const r=cv.getBoundingClientRect();
+    const my=e.clientY-r.top;
+    const startY=44, rowH=62;
+    const i=Math.floor((my-startY)/rowH);
+    if(i>=0&&i<regions.length){
+      sel=(sel===regions[i].id)?null:regions[i].id;
+      inf.innerHTML=sel?regions[i].info:'<em style="color:var(--muted)">Click a region to learn what lives there.</em>';
+    } else { sel=null; inf.innerHTML='<em style="color:var(--muted)">Click a region to learn what lives there.</em>'; }
+    draw();
+  });
+  window.addEventListener('resize',draw);
+})();
+
+// ── VISUAL 4: Variable in memory ─────────────────────────────────────────────
+(function(){
+  const cv  = document.getElementById('cvVar');
+  const sel = document.getElementById('typeSelect');
+  const inp = document.getElementById('varVal');
+  const types = {
+    char:   {size:1,label:'char'},
+    short:  {size:2,label:'short'},
+    int:    {size:4,label:'int'},
+    double: {size:8,label:'double'},
+    pointer:{size:8,label:'pointer'},
+  };
+  function getBytes(type,val){
+    const n=parseInt(val)||0, sz=types[type].size, bytes=[];
+    for(let i=0;i<sz;i++) bytes.push((n>>(i*8))&0xff);
+    return bytes;
+  }
+  function draw(){
+    const {w,h} = resize(cv,130);
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0,0,w,h);
+    const type=sel.value, val=inp.value;
+    const {size,label}=types[type];
+    const bytes=getBytes(type,val);
+    const pad=20, boxW=Math.min(52,(w-pad*2-8*(size-1))/size), boxH=54, startY=24, startX=pad;
+
+    txt(ctx,`${label}  ${val||'0'}`,pad,16,11,ACCENT);
+    txt(ctx,`${size} byte${size>1?'s':''}  at address 0x1000`,w-pad,16,10,MUTED,'right');
+
+    for(let i=0;i<size;i++){
+      const x=startX+i*(boxW+8);
+      rnd(ctx,x,startY,boxW,boxH,5,'rgba(232,168,76,0.1)',ACCENT);
+      mono(ctx,'0x'+(1000+i).toString(16).toUpperCase(),x+boxW/2,startY+14,8,MUTED,'center');
+      mono(ctx,bytes[i].toString(16).padStart(2,'0').toUpperCase(),x+boxW/2,startY+34,12,GREEN,'center');
+      mono(ctx,bytes[i].toString(),x+boxW/2,startY+50,8,MUTED,'center');
+    }
+    // name label
+    const nameX=startX, nameW=size*boxW+(size-1)*8;
+    ctx.beginPath();ctx.moveTo(nameX,startY+boxH+8);ctx.lineTo(nameX+nameW,startY+boxH+8);
+    ctx.strokeStyle=ACCENT;ctx.lineWidth=1;ctx.stroke();
+    txt(ctx,`"${label==='pointer'?'ptr':label[0]}"  (the name — only exists at compile time)`,nameX+nameW/2,startY+boxH+22,10,MUTED,'center');
+  }
+  draw();
+  sel.addEventListener('change',draw);
+  inp.addEventListener('input',draw);
+  window.addEventListener('resize',draw);
+})();
+</script>
+</body>
+</html>

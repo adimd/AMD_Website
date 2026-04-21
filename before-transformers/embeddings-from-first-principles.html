@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>From Words to Spaces | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav — same as parts 1+2 */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* ── VIZ 1: corpus builder + matrix ───────────────────────────────────── */
+    .corpus-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1.3rem;align-items:start}
+    @media(max-width:840px){.corpus-wrap{grid-template-columns:1fr}}
+    .corpus-col{display:flex;flex-direction:column;gap:.8rem;min-width:0}
+    .corpus-section-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.1rem}
+    .sentence-input-row{display:flex;gap:.5rem}
+    .sentence-input{flex:1;padding:.65rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--ink);font-size:.95rem;outline:none;font-family:inherit}
+    .sentence-input:focus{border-color:var(--accent)}
+    .btn-add{padding:.65rem 1.1rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);cursor:pointer;font-size:.95rem;font-family:inherit;font-weight:500;transition:all .2s;white-space:nowrap}
+    .btn-add:hover{background:rgba(232,168,76,.2)}
+    .btn-add:disabled{opacity:.4;cursor:not-allowed}
+    .sentence-list{display:flex;flex-direction:column;gap:.4rem;max-height:240px;overflow-y:auto;padding:.2rem}
+    .sentence-chip{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.55rem .85rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .sentence-text{font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);flex:1;word-break:break-word}
+    .sentence-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:.25rem .5rem;border-radius:4px;font-size:1.1rem;line-height:1;transition:all .15s;font-family:inherit}
+    .sentence-remove:hover{background:rgba(255,107,107,.15);color:var(--red)}
+    .preset-row{display:flex;gap:.4rem;flex-wrap:wrap}
+    .preset-btn{padding:.35rem .8rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.78rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .window-control{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+    .window-btn{padding:.3rem .75rem;border-radius:6px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--muted);font-size:.82rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .window-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+
+    /* matrix */
+    .matrix-wrap{overflow:auto;padding:.3rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px}
+    .cooc-matrix{border-collapse:separate;border-spacing:4px;margin:0 auto;font-variant-numeric:tabular-nums}
+    .cooc-matrix th,.cooc-matrix td{text-align:center;padding:6px 8px;border-radius:6px;min-width:42px;font-size:.85rem;transition:all .2s}
+    .cooc-matrix thead th{color:var(--ink);font-weight:600;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.2)}
+    .cooc-matrix tbody th{color:var(--ink);font-weight:600;background:rgba(232,168,76,.06);text-align:left;padding-left:10px;border:1px solid rgba(232,168,76,.15)}
+    .cooc-matrix td{background:rgba(237,232,224,.03);border:1px solid var(--border);color:var(--muted);font-family:'Courier New',monospace}
+    .cooc-matrix td.c0{color:rgba(125,118,107,.5)}
+    .cooc-matrix td.c1{background:rgba(232,168,76,.1);color:var(--ink)}
+    .cooc-matrix td.c2{background:rgba(232,168,76,.22);color:var(--ink);font-weight:600}
+    .cooc-matrix td.c3{background:rgba(232,168,76,.38);color:#fff;font-weight:700}
+    .cooc-matrix td.c4{background:rgba(232,168,76,.55);color:#fff;font-weight:700}
+    .cooc-matrix tr.row-hi th,.cooc-matrix tr.row-hi td{outline:1.5px solid rgba(127,255,107,.5)}
+    .cooc-matrix tr.twin th,.cooc-matrix tr.twin td{background:rgba(127,255,107,.08)!important;outline:1.5px solid rgba(127,255,107,.35)}
+    .matrix-insight{padding:.85rem 1rem;background:rgba(127,255,107,0.06);border:1px solid rgba(127,255,107,0.2);border-radius:8px;font-size:.9rem;color:var(--body);line-height:1.6;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .matrix-insight.none{background:var(--bg-card);border-color:var(--border);color:var(--muted);font-style:italic}
+    .twin-badge{display:inline-block;padding:.15rem .55rem;border-radius:999px;background:rgba(127,255,107,.15);color:var(--green);font-size:.72rem;font-weight:600;letter-spacing:.05em;margin-right:.3rem}
+
+    /* ── VIZ 2: graph render ──────────────────────────────────────────────── */
+    .graph-canvas{width:100%;height:auto;background:#14130f;border-radius:10px;border:1px solid var(--border);display:block}
+
+    /* ── VIZ 3: sparse vs dense scale ─────────────────────────────────────── */
+    .scale-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1.3rem;margin-top:.5rem}
+    @media(max-width:720px){.scale-wrap{grid-template-columns:1fr}}
+    .scale-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.1rem;display:flex;flex-direction:column;gap:.6rem;position:relative;overflow:hidden}
+    .scale-card.sparse{border-left:3px solid var(--red)}
+    .scale-card.dense{border-left:3px solid var(--green)}
+    .scale-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+    .scale-title{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .scale-shape{font-family:'Courier New',monospace;font-size:.9rem;color:var(--accent)}
+    .scale-bar-wrap{height:24px;background:rgba(237,232,224,.04);border-radius:4px;overflow:hidden;position:relative}
+    .scale-bar{height:100%;border-radius:4px;transition:width .9s cubic-bezier(.22,1,.36,1)}
+    .scale-bar.sparse{background:linear-gradient(90deg,rgba(255,107,107,.7),rgba(255,107,107,.4))}
+    .scale-bar.dense{background:linear-gradient(90deg,var(--green),rgba(127,255,107,.5))}
+    .scale-size{font-family:'Courier New',monospace;font-size:.88rem;color:var(--body)}
+    .scale-size strong{color:var(--accent)}
+    .scale-size.small{color:var(--green)}
+    .scale-size.small strong{color:var(--green)}
+    .scale-size.big{color:var(--red)}
+    .scale-size.big strong{color:var(--red)}
+    .scale-controls{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+    .scale-slider-group{display:flex;flex-direction:column;gap:.3rem}
+    .scale-slider-label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .scale-slider{width:160px;accent-color:var(--accent)}
+    .scale-val{font-family:'Courier New',monospace;color:var(--accent);font-size:.9rem}
+    .scale-viz-matrix{display:grid;gap:1px;aspect-ratio:1;margin-top:.3rem;background:rgba(237,232,224,.03);border-radius:4px;overflow:hidden;max-height:140px}
+    .scale-viz-cell{background:var(--bg-elevated)}
+    .scale-viz-cell.lit{background:var(--accent)}
+    .scale-viz-dense{display:flex;gap:2px;margin-top:.3rem;height:40px;align-items:flex-end}
+    .scale-viz-dbar{flex:1;background:linear-gradient(to top,rgba(127,255,107,.7),rgba(127,255,107,.2));border-radius:2px;min-height:4px}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Before Transformers: How Embeddings Learn Meaning</span>
+  <h1>From Words to Spaces</h1>
+  <p class="blog-subtitle">How language becomes geometry — the mathematical foundations that make embeddings, similarity, and attention possible.</p>
+
+  <h2>Meaning is behaviour, not definition</h2>
+
+  <p>Ask a philosopher where the meaning of a word lives and they might say it lives inside the word itself. "Dog" means dog. That sounds comforting, like meaning is neatly sealed inside each word like a label on a jar. The moment you try to build a machine that works with language, that idea becomes useless. A computer has no childhood memory of being chased by a dog. No sense of fur. No smell. All it sees is <code>"d"</code>, <code>"o"</code>, <code>"g"</code> and some numbers behind them.</p>
+
+  <p>If meaning isn't hiding inside the word, where does it come from? The answer is less mystical and more practical: we understand words because of the situations they show up in and the company they keep. You didn't learn what "dog" means by staring at the letters. You learned it because "dog" kept appearing near "walk", "bark", "leash", "pet". "Cat" builds its own orbit: "purr", "climb", "couch ownership" (which, let's be honest, is the most accurate description of cats). And some phrases, like "quantum field theory", have a very strong habit of never appearing anywhere near "cute Instagram story".</p>
+
+  <div class="callout">We understand words because of the situations they appear in and the neighbours they keep.</div>
+
+  <p>Linguists noticed this long before machine learning existed. Zellig Harris hinted at it. J. R. Firth gave it its most famous form: <em>"You shall know a word by the company it keeps."</em> A huge chunk of modern NLP is basically an industrial-scale attempt to turn that one sentence into maths.</p>
+
+  <div class="callout">Distributional hypothesis: words that occur in similar contexts tend to have similar meanings.</div>
+
+  <hr class="sep">
+
+  <h2>A tiny universe of six words</h2>
+
+  <p>To see the idea working rather than argue about it, imagine our entire corpus is just four sentences:</p>
+
+  <ul>
+    <li>I love my dog</li>
+    <li>I love my cat</li>
+    <li>You love my dog</li>
+    <li>You love my cat</li>
+  </ul>
+
+  <p>Six words total. Even before we do any maths, your brain is already spotting structure. "Dog" and "cat" feel similar. "I" and "You" play the same role. "Love my" feels welded together. The challenge is making a machine notice the same things without giving it any outside knowledge. No dictionary. No labels. No "dog and cat are both pets". The only thing the machine observes is who tends to sit next to whom.</p>
+
+  <div class="callout">The only thing we let the machine see is neighbours. Nothing else.</div>
+
+  <hr class="sep">
+
+  <h2>Defining neighbours</h2>
+
+  <p>"Context" can mean lots of things: same sentence, within five words, same paragraph. We'll go strict: two words are neighbours if they're adjacent. Window size of 1.</p>
+
+  <p>In <code>I love my dog</code>, the adjacent pairs are (I, love), (love, my), (my, dog). For every pair (a, b), we count both directions: (a, b) and (b, a). This gives us a symmetric matrix. We don't care about order yet. Just who bumps into whom.</p>
+
+  <p>Do this for all four sentences and add up the counts. Now we have something a machine can work with.</p>
+
+  <!-- VIZ 1: Corpus builder with live matrix + graph -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Build a tiny corpus. Watch the matrix appear.</span></div>
+    <div class="viz-body">
+
+      <div class="corpus-wrap">
+        <div class="corpus-col">
+          <div class="corpus-section-label">Sentences in the corpus</div>
+          <div class="sentence-input-row">
+            <input type="text" class="sentence-input" id="sentenceInput" placeholder="Type a sentence, e.g. I love my book" maxlength="60">
+            <button class="btn-add" id="btnAdd">Add</button>
+          </div>
+          <div class="preset-row">
+            <button class="preset-btn" data-preset="default">Original 4 sentences</button>
+            <button class="preset-btn" data-preset="pets">Add pets</button>
+            <button class="preset-btn" data-preset="food">Switch to food</button>
+            <button class="preset-btn" data-preset="clear">Clear all</button>
+          </div>
+          <div class="sentence-list" id="sentenceList"></div>
+          <div style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;margin-top:.3rem">
+            <span class="corpus-section-label" style="margin:0">Window size</span>
+            <div class="window-control">
+              <button class="window-btn active" data-window="1">1 (adjacent)</button>
+              <button class="window-btn" data-window="2">2</button>
+              <button class="window-btn" data-window="99">whole sentence</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="corpus-col">
+          <div class="corpus-section-label">Co-occurrence matrix</div>
+          <div class="matrix-wrap">
+            <div id="matrixHost"></div>
+          </div>
+          <div class="corpus-section-label" style="margin-top:.3rem">Neighbour graph</div>
+          <canvas id="graphCanvas" class="graph-canvas" width="560" height="340"></canvas>
+          <div class="matrix-insight" id="matrixInsight">Add some sentences to see the structure appear.</div>
+        </div>
+      </div>
+
+      <p class="viz-note">Start with the original four sentences and notice that "dog" and "cat" get highlighted as twins — their rows are identical. Now try adding <em>both</em> "I love my pizza" and "You love my pizza". Pizza joins the twin group. The machine wasn't told these words are similar. Their behaviour in the corpus forced them into the same place. Switch the window size and watch the structure shift: with a wider window, more distant words start to matter.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>What the matrix actually says</h2>
+
+  <p>With the original four sentences, the rows for <code>dog</code> and <code>cat</code> are identical: <code>[0, 0, 0, 2, 0, 0]</code>. The rows for <code>I</code> and <code>You</code> are identical too: <code>[0, 0, 2, 0, 0, 0]</code>. Meanwhile <code>love</code> and <code>my</code> sit in the middle as bridges that connect subjects to pets.</p>
+
+  <p>Nobody told the machine that "dog" and "cat" are similar. It was shown only neighbour behaviour, and the similarity appeared as a structural fact. Just from adjacency.</p>
+
+  <div class="callout">Without any dictionary, the matrix quietly learned that "dog" and "cat" behave the same way.</div>
+
+  <hr class="sep">
+
+  <h2>Meaning as geometry</h2>
+
+  <p>Something subtle happened in that table. Each row is a vector. That means each word now has a location in 6-dimensional space. Not because we designed a geometry, but because behaviour <em>became</em> geometry once we represented it as counts.</p>
+
+  <p><code>dog</code> is the vector <code>[0, 0, 0, 2, 0, 0]</code>. <code>cat</code> is the same vector. They sit on top of each other. <code>I</code> and <code>You</code> sit together somewhere else. <code>love</code> and <code>my</code> are the busy intersections because they touch many neighbours.</p>
+
+  <div class="callout">Similar words have similar vectors. Similar vectors live near each other in space.</div>
+
+  <p>This is the first glimpse of what we'll eventually call an <strong>embedding space</strong>. It's tiny and clumsy here, six dimensions from four sentences. But the conceptual shift is already visible: meaning looks less like a definition and more like a location. Where a word lives, relative to other words, based on how it's used.</p>
+
+  <hr class="sep">
+
+  <h2>Why this doesn't scale</h2>
+
+  <p>In real NLP, your vocabulary isn't 6. It might be 50,000 or 200,000. The co-occurrence matrix grows as \(V \times V\). For 50,000 words that's 2.5 billion cells. The Excel sheet that makes your laptop cry.</p>
+
+  <p>The problems pile up fast. The matrix is mostly zeros because most word pairs never sit next to each other. Rare words produce tiny, noisy counts. Each row is a 50,000-dimensional vector, which makes similarity calculations expensive. Co-occurrence captures something real about meaning, but it captures it in a form that's computationally awful. It's like keeping your entire life's knowledge as raw CCTV footage. Everything you care about is in there somewhere. It's just not a format you want to work with.</p>
+
+  <!-- VIZ 3: Sparse vs dense -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The same meaning, two very different shapes</span></div>
+    <div class="viz-body">
+      <div class="scale-controls">
+        <div class="scale-slider-group">
+          <span class="scale-slider-label">Vocabulary size V: <span class="scale-val" id="vVal">50,000</span></span>
+          <input type="range" id="vSlider" class="scale-slider" min="6" max="200000" value="50000" step="1000">
+        </div>
+        <div class="scale-slider-group">
+          <span class="scale-slider-label">Embedding dim d: <span class="scale-val" id="dVal">300</span></span>
+          <input type="range" id="dSlider" class="scale-slider" min="50" max="1024" value="300" step="10">
+        </div>
+      </div>
+      <div class="scale-wrap">
+        <div class="scale-card sparse">
+          <span class="scale-label">Sparse co-occurrence (one row)</span>
+          <div class="scale-title">V-dimensional vector</div>
+          <div class="scale-shape" id="sparseShape">shape: (50000,)</div>
+          <div class="scale-viz-matrix" id="sparseMatrix"></div>
+          <div class="scale-bar-wrap"><div class="scale-bar sparse" id="sparseBar" style="width:100%"></div></div>
+          <div class="scale-size big"><strong id="sparseSize">200 KB</strong> per word, mostly zeros</div>
+        </div>
+        <div class="scale-card dense">
+          <span class="scale-label">Dense embedding</span>
+          <div class="scale-title">d-dimensional vector</div>
+          <div class="scale-shape" id="denseShape">shape: (300,)</div>
+          <div class="scale-viz-dense" id="denseBars"></div>
+          <div class="scale-bar-wrap"><div class="scale-bar dense" id="denseBar" style="width:0.6%"></div></div>
+          <div class="scale-size small"><strong id="denseSize">1.2 KB</strong> per word, every value meaningful</div>
+        </div>
+      </div>
+      <p class="viz-note">Drag V. Drag d. Both vectors claim to represent the same word. The sparse version carries most of its weight in empty space; the dense one packs every coordinate with information earned through training. At V=50,000 and d=300, the dense vector is roughly 0.6% the size per word but arguably richer. That ratio is why every modern language model lives on dense vectors.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>From sparse counts to dense embeddings</h2>
+
+  <p>Co-occurrence captures real meaning but is computationally unusable. So the next question is whether we actually need all 50,000 numbers in each word's vector.</p>
+
+  <p>We don't. We don't need the full high-dimensional fingerprint. We need a compressed version that still preserves the important relationships: which contexts this word lives in, and how that compares to other words. So instead of a giant sparse vector like</p>
+
+  <p>\[\text{dog}_{\text{sparse}} = [0, 0, 0, 2, 0, 0, \dots, 0] \in \mathbb{R}^{V},\]</p>
+
+  <p>we want a much smaller dense vector:</p>
+
+  <p>\[\text{dog}_{\text{embed}} = [0.72,\; -0.11,\; 0.83,\; 0.21,\; \dots] \in \mathbb{R}^{d},\]</p>
+
+  <p>where \(d\) might be 50, 100, or 300. Dramatically smaller than \(V\), expressive enough to keep the similarity structure.</p>
+
+  <div class="callout">These smaller, dense vectors are what we call word embeddings.</div>
+
+  <p>They still encode "the company a word keeps", but in a form a computer can actually work with. From a matrix perspective, this is approximating the huge matrix \(M\) with a low-rank factorisation:</p>
+
+  <p>\[M \approx W C^{\top},\]</p>
+
+  <p>where \(W \in \mathbb{R}^{V \times d}\) holds one embedding per word and \(C \in \mathbb{R}^{V \times d}\) holds one context vector per word, with \(d \ll V\).</p>
+
+  <p>In practice nobody actually builds \(M\) and factors it. That would defeat the point. Methods like Word2Vec learn \(W\) and \(C\) directly by turning neighbour structure into a prediction game: given a word, predict its neighbours. The gradients do the compression, and the geometry emerges as a side effect of learning to predict context.</p>
+
+  <div class="callout">Co-occurrence gave us "meaning as a vector." Embeddings make that idea computationally tractable.</div>
+
+  <hr class="sep">
+
+  <h2>Where this is going</h2>
+
+  <p>Early in the series, we watched text become numbers: ASCII, Unicode, tokenisation. The triumph there was representability, not meaning. In Part 2 we borrowed geometry from images to show what a learning system actually needs. Here we made a different move. We treated meaning as behaviour, let behaviour solidify into counts, and watched similarity appear as a structural fact in a tiny universe. Then we hit the real-world constraint: the naive approach works conceptually but collapses at scale.</p>
+
+  <div class="callout">Meaning = patterns of usage, compressed into vectors.</div>
+
+  <p>What we haven't done yet is show how those dense vectors are actually learned from real text. How "neighbourhood" becomes a prediction task. How a simple model turns repeated exposure into geometry. How gradients slowly sculpt an embedding space where similarity becomes measurable. That's next. We'll turn "who are my neighbours?" into a game the machine can play, and watch the space of meaning emerge as structure the model earns through prediction.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Before Transformers: How Embeddings Learn Meaning</h2>
+    <a class="sidebar-link" href="text-and-meaning.html">
+      <div class="sidebar-link-title">Part 1: Text Was a Problem</div>
+      <div class="sidebar-link-note">Why tokenisation exists.</div>
+    </a>
+    <a class="sidebar-link" href="similarity-and-representation.html">
+      <div class="sidebar-link-title">Part 2: From Characters to Concepts</div>
+      <div class="sidebar-link-note">Why text alone isn't enough.</div>
+    </a>
+    <a class="sidebar-link" href="embeddings-from-first-principles.html">
+      <div class="sidebar-link-title">Part 3: From Words to Spaces</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="meaning-as-geometry.html">
+      <div class="sidebar-link-title">Part 4: From Counting to Learning</div>
+      <div class="sidebar-link-note">Meaning becomes geometry.</div>
+    </a>
+    <a class="sidebar-link" href="center-context-alignment.html">
+      <div class="sidebar-link-title">Part 5: What the Dot Product Measures</div>
+      <div class="sidebar-link-note">Centre and context.</div>
+    </a>
+    <a class="sidebar-link" href="from-scores-to-probabilities.html">
+      <div class="sidebar-link-title">Part 6: Why Raw Dot Products Aren't Enough</div>
+      <div class="sidebar-link-note">Scores to probabilities.</div>
+    </a>
+    <a class="sidebar-link" href="model-vs-data-distributions.html">
+      <div class="sidebar-link-title">Part 7: Two Distributions, One Goal</div>
+      <div class="sidebar-link-note">P_data and P_model.</div>
+    </a>
+    <a class="sidebar-link" href="why-neg-log.html">
+      <div class="sidebar-link-title">Part 8: Why −log P?</div>
+      <div class="sidebar-link-note">The shape of error.</div>
+    </a>
+    <a class="sidebar-link" href="learning-signal.html">
+      <div class="sidebar-link-title">Part 9: Creating the Learning Signal</div>
+      <div class="sidebar-link-note">From loss to p_k − q_k.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="#">
+      <div class="sidebar-link-title">Part 10: From Signal to Geometry</div>
+      <div class="sidebar-link-note">Connecting back to the geometry of meaning</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The distributional hypothesis</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why neighbour counts matter</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Rows as vectors, behaviour as geometry</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why sparse V×V doesn't scale</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Low-rank factorisation: M ≈ W Cᵀ</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why nobody actually builds M</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: CORPUS BUILDER + LIVE MATRIX + GRAPH
+// ═══════════════════════════════════════════════════════════════════════════
+const PRESETS={
+  default:['I love my dog','I love my cat','You love my dog','You love my cat'],
+  pets:['I love my dog','I love my cat','You love my dog','You love my cat','I love my rabbit','You love my rabbit','I love my hamster','You love my hamster'],
+  food:['I love my pizza','I love my pasta','You love my pizza','You love my pasta'],
+  clear:[]
+};
+let sentences=[...PRESETS.default];
+let windowSize=1;
+
+function tokenise(s){
+  return s.trim().split(/\s+/).filter(Boolean);
+}
+// Build vocab preserving first-seen order
+function buildVocab(sents){
+  const seen=new Map(); // lower -> original case
+  const order=[];
+  sents.forEach(s=>{
+    tokenise(s).forEach(w=>{
+      const k=w.toLowerCase();
+      if(!seen.has(k)){seen.set(k,w);order.push(k);}
+    });
+  });
+  return{order,display:k=>seen.get(k)};
+}
+function buildCooc(sents,vocab,win){
+  const n=vocab.order.length;
+  const M=Array.from({length:n},()=>new Array(n).fill(0));
+  const idx=new Map(vocab.order.map((w,i)=>[w,i]));
+  sents.forEach(s=>{
+    const toks=tokenise(s).map(t=>t.toLowerCase());
+    for(let i=0;i<toks.length;i++){
+      const ii=idx.get(toks[i]);
+      if(ii===undefined)continue;
+      const maxJ=win>=99?toks.length-1:Math.min(toks.length-1,i+win);
+      for(let j=i+1;j<=maxJ;j++){
+        const jj=idx.get(toks[j]);
+        if(jj===undefined)continue;
+        M[ii][jj]++;M[jj][ii]++;
+      }
+    }
+  });
+  return M;
+}
+function colorClass(v,max){
+  if(v===0)return'c0';
+  if(max<=1)return v>0?'c1':'c0';
+  const r=v/max;
+  if(r>=0.9)return'c4';
+  if(r>=0.65)return'c3';
+  if(r>=0.35)return'c2';
+  return'c1';
+}
+function findTwins(M,vocab){
+  // groups of words with identical rows (only returns groups of size >= 2)
+  const n=vocab.order.length;
+  const groups=new Map(); // key=row signature -> [word indices]
+  for(let i=0;i<n;i++){
+    const key=M[i].join(',');
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(i);
+  }
+  const twins=[];
+  groups.forEach((arr,key)=>{
+    if(arr.length>=2&&key!==new Array(n).fill(0).join(','))twins.push(arr);
+  });
+  return twins;
+}
+function renderMatrix(){
+  const vocab=buildVocab(sentences);
+  const M=buildCooc(sentences,vocab,windowSize);
+  const host=document.getElementById('matrixHost');
+  if(vocab.order.length===0){
+    host.innerHTML='<div style="padding:2rem;text-align:center;color:var(--muted);font-style:italic">No sentences yet.</div>';
+    renderGraph(vocab,M,[]);
+    document.getElementById('matrixInsight').className='matrix-insight none';
+    document.getElementById('matrixInsight').textContent='Add some sentences to see the structure appear.';
+    return;
+  }
+  let max=0;
+  for(let i=0;i<M.length;i++)for(let j=0;j<M[i].length;j++)if(i!==j&&M[i][j]>max)max=M[i][j];
+  const twins=findTwins(M,vocab);
+  const twinSet=new Set();
+  twins.forEach(g=>g.forEach(i=>twinSet.add(i)));
+
+  // header
+  let html='<table class="cooc-matrix"><thead><tr><th></th>';
+  vocab.order.forEach(w=>{html+=`<th>${vocab.display(w)}</th>`;});
+  html+='</tr></thead><tbody>';
+  vocab.order.forEach((w,i)=>{
+    const twinClass=twinSet.has(i)?'twin':'';
+    html+=`<tr class="${twinClass}"><th>${vocab.display(w)}</th>`;
+    M[i].forEach(v=>{
+      html+=`<td class="${colorClass(v,max)}">${v}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  host.innerHTML=html;
+
+  // insight
+  const ins=document.getElementById('matrixInsight');
+  if(twins.length>0){
+    const parts=twins.map(g=>g.map(i=>`"${vocab.display(vocab.order[i])}"`).join(' / '));
+    ins.className='matrix-insight';
+    ins.innerHTML=`<span class="twin-badge">identical rows</span>${parts.join('<br><span class="twin-badge">identical rows</span>')} — these words are neighbour-twins. Nothing told the machine they're similar. They behave the same way in the corpus.`;
+  }else if(vocab.order.length<2){
+    ins.className='matrix-insight none';
+    ins.textContent='Add more sentences to start seeing patterns.';
+  }else{
+    ins.className='matrix-insight none';
+    ins.textContent='No two words have exactly the same row. Try adding a sentence that uses a new word in the same position as an existing one.';
+  }
+
+  renderGraph(vocab,M,twinSet);
+}
+
+// ── Graph renderer ──────────────────────────────────────────────────────────
+const gCanvas=document.getElementById('graphCanvas');
+function renderGraph(vocab,M,twinSet){
+  const dpr=window.devicePixelRatio||1;
+  const W=gCanvas.clientWidth||560,H=340;
+  gCanvas.width=W*dpr;gCanvas.height=H*dpr;gCanvas.style.height=H+'px';
+  const ctx=gCanvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#14130f';ctx.fillRect(0,0,W,H);
+
+  const n=vocab.order.length;
+  if(n===0){
+    ctx.fillStyle='rgba(125,118,107,0.5)';
+    ctx.font='italic 13px "Source Sans 3",sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('No words yet.',W/2,H/2);
+    return;
+  }
+
+  // compute node degrees for radius and layout
+  const degree=M.map(row=>row.reduce((a,b)=>a+b,0));
+  // Place nodes on a circle, sorted by degree (hubs toward center would be ideal,
+  // but a circle keeps layout stable & predictable for the pedagogical point)
+  const positions=[];
+  const cx=W/2,cy=H/2;
+  const minDim=Math.min(W,H);
+  const radius=minDim*0.36;
+  for(let i=0;i<n;i++){
+    const ang=-Math.PI/2+(i/n)*Math.PI*2;
+    positions.push({x:cx+Math.cos(ang)*radius,y:cy+Math.sin(ang)*radius});
+  }
+
+  // find max weight for edge styling
+  let maxW=0;
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)if(M[i][j]>maxW)maxW=M[i][j];
+
+  // draw edges
+  for(let i=0;i<n;i++){
+    for(let j=i+1;j<n;j++){
+      if(M[i][j]===0)continue;
+      const w=M[i][j];
+      const alpha=0.25+0.55*(w/Math.max(maxW,1));
+      const thick=2+6*(w/Math.max(maxW,1));
+      ctx.strokeStyle=`rgba(232,168,76,${alpha})`;
+      ctx.lineWidth=thick;
+      ctx.beginPath();
+      ctx.moveTo(positions[i].x,positions[i].y);
+      ctx.lineTo(positions[j].x,positions[j].y);
+      ctx.stroke();
+      // weight label
+      if(n<=12){
+        const mx=(positions[i].x+positions[j].x)/2;
+        const my=(positions[i].y+positions[j].y)/2;
+        ctx.fillStyle='rgba(237,232,224,0.55)';
+        ctx.font='600 11px "Courier New",monospace';
+        ctx.textAlign='center';
+        ctx.fillText(w,mx,my-2);
+      }
+    }
+  }
+
+  // draw nodes
+  const maxDeg=Math.max(...degree,1);
+  for(let i=0;i<n;i++){
+    const p=positions[i];
+    const isHub=degree[i]/maxDeg>0.7;
+    const isTwin=twinSet.has(i);
+    const nodeR=Math.max(14,Math.min(26,14+10*(degree[i]/maxDeg)));
+    // fill
+    if(isTwin){
+      ctx.fillStyle='rgba(127,255,107,0.18)';
+      ctx.strokeStyle='rgba(127,255,107,0.55)';
+    }else if(isHub){
+      ctx.fillStyle='rgba(232,168,76,0.2)';
+      ctx.strokeStyle='rgba(232,168,76,0.55)';
+    }else{
+      ctx.fillStyle='rgba(237,232,224,0.06)';
+      ctx.strokeStyle='rgba(237,232,224,0.22)';
+    }
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,nodeR,0,Math.PI*2);
+    ctx.fill();ctx.stroke();
+    // label
+    ctx.fillStyle='#ede8e0';
+    ctx.font='600 12px "Source Sans 3",sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    const label=vocab.display(vocab.order[i]);
+    // truncate long labels
+    const displayLabel=label.length>10?label.slice(0,9)+'…':label;
+    ctx.fillText(displayLabel,p.x,p.y);
+  }
+}
+
+// ── list of sentence chips ──────────────────────────────────────────────────
+function renderList(){
+  const host=document.getElementById('sentenceList');
+  if(sentences.length===0){
+    host.innerHTML='<div style="padding:.8rem;color:var(--muted);font-style:italic;font-size:.9rem">No sentences yet. Type one above or pick a preset.</div>';
+    return;
+  }
+  host.innerHTML=sentences.map((s,i)=>
+    `<div class="sentence-chip"><span class="sentence-text">${s.replace(/</g,'&lt;')}</span><button class="sentence-remove" data-idx="${i}" title="Remove">×</button></div>`
+  ).join('');
+  host.querySelectorAll('.sentence-remove').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const i=parseInt(b.dataset.idx);
+      sentences.splice(i,1);
+      renderAll();
+    });
+  });
+}
+function renderAll(){renderList();renderMatrix();}
+
+// input wiring
+const inp=document.getElementById('sentenceInput');
+const btnAdd=document.getElementById('btnAdd');
+function tryAdd(){
+  const v=inp.value.trim();
+  if(!v)return;
+  if(tokenise(v).length===0)return;
+  sentences.push(v);
+  inp.value='';
+  renderAll();
+}
+btnAdd.addEventListener('click',tryAdd);
+inp.addEventListener('keydown',e=>{if(e.key==='Enter')tryAdd();});
+
+document.querySelectorAll('.preset-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const p=b.dataset.preset;
+    if(p==='pets')sentences=[...PRESETS.pets];
+    else if(p==='food')sentences=[...PRESETS.food];
+    else if(p==='clear')sentences=[];
+    else sentences=[...PRESETS.default];
+    renderAll();
+  });
+});
+document.querySelectorAll('.window-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.window-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    windowSize=parseInt(b.dataset.window);
+    renderMatrix();
+  });
+});
+
+renderAll();
+window.addEventListener('resize',()=>renderMatrix());
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: sparse vs dense
+// ═══════════════════════════════════════════════════════════════════════════
+const vSlider=document.getElementById('vSlider');
+const dSlider=document.getElementById('dSlider');
+const vVal=document.getElementById('vVal');
+const dVal=document.getElementById('dVal');
+
+function fmt(n){
+  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(0)+'K';
+  return n.toString();
+}
+function bytes(n){
+  // assume 4 bytes per float
+  const b=n*4;
+  if(b>=1024*1024)return(b/1024/1024).toFixed(1)+' MB';
+  if(b>=1024)return(b/1024).toFixed(1)+' KB';
+  return b+' B';
+}
+
+// build a small sparse matrix viz (12x12 grid)
+function renderSparseMatrix(){
+  const host=document.getElementById('sparseMatrix');
+  const SZ=16;
+  host.style.gridTemplateColumns=`repeat(${SZ},1fr)`;
+  host.innerHTML='';
+  // density: ~3-5% of cells lit — matches real sparse co-occurrence
+  const total=SZ*SZ;
+  const litCount=Math.floor(total*0.04);
+  const lit=new Set();
+  while(lit.size<litCount)lit.add(Math.floor(Math.random()*total));
+  for(let i=0;i<total;i++){
+    const d=document.createElement('div');
+    d.className='scale-viz-cell'+(lit.has(i)?' lit':'');
+    host.appendChild(d);
+  }
+}
+function renderDenseBars(){
+  const host=document.getElementById('denseBars');
+  host.innerHTML='';
+  const n=24;
+  for(let i=0;i<n;i++){
+    const b=document.createElement('div');
+    b.className='scale-viz-dbar';
+    const h=20+Math.random()*80;
+    b.style.height=h+'%';
+    host.appendChild(b);
+  }
+}
+
+function updateScale(){
+  const v=parseInt(vSlider.value);
+  const d=parseInt(dSlider.value);
+  vVal.textContent=v.toLocaleString();
+  dVal.textContent=d.toLocaleString();
+  document.getElementById('sparseShape').textContent=`shape: (${v.toLocaleString()},)`;
+  document.getElementById('denseShape').textContent=`shape: (${d.toLocaleString()},)`;
+  document.getElementById('sparseSize').textContent=bytes(v);
+  document.getElementById('denseSize').textContent=bytes(d);
+  // bars: sparse is always 100% relative to itself, dense relative to sparse
+  document.getElementById('sparseBar').style.width='100%';
+  const ratio=Math.max(0.5,Math.min(100,(d/v)*100));
+  document.getElementById('denseBar').style.width=ratio+'%';
+}
+vSlider.addEventListener('input',updateScale);
+dSlider.addEventListener('input',updateScale);
+updateScale();
+renderSparseMatrix();
+renderDenseBars();
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
+</html>

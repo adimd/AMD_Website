@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Two Distributions, One Goal | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>MathJax={tex:{inlineMath:[['\\(','\\)'],['$','$']]}};</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --purple:#c084fc;--purple-dim:rgba(192,132,252,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pop{0%{opacity:0;transform:translateY(0) scale(.8)}30%{opacity:1;transform:translateY(-8px) scale(1.1)}100%{opacity:0;transform:translateY(-26px) scale(1)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* ── VIZ 1: row-normalised matrix builder ────────────────────────────── */
+    .rnm-wrap{display:flex;flex-direction:column;gap:1rem}
+    .rnm-controls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+    .rnm-input{flex:1;min-width:240px;padding:.6rem .85rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--ink);font-size:.92rem;outline:none;font-family:inherit}
+    .rnm-input:focus{border-color:var(--accent)}
+    .rnm-btn{padding:.55rem 1rem;border-radius:8px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--muted);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
+    .rnm-btn.primary{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .rnm-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .rnm-sentences{display:flex;flex-wrap:wrap;gap:.4rem}
+    .rnm-sentence-chip{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-family:'Courier New',monospace;font-size:.82rem;color:var(--body)}
+    .rnm-sentence-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;line-height:.7;padding:0 .1rem;transition:color .15s}
+    .rnm-sentence-remove:hover{color:var(--red)}
+    .rnm-matrix-wrap{overflow-x:auto;padding:.3rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px}
+    .rnm-matrix{border-collapse:separate;border-spacing:4px;margin:0 auto;font-variant-numeric:tabular-nums}
+    .rnm-matrix th,.rnm-matrix td{text-align:center;padding:.55rem .7rem;border-radius:6px;min-width:58px;font-size:.84rem;transition:all .2s}
+    .rnm-matrix thead th{color:var(--ink);font-weight:600;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.2);font-family:var(--sans)}
+    .rnm-matrix tbody th{color:var(--ink);font-weight:600;background:rgba(232,168,76,.06);text-align:left;padding-left:.75rem;border:1px solid rgba(232,168,76,.15);font-family:var(--sans)}
+    .rnm-matrix tbody th.total{background:rgba(127,255,107,.06);border-color:rgba(127,255,107,.2);color:var(--green)}
+    .rnm-matrix td{background:rgba(237,232,224,.03);border:1px solid var(--border);color:var(--body);font-family:'Courier New',monospace}
+    .rnm-matrix td.v0{color:rgba(125,118,107,.5)}
+    .rnm-matrix td.v1{background:rgba(232,168,76,.1);color:var(--ink)}
+    .rnm-matrix td.v2{background:rgba(232,168,76,.22);color:var(--ink)}
+    .rnm-matrix td.v3{background:rgba(232,168,76,.38);color:#fff;font-weight:600}
+    .rnm-matrix td.v4{background:rgba(232,168,76,.55);color:#fff;font-weight:700}
+    .rnm-matrix td.rowsum{background:rgba(127,255,107,.08);color:var(--green);font-weight:700;border-color:rgba(127,255,107,.2)}
+
+    /* ── VIZ 2: P_data vs P_model ─────────────────────────────────────────── */
+    .cmp-wrap{display:flex;flex-direction:column;gap:1rem}
+    .cmp-controls{display:flex;gap:.8rem;flex-wrap:wrap;align-items:center}
+    .cmp-slider-group{flex:1;min-width:220px;display:flex;flex-direction:column;gap:.25rem}
+    .cmp-slider-label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted)}
+    .cmp-slider-label strong{color:var(--accent);font-family:'Courier New',monospace}
+    .cmp-slider{width:100%;accent-color:var(--accent)}
+    .cmp-centre-picker{display:flex;gap:.35rem;flex-wrap:wrap}
+    .cmp-centre-btn{padding:.35rem .75rem;border-radius:6px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--muted);font-size:.82rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .cmp-centre-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .cmp-btn{padding:.5rem 1rem;border-radius:8px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--muted);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .cmp-btn.primary{background:rgba(127,255,107,.12);border-color:rgba(127,255,107,.4);color:var(--green)}
+    .cmp-btn:hover{border-color:var(--accent);color:var(--accent)}
+    #cmpCanvas{width:100%;height:auto;background:#14130f;border-radius:10px;border:1px solid var(--border);display:block}
+    .cmp-legend{display:flex;gap:1.2rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+    .cmp-legend span{display:inline-flex;align-items:center;gap:.4rem}
+    .cmp-dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+    .cmp-gap-display{padding:.6rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-family:'Courier New',monospace;font-size:.88rem;color:var(--body);display:flex;justify-content:space-between;align-items:center}
+    .cmp-gap-display strong{color:var(--accent)}
+    .cmp-gap-display .good{color:var(--green)}
+
+    /* ── VIZ 3: live timeline ─────────────────────────────────────────────── */
+    .tl-wrap{display:flex;flex-direction:column;gap:1rem}
+    .tl-controls{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center}
+    .tl-btn{padding:.5rem 1rem;border-radius:8px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--muted);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .tl-btn.primary{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .tl-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .tl-status{font-size:.88rem;color:var(--body);font-family:'Courier New',monospace}
+    .tl-status strong{color:var(--accent)}
+    .tl-log{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:.7rem .95rem;font-family:'Courier New',monospace;font-size:.82rem;color:var(--body);min-height:44px;line-height:1.55;display:flex;align-items:center;gap:.6rem}
+    .tl-log strong{color:var(--accent)}
+    .tl-log .up{color:var(--green)}
+    .tl-log .down{color:var(--red)}
+    #tlCanvas{width:100%;height:auto;background:#14130f;border-radius:10px;border:1px solid var(--border);display:block}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Before Transformers: How Embeddings Learn Meaning</span>
+  <h1>Two Distributions, One Goal</h1>
+  <p class="blog-subtitle">How repeated experience turns random probabilities into meaningful pressure.</p>
+
+  <h2>The gap between form and substance</h2>
+
+  <p>Last time we turned raw dot products into a probability distribution over context words. Mathematically the distribution is perfect: positive, sums to one, expresses relative preference. Every probability we've computed so far used vectors that were chosen arbitrarily. The maths worked on placeholders.</p>
+
+  <p>A distribution can be valid in form and completely wrong in substance. It can express preferences that have nothing to do with language. At this stage, if the model believes something, it believes it by coincidence.</p>
+
+  <div class="callout">We've built a way to express belief. What remains is to teach the model what to believe.</div>
+
+  <p>Now that probability is on the table, a new possibility opens up. Beliefs can be compared against what actually happens in text. When the model assigns high probability to the wrong context, that mismatch becomes visible. Anything visible can exert pressure.</p>
+
+  <hr class="sep">
+
+  <h2>Two distributions, one question</h2>
+
+  <p>The probability distribution from our vectors is \(P_{\text{model}}(c \mid v)\). It has all the right mathematical properties, but it expresses the preferences of the <em>model</em>, not the preferences of the <em>data</em>.</p>
+
+  <p>Look at the co-occurrence matrix from a new angle. Fix a centre word \(v\). Look across its row. Each entry counts how many times a context word \(c\) appeared near \(v\). Sum the row and divide:</p>
+
+  <p style="text-align:center;">\(P_{\text{data}}(c \mid v) = \frac{\text{count}(v, c)}{\sum_{c'} \text{count}(v, c')}\)</p>
+
+  <p>This is the data's own conditional distribution. It answers: given that \(v\) appeared, how likely was it to be accompanied by \(c\)? It's empirical. It reflects what actually happened.</p>
+
+  <!-- VIZ 1: Row-normalised matrix builder -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Build a corpus. Watch each row become a distribution.</span></div>
+    <div class="viz-body">
+      <div class="rnm-wrap">
+        <div class="rnm-controls">
+          <input type="text" id="rnmInput" class="rnm-input" placeholder="Type a sentence, e.g. I love my book" maxlength="60">
+          <button class="rnm-btn primary" id="rnmAdd">Add</button>
+          <button class="rnm-btn" data-preset="default">Default corpus</button>
+          <button class="rnm-btn" data-preset="more-pets">Add more pets</button>
+          <button class="rnm-btn" data-preset="clear">Clear</button>
+        </div>
+        <div class="rnm-sentences" id="rnmSentences"></div>
+        <div class="rnm-matrix-wrap" id="rnmMatrixHost"></div>
+      </div>
+      <p class="viz-note">Each row sums to exactly 1. That's what makes it a probability distribution. Look at the "dog" and "cat" rows in the default corpus — both put all their mass on "my", meaning P(my | dog) = P(my | cat) = 1.00. The row for "love" distributes its mass between "I", "You" and "my". Add sentences and watch rows redistribute. Nothing here is designed. The distribution is whatever the sentences produce.</p>
+    </div>
+  </div>
+
+  <p>We have two distributions answering the same question over the same vocabulary, from different sources. \(P_{\text{data}}\) comes from observed language. \(P_{\text{model}}\) comes from vector geometry. Every difference between them is a disagreement. Disagreement is now measurable.</p>
+
+  <div class="callout">Learning begins when these two distributions are placed side by side. From here on, learning means aligning \(P_{\text{model}}\) with \(P_{\text{data}}\).</div>
+
+  <!-- VIZ 2: P_data vs P_model side by side -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">One vocabulary, two beliefs</span></div>
+    <div class="viz-body">
+      <div class="cmp-wrap">
+        <div class="cmp-controls">
+          <div>
+            <div style="font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Centre word</div>
+            <div class="cmp-centre-picker" id="cmpCentrePicker"></div>
+          </div>
+          <div class="cmp-slider-group">
+            <div class="cmp-slider-label">Training progress: <strong id="cmpProgressVal">0%</strong></div>
+            <input type="range" id="cmpProgress" class="cmp-slider" min="0" max="100" step="1" value="0">
+          </div>
+          <button class="cmp-btn primary" id="cmpAnimate">Auto-train</button>
+          <button class="cmp-btn" id="cmpReshuffle">New random model</button>
+        </div>
+        <canvas id="cmpCanvas" width="700" height="320"></canvas>
+        <div class="cmp-legend">
+          <span><span class="cmp-dot" style="background:var(--accent)"></span>P<sub>data</sub> — what the corpus says</span>
+          <span><span class="cmp-dot" style="background:var(--blue)"></span>P<sub>model</sub> — what the current vectors say</span>
+        </div>
+        <div class="cmp-gap-display">
+          <span>Total disagreement (sum of |P<sub>data</sub> − P<sub>model</sub>|): <strong id="cmpGap">—</strong></span>
+          <span id="cmpGapVerdict">—</span>
+        </div>
+      </div>
+      <p class="viz-note">Orange bars show P<sub>data</sub> — the distribution the corpus has already handed us. Blue bars show P<sub>model</sub> — what a freshly initialised set of vectors produces. At 0% training the two distributions disagree all over the place. Drag the progress slider to 100% (or hit auto-train) and watch the blue bars drift toward the orange. That drift is the entire job: reshape the geometry until the model's belief matches what the data says.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Where does \(P_{\text{data}}\) actually come from?</h2>
+
+  <p>Worth pausing on something that might feel circular. We keep saying we don't want to build a co-occurrence table, yet we keep referring to \(P_{\text{data}}\) as if it exists.</p>
+
+  <p>\(P_{\text{data}}\) isn't something we construct first and then use for training. It's already encoded in the way training data appears.</p>
+
+  <p>The word "my" appears four times across our four sentences. Every time, "love" is next to it. "Dog" and "cat" appear next to it only twice each. Nothing has been counted or normalised, and yet the data has already expressed a preference. Experiencing ("my", "love") four times and ("my", "dog") twice <em>is</em> a statement of relative likelihood.</p>
+
+  <div class="callout">\(P_{\text{data}}\) is not constructed. It's revealed through repeated experience.</div>
+
+  <p>Instead of computing \(P_{\text{data}}\), we <em>sample</em> from it. Every centre–context pair the corpus emits is one draw from the data distribution. Pairs that occur often are sampled often. Pairs that never occur are never sampled. The corpus doesn't describe the distribution. It instantiates it.</p>
+
+  <hr class="sep">
+
+  <h2>What training actually does, one experience at a time</h2>
+
+  <p>The model doesn't sit in front of the entire corpus. It sees one small experience at a time: a single centre word, a single context word. A score is computed. That score becomes a probability. The vectors are nudged. The adjustment from a single example is tiny.</p>
+
+  <p>Training doesn't stop at one example. The same kinds of experiences keep returning. When ("my", "love") appears repeatedly, the model receives the same directional push again and again. Each push is small. They all point in the same direction. Over time they leave a visible mark on the geometry.</p>
+
+  <p>("My", "dog") also pushes, but only twice. The cumulative effect is weaker. This difference in repetition is enough. Without ever counting, the model is exposed to the same imbalance that exists in the data.</p>
+
+  <div class="callout">Training works because repetition carries structure. Frequent events carve deep grooves. Rare events leave faint traces.</div>
+
+  <h3>A tiny numerical example</h3>
+
+  <p>Start with the centre word "my." The corpus shows ("my", "love") four times and ("my", "dog") twice. At initialisation the model assigns roughly equal probabilities:</p>
+
+  <p style="text-align:center;">\(P_{\text{model}}(\text{love} \mid \text{my}) = 0.34, \quad P_{\text{model}}(\text{dog} \mid \text{my}) = 0.33, \quad P_{\text{model}}(\text{cat} \mid \text{my}) = 0.33\)</p>
+
+  <p>Each time ("my", "love") is encountered, the model nudges P(love) up by ~0.02 and renormalises. Four encounters, roughly +0.08:</p>
+
+  <p style="text-align:center;">\(P_{\text{model}}(\text{love} \mid \text{my}) \approx 0.42\)</p>
+
+  <p>Because probability mass is conserved, that +0.08 is pulled from "dog" and "cat", which each drop to ~0.29. "Love" rose above the others because the pair returned more often. The corpus applied pressure repeatedly in the same direction.</p>
+
+  <!-- VIZ 3: Live timeline -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Watch the probability rise, one encounter at a time</span></div>
+    <div class="viz-body">
+      <div class="tl-wrap">
+        <canvas id="tlCanvas" width="700" height="260"></canvas>
+        <div class="tl-log" id="tlLog">Press "Next encounter" to start.</div>
+        <div class="tl-controls">
+          <button class="tl-btn primary" id="tlNext">Next encounter</button>
+          <button class="tl-btn" id="tlAuto">Auto-play</button>
+          <button class="tl-btn" id="tlReset">Reset</button>
+          <span class="tl-status">Step: <strong id="tlStep">0</strong> / 8</span>
+        </div>
+      </div>
+      <p class="viz-note">Each click draws one centre-context pair from the toy corpus, exactly as a training loop would. Under window=1, the word "my" has three possible neighbours: love, dog, cat. The corpus emits them in a 4:2:2 ratio. Watch P(love) climb past 0.4 as it gets pulled more often than the others. Because probabilities sum to 1, every rise in one bar forces a drop in others. Turn on auto-play to see the accumulation in real time.</p>
+    </div>
+  </div>
+
+  <p>The model doesn't need an explicit table of \(P_{\text{data}}\). It experiences it as uneven repetition. More repetitions produce stronger cumulative drift. Fewer repetitions produce weaker drift.</p>
+
+  <div class="callout">Training is not about reacting to one event. It's about letting frequency accumulate into geometry.</div>
+
+  <hr class="sep">
+
+  <h2>Where we go next</h2>
+
+  <p>We now have two distributions in play. One is implicit in the data, revealed through repeated experience. The other lives inside the model, expressed as probabilities derived from its vectors. Training is about bringing them into alignment.</p>
+
+  <p>The model doesn't yet have a way to <em>judge</em> its own beliefs. It has preferences, but no notion of error. Next we'll make this comparison explicit: how different is \(P_{\text{model}}\) from \(P_{\text{data}}\)? Once that question is well-defined, the remaining pieces of learning fall into place.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Before Transformers: How Embeddings Learn Meaning</h2>
+    <a class="sidebar-link" href="text-and-meaning.html">
+      <div class="sidebar-link-title">Part 1: Text Was a Problem</div>
+      <div class="sidebar-link-note">Why tokenisation exists.</div>
+    </a>
+    <a class="sidebar-link" href="similarity-and-representation.html">
+      <div class="sidebar-link-title">Part 2: From Characters to Concepts</div>
+      <div class="sidebar-link-note">Why text alone isn't enough.</div>
+    </a>
+    <a class="sidebar-link" href="embeddings-from-first-principles.html">
+      <div class="sidebar-link-title">Part 3: From Words to Spaces</div>
+      <div class="sidebar-link-note">Language becomes geometry.</div>
+    </a>
+    <a class="sidebar-link" href="meaning-as-geometry.html">
+      <div class="sidebar-link-title">Part 4: From Counting to Learning</div>
+      <div class="sidebar-link-note">Meaning becomes geometry.</div>
+    </a>
+    <a class="sidebar-link" href="center-context-alignment.html">
+      <div class="sidebar-link-title">Part 5: What the Dot Product Measures</div>
+      <div class="sidebar-link-note">Centre and context.</div>
+    </a>
+    <a class="sidebar-link" href="from-scores-to-probabilities.html">
+      <div class="sidebar-link-title">Part 6: Why Raw Dot Products Aren't Enough</div>
+      <div class="sidebar-link-note">Scores to probabilities.</div>
+    </a>
+    <a class="sidebar-link" href="model-vs-data-distributions.html">
+      <div class="sidebar-link-title">Part 7: Two Distributions, One Goal</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="why-neg-log.html">
+      <div class="sidebar-link-title">Part 8: Why −log P?</div>
+      <div class="sidebar-link-note">The shape of error.</div>
+    </a>
+    <a class="sidebar-link" href="learning-signal.html">
+      <div class="sidebar-link-title">Part 9: Creating the Learning Signal</div>
+      <div class="sidebar-link-note">From loss to p_k − q_k.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="#">
+      <div class="sidebar-link-title">Part 10: From Signal to Geometry</div>
+      <div class="sidebar-link-note">Connecting back to the geometry of meaning</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Form vs substance</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Row-normalised co-occurrence</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">P_data vs P_model</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Revealed vs constructed</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Sampling instead of storing</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Frequency becomes geometry</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Shared utilities
+// ═══════════════════════════════════════════════════════════════════════════
+function tokenise(s){return s.trim().split(/\s+/).filter(Boolean);}
+function buildVocab(sents){
+  const seen=new Map(),order=[];
+  sents.forEach(s=>{
+    tokenise(s).forEach(w=>{
+      const k=w.toLowerCase();
+      if(!seen.has(k)){seen.set(k,w);order.push(k);}
+    });
+  });
+  return{order,display:k=>seen.get(k)};
+}
+function buildCoocCounts(sents,vocab,win=1){
+  const n=vocab.order.length;
+  const M=Array.from({length:n},()=>new Array(n).fill(0));
+  const idx=new Map(vocab.order.map((w,i)=>[w,i]));
+  sents.forEach(s=>{
+    const toks=tokenise(s).map(t=>t.toLowerCase());
+    for(let i=0;i<toks.length;i++){
+      const ii=idx.get(toks[i]);
+      if(ii===undefined)continue;
+      for(let j=i+1;j<=Math.min(toks.length-1,i+win);j++){
+        const jj=idx.get(toks[j]);
+        if(jj===undefined)continue;
+        M[ii][jj]++;M[jj][ii]++;
+      }
+    }
+  });
+  return M;
+}
+function rowNormalise(M){
+  return M.map(r=>{
+    const s=r.reduce((a,b)=>a+b,0);
+    return s>0?r.map(v=>v/s):r.slice();
+  });
+}
+// seeded RNG for reproducible "random" model
+let seedState=1;
+function seededRand(){
+  seedState=(seedState*9301+49297)%233280;
+  return seedState/233280;
+}
+function setSeed(n){seedState=n;}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: row-normalised matrix builder
+// ═══════════════════════════════════════════════════════════════════════════
+const RNM_PRESETS={
+  default:['I love my dog','I love my cat','You love my dog','You love my cat'],
+  'more-pets':['I love my dog','I love my cat','You love my dog','You love my cat','I love my rabbit','You love my rabbit'],
+  clear:[]
+};
+let rnmSents=[...RNM_PRESETS.default];
+
+function renderRNMSentences(){
+  const host=document.getElementById('rnmSentences');
+  if(rnmSents.length===0){
+    host.innerHTML='<span style="color:var(--muted);font-style:italic;font-size:.85rem">No sentences yet.</span>';
+    return;
+  }
+  host.innerHTML=rnmSents.map((s,i)=>
+    `<span class="rnm-sentence-chip">${s.replace(/</g,'&lt;')}<button class="rnm-sentence-remove" data-idx="${i}" title="Remove">×</button></span>`
+  ).join('');
+  host.querySelectorAll('.rnm-sentence-remove').forEach(b=>{
+    b.addEventListener('click',()=>{
+      rnmSents.splice(parseInt(b.dataset.idx),1);
+      renderRNM();
+    });
+  });
+}
+function classifyProb(p){
+  if(p===0)return'v0';
+  if(p>=0.75)return'v4';
+  if(p>=0.45)return'v3';
+  if(p>=0.25)return'v2';
+  return'v1';
+}
+function renderRNM(){
+  renderRNMSentences();
+  const vocab=buildVocab(rnmSents);
+  const host=document.getElementById('rnmMatrixHost');
+  if(vocab.order.length===0){
+    host.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--muted);font-style:italic">No vocabulary yet — add a sentence above.</div>';
+    return;
+  }
+  const counts=buildCoocCounts(rnmSents,vocab,1);
+  const probs=rowNormalise(counts);
+  let html='<table class="rnm-matrix"><thead><tr><th></th>';
+  vocab.order.forEach(w=>{html+=`<th>${vocab.display(w)}</th>`;});
+  html+='<th style="color:var(--green)">Σ</th></tr></thead><tbody>';
+  vocab.order.forEach((w,i)=>{
+    html+=`<tr><th>${vocab.display(w)}</th>`;
+    let rowSum=0;
+    probs[i].forEach(p=>{
+      rowSum+=p;
+      const cls=classifyProb(p);
+      const txt=p===0?'0':p.toFixed(2);
+      html+=`<td class="${cls}">${txt}</td>`;
+    });
+    html+=`<td class="rowsum">${rowSum.toFixed(2)}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  host.innerHTML=html;
+}
+document.getElementById('rnmAdd').addEventListener('click',()=>{
+  const v=document.getElementById('rnmInput').value.trim();
+  if(!v||tokenise(v).length===0)return;
+  rnmSents.push(v);
+  document.getElementById('rnmInput').value='';
+  renderRNM();
+});
+document.getElementById('rnmInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter')document.getElementById('rnmAdd').click();
+});
+document.querySelectorAll('.rnm-btn[data-preset]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    rnmSents=[...RNM_PRESETS[b.dataset.preset]];
+    renderRNM();
+  });
+});
+renderRNM();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: P_data vs P_model side by side
+// ═══════════════════════════════════════════════════════════════════════════
+// Use the same default corpus so P_data is consistent with the prose example.
+const CMP_SENTS=['I love my dog','I love my cat','You love my dog','You love my cat'];
+const CMP_VOCAB=buildVocab(CMP_SENTS);
+const CMP_COUNTS=buildCoocCounts(CMP_SENTS,CMP_VOCAB,1);
+const CMP_PDATA=rowNormalise(CMP_COUNTS);
+
+let cmpCentreIdx=CMP_VOCAB.order.indexOf('my');
+let cmpProgress=0;
+let cmpModelInit=null; // initial random distribution for this "seed"
+let cmpAnimHandle=null;
+
+function initCmpModel(){
+  // generate a noisy distribution for each centre (softmax over random logits)
+  const n=CMP_VOCAB.order.length;
+  const perCentre=[];
+  for(let i=0;i<n;i++){
+    const logits=Array.from({length:n},()=>seededRand()*4-2);
+    const m=Math.max(...logits);
+    const exps=logits.map(l=>Math.exp(l-m));
+    const Z=exps.reduce((a,b)=>a+b,0);
+    perCentre.push(exps.map(e=>e/Z));
+  }
+  cmpModelInit=perCentre;
+}
+function cmpCurrentModel(centreIdx){
+  // Interpolate between cmpModelInit[centreIdx] and CMP_PDATA[centreIdx] by progress/100.
+  const t=cmpProgress/100;
+  const init=cmpModelInit[centreIdx];
+  const target=CMP_PDATA[centreIdx];
+  return init.map((v,i)=>(1-t)*v+t*target[i]);
+}
+
+function renderCmpCentrePicker(){
+  const host=document.getElementById('cmpCentrePicker');
+  host.innerHTML='';
+  CMP_VOCAB.order.forEach((w,i)=>{
+    const b=document.createElement('button');
+    b.className='cmp-centre-btn'+(i===cmpCentreIdx?' active':'');
+    b.textContent=CMP_VOCAB.display(w);
+    b.addEventListener('click',()=>{
+      cmpCentreIdx=i;
+      renderCmpCentrePicker();
+      drawCmp();
+    });
+    host.appendChild(b);
+  });
+}
+function drawCmp(){
+  const canvas=document.getElementById('cmpCanvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth||700,H=320;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#14130f';ctx.fillRect(0,0,W,H);
+
+  const pData=CMP_PDATA[cmpCentreIdx];
+  const pModel=cmpCurrentModel(cmpCentreIdx);
+  const n=CMP_VOCAB.order.length;
+
+  // layout
+  const padL=60,padR=30,padT=40,padB=60;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  const groupW=plotW/n;
+  const barW=groupW*0.38;
+  const gap=groupW*0.06;
+
+  // grid
+  ctx.strokeStyle='rgba(237,232,224,.06)';ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=padT+plotH*i/5;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+  }
+  // y-axis labels
+  ctx.fillStyle='rgba(125,118,107,.6)';
+  ctx.font='10px "Courier New",monospace';
+  ctx.textAlign='right';
+  for(let i=0;i<=5;i++){
+    const y=padT+plotH*i/5;
+    const v=1-i/5;
+    ctx.fillText(v.toFixed(1),padL-6,y+3);
+  }
+
+  // baseline
+  ctx.strokeStyle='rgba(237,232,224,.2)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(padL,padT+plotH);ctx.lineTo(W-padR,padT+plotH);ctx.stroke();
+
+  // "1" line
+  ctx.strokeStyle='rgba(127,255,107,.4)';ctx.lineWidth=1;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(padL,padT);ctx.lineTo(W-padR,padT);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // bars
+  for(let i=0;i<n;i++){
+    const gx=padL+i*groupW+groupW/2;
+    const dataBarX=gx-barW-gap/2;
+    const modelBarX=gx+gap/2;
+    // data bar (orange)
+    const dh=pData[i]*plotH;
+    ctx.fillStyle='rgba(232,168,76,0.75)';
+    ctx.strokeStyle='var(--accent)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    const dataY=padT+plotH-dh;
+    if(ctx.roundRect)ctx.roundRect(dataBarX,dataY,barW,dh,4);
+    else ctx.rect(dataBarX,dataY,barW,dh);
+    ctx.fill();
+    // model bar (blue)
+    const mh=pModel[i]*plotH;
+    ctx.fillStyle='rgba(76,168,232,0.75)';
+    ctx.beginPath();
+    const modelY=padT+plotH-mh;
+    if(ctx.roundRect)ctx.roundRect(modelBarX,modelY,barW,mh,4);
+    else ctx.rect(modelBarX,modelY,barW,mh);
+    ctx.fill();
+    // x labels
+    ctx.fillStyle='#ede8e0';
+    ctx.font='600 12px "Source Sans 3",sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(CMP_VOCAB.display(CMP_VOCAB.order[i]),gx,padT+plotH+20);
+    // values above bars (only if > 5%)
+    if(pData[i]>0.05){
+      ctx.fillStyle='#e8a84c';
+      ctx.font='10px "Courier New",monospace';
+      ctx.textAlign='center';
+      ctx.fillText(pData[i].toFixed(2),dataBarX+barW/2,dataY-4);
+    }
+    if(pModel[i]>0.05){
+      ctx.fillStyle='#4ca8e8';
+      ctx.font='10px "Courier New",monospace';
+      ctx.textAlign='center';
+      ctx.fillText(pModel[i].toFixed(2),modelBarX+barW/2,modelY-4);
+    }
+  }
+
+  // title
+  const centreLabel=CMP_VOCAB.display(CMP_VOCAB.order[cmpCentreIdx]);
+  ctx.fillStyle='rgba(237,232,224,.6)';
+  ctx.font='13px "Source Sans 3",sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText(`P( · | ${centreLabel} )`,padL,padT-12);
+
+  // compute total disagreement (L1 / 2 = total variation distance, but we'll show L1)
+  let gap2=0;
+  for(let i=0;i<n;i++)gap2+=Math.abs(pData[i]-pModel[i]);
+  document.getElementById('cmpGap').textContent=gap2.toFixed(3);
+  const verdict=document.getElementById('cmpGapVerdict');
+  if(gap2<0.05){verdict.innerHTML='<span class="good">near perfect agreement</span>';}
+  else if(gap2<0.3){verdict.textContent='close but not aligned';}
+  else if(gap2<0.8){verdict.textContent='moderate disagreement';}
+  else{verdict.textContent='large disagreement';}
+}
+
+// progress slider
+document.getElementById('cmpProgress').addEventListener('input',e=>{
+  cmpProgress=parseFloat(e.target.value);
+  document.getElementById('cmpProgressVal').textContent=cmpProgress.toFixed(0)+'%';
+  drawCmp();
+});
+// auto-train
+document.getElementById('cmpAnimate').addEventListener('click',()=>{
+  if(cmpAnimHandle){clearInterval(cmpAnimHandle);cmpAnimHandle=null;}
+  cmpProgress=0;
+  document.getElementById('cmpProgress').value=0;
+  const step=()=>{
+    cmpProgress=Math.min(100,cmpProgress+1.5);
+    document.getElementById('cmpProgress').value=cmpProgress;
+    document.getElementById('cmpProgressVal').textContent=cmpProgress.toFixed(0)+'%';
+    drawCmp();
+    if(cmpProgress>=100){clearInterval(cmpAnimHandle);cmpAnimHandle=null;}
+  };
+  cmpAnimHandle=setInterval(step,30);
+});
+// reshuffle
+document.getElementById('cmpReshuffle').addEventListener('click',()=>{
+  setSeed(Math.floor(Math.random()*100000));
+  initCmpModel();
+  cmpProgress=0;
+  document.getElementById('cmpProgress').value=0;
+  document.getElementById('cmpProgressVal').textContent='0%';
+  drawCmp();
+});
+
+setSeed(42);
+initCmpModel();
+renderCmpCentrePicker();
+drawCmp();
+window.addEventListener('resize',drawCmp);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: live timeline — probability rising one encounter at a time
+// ═══════════════════════════════════════════════════════════════════════════
+// Centre is "my". Under window=1, the only neighbours of "my" across the four
+// sentences are "love", "dog", "cat". Total adjacent pairs:
+//   (my, love) × 4  (from the 4 "love my …" and "my dog/cat" overlap — see below)
+//   (my, dog)  × 2
+//   (my, cat)  × 2
+// Sequence interleaves them to feel like drawing from a shuffled corpus.
+const TL_CONTEXTS=['love','dog','cat'];
+// Sequence grouped: 4×love first (matching the prose's numerical checkpoint at step 4),
+// then 2×dog and 2×cat. After step 4, P(love)=0.42, P(dog)=P(cat)=0.29 — exactly as
+// claimed in the prose. After all 8 steps, the distribution is still approaching
+// P_data = [0.50, 0.25, 0.25] but hasn't converged — realistic for a low learn rate.
+const TL_SEQUENCE=['love','love','love','love','dog','dog','cat','cat'];
+
+let tlStep=0;
+let tlProbs=[0.34,0.33,0.33]; // matches prose's initialisation exactly
+const TL_LEARN_RATE=0.02;
+let tlAutoHandle=null;
+let tlRecentChange=null; // {idx, delta} for popup annotation
+
+function tlReset(){
+  tlStep=0;
+  tlProbs=[0.34,0.33,0.33];
+  tlRecentChange=null;
+  if(tlAutoHandle){clearInterval(tlAutoHandle);tlAutoHandle=null;document.getElementById('tlAuto').textContent='Auto-play';}
+  document.getElementById('tlLog').innerHTML='Press "Next encounter" to start.';
+  document.getElementById('tlStep').textContent='0';
+  drawTL();
+}
+function tlNextStep(){
+  if(tlStep>=TL_SEQUENCE.length)return false;
+  const ctx=TL_SEQUENCE[tlStep];
+  const idx=TL_CONTEXTS.indexOf(ctx);
+  // Increase P(ctx) by learn rate; redistribute from the rest proportionally
+  const before=[...tlProbs];
+  const delta=TL_LEARN_RATE;
+  tlProbs[idx]+=delta;
+  // subtract delta/4 from each of the other 4
+  const shareOut=delta/(TL_CONTEXTS.length-1);
+  for(let i=0;i<tlProbs.length;i++){
+    if(i!==idx)tlProbs[i]-=shareOut;
+  }
+  // safety clamp & renormalise
+  tlProbs=tlProbs.map(p=>Math.max(0.001,p));
+  const s=tlProbs.reduce((a,b)=>a+b,0);
+  tlProbs=tlProbs.map(p=>p/s);
+  tlStep++;
+  tlRecentChange={idx,delta,ctx,before};
+  // update log
+  const actualDelta=tlProbs[idx]-before[idx];
+  const logHost=document.getElementById('tlLog');
+  const losers=before.map((v,i)=>{
+    if(i===idx)return null;
+    return {word:TL_CONTEXTS[i],d:tlProbs[i]-v};
+  }).filter(Boolean);
+  logHost.innerHTML=
+    `Step <strong>${tlStep}</strong>: drew (<strong>my</strong>, <strong>${ctx}</strong>). `+
+    `P(${ctx}) <span class="up">+${(actualDelta*100).toFixed(1)}%</span>. `+
+    `Others each <span class="down">−${Math.abs(losers[0].d*100).toFixed(2)}%</span>.`;
+  document.getElementById('tlStep').textContent=tlStep;
+  drawTL();
+  return true;
+}
+function drawTL(){
+  const canvas=document.getElementById('tlCanvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth||700,H=260;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#14130f';ctx.fillRect(0,0,W,H);
+
+  const padL=60,padR=30,padT=40,padB=60;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+
+  // grid
+  ctx.strokeStyle='rgba(237,232,224,.06)';ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=padT+plotH*i/5;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+  }
+  // y-labels
+  ctx.fillStyle='rgba(125,118,107,.6)';
+  ctx.font='10px "Courier New",monospace';
+  ctx.textAlign='right';
+  for(let i=0;i<=5;i++){
+    const y=padT+plotH*i/5;
+    ctx.fillText((1-i/5).toFixed(1),padL-6,y+3);
+  }
+  // axis
+  ctx.strokeStyle='rgba(237,232,224,.2)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(padL,padT+plotH);ctx.lineTo(W-padR,padT+plotH);ctx.stroke();
+
+  // bars
+  const n=TL_CONTEXTS.length;
+  const barW=plotW/n*0.6;
+  const gap=plotW/n*0.4;
+  const colors=['#e8a84c','#4ca8e8','#c084fc','#7fff6b','#ff6b6b'];
+  for(let i=0;i<n;i++){
+    const x=padL+i*(plotW/n)+(plotW/n-barW)/2;
+    const h=tlProbs[i]*plotH;
+    const y=padT+plotH-h;
+    ctx.fillStyle=colors[i]+'cc';
+    ctx.strokeStyle=colors[i];
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    if(ctx.roundRect)ctx.roundRect(x,y,barW,h,5);
+    else ctx.rect(x,y,barW,h);
+    ctx.fill();ctx.stroke();
+    // word label
+    ctx.fillStyle='#ede8e0';
+    ctx.font='600 12px "Source Sans 3",sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(TL_CONTEXTS[i],x+barW/2,padT+plotH+20);
+    // value
+    ctx.fillStyle=colors[i];
+    ctx.font='600 11px "Courier New",monospace';
+    ctx.fillText(tlProbs[i].toFixed(2),x+barW/2,y-6);
+    // delta annotation for the most recent change (appears as "+X" floating up)
+    if(tlRecentChange&&i===tlRecentChange.idx){
+      ctx.fillStyle='#7fff6b';
+      ctx.font='700 13px "Courier New",monospace';
+      ctx.fillText('+'+(tlRecentChange.delta*100).toFixed(0)+'%',x+barW/2,y-22);
+    }
+  }
+
+  // title
+  ctx.fillStyle='rgba(237,232,224,.6)';
+  ctx.font='13px "Source Sans 3",sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText('P_model( · | my ) — evolving through encounters',padL,padT-14);
+}
+document.getElementById('tlNext').addEventListener('click',()=>{
+  if(!tlNextStep()){
+    document.getElementById('tlLog').innerHTML='End of sequence. Press <strong>Reset</strong> to start over.';
+  }
+});
+document.getElementById('tlAuto').addEventListener('click',()=>{
+  const btn=document.getElementById('tlAuto');
+  if(tlAutoHandle){
+    clearInterval(tlAutoHandle);tlAutoHandle=null;btn.textContent='Auto-play';return;
+  }
+  btn.textContent='Pause';
+  tlAutoHandle=setInterval(()=>{
+    if(!tlNextStep()){clearInterval(tlAutoHandle);tlAutoHandle=null;btn.textContent='Auto-play';}
+  },650);
+});
+document.getElementById('tlReset').addEventListener('click',tlReset);
+drawTL();
+window.addEventListener('resize',drawTL);
+</script>
+</body>
+</html>

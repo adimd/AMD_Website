@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Combining Gates: From Logic to Arithmetic | How Computers Work at the Lowest Level</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.92em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.2rem;font-style:italic;color:var(--ink);line-height:1.58}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+    canvas{display:block;border-radius:6px}
+
+    /* bit toggles */
+    .bit-toggle-row{display:flex;align-items:center;gap:.8rem;margin:.5rem 0}
+    .bit-toggle-row label{font-size:.88rem;color:var(--muted);min-width:60px;font-family:'Courier New',monospace}
+    .tog{width:48px;height:28px;border-radius:14px;border:1px solid var(--border-hover);background:var(--bg-card);cursor:pointer;position:relative;transition:all .22s;flex-shrink:0}
+    .tog.on{background:var(--accent-dim);border-color:var(--accent)}
+    .tog::after{content:'';position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:var(--muted);transition:all .22s}
+    .tog.on::after{left:22px;background:var(--accent)}
+    .bit-val{font-family:'Courier New',monospace;font-size:1rem;min-width:18px;color:var(--body)}
+    .tog.on + .bit-val{color:var(--accent)}
+
+    /* result display */
+    .result-chip{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem .9rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);font-family:'Courier New',monospace;font-size:1rem;margin:.3rem .2rem}
+    .result-chip.active{border-color:var(--accent);background:var(--accent-dim)}
+    .result-chip-label{font-size:.75rem;color:var(--muted)}
+    .result-chip-val{font-size:1.3rem;font-weight:700}
+    .v1{color:var(--green)}.v0{color:var(--red)}
+
+    /* adder chain */
+    .adder-grid{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin:1rem 0}
+    .fa-box{background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;padding:.8rem 1rem;min-width:90px;text-align:center;transition:all .3s;position:relative}
+    .fa-box.active{border-color:var(--accent);background:var(--accent-dim)}
+    .fa-box.settled{border-color:var(--green);background:var(--green-dim)}
+    .fa-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.3rem}
+    .fa-sum{font-family:'Courier New',monospace;font-size:1.4rem;font-weight:700;color:var(--ink)}
+    .fa-carry{font-size:.75rem;color:var(--muted);margin-top:.2rem;font-family:'Courier New',monospace}
+    .carry-arrow{color:var(--accent);font-size:1.2rem;align-self:center;opacity:.6}
+
+    /* truth table */
+    .tt{width:100%;border-collapse:collapse;font-size:.9rem;margin:.6rem 0}
+    .tt th{text-align:center;padding:.45rem .5rem;color:var(--muted);font-weight:400;border-bottom:1px solid var(--border);font-size:.78rem;letter-spacing:.07em;text-transform:uppercase}
+    .tt td{text-align:center;padding:.42rem .5rem;font-family:'Courier New',monospace;border-bottom:1px solid var(--border);transition:background .2s}
+    .tt tr:last-child td{border-bottom:none}
+    .tt tr.hi td{background:var(--accent-dim)}
+    .c1{color:var(--green)}.c0{color:var(--red)}
+
+    /* CLA */
+    .cla-row{display:flex;gap:.5rem;flex-wrap:wrap;margin:.7rem 0}
+    .gp-chip{padding:.3rem .7rem;border-radius:6px;font-family:'Courier New',monospace;font-size:.82rem;border:1px solid var(--border);background:var(--bg-card);transition:all .3s}
+    .gp-chip.gen{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+    .gp-chip.prop{border-color:var(--blue);background:var(--blue-dim);color:var(--blue)}
+    .gp-chip.none{color:var(--muted)}
+    .carry-formula{font-family:'Courier New',monospace;font-size:.88rem;line-height:2;color:var(--body);margin:.5rem 0;padding:.8rem 1rem;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)}
+    .carry-formula span.hi{color:var(--accent)}
+    .carry-formula span.blue{color:var(--blue)}
+
+    /* mux */
+    .mux-wrap{display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start}
+    .mux-col{flex:1;min-width:140px}
+    .mux-label{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem}
+    .mux-canvas{display:block;border-radius:6px}
+
+    /* subtractor */
+    .sub-toggle-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin:.8rem 0}
+    .mode-btn{padding:.4rem 1rem;border-radius:8px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--muted);font-size:.88rem;cursor:pointer;transition:all .2s;font-family:var(--sans)}
+    .mode-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}.adder-grid{gap:.35rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>How Computers Work at the Lowest Level</span>
+  <h1>Combining Gates: From Logic to Arithmetic</h1>
+  <p class="blog-subtitle">Gates make decisions. But chain enough of them together in the right arrangement and something surprising happens: they can add numbers. This is the step where logic becomes computation.</p>
+
+  <h2>Why the truth tables are the proof</h2>
+
+  <p>Before building anything, it's worth pausing on why XOR and AND are the right gates for addition. This isn't something someone decided by convention. It falls directly out of the truth tables.</p>
+
+  <p>When you add two single bits A and B, there are exactly four possible cases. Zero plus zero is zero with no carry. Zero plus one is one with no carry. One plus zero is one with no carry. One plus one is two, which in binary is 10, meaning the current column is zero and you carry a one into the next column.</p>
+
+  <p>Write out just the sum column across those four cases: 0, 1, 1, 0. Now look at the XOR truth table. It gives exactly 0, 1, 1, 0 for the same inputs. Write out just the carry column: 0, 0, 0, 1. That's the AND truth table exactly. The gates do not need to be adapted or configured for this purpose. Their natural behaviour already describes binary addition perfectly. That match is what makes all of this buildable in silicon.</p>
+
+  <!-- VIZ 1: Half adder interactive -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Half adder: two gates, two outputs</span></div>
+    <div class="viz-body">
+      <div style="display:flex;gap:2rem;flex-wrap:wrap;align-items:flex-start">
+        <div style="min-width:200px">
+          <div class="bit-toggle-row">
+            <label>Input A</label>
+            <button class="tog" id="ha_a" onclick="toggleHA('a')"></button>
+            <span class="bit-val" id="ha_a_val">0</span>
+          </div>
+          <div class="bit-toggle-row">
+            <label>Input B</label>
+            <button class="tog" id="ha_b" onclick="toggleHA('b')"></button>
+            <span class="bit-val" id="ha_b_val">0</span>
+          </div>
+          <div style="margin-top:1.2rem;display:flex;gap:.5rem;flex-wrap:wrap">
+            <div class="result-chip" id="ha_sum_chip">
+              <span class="result-chip-label">Sum (XOR)</span>
+              <span class="result-chip-val c0" id="ha_sum">0</span>
+            </div>
+            <div class="result-chip" id="ha_carry_chip">
+              <span class="result-chip-label">Carry (AND)</span>
+              <span class="result-chip-val c0" id="ha_carry">0</span>
+            </div>
+          </div>
+          <div style="margin-top:.8rem;font-family:'Courier New',monospace;font-size:.9rem;color:var(--body)" id="ha_desc">0 + 0 = 00 in binary</div>
+        </div>
+        <div style="flex:1;min-width:180px">
+          <table class="tt">
+            <thead><tr><th>A</th><th>B</th><th>Sum</th><th>Carry</th></tr></thead>
+            <tbody id="ha_tt"></tbody>
+          </table>
+        </div>
+      </div>
+      <p class="viz-note">The highlighted row shows your current inputs. Notice that Sum is exactly XOR and Carry is exactly AND across every row. The gates are not approximating addition. Their truth tables are addition, for a single bit column.</p>
+    </div>
+  </div>
+
+  <h2>What the half adder cannot do</h2>
+
+  <p>The half adder handles the rightmost column of any binary addition perfectly, because nothing sits to its right and there is no incoming carry to deal with. The moment you move one column left, things change. That column receives a carry from the column you just computed. The half adder has only two inputs, A and B. It has nowhere to accept that incoming carry. It is structurally incapable of handling it.</p>
+
+  <p>For every column except the rightmost, you need a circuit that takes three inputs: A, B, and Cin. That circuit is the full adder.</p>
+
+  <h2>The full adder: deriving it from scratch</h2>
+
+  <p>A full adder has three inputs and two outputs. Inputs are A, B, and Cin. Outputs are Sum and Cout. There are eight possible combinations of three binary inputs.</p>
+
+  <p>The sum bit should be 1 whenever an odd number of the three inputs are 1. Think through why. If one input is 1, the total is 1, sum is 1. If two inputs are 1, the total is 2 which is binary 10, so sum is 0. If all three are 1, the total is 3 which is binary 11, so sum is 1. Odd count gives sum 1. Even count gives sum 0. That is exactly what XOR does across three inputs, and you can chain it: first compute P = A XOR B, then compute Sum = P XOR Cin.</p>
+
+  <p>The carry out should be 1 whenever two or more of the three inputs are 1. You can write this as three separate conditions joined by OR: A and B are both 1, or A and Cin are both 1, or B and Cin are both 1. That gives Cout = (A AND B) OR (A AND Cin) OR (B AND Cin).</p>
+
+  <p>Using the partial sum P = A XOR B, the Cout expression simplifies neatly. Since P is already computed on the way to getting Sum, you can reuse it: Cout = (A AND B) OR (P AND Cin). This is the form used in real circuits because it shares gates between the sum path and the carry path, saving area on silicon.</p>
+
+  <p>The full adder is therefore five gates: two XOR, two AND, one OR. Let's verify with the hardest case: A=1, B=1, Cin=1. That's three ones, which should give Sum=1 and Cout=1 since 1+1+1=3 which is binary 11.</p>
+
+  <p>P = 1 XOR 1 = 0. Sum = P XOR Cin = 0 XOR 1 = 1. Correct. Cout = (A AND B) OR (P AND Cin) = (1 AND 1) OR (0 AND 1) = 1 OR 0 = 1. Correct.</p>
+
+  <!-- VIZ 2: Full adder interactive -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Full adder: three inputs, all eight cases</span></div>
+    <div class="viz-body">
+      <div style="display:flex;gap:2rem;flex-wrap:wrap;align-items:flex-start">
+        <div style="min-width:220px">
+          <div class="bit-toggle-row">
+            <label>Input A</label>
+            <button class="tog" id="fa_a" onclick="toggleFA('a')"></button>
+            <span class="bit-val" id="fa_a_val">0</span>
+          </div>
+          <div class="bit-toggle-row">
+            <label>Input B</label>
+            <button class="tog" id="fa_b" onclick="toggleFA('b')"></button>
+            <span class="bit-val" id="fa_b_val">0</span>
+          </div>
+          <div class="bit-toggle-row">
+            <label>Cin</label>
+            <button class="tog" id="fa_cin" onclick="toggleFA('cin')"></button>
+            <span class="bit-val" id="fa_cin_val">0</span>
+          </div>
+          <div style="margin-top:1.1rem">
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;font-family:'Courier New',monospace">Partial sum P = A XOR B</div>
+            <div style="font-family:'Courier New',monospace;font-size:1.1rem;color:var(--blue)" id="fa_p_val">P = 0</div>
+          </div>
+          <div style="margin-top:.9rem;display:flex;gap:.5rem;flex-wrap:wrap">
+            <div class="result-chip" id="fa_sum_chip">
+              <span class="result-chip-label">Sum</span>
+              <span class="result-chip-val c0" id="fa_sum">0</span>
+            </div>
+            <div class="result-chip" id="fa_cout_chip">
+              <span class="result-chip-label">Cout</span>
+              <span class="result-chip-val c0" id="fa_cout">0</span>
+            </div>
+          </div>
+          <div style="margin-top:.8rem;font-family:'Courier New',monospace;font-size:.88rem;line-height:1.8;color:var(--body);padding:.7rem;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)" id="fa_working">
+            Working shown here
+          </div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <table class="tt">
+            <thead><tr><th>A</th><th>B</th><th>Cin</th><th>Sum</th><th>Cout</th></tr></thead>
+            <tbody id="fa_tt"></tbody>
+          </table>
+        </div>
+      </div>
+      <canvas id="fa_canvas" height="110" style="width:100%;margin-top:1rem"></canvas>
+      <p class="viz-note">The canvas shows the gate-level circuit in real time. P is computed first by the XOR of A and B, then P and Cin are XORed to give the sum. The two AND gates feed into the OR gate to produce Cout. Trace the signal path as you toggle inputs.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Chaining full adders: the ripple carry adder</h2>
+
+  <p>To add two 4-bit numbers you place four full adders side by side. The first one handles bit position 0 (the rightmost). Its carry-in is hardwired to 0 because nothing sits to its right. Its carry-out feeds into the carry-in of the second adder. The second adder's carry-out feeds the third. And so on. The carry-out of the final adder tells you whether the entire addition overflowed.</p>
+
+  <p>This arrangement is called a ripple carry adder because the carry signal ripples from right to left through the chain. Each adder waits for the adder to its right to finish before it knows what carry arrived at its input. The result of the whole addition is only valid once the carry has finished its journey through every stage.</p>
+
+  <p>Let's trace through a real example. Add 0110 (which is 6) and 0111 (which is 7). The correct answer is 1101, which is 13.</p>
+
+  <p>Stage 0: A0=0, B0=1, Cin=0. P=1, Sum=1, Cout=0. Stage 1: A1=1, B1=1, Cin=0. P=0, Sum=0, Cout=1. Stage 2: A2=1, B2=1, Cin=1. P=0, Sum=1, Cout=1. Stage 3: A3=0, B3=0, Cin=1. P=1, Sum=1, Cout=0. Reading the sum bits from stage 3 down to stage 0 gives 1101. That is 13. Correct.</p>
+
+  <!-- VIZ 3: Ripple carry adder -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">4-bit ripple carry adder: try any numbers</span></div>
+    <div class="viz-body">
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.2rem">
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;letter-spacing:.08em;text-transform:uppercase">Number A (0 to 15)</div>
+          <input type="range" id="rca_a" min="0" max="15" value="6" style="accent-color:var(--accent);width:140px">
+          <span style="font-family:'Courier New',monospace;font-size:.95rem;color:var(--accent);margin-left:.5rem" id="rca_a_val">6</span>
+        </div>
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;letter-spacing:.08em;text-transform:uppercase">Number B (0 to 15)</div>
+          <input type="range" id="rca_b" min="0" max="15" value="7" style="accent-color:var(--accent);width:140px">
+          <span style="font-family:'Courier New',monospace;font-size:.95rem;color:var(--accent);margin-left:.5rem" id="rca_b_val">7</span>
+        </div>
+        <button class="mode-btn active" id="rca_animate_btn" onclick="animateRCA()">Animate ripple</button>
+      </div>
+      <canvas id="rca_canvas" height="220" style="width:100%;border-radius:8px;background:#1e1c1a"></canvas>
+      <div style="margin-top:.8rem;font-family:'Courier New',monospace;font-size:.9rem;color:var(--body);line-height:1.8" id="rca_result"></div>
+      <p class="viz-note">Press "Animate ripple" to watch the carry signal travel from right to left through each stage. Each stage cannot settle until the previous one produces its carry-out. The rightmost stage is always first. This sequential dependency is the ripple carry problem.</p>
+    </div>
+  </div>
+
+  <h2>The ripple problem: why it matters at scale</h2>
+
+  <p>For a 4-bit adder the ripple delay is small enough to feel academic. At 32 or 64 bits it becomes a genuine bottleneck.</p>
+
+  <p>The worst case input for a ripple carry adder is not all ones plus all ones. When both inputs are 1 at every position, every stage generates its own carry immediately without needing to wait for anything. The carry does not actually ripple far because each stage produces it independently.</p>
+
+  <p>The true worst case is 11111111 plus 00000001, that is 255 plus 1 for an 8-bit adder. Stage 0 gets 1 plus 1, generates a carry. Every stage above it has inputs of 1 and 0, so it is in propagate mode: it will pass on any carry it receives but cannot generate one on its own. The carry from stage 0 has to travel through every single stage in sequence before the final result is valid. Stage 1 cannot finish until stage 0 carries out. Stage 2 cannot finish until stage 1 carries out. All the way to stage 7. That is maximum ripple length, and every step adds propagation delay.</p>
+
+  <!-- VIZ 4: Worst case ripple demo -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Worst case ripple: 255 + 1</span></div>
+    <div class="viz-body">
+      <canvas id="worst_canvas" height="160" style="width:100%;border-radius:8px;background:#1e1c1a"></canvas>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.9rem;align-items:center">
+        <button class="mode-btn active" onclick="animateWorst()">Run worst case (255 + 1)</button>
+        <button class="mode-btn" onclick="animateGood()">Run best case (128 + 128)</button>
+      </div>
+      <div style="font-family:'Courier New',monospace;font-size:.85rem;color:var(--body);margin-top:.7rem;line-height:1.8" id="worst_desc">Click a button to see how far the carry travels in each case.</div>
+      <p class="viz-note">In the worst case the carry visits every single stage. In the best case (both inputs maximum) every stage generates its own carry immediately and the ripple is minimal. The distinction between generate and propagate modes determines how far the carry actually travels.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Carry lookahead: computing all carries at once</h2>
+
+  <p>The insight behind carry lookahead is that you do not have to wait for a carry to ripple through. You can calculate what every carry will be directly from the original A and B inputs, all at the same time, using a dedicated circuit.</p>
+
+  <p>For each bit position i, you compute two signals. <strong>Generate (Gi = Ai AND Bi)</strong>: this position will produce a carry on its own regardless of what carry comes in, because both its inputs are 1. <strong>Propagate (Pi = Ai XOR Bi)</strong>: this position will pass on whatever carry arrives, because exactly one of its inputs is 1. Notice it is XOR not OR: if both inputs are 1 the position generates rather than propagates, so you exclude that case.</p>
+
+  <p>With G and P computed for every position simultaneously, you can write a direct formula for every carry:</p>
+
+  <p>C1 = G0 OR (P0 AND C0). Carry into position 1 is either generated by position 0, or position 0 propagates the initial carry in.</p>
+
+  <p>C2 = G1 OR (P1 AND G0) OR (P1 AND P0 AND C0). Carry into position 2 is generated at position 1, or generated at 0 and propagated through 1, or the initial carry propagated through both.</p>
+
+  <p>C3 = G2 OR (P2 AND G1) OR (P2 AND P1 AND G0) OR (P2 AND P1 AND P0 AND C0).</p>
+
+  <p>These expressions use only the original G and P values and the initial carry-in. No carry needs to wait for the previous carry. A lookahead unit computes all of them in parallel using a single level of AND and OR gates. The adder's total delay drops from N gate delays down to a small constant, regardless of how many bits you are adding.</p>
+
+  <p>The cost is circuit area. The carry expressions grow with each bit position. C31 in a 32-bit adder has 32 terms. Building one giant lookahead unit for all 32 bits would require AND gates with enormous fan-in, which brings its own capacitance delays. The practical solution is hierarchical lookahead: group 4 bits at a time into small lookahead units, then connect those units using a second-level lookahead circuit above them. A 64-bit adder might use three levels of hierarchy. The delay grows logarithmically with word size rather than linearly. A 64-bit carry lookahead adder is only slightly slower than a 4-bit one.</p>
+
+  <!-- VIZ 5: CLA interactive -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Carry lookahead: all carries computed at once</span></div>
+    <div class="viz-body">
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem">
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.08em">4-bit A</div>
+          <input type="range" id="cla_a" min="0" max="15" value="11" style="accent-color:var(--accent);width:130px">
+          <span style="font-family:'Courier New',monospace;font-size:.9rem;color:var(--accent);margin-left:.4rem" id="cla_a_val">11</span>
+        </div>
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.08em">4-bit B</div>
+          <input type="range" id="cla_b" min="0" max="15" value="7" style="accent-color:var(--accent);width:130px">
+          <span style="font-family:'Courier New',monospace;font-size:.9rem;color:var(--accent);margin-left:.4rem" id="cla_b_val">7</span>
+        </div>
+      </div>
+      <canvas id="cla_canvas" height="260" style="width:100%;border-radius:8px;background:#1e1c1a"></canvas>
+      <div style="margin-top:.9rem" id="cla_formulas"></div>
+      <p class="viz-note">Each bit position shows whether it is in Generate mode (it produces a carry regardless of input), Propagate mode (it passes a carry through), or neither. The carry formulas at the bottom are computed directly from these signals, all in parallel, with no waiting.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Subtraction is almost free</h2>
+
+  <p>Once you have an adder, subtraction costs almost nothing extra. The key is two's complement from Topic 1.</p>
+
+  <p>To negate a number in two's complement you flip all its bits and add 1. So A minus B is the same as A plus (NOT B) plus 1. Your adder already adds. The carry-in of the first full adder is normally 0. Set it to 1 and you have added 1. Put a NOT gate on every bit of B before it enters the adder and you have flipped all of B's bits. The adder is now computing A plus (NOT B) plus 1, which is A minus B.</p>
+
+  <p>In practice this is combined into one circuit called an adder-subtractor. A single control line called SUB selects the mode. XOR gates sit on every B input: XOR with 0 passes B unchanged, XOR with 1 inverts it. The SUB line connects to all those XOR gates and also directly to the carry-in of the first stage. When SUB=0 you get addition. When SUB=1 you get subtraction. Same hardware. Same adder. Two extra wires.</p>
+
+  <!-- VIZ 6: Adder-subtractor -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Adder-subtractor: one circuit, two operations</span></div>
+    <div class="viz-body">
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem">
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.08em">A (4-bit signed)</div>
+          <input type="range" id="sub_a" min="-8" max="7" value="6" style="accent-color:var(--accent);width:130px">
+          <span style="font-family:'Courier New',monospace;font-size:.9rem;color:var(--accent);margin-left:.4rem" id="sub_a_val">6</span>
+        </div>
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.08em">B (4-bit signed)</div>
+          <input type="range" id="sub_b" min="-8" max="7" value="4" style="accent-color:var(--accent);width:130px">
+          <span style="font-family:'Courier New',monospace;font-size:.9rem;color:var(--accent);margin-left:.4rem" id="sub_b_val">4</span>
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <button class="mode-btn active" id="sub_add_btn" onclick="setSubMode(0)">Add (SUB=0)</button>
+          <button class="mode-btn" id="sub_sub_btn" onclick="setSubMode(1)">Subtract (SUB=1)</button>
+        </div>
+      </div>
+      <canvas id="sub_canvas" height="200" style="width:100%;border-radius:8px;background:#1e1c1a"></canvas>
+      <div style="font-family:'Courier New',monospace;font-size:.9rem;line-height:2;color:var(--body);margin-top:.8rem;padding:.8rem 1rem;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)" id="sub_working"></div>
+      <p class="viz-note">Toggle between Add and Subtract mode. The only things that change are the XOR gates on B's inputs (which invert B when SUB=1) and the carry-in of the first stage (which adds 1 when SUB=1). The adder itself does not change at all.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The multiplexer: routing signals based on decisions</h2>
+
+  <p>Almost every interesting circuit needs to choose between options. Should the processor use the result of the adder or the result of a logic operation? Should it read from register A or register B? The circuit that answers these questions is the multiplexer, almost always written MUX.</p>
+
+  <p>A 2-to-1 MUX has three inputs and one output. Two data inputs D0 and D1, and one selector S. When S=0 the output follows D0. When S=1 the output follows D1. The gate-level expression is: Output = (D0 AND NOT S) OR (D1 AND S). When S=0, the D0 term survives and D1 term is blocked. When S=1, the D1 term survives and D0 is blocked. The selector controls which data path is open at any moment.</p>
+
+  <p>MUXes scale up straightforwardly. A 4-to-1 MUX uses two selector bits to choose among four inputs. An 8-to-1 MUX uses three selector bits. Inside any processor, MUXes are everywhere: selecting which registers feed the ALU, routing results to the right destination, choosing between different operation modes. They are the traffic controllers of the digital world.</p>
+
+  <!-- VIZ 7: MUX interactive -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Multiplexer: selecting between data paths</span></div>
+    <div class="viz-body">
+      <div style="display:flex;gap:2rem;flex-wrap:wrap;align-items:flex-start">
+        <div style="min-width:180px">
+          <div class="bit-toggle-row">
+            <label>D0</label>
+            <button class="tog" id="mux_d0" onclick="toggleMUX('d0')"></button>
+            <span class="bit-val" id="mux_d0_val">0</span>
+          </div>
+          <div class="bit-toggle-row">
+            <label>D1</label>
+            <button class="tog" id="mux_d1" onclick="toggleMUX('d1')"></button>
+            <span class="bit-val" id="mux_d1_val">0</span>
+          </div>
+          <div class="bit-toggle-row" style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border)">
+            <label>Select S</label>
+            <button class="tog" id="mux_s" onclick="toggleMUX('s')"></button>
+            <span class="bit-val" id="mux_s_val">0</span>
+          </div>
+          <div style="margin-top:1rem" class="result-chip" id="mux_out_chip">
+            <span class="result-chip-label">Output Q</span>
+            <span class="result-chip-val c0" id="mux_out">0</span>
+          </div>
+          <div style="font-size:.85rem;color:var(--body);margin-top:.7rem;line-height:1.6" id="mux_desc">S=0 so output follows D0</div>
+        </div>
+        <canvas id="mux_canvas" height="200" style="flex:1;min-width:220px;border-radius:8px;background:#1e1c1a"></canvas>
+      </div>
+      <p class="viz-note">The selector S controls which data input reaches the output. When S=0, the path from D0 is open and D1 is blocked. When S=1, the path from D1 is open. Internally this is just AND gates, OR gates and an inverter. There is no magic, just logic.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Everything connecting</h2>
+
+  <p>Step back and look at what these three topics have assembled. In Topic 1 we established that everything in a computer is numbers. In Topic 2 we learned that transistors make gates and gates make decisions. Now in Topic 3 we have seen that gates combined in the right arrangements can add numbers, subtract them, and select between them.</p>
+
+  <p>The next step is to bundle all of this into one unit: the ALU. An ALU is just an adder-subtractor, a set of logic operation circuits (AND, OR, XOR applied to all bits in parallel), and a bank of MUXes controlled by an operation selector. The selector is a few bits that tell the ALU which of its internal circuits to connect to the output at any given moment. Add, subtract, AND, OR, compare: the same hardware, different selector value.</p>
+
+  <p>After the ALU we have memory. The circuits so far are purely combinational: they react to their inputs immediately and produce an output, but they remember nothing. For a computer to actually run a program it needs to store intermediate results. That requires a different kind of circuit, one built from feedback loops rather than forward-flowing logic. That is Topic 5, and it is where things get genuinely strange in the best possible way.</p>
+
+  <div class="callout">An adder is five gates. A subtractor is an adder plus two wires. A MUX is three gates. An ALU is these components bundled together. The most powerful calculating machine humanity has ever built is, at its foundation, a very large pile of very simple things arranged very carefully.</div>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">How Computers Work at the Lowest Level</h2>
+    <a class="sidebar-link" href="topic1_representation.html"><div class="sidebar-link-title">Topic 1: Representation</div><div class="sidebar-link-note">Bits, binary, two's complement, floats.</div></a>
+    <a class="sidebar-link" href="topic2_logic_gates.html"><div class="sidebar-link-title">Topic 2: Logic Gates</div><div class="sidebar-link-note">Transistors, CMOS, gates, NAND universality.</div></a>
+    <a class="sidebar-link active-topic" href="#"><div class="sidebar-link-title">Topic 3: Combining Gates</div><div class="sidebar-link-note">You are here.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Topic 4: The ALU</div><div class="sidebar-link-note">Coming next.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Topic 5: Memory</div><div class="sidebar-link-note">Coming soon.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Topic 6: Fetch-Decode-Execute</div><div class="sidebar-link-note">Coming soon.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Topic 7: Clock Speed</div><div class="sidebar-link-note">Coming soon.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Topic 8: The ISA</div><div class="sidebar-link-note">Coming soon.</div></a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why XOR and AND match addition</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Half adder vs full adder</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Ripple carry and worst case</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Generate and Propagate</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Carry lookahead</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Subtraction for free</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The multiplexer</div></a>
+  </div>
+</aside>
+</div></div>
+
+<footer class="site-footer"><p class="footer-tagline">Thanks for reading.</p><p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p></footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// helpers
+function toBin(n,bits){return(n>>>0).toString(2).padStart(bits,'0');}
+function toSigned4(n){return n>=8?n-16:n;}
+
+// ── VIZ 1: Half adder ────────────────────────────────────────────────────────
+let ha={a:0,b:0};
+function updateHA(){
+  const s=ha.a^ha.b, c=ha.a&ha.b;
+  document.getElementById('ha_a').classList.toggle('on',!!ha.a);
+  document.getElementById('ha_b').classList.toggle('on',!!ha.b);
+  document.getElementById('ha_a_val').textContent=ha.a;
+  document.getElementById('ha_b_val').textContent=ha.b;
+  const sv=document.getElementById('ha_sum'), cv=document.getElementById('ha_carry');
+  sv.textContent=s; sv.className='result-chip-val '+(s?'c1':'c0');
+  cv.textContent=c; cv.className='result-chip-val '+(c?'c1':'c0');
+  document.getElementById('ha_sum_chip').classList.toggle('active',!!s);
+  document.getElementById('ha_carry_chip').classList.toggle('active',!!c);
+  document.getElementById('ha_desc').textContent=`${ha.a} + ${ha.b} = ${toBin(c,1)}${toBin(s,1)} in binary (= ${ha.a+ha.b} decimal)`;
+  let html='';
+  [[0,0],[0,1],[1,0],[1,1]].forEach(([a,b])=>{
+    const ss=a^b,cc=a&b,hi=(a===ha.a&&b===ha.b)?'hi':'';
+    html+=`<tr class="${hi}"><td class="c${a}">${a}</td><td class="c${b}">${b}</td><td class="c${ss}">${ss}</td><td class="c${cc}">${cc}</td></tr>`;
+  });
+  document.getElementById('ha_tt').innerHTML=html;
+}
+function toggleHA(x){ha[x]=ha[x]?0:1;updateHA();}
+updateHA();
+
+// ── VIZ 2: Full adder ────────────────────────────────────────────────────────
+let fa={a:0,b:0,cin:0};
+function updateFA(){
+  const p=fa.a^fa.b, s=p^fa.cin, cout=(fa.a&fa.b)|(p&fa.cin);
+  ['a','b','cin'].forEach(k=>{
+    document.getElementById('fa_'+k).classList.toggle('on',!!fa[k]);
+    document.getElementById('fa_'+k+'_val').textContent=fa[k];
+  });
+  document.getElementById('fa_p_val').textContent='P = '+p;
+  const sv=document.getElementById('fa_sum'),cv=document.getElementById('fa_cout');
+  sv.textContent=s; sv.className='result-chip-val '+(s?'c1':'c0');
+  cv.textContent=cout; cv.className='result-chip-val '+(cout?'c1':'c0');
+  document.getElementById('fa_sum_chip').classList.toggle('active',!!s);
+  document.getElementById('fa_cout_chip').classList.toggle('active',!!cout);
+  document.getElementById('fa_working').innerHTML=
+    `P = A XOR B = ${fa.a} XOR ${fa.b} = ${p}<br>`+
+    `Sum = P XOR Cin = ${p} XOR ${fa.cin} = ${s}<br>`+
+    `Cout = (A AND B) OR (P AND Cin)<br>`+
+    `     = (${fa.a} AND ${fa.b}) OR (${p} AND ${fa.cin})<br>`+
+    `     = ${fa.a&fa.b} OR ${p&fa.cin} = ${cout}`;
+  let html='';
+  [[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]].forEach(([a,b,cin])=>{
+    const pp=a^b,ss=pp^cin,cc=(a&b)|(pp&cin),hi=(a===fa.a&&b===fa.b&&cin===fa.cin)?'hi':'';
+    html+=`<tr class="${hi}"><td class="c${a}">${a}</td><td class="c${b}">${b}</td><td class="c${cin}">${cin}</td><td class="c${ss}">${ss}</td><td class="c${cc}">${cc}</td></tr>`;
+  });
+  document.getElementById('fa_tt').innerHTML=html;
+  drawFACircuit();
+}
+function toggleFA(x){fa[x]=fa[x]?0:1;updateFA();}
+
+function drawFACircuit(){
+  const canvas=document.getElementById('fa_canvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth,H=110;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#1e1c1a';ctx.fillRect(0,0,W,H);
+  const p=fa.a^fa.b,s=p^fa.cin,cout=(fa.a&fa.b)|(p&fa.cin);
+  const aC=fa.a?'#7fff6b':'#ff6b6b',bC=fa.b?'#7fff6b':'#ff6b6b',cC=fa.cin?'#7fff6b':'#ff6b6b';
+  const pC=p?'#4ca8e8':'rgba(76,168,232,0.3)',sC=s?'#7fff6b':'#ff6b6b',coC=cout?'#e8a84c':'rgba(232,168,76,0.3)';
+  const gateH=22,gateW=36;
+  // layout positions
+  const xor1x=W*0.22,xor2x=W*0.52,andx=W*0.52,and2x=W*0.72,orx=W*0.82;
+  const row1=H*0.28,row2=H*0.7;
+  function drawGate(x,y,label,color){
+    ctx.fillStyle=color+'22';ctx.strokeStyle=color;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.roundRect(x-gateW/2,y-gateH/2,gateW,gateH,4);ctx.fill();ctx.stroke();
+    ctx.fillStyle=color;ctx.font='bold 9px "Courier New"';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(label,x,y);
+  }
+  function wire(x1,y1,x2,y2,color){ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+  function dot(x,y,color){ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();}
+  function label(x,y,text,color){ctx.fillStyle=color;ctx.font='9px "Courier New"';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,x,y);}
+
+  // Input labels
+  label(18,row1-8,'A='+fa.a,aC);
+  label(18,row1+8,'B='+fa.b,bC);
+  label(18,row2,'Cin='+fa.cin,cC);
+  // Wires to XOR1
+  wire(32,row1-8,xor1x-gateW/2,row1-6,aC);
+  wire(32,row1+8,xor1x-gateW/2,row1+6,bC);
+  drawGate(xor1x,row1,'XOR',pC);
+  // P wire
+  wire(xor1x+gateW/2,row1,xor2x-gateW/2,row1,pC);
+  dot(xor1x+gateW/2+4,row1,pC);
+  label(xor1x+gateW/2+18,row1-8,'P='+p,pC);
+  // XOR2 (sum)
+  wire(xor1x+gateW/2,row1,xor2x-gateW/2,row1,pC);
+  wire(W*0.12,row2,xor2x-gateW/2,row2*0.9,cC);
+  drawGate(xor2x,row1,'XOR',sC);
+  wire(xor2x+gateW/2,row1,W-20,row1,sC);
+  label(W-12,row1,'S='+s,sC);
+  // AND gate (A.B)
+  const abC=(fa.a&fa.b)?'#e8a84c':'rgba(232,168,76,0.3)';
+  wire(28,row1-8,andx-gateW/2,(row1+row2)/2-6,aC);
+  wire(28,row1+8,andx-gateW/2,(row1+row2)/2+6,bC);
+  drawGate(andx,(row1+row2)/2,'AND',abC);
+  // AND gate (P.Cin)
+  const pcC=(p&fa.cin)?'#e8a84c':'rgba(232,168,76,0.3)';
+  wire(xor1x+gateW/2+4,row1,and2x-gateW/2,row2-6,pC);
+  wire(W*0.12,row2,and2x-gateW/2,row2+4,cC);
+  drawGate(and2x,row2,'AND',pcC);
+  // OR gate
+  wire(andx+gateW/2,(row1+row2)/2,orx-gateW/2,(row1+row2)/2+4,abC);
+  wire(and2x+gateW/2,row2,orx-gateW/2,(row1+row2)/2+10,pcC);
+  drawGate(orx,(row1+row2)/2+7,'OR',coC);
+  wire(orx+gateW/2,(row1+row2)/2+7,W-20,(row1+row2)/2+7,coC);
+  label(W-14,(row1+row2)/2+7,'Co='+cout,coC);
+}
+updateFA();
+
+// ── VIZ 3: Ripple carry adder ────────────────────────────────────────────────
+// stages[0] = bit 0 (LSB, rightmost FA0). Carry propagates stages[0]→[1]→[2]→[3].
+// Display: FA3 on left, FA0 on right. Matches standard binary notation.
+let rcaAnimId=null;
+function computeRCA(a4,b4){
+  let cin=0,stages=[];
+  for(let i=0;i<4;i++){          // i=0 is LSB
+    const ai=(a4>>i)&1,bi=(b4>>i)&1;
+    const p=ai^bi,s=p^cin,cout=(ai&bi)|(p&cin);
+    stages.push({bit:i,ai,bi,cin,p,s,cout});
+    cin=cout;
+  }
+  return stages; // stages[0]=FA0(LSB) … stages[3]=FA3(MSB)
+}
+function drawRCA(stages,animStep){
+  // animStep: which FA is currently being computed (0=FA0 first, ripples left)
+  // Display order on screen: FA3 leftmost (idx=0 on screen) … FA0 rightmost (idx=3 on screen)
+  const canvas=document.getElementById('rca_canvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth,H=230;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#1e1c1a';ctx.fillRect(0,0,W,H);
+  const n=4,pad=30,boxW=Math.min(100,(W-pad*2-20)/n),boxH=95,gap=16;
+  const totalW=n*boxW+(n-1)*gap,startX=(W-totalW)/2,y=H/2-boxH/2-8;
+
+  // screen position idx 0=FA3(MSB), idx 3=FA0(LSB)
+  for(let screenIdx=0;screenIdx<4;screenIdx++){
+    const stageIdx=3-screenIdx;   // stages array index
+    const st=stages[stageIdx];
+    const x=startX+screenIdx*(boxW+gap);
+
+    // settled = this FA has already computed (stageIdx < animStep, or animStep null)
+    const settled = animStep===null ? true : stageIdx<animStep;
+    const active  = animStep!==null && stageIdx===animStep;
+    const waiting = animStep!==null && stageIdx>animStep;
+
+    ctx.fillStyle=settled?'rgba(127,255,107,0.09)':active?'rgba(232,168,76,0.13)':'rgba(237,232,224,0.03)';
+    ctx.strokeStyle=settled?'rgba(127,255,107,0.55)':active?'rgba(232,168,76,0.75)':'rgba(237,232,224,0.1)';
+    ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.roundRect(x,y,boxW,boxH,8);ctx.fill();ctx.stroke();
+
+    ctx.fillStyle='#7d766b';ctx.font='10px "Source Sans 3"';ctx.textAlign='center';
+    ctx.fillText('FA'+stageIdx,x+boxW/2,y+14);
+    ctx.fillStyle='#b5aea3';ctx.font='9px "Courier New"';
+    ctx.fillText('A='+st.ai+' B='+st.bi,x+boxW/2,y+30);
+    ctx.fillText('Cin='+st.cin,x+boxW/2,y+44);
+    const sc=settled||active?(st.s?'#7fff6b':'#ff6b6b'):'#4a4540';
+    const cc=settled||active?(st.cout?'#e8a84c':'#7d766b'):'#4a4540';
+    ctx.fillStyle=sc;ctx.font='bold 13px "Courier New"';
+    ctx.fillText('S='+st.s,x+boxW/2,y+63);
+    ctx.fillStyle=cc;ctx.font='10px "Courier New"';
+    ctx.fillText('Co='+st.cout,x+boxW/2,y+80);
+
+    // Carry arrow: FA(stageIdx) sends its Cout to FA(stageIdx+1) which is screenIdx-1 (to the left)
+    // Arrow goes from right box to left box, i.e. from screenIdx to screenIdx-1
+    if(screenIdx>0){
+      // this box's stage carries OUT to the box on its left
+      // the carry flows from the current screenIdx box leftward
+      const prevScreenIdx=screenIdx-1; // the box to the left
+      const prevStageIdx=3-prevScreenIdx; // = stageIdx+1
+      const arrowX1=x; // left edge of current box
+      const arrowX2=startX+prevScreenIdx*(boxW+gap)+boxW; // right edge of left box
+      const ay=y+80;
+      const carryLive=settled&&st.cout;
+      const carryColor=carryLive?'#e8a84c':'rgba(237,232,224,0.12)';
+      ctx.strokeStyle=carryColor;ctx.lineWidth=carryLive?2:1;
+      ctx.beginPath();ctx.moveTo(arrowX2,ay);ctx.lineTo(arrowX1,ay);ctx.stroke();
+      if(carryLive){
+        // arrowhead pointing left (toward lower screenIdx = higher bit)
+        ctx.beginPath();ctx.moveTo(arrowX2+7,ay-4);ctx.lineTo(arrowX2,ay);ctx.lineTo(arrowX2+7,ay+4);
+        ctx.strokeStyle=carryColor;ctx.lineWidth=2;ctx.stroke();
+      }
+    }
+  }
+
+  // result row: sum bits MSB first = stages[3].s … stages[0].s
+  const sumBits=[stages[3],stages[2],stages[1],stages[0]].map(s=>s.s).join('');
+  const overflow=stages[3].cout;
+  const resultVal=parseInt((overflow?'1':'')+sumBits,2);
+  ctx.fillStyle='#ede8e0';ctx.font='13px "Courier New"';ctx.textAlign='center';
+  ctx.fillText('Result: '+(overflow?'1':'')+sumBits+' = '+resultVal+' decimal',W/2,H-10);
+}
+function animateRCA(){
+  const a=parseInt(document.getElementById('rca_a').value);
+  const b=parseInt(document.getElementById('rca_b').value);
+  const stages=computeRCA(a,b);
+  if(rcaAnimId)clearInterval(rcaAnimId);
+  let step=0; // starts at FA0
+  drawRCA(stages,step);
+  rcaAnimId=setInterval(()=>{
+    step++;
+    if(step>=4){clearInterval(rcaAnimId);drawRCA(stages,null);}
+    else drawRCA(stages,step);
+  },650);
+  const sumBits=[stages[3],stages[2],stages[1],stages[0]].map(s=>s.s).join('');
+  const overflow=stages[3].cout;
+  const resultVal=parseInt((overflow?'1':'')+sumBits,2);
+  document.getElementById('rca_result').innerHTML=
+    toBin(a,4)+' ('+a+') + '+toBin(b,4)+' ('+b+') = '+(overflow?'1':'')+sumBits+' = '+resultVal+'\nCarry out: '+overflow+' '+(overflow?'(overflow!)':'(no overflow)');
+}
+['rca_a','rca_b'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+  document.getElementById('rca_a_val').textContent=document.getElementById('rca_a').value;
+  document.getElementById('rca_b_val').textContent=document.getElementById('rca_b').value;
+  const a=parseInt(document.getElementById('rca_a').value),b=parseInt(document.getElementById('rca_b').value);
+  drawRCA(computeRCA(a,b),null);
+}));
+drawRCA(computeRCA(6,7),null);
+
+// ── VIZ 4: Worst case ────────────────────────────────────────────────────────
+// Same display convention: FA3 leftmost (screenIdx 0), FA0 rightmost (screenIdx 3)
+// Animation: ripple starts from FA0 (stageIdx 0 = screenIdx 3) and moves LEFT
+let worstAnimId=null;
+function runWorstAnim(a,b,lbl){
+  const stages=computeRCA(a,b);
+  if(worstAnimId)clearInterval(worstAnimId);
+  let step=0;
+  drawWorst(stages,step,lbl);
+  worstAnimId=setInterval(()=>{
+    step++;
+    if(step>=4){clearInterval(worstAnimId);drawWorst(stages,null,lbl);}
+    else drawWorst(stages,step,lbl);
+  },520);
+}
+function animateWorst(){runWorstAnim(15,1,'Worst case: 1111 + 0001 (15+1). FA0 generates carry, every other stage PROPAGATES it leftward.');}
+function animateGood(){runWorstAnim(8,8,'Better case: 1000 + 1000 (8+8). Only FA3 generates; no long ripple chain.');}
+function drawWorst(stages,animStep,lbl){
+  const canvas=document.getElementById('worst_canvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth,H=165;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#1e1c1a';ctx.fillRect(0,0,W,H);
+  const n=4,pad=30,boxW=Math.min(90,(W-pad*2-20)/n),boxH=72,gap=14;
+  const totalW=n*boxW+(n-1)*gap,startX=(W-totalW)/2,y=H/2-boxH/2-4;
+
+  for(let screenIdx=0;screenIdx<4;screenIdx++){
+    const stageIdx=3-screenIdx;
+    const st=stages[stageIdx];
+    const x=startX+screenIdx*(boxW+gap);
+    const g=(st.ai&st.bi)===1,p=(st.ai^st.bi)===1;
+    const settled=animStep===null?true:stageIdx<animStep;
+    const active=animStep!==null&&stageIdx===animStep;
+    const modeColor=g?'#e8a84c':p?'#4ca8e8':'#7d766b';
+    ctx.fillStyle=settled?'rgba(127,255,107,0.07)':active?'rgba(232,168,76,0.1)':'rgba(237,232,224,0.03)';
+    ctx.strokeStyle=settled?'rgba(127,255,107,0.4)':active?'rgba(232,168,76,0.6)':'rgba(237,232,224,0.08)';
+    ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x,y,boxW,boxH,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#b5aea3';ctx.font='9px "Courier New"';ctx.textAlign='center';
+    ctx.fillText('FA'+stageIdx,x+boxW/2,y+13);
+    ctx.fillText(st.ai+'+'+st.bi+'+'+st.cin,x+boxW/2,y+27);
+    ctx.fillStyle=modeColor;ctx.font='bold 9px "Source Sans 3"';
+    ctx.fillText(g?'GENERATE':p?'PROPAGATE':'KILL',x+boxW/2,y+42);
+    ctx.fillStyle=settled||active?'#ede8e0':'#4a4540';ctx.font='10px "Courier New"';
+    ctx.fillText('Co='+st.cout,x+boxW/2,y+58);
+
+    // carry arrow pointing LEFT (from screenIdx to screenIdx-1)
+    if(screenIdx>0&&st.cout&&settled){
+      const ax=x, ay=y+58;
+      const prevX=startX+(screenIdx-1)*(boxW+gap)+boxW;
+      ctx.strokeStyle='#e8a84c';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(prevX,ay);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(prevX+7,ay-4);ctx.lineTo(prevX,ay);ctx.lineTo(prevX+7,ay+4);
+      ctx.strokeStyle='#e8a84c';ctx.stroke();
+    }
+  }
+  if(lbl){document.getElementById('worst_desc').textContent=lbl;}
+}
+drawWorst(computeRCA(6,7),null,'Click a button to see how far the carry travels in each case.');
+
+// ── VIZ 5: Carry lookahead ───────────────────────────────────────────────────
+function updateCLA(){
+  const a=parseInt(document.getElementById('cla_a').value);
+  const b=parseInt(document.getElementById('cla_b').value);
+  document.getElementById('cla_a_val').textContent=a;
+  document.getElementById('cla_b_val').textContent=b;
+  drawCLA(a,b);
+}
+function drawCLA(a,b){
+  const canvas=document.getElementById('cla_canvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth,H=260;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#1e1c1a';ctx.fillRect(0,0,W,H);
+
+  const n=4,pad=24;
+  const colW=(W-pad*2)/n;
+  let c0=0,carries=[0];
+  const bits=[];
+  for(let i=3;i>=0;i--){
+    const ai=(a>>i)&1,bi=(b>>i)&1;
+    const g=ai&bi,p=ai^bi;
+    bits.push({i,ai,bi,g,p});
+  }
+  bits.reverse();
+  // compute carries
+  let c=0;
+  for(let i=0;i<n;i++){
+    const {g,p}=bits[i];
+    const nc=g|(p&c);
+    carries.push(nc);
+    c=nc;
+  }
+
+  // row y positions
+  const rowA=40,rowB=70,rowG=110,rowP=140,rowC=185,rowS=225;
+
+  bits.forEach(({i,ai,bi,g,p},idx)=>{
+    const cx=pad+idx*colW+colW/2;
+    const bitIdx=3-i;
+    const carryIn=carries[idx],carryOut=carries[idx+1];
+    const psi=(bits[idx].p&carryIn)^0, si=bits[idx].g|(bits[idx].p&carryIn);
+
+    // Actual sum
+    const pp=ai^bi,ss=pp^carryIn;
+
+    // column header
+    ctx.fillStyle='#7d766b';ctx.font='9px "Source Sans 3"';ctx.textAlign='center';
+    ctx.fillText('bit '+i,cx,16);
+
+    // A and B bits
+    ctx.fillStyle=ai?'#7fff6b':'#ff6b6b';ctx.font='bold 14px "Courier New"';
+    ctx.fillText(ai,cx,rowA);
+    ctx.fillStyle=bi?'#7fff6b':'#ff6b6b';
+    ctx.fillText(bi,cx,rowB);
+
+    // G chip
+    const gColor=g?'#e8a84c':'rgba(237,232,224,0.15)';
+    ctx.fillStyle=g?'rgba(232,168,76,0.2)':'rgba(237,232,224,0.03)';
+    ctx.strokeStyle=gColor;ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(cx-22,rowG-12,44,22,5);ctx.fill();ctx.stroke();
+    ctx.fillStyle=gColor;ctx.font=g?'bold 10px "Courier New"':'10px "Courier New"';
+    ctx.fillText('G='+g,cx,rowG+2);
+
+    // P chip
+    const pColor=p?'#4ca8e8':'rgba(237,232,224,0.15)';
+    ctx.fillStyle=p?'rgba(76,168,232,0.15)':'rgba(237,232,224,0.03)';
+    ctx.strokeStyle=pColor;ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(cx-22,rowP-12,44,22,5);ctx.fill();ctx.stroke();
+    ctx.fillStyle=pColor;ctx.font=p?'bold 10px "Courier New"':'10px "Courier New"';
+    ctx.fillText('P='+p,cx,rowP+2);
+
+    // Carry in
+    const cinColor=carryIn?'#e8a84c':'rgba(237,232,224,0.2)';
+    ctx.fillStyle=cinColor;ctx.font='10px "Courier New"';
+    ctx.fillText('C'+idx+'='+carryIn,cx,rowC);
+
+    // Sum
+    ctx.fillStyle=ss?'#7fff6b':'#ff6b6b';ctx.font='bold 14px "Courier New"';
+    ctx.fillText('S='+ss,cx,rowS);
+
+    // vertical dividers
+    if(idx<n-1){
+      ctx.strokeStyle='rgba(237,232,224,0.06)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(cx+colW/2,20);ctx.lineTo(cx+colW/2,H-10);ctx.stroke();
+    }
+  });
+
+  // row labels
+  const labels=[['A bits',rowA],['B bits',rowB],['Generate',rowG],['Propagate',rowP],['Carry in',rowC],['Sum',rowS]];
+  labels.forEach(([l,ry])=>{
+    ctx.fillStyle='rgba(125,118,107,0.5)';ctx.font='8px "Source Sans 3"';ctx.textAlign='left';
+    ctx.fillText(l,2,ry+3);
+  });
+
+  // formulas
+  let fhtml='<div class="carry-formula">';
+  for(let i=1;i<=n;i++){
+    let expr='C'+i+' = G'+(i-1);
+    for(let j=i-1;j>=1;j--){
+      let term='P'+(i-1);
+      for(let k=i-2;k>=j;k--) term+=' · P'+k;
+      term+=' · G'+(j-1);
+      expr+=' + '+term;
+    }
+    if(i<=3){let term='P'+(i-1);for(let k=i-2;k>=0;k--) term+=' · P'+k;expr+=' + '+term+' · C0';}
+    fhtml+=`<span style="color:var(--muted)">${expr}</span> = <span class="hi">${carries[i]}</span><br>`;
+  }
+  fhtml+='</div>';
+  document.getElementById('cla_formulas').innerHTML=fhtml;
+}
+['cla_a','cla_b'].forEach(id=>document.getElementById(id).addEventListener('input',updateCLA));
+updateCLA();
+
+// ── VIZ 6: Adder-subtractor ──────────────────────────────────────────────────
+let subMode=0;
+function setSubMode(m){
+  subMode=m;
+  document.getElementById('sub_add_btn').classList.toggle('active',m===0);
+  document.getElementById('sub_sub_btn').classList.toggle('active',m===1);
+  updateSub();
+}
+function toTC4(n){if(n<0)return 16+n;return n;}
+function fromTC4(b){return b>=8?b-16:b;}
+function updateSub(){
+  const a=parseInt(document.getElementById('sub_a').value);
+  const b=parseInt(document.getElementById('sub_b').value);
+  document.getElementById('sub_a_val').textContent=a;
+  document.getElementById('sub_b_val').textContent=b;
+  const ua=toTC4(a),ub=toTC4(b);
+  const bEffective=subMode?(~ub&0xF):ub;
+  const cin=subMode?1:0;
+  const raw=(ua+bEffective+cin);
+  const result4=raw&0xF;
+  const result=fromTC4(result4);
+  const overflow=(raw>15||raw<-8);
+  const op=subMode?'-':'+';
+  document.getElementById('sub_working').innerHTML=
+    `Operation: ${a} ${op} ${b}<br>`+
+    `A in binary: ${toBin(ua,4)}<br>`+
+    (subMode?`B flipped:   ${toBin(bEffective,4)}  (NOT B, because SUB=1)<br>`:`B in binary: ${toBin(ub,4)}<br>`)+
+    `Cin = ${cin}  ${subMode?'(SUB=1 adds the +1 of two\'s complement)':''}<br>`+
+    `Result bits: ${toBin(result4,4)} = ${result} decimal`;
+  drawSubCircuit(ua,ub,bEffective,cin,result4,result);
+}
+function drawSubCircuit(ua,ub,bEff,cin,res4,result){
+  const canvas=document.getElementById('sub_canvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth,H=200;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#1e1c1a';ctx.fillRect(0,0,W,H);
+  const n=4,pad=20,colW=(W-pad*2)/n;
+  for(let i=0;i<n;i++){
+    const bi=(3-i);
+    const ai=(ua>>bi)&1,bOrig=(ub>>bi)&1,bF=(bEff>>bi)&1;
+    const cx=pad+i*colW+colW/2;
+    // A bit
+    ctx.fillStyle=ai?'#7fff6b':'#ff6b6b';ctx.font='12px "Courier New"';ctx.textAlign='center';
+    ctx.fillText('A'+bi+'='+ai,cx,28);
+    // XOR gate on B
+    const xorColor=subMode?'#e8a84c':'rgba(237,232,224,0.3)';
+    ctx.fillStyle=subMode?'rgba(232,168,76,0.1)':'rgba(237,232,224,0.04)';
+    ctx.strokeStyle=xorColor;ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.roundRect(cx-18,38,36,20,4);ctx.fill();ctx.stroke();
+    ctx.fillStyle=xorColor;ctx.font='8px "Courier New"';
+    ctx.fillText(subMode?'XOR 1':'XOR 0',cx,50);
+    ctx.fillStyle=bF?'#4ca8e8':'rgba(76,168,232,0.4)';ctx.font='10px "Courier New"';
+    ctx.fillText('B'+bi+'='+bF,cx,78);
+    // FA box
+    ctx.fillStyle='rgba(237,232,224,0.04)';ctx.strokeStyle='rgba(237,232,224,0.15)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(cx-22,88,44,46,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#7d766b';ctx.font='8px "Source Sans 3"';ctx.fillText('FA'+bi,cx,102);
+    const sr=(res4>>(bi))&1;
+    ctx.fillStyle=sr?'#7fff6b':'#ff6b6b';ctx.font='bold 12px "Courier New"';
+    ctx.fillText('S='+sr,cx,122);
+  }
+  // Cin indicator
+  ctx.fillStyle=cin?'#e8a84c':'rgba(237,232,224,0.3)';ctx.font='9px "Courier New"';ctx.textAlign='left';
+  ctx.fillText('Cin='+cin+(subMode?' (SUB line)':''),pad,160);
+  ctx.fillStyle='#ede8e0';ctx.font='12px "Courier New"';ctx.textAlign='center';
+  ctx.fillText('Result: '+toBin(res4,4)+' = '+result+' decimal',W/2,185);
+}
+['sub_a','sub_b'].forEach(id=>document.getElementById(id).addEventListener('input',updateSub));
+updateSub();
+
+// ── VIZ 7: MUX ───────────────────────────────────────────────────────────────
+let mux={d0:0,d1:1,s:0};
+function toggleMUX(x){mux[x]=mux[x]?0:1;updateMUX();}
+function updateMUX(){
+  const out=(mux.s?mux.d1:mux.d0);
+  ['d0','d1','s'].forEach(k=>{
+    document.getElementById('mux_'+k).classList.toggle('on',!!mux[k]);
+    document.getElementById('mux_'+k+'_val').textContent=mux[k];
+  });
+  const ov=document.getElementById('mux_out');
+  ov.textContent=out;ov.className='result-chip-val '+(out?'c1':'c0');
+  document.getElementById('mux_out_chip').classList.toggle('active',!!out);
+  document.getElementById('mux_desc').textContent=mux.s?'S=1 so output follows D1 (D0 is blocked)':'S=0 so output follows D0 (D1 is blocked)';
+  drawMUX(out);
+}
+function drawMUX(out){
+  const canvas=document.getElementById('mux_canvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth||240,H=200;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#1e1c1a';ctx.fillRect(0,0,W,H);
+  const mx=W*0.5,my=H*0.5;
+  // MUX trapezoid
+  ctx.fillStyle='rgba(232,168,76,0.1)';ctx.strokeStyle='rgba(232,168,76,0.5)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(mx-28,my-45);ctx.lineTo(mx+28,my-30);ctx.lineTo(mx+28,my+30);ctx.lineTo(mx-28,my+45);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#e8a84c';ctx.font='bold 11px "Source Sans 3"';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('MUX',mx,my);
+
+  // D0 wire
+  const d0C=mux.d0?'#7fff6b':'#ff6b6b';
+  const d0Active=!mux.s;
+  ctx.strokeStyle=d0Active?d0C:'rgba(237,232,224,0.15)';ctx.lineWidth=d0Active?2.5:1;
+  ctx.beginPath();ctx.moveTo(30,my-28);ctx.lineTo(mx-28,my-28);ctx.stroke();
+  ctx.fillStyle=d0Active?d0C:'#7d766b';ctx.font='10px "Courier New"';ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText('D0='+mux.d0,4,my-28);
+
+  // D1 wire
+  const d1C=mux.d1?'#7fff6b':'#ff6b6b';
+  const d1Active=!!mux.s;
+  ctx.strokeStyle=d1Active?d1C:'rgba(237,232,224,0.15)';ctx.lineWidth=d1Active?2.5:1;
+  ctx.beginPath();ctx.moveTo(30,my+28);ctx.lineTo(mx-28,my+28);ctx.stroke();
+  ctx.fillStyle=d1Active?d1C:'#7d766b';ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText('D1='+mux.d1,4,my+28);
+
+  // S wire
+  ctx.strokeStyle=mux.s?'#4ca8e8':'rgba(237,232,224,0.2)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(mx,my+45);ctx.lineTo(mx,my+70);ctx.stroke();
+  ctx.fillStyle=mux.s?'#4ca8e8':'#7d766b';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('S='+mux.s,mx,my+72);
+
+  // Output wire
+  const outC=out?'#7fff6b':'#ff6b6b';
+  ctx.strokeStyle=outC;ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(mx+28,my);ctx.lineTo(W-10,my);ctx.stroke();
+  ctx.fillStyle=outC;ctx.textAlign='right';ctx.textBaseline='middle';
+  ctx.fillText('Q='+out,W-2,my);
+
+  // blocked indicator
+  const blockedY=mux.s?my-28:my+28;
+  ctx.fillStyle='rgba(255,107,107,0.4)';ctx.font='8px "Source Sans 3"';ctx.textAlign='right';
+  ctx.fillText('blocked',mx-30,blockedY);
+}
+updateMUX();
+
+window.addEventListener('resize',()=>{drawFACircuit();drawRCA(computeRCA(parseInt(document.getElementById('rca_a').value),parseInt(document.getElementById('rca_b').value)),null);updateCLA();updateSub();updateMUX();});
+</script>
+</body>
+</html>

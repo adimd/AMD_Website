@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>From Signal to Geometry | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>MathJax={tex:{inlineMath:[['\\(','\\)'],['$','$']]}};</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --purple:#c084fc;--purple-dim:rgba(192,132,252,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* common canvas styling */
+    .viz-canvas{width:100%;height:auto;background:#14130f;border-radius:10px;border:1px solid var(--border);display:block}
+
+    /* ── VIZ 1: C_k update decomposition ─────────────────────────────────── */
+    .ck-wrap{display:flex;flex-direction:column;gap:1rem}
+    .ck-controls{display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+    .ck-toggle{display:inline-flex;border:1px solid var(--border-hover);border-radius:8px;overflow:hidden}
+    .ck-toggle button{padding:.5rem 1rem;border:none;background:var(--bg-card);color:var(--muted);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .ck-toggle button.on{background:var(--accent-dim);color:var(--accent)}
+    .ck-slider-wrap{flex:1;min-width:240px;display:flex;flex-direction:column;gap:.25rem}
+    .ck-slider-label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted)}
+    .ck-slider-label strong{color:var(--accent);font-family:'Courier New',monospace}
+    .ck-slider{width:100%;accent-color:var(--accent)}
+    .ck-btn{padding:.5rem 1rem;border-radius:8px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--muted);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .ck-btn.primary{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .ck-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .ck-formula{padding:.65rem .9rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-family:'Courier New',monospace;font-size:.88rem;color:var(--body);line-height:1.55}
+    .ck-formula strong{color:var(--accent)}
+    .ck-formula .up{color:var(--green)}
+    .ck-formula .down{color:var(--red)}
+
+    /* ── VIZ 2: W update weighted sum ───────────────────────────────────── */
+    .wu-wrap{display:flex;flex-direction:column;gap:1rem}
+    .wu-controls{display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+    .wu-contribs{display:flex;flex-direction:column;gap:.4rem}
+    .wu-contrib-row{display:grid;grid-template-columns:50px 1fr 68px 68px;gap:.5rem;align-items:center;font-family:'Courier New',monospace;font-size:.8rem;padding:.3rem .5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;transition:all .2s}
+    .wu-contrib-row.true{border-color:rgba(232,168,76,.4);background:var(--accent-dim)}
+    .wu-contrib-row .w{text-align:right;color:var(--body)}
+    .wu-contrib-row .w.true{color:var(--accent);font-weight:700}
+    .wu-contrib-bar{position:relative;height:18px;background:rgba(237,232,224,.04);border-radius:3px}
+    .wu-contrib-zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(237,232,224,.2)}
+    .wu-contrib-fill{position:absolute;top:0;bottom:0;border-radius:3px;transition:all .3s}
+    .wu-contrib-fill.pos{background:rgba(255,107,107,.7)}
+    .wu-contrib-fill.neg{background:rgba(127,255,107,.7)}
+    .wu-contrib-val{text-align:right;color:var(--ink);font-weight:500}
+    .wu-contrib-gap{text-align:right;color:var(--muted);font-size:.72rem}
+    .wu-summary{padding:.7rem .9rem;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:8px;font-family:'Courier New',monospace;font-size:.82rem;color:var(--body);line-height:1.6}
+    .wu-summary strong{color:var(--accent)}
+    .wu-sliders{display:flex;flex-direction:column;gap:.35rem}
+    .wu-slider-row{display:grid;grid-template-columns:50px 1fr 50px;gap:.5rem;align-items:center;font-family:'Courier New',monospace;font-size:.78rem}
+    .wu-slider-row .w{text-align:right;color:var(--body)}
+    .wu-slider-row input{accent-color:var(--accent)}
+    .wu-slider-row .v{text-align:right;color:var(--accent)}
+
+    /* ── VIZ 3: corpus training loop ─────────────────────────────────────── */
+    .corp-wrap{display:flex;flex-direction:column;gap:1rem}
+    .corp-controls{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+    .corp-btn{padding:.5rem 1rem;border-radius:8px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--muted);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .corp-btn.primary{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .corp-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .corp-status{font-size:.82rem;color:var(--body);font-family:'Courier New',monospace}
+    .corp-status strong{color:var(--accent)}
+    .corp-panels{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+    @media(max-width:820px){.corp-panels{grid-template-columns:1fr}}
+    .corp-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.8rem}
+    .corp-panel-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin-bottom:.5rem}
+    .corp-panel-sub{font-size:.75rem;color:var(--muted);margin-bottom:.5rem}
+    .corp-sim-rows{display:flex;flex-direction:column;gap:.3rem}
+    .corp-sim-row{display:grid;grid-template-columns:85px 1fr 50px;gap:.5rem;align-items:center;font-family:'Courier New',monospace;font-size:.78rem;padding:.25rem .45rem;background:var(--bg-elevated);border-radius:5px;transition:background .2s}
+    .corp-sim-row.featured{background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3)}
+    .corp-sim-row .pair{color:var(--body);text-align:right;white-space:nowrap}
+    .corp-sim-row .pair.match{color:var(--green);font-weight:700}
+    .corp-sim-row .pair.inter{color:var(--muted)}
+    .corp-sim-bar{height:14px;background:rgba(237,232,224,.04);border-radius:3px;position:relative;overflow:hidden}
+    .corp-sim-zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(237,232,224,.2)}
+    .corp-sim-fill{position:absolute;top:0;bottom:0;border-radius:3px;transition:all .4s}
+    .corp-sim-fill.pos{background:rgba(127,255,107,.7)}
+    .corp-sim-fill.neg{background:rgba(255,107,107,.6)}
+    .corp-sim-val{text-align:right;color:var(--ink);font-weight:600;font-size:.75rem}
+    .corp-sim-val.good{color:var(--green)}
+
+    .corp-corpus{padding:.55rem .8rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-family:'Courier New',monospace;font-size:.8rem;color:var(--body);line-height:1.6}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Before Transformers: How Embeddings Learn Meaning</span>
+  <h1>From Signal to Geometry</h1>
+  <p class="blog-subtitle">How a gradient on a score becomes an actual movement in embedding space.</p>
+
+  <h2>Where we stand</h2>
+
+  <p>Last post gave us the cleanest result in the series: \(\partial L / \partial s_k = p_k - q_k\). The learning signal for every score. Positive for classes the model overestimated. Negative for the true class it underestimated. Simple to state, clean to compute.</p>
+
+  <p>But scores aren't the thing we actually store. The model's memory lives in two matrices, \(W\) and \(C\), that hold the centre and context embeddings. Scores are derived. When training says "move score \(s_k\) down by this much," something has to happen to the vectors that produced \(s_k\). This post is about what that something is.</p>
+
+  <div class="callout">A gradient on a score is a note to the vectors: reshape yourselves so this score comes out different next time.</div>
+
+  <p>By the end, the full Skip-Gram training loop will be concrete. Not as an algorithm to memorise, but as a geometric process: vectors nudging each other through thousands of interactions until the shape of the space starts to encode the shape of language.</p>
+
+  <hr class="sep">
+
+  <h2>One step of gradient descent on a score</h2>
+
+  <p>Gradient descent has one rule. Whatever the loss cares about, subtract its gradient times a small step size:</p>
+
+  <p style="text-align:center;">\(s_k \leftarrow s_k - \eta \cdot \dfrac{\partial L}{\partial s_k}\)</p>
+
+  <p>Substitute our learning signal:</p>
+
+  <p style="text-align:center;">\(s_k \leftarrow s_k - \eta (p_k - q_k)\)</p>
+
+  <p>Read the two cases. For the true class \(y\), we have \(q_y = 1\) and \(p_y \le 1\), so \((p_y - 1) \le 0\) and the minus sign flips it to positive. The true score goes up by \(\eta(1 - p_y)\). Big underconfidence gives a big push.</p>
+
+  <p>For any wrong class \(k \ne y\), \(q_k = 0\), so the update is \(s_k \leftarrow s_k - \eta p_k\). The score goes down in proportion to how much probability the model wasted on that class. Unlikely classes barely move. Confidently-wrong classes get slapped hard.</p>
+
+  <p>Everything here is familiar from last post. The new question is different. Nothing in this update tells \(W\) or \(C\) what to do. Scores are imaginary. They only exist because we computed them. So we need to translate a desired change in a score into a change in the actual parameters.</p>
+
+  <hr class="sep">
+
+  <h2>The score is a dot product. That fact is the bridge.</h2>
+
+  <p>Given a centre word, let \(W\) be its embedding (one row of the centre matrix). For each class \(k\), let \(C_k\) be the corresponding context vector (one row of the context matrix). The score is the dot product of those two:</p>
+
+  <p style="text-align:center;">\(s_k = W \cdot C_k^\top\)</p>
+
+  <p>So \(s_k\) isn't a stored number. It's the result of multiplying two d-dimensional vectors. If we want \(s_k\) to change by \(\Delta s_k = -\eta (p_k - q_k)\), we need to ask: which small moves to \(W\) and \(C_k\) would produce that change in the dot product?</p>
+
+  <p>Work out the linearised change. If \(W\) moves by \(\Delta W\) and \(C_k\) moves by \(\Delta C_k\), the score changes by:</p>
+
+  <p style="text-align:center;">\(\Delta s_k \approx \Delta W \cdot C_k^\top + W \cdot \Delta C_k^\top\)</p>
+
+  <p>Two things are worth noticing here. First, changing \(C_k\) only affects one score: \(s_k\) itself. The other context vectors have their own independent rows. Second, changing \(W\) affects <em>every</em> score at once, because \(W\) sits inside every dot product. That's the whole coupling. One centre vector, one shared chance to influence the entire distribution.</p>
+
+  <hr class="sep">
+
+  <h2>Updating the context vector</h2>
+
+  <p>Isolate the context side first. Hold \(W\) fixed and ask: what \(\Delta C_k\) produces the desired \(\Delta s_k\)?</p>
+
+  <p style="text-align:center;">\(\Delta s_k \approx W \cdot \Delta C_k^\top\)</p>
+
+  <p>The cleanest choice is \(\Delta C_k\) pointing along \(W\), with magnitude equal to the desired change in score:</p>
+
+  <p style="text-align:center;">\(\Delta C_k = -\eta (p_k - q_k) \cdot W\)</p>
+
+  <p>Which gives the update rule:</p>
+
+  <p style="text-align:center;">\(\boxed{C_k \leftarrow C_k - \eta (p_k - q_k) \cdot W}\)</p>
+
+  <p>Read the geometry. For the true class (\(q_k = 1\), so \(p_k - q_k\) is negative), the minus flips it: \(C_y\) moves <em>toward</em> \(W\). The centre word pulls its true context partner closer. For wrong classes (\(q_k = 0\), so \(p_k - q_k\) is positive), \(C_k\) moves <em>away</em> from \(W\). The centre pushes its false contexts out.</p>
+
+  <div class="callout">Every centre word, on every training example, pulls one context vector toward itself and shoves the rest away. The gap decides how hard.</div>
+
+  <!-- VIZ 1: C_k update decomposition -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">One context vector, one update step</span></div>
+    <div class="viz-body">
+      <div class="ck-wrap">
+        <canvas id="ckCanvas" class="viz-canvas" width="700" height="380"></canvas>
+        <div class="ck-controls">
+          <div class="ck-toggle">
+            <button id="ckTrue" class="on">Class k is the true class (q=1)</button>
+            <button id="ckFalse">Class k is a wrong class (q=0)</button>
+          </div>
+          <div class="ck-slider-wrap">
+            <div class="ck-slider-label">Model's current p<sub>k</sub>: <strong id="ckPVal">0.20</strong></div>
+            <input type="range" id="ckSlider" class="ck-slider" min="1" max="999" step="1" value="200">
+          </div>
+          <button class="ck-btn primary" id="ckStep">Apply one update</button>
+          <button class="ck-btn" id="ckReset">Reset C<sub>k</sub></button>
+        </div>
+        <div class="ck-formula" id="ckFormula"></div>
+      </div>
+      <p class="viz-note">The orange vector is W, the centre word's embedding. The blue vector is C<sub>k</sub>, one context word's embedding. Toggle whether class k is the truth or a wrong answer. Drag the slider to set what p<sub>k</sub> the model currently assigns. Click "Apply update" and watch C<sub>k</sub> slide along the W direction by exactly −η(p<sub>k</sub> − q<sub>k</sub>) · W. Pull when it's the true class, push when it's wrong. The dashed arrow shows the correction applied. Repeat a few times to see the vector migrate.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Updating the centre vector</h2>
+
+  <p>Now the harder side. The centre vector \(W\) appears in every single score, so a change in \(W\) affects every \(s_k\) at once. We can't satisfy one score's desire in isolation. We have to balance every score's desired change simultaneously.</p>
+
+  <p>Fortunately the chain rule handles this gracefully. The total gradient of the loss with respect to \(W\) is the sum of contributions from every score:</p>
+
+  <p style="text-align:center;">\(\dfrac{\partial L}{\partial W} = \displaystyle\sum_{k=1}^{K} \dfrac{\partial L}{\partial s_k} \cdot \dfrac{\partial s_k}{\partial W} = \displaystyle\sum_{k=1}^{K} (p_k - q_k) \cdot C_k\)</p>
+
+  <p>Each score's gradient multiplies the context vector it was computed against. Plug into gradient descent:</p>
+
+  <p style="text-align:center;">\(\boxed{W \leftarrow W - \eta \displaystyle\sum_{k=1}^{K} (p_k - q_k) \cdot C_k}\)</p>
+
+  <p>The expression says something beautiful. The centre vector moves in a direction formed by combining every context vector, each weighted by its gap \((p_k - q_k)\). Wrong classes (positive gap, p_k > 0) pull \(W\) <em>away</em> from their direction, because of the leading minus sign in gradient descent. The true class (negative gap, \(p_y - 1 < 0\)) pulls \(W\) <em>toward</em> \(C_y\). The result is a single movement: away from the context vectors the model was mistakenly drawn to, toward the one it should have recognised.</p>
+
+  <div class="callout">The centre vector's move is a vote. Every wrong context contributes a small nudge away. The true context contributes a large pull toward. The sum is the step.</div>
+
+  <!-- VIZ 2: W update as weighted sum -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Every context casts a vote on where W should go</span></div>
+    <div class="viz-body">
+      <div class="wu-wrap">
+        <canvas id="wuCanvas" class="viz-canvas" width="700" height="420"></canvas>
+        <div class="wu-controls">
+          <div style="flex:1;min-width:240px">
+            <div style="font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">True class</div>
+            <div id="wuTruePicker" style="display:flex;gap:.35rem;flex-wrap:wrap"></div>
+          </div>
+          <button class="ck-btn primary" id="wuStep">Apply update to W</button>
+          <button class="ck-btn" id="wuReset">Reset W</button>
+        </div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem">Score sliders (adjust to see how p<sub>k</sub> changes the contributions)</div>
+        <div class="wu-sliders" id="wuSliders"></div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:.3rem">Individual contributions to Δ W</div>
+        <div class="wu-contribs" id="wuContribs"></div>
+        <div class="wu-summary" id="wuSummary"></div>
+      </div>
+      <p class="viz-note">Orange is W. The coloured arrows are four C<sub>k</sub> context vectors. The dashed grey arrow is the total correction Σ<sub>k</sub>(p<sub>k</sub> − q<sub>k</sub>) · C<sub>k</sub>. Each context contributes proportional to its gap. Large green bars for the true class pull W toward it, small red bars for wrong classes push it away. Click "Apply update" to move W by −η times the correction. The arrow you see being formed is the actual step W takes. Try different true classes and different score configurations.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Both updates, running together</h2>
+
+  <p>The two rules together describe one step of Skip-Gram training:</p>
+
+  <p style="text-align:center;">\(C_k \leftarrow C_k - \eta (p_k - q_k) \cdot W \qquad (\text{for every } k)\)</p>
+  <p style="text-align:center;">\(W \leftarrow W - \eta \displaystyle\sum_{k=1}^{K} (p_k - q_k) \cdot C_k\)</p>
+
+  <p>One training example does all of this. The centre gets one step, all \(V\) context vectors get one step each. Run over many examples, and the updates accumulate. Pairs that occur often in the corpus get many reinforcing nudges. Pairs that never occur get none. Uneven repetition becomes uneven geometry.</p>
+
+  <p>Remember what this looks like from Part 7. In the toy corpus <code>I love my dog / I love my cat / You love my dog / You love my cat</code>, "dog" and "cat" never appear next to each other. Yet after enough training, their centre vectors end up close. Why? Because whenever "my" is the centre and "dog" is the true context, \(C_{\text{dog}}\) gets pulled toward \(W_{\text{my}}\). On a different sentence, \(C_{\text{cat}}\) gets pulled toward the same \(W_{\text{my}}\). Two vectors, both pulled toward the same third, end up near each other. The distributional hypothesis, in action.</p>
+
+  <!-- VIZ 3: full corpus training -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Let the whole corpus run. Watch dog and cat find each other.</span></div>
+    <div class="viz-body">
+      <div class="corp-wrap">
+        <div class="corp-corpus">
+          <strong style="color:var(--accent)">Corpus:</strong>
+          I love my dog &nbsp;·&nbsp; I love my cat &nbsp;·&nbsp; You love my dog &nbsp;·&nbsp; You love my cat
+          <br><span style="color:var(--muted);font-size:.72rem">(window = 1, so each centre looks at its two immediate neighbours)</span>
+        </div>
+        <canvas id="corpCanvas" class="viz-canvas" width="700" height="420"></canvas>
+        <div class="corp-controls">
+          <button class="corp-btn primary" id="corpStep">Train 1 epoch</button>
+          <button class="corp-btn" id="corpRun">Train 50 epochs</button>
+          <button class="corp-btn" id="corpReset">Reset to random</button>
+          <span class="corp-status">Epoch: <strong id="corpEpoch">0</strong></span>
+          <span class="corp-status">Loss: <strong id="corpLoss">—</strong></span>
+        </div>
+        <div class="corp-panels">
+          <div class="corp-panel">
+            <div class="corp-panel-title">Within-group similarity</div>
+            <div class="corp-panel-sub">Words that share contexts. Should converge to +1.</div>
+            <div class="corp-sim-rows" id="corpWithin"></div>
+          </div>
+          <div class="corp-panel">
+            <div class="corp-panel-title">Cross-group similarity</div>
+            <div class="corp-panel-sub">Words from different roles. Should NOT climb toward +1.</div>
+            <div class="corp-sim-rows" id="corpCross"></div>
+          </div>
+        </div>
+      </div>
+      <p class="viz-note">Six words from our toy corpus, embedded in 2D for visibility. At epoch zero everything is random. Click "Train 50 epochs" and watch. The two panels at the bottom track cosine similarity between centre vectors. The within-group numbers (dog↔cat, I↔You) should climb toward +1 as shared contexts pull them together. The cross-group numbers should stay low or even go negative as different syntactic roles push words apart. In 2D the space is too cramped for everything to be mutually orthogonal, so unrelated words end up actively anti-aligned. In the higher dimensions real embeddings use, they'd simply be near-perpendicular. Either way, dog and cat end up close, and they got there without ever co-occurring.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>What we've actually built</h2>
+
+  <p>Step back and look at the whole arc.</p>
+
+  <p>Ten posts ago, we had text. Sequences of characters with no numerical structure. We needed a way to turn them into something a machine could learn from.</p>
+
+  <p>Tokenisation cut the text into units. One-hot encoding gave each unit a numerical address. But addresses don't carry meaning. So we moved from identity vectors to embedding vectors, where geometric relationships could stand in for semantic ones.</p>
+
+  <p>Then came the question of how to <em>choose</em> those embedding vectors. The distributional hypothesis said: a word is defined by its company. We turned this into a concrete objective. Two vectors per word (centre and context). A dot product between them measured compatibility. Softmax turned compatibility into probability. Cross-entropy measured disagreement between the model's probabilities and the corpus. The gradient of that cross-entropy reduced, beautifully, to \(p_k - q_k\). And now we've seen that gradient become an actual shove on the vectors themselves.</p>
+
+  <p>Everything that's fancy in modern language models grows out of this loop. Transformers are more expressive, attention is more flexible, scale is bigger. But the fundamental move is the same: represent things as vectors, compute a score via some geometric operation, normalise to a probability, compare to the truth, and update.</p>
+
+  <div class="callout">We started with text as a stranger. We end with geometry that knows what words mean because it remembers what they saw.</div>
+
+  <hr class="sep">
+
+  <h2>Where we go from here</h2>
+
+  <p>This series ends here, but the story doesn't. Skip-Gram embeddings were the entry point. Once you have a way of training geometric representations from text, the path opens up in every direction.</p>
+
+  <p>Context windows widen, and attention mechanisms emerge to handle them. Single-layer models stack into deep networks. Position information gets folded in. Training data scales from toy corpora to the entire internet. The core loop stays the same: dot products, softmax, cross-entropy, gradient, update. Everything later is an elaboration.</p>
+
+  <p>If you've followed all ten posts, you've seen every one of the load-bearing ideas. From here, the rest is engineering, scale, and the beautiful discovery that this basic loop, run hard enough, learns things nobody explicitly taught it.</p>
+
+  <p>Thanks for reading.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Before Transformers: How Embeddings Learn Meaning</h2>
+    <a class="sidebar-link" href="text-and-meaning.html">
+      <div class="sidebar-link-title">Part 1: Text Was a Problem</div>
+      <div class="sidebar-link-note">Why tokenisation exists.</div>
+    </a>
+    <a class="sidebar-link" href="similarity-and-representation.html">
+      <div class="sidebar-link-title">Part 2: From Characters to Concepts</div>
+      <div class="sidebar-link-note">Why text alone isn't enough.</div>
+    </a>
+    <a class="sidebar-link" href="embeddings-from-first-principles.html">
+      <div class="sidebar-link-title">Part 3: From Words to Spaces</div>
+      <div class="sidebar-link-note">Language becomes geometry.</div>
+    </a>
+    <a class="sidebar-link" href="meaning-as-geometry.html">
+      <div class="sidebar-link-title">Part 4: From Counting to Learning</div>
+      <div class="sidebar-link-note">Meaning becomes geometry.</div>
+    </a>
+    <a class="sidebar-link" href="center-context-alignment.html">
+      <div class="sidebar-link-title">Part 5: What the Dot Product Measures</div>
+      <div class="sidebar-link-note">Centre and context.</div>
+    </a>
+    <a class="sidebar-link" href="from-scores-to-probabilities.html">
+      <div class="sidebar-link-title">Part 6: Why Raw Dot Products Aren't Enough</div>
+      <div class="sidebar-link-note">Scores to probabilities.</div>
+    </a>
+    <a class="sidebar-link" href="model-vs-data-distributions.html">
+      <div class="sidebar-link-title">Part 7: Two Distributions, One Goal</div>
+      <div class="sidebar-link-note">P_data and P_model.</div>
+    </a>
+    <a class="sidebar-link" href="why-neg-log.html">
+      <div class="sidebar-link-title">Part 8: Why −log P?</div>
+      <div class="sidebar-link-note">The shape of error.</div>
+    </a>
+    <a class="sidebar-link" href="learning-signal.html">
+      <div class="sidebar-link-title">Part 9: Creating the Learning Signal</div>
+      <div class="sidebar-link-note">From loss to p_k − q_k.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="#">
+      <div class="sidebar-link-title">Part 10: From Signal to Geometry</div>
+      <div class="sidebar-link-note">You are here.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Score = dot product</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">C_k updates: slide along W</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">W updates: weighted vote</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Push-pull dynamics</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Clusters emerge from shared contexts</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading. All ten posts.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SHARED: 2D canvas helpers
+// ═══════════════════════════════════════════════════════════════════════════
+function setupCanvas(canvas,W,H){
+  const dpr=window.devicePixelRatio||1;
+  const cW=canvas.clientWidth||W;
+  canvas.width=cW*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#14130f';ctx.fillRect(0,0,cW,H);
+  return{ctx,W:cW,H};
+}
+function drawAxes(ctx,W,H){
+  ctx.strokeStyle='rgba(237,232,224,.04)';ctx.lineWidth=1;
+  for(let i=25;i<W;i+=25){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,H);ctx.stroke();}
+  for(let i=25;i<H;i+=25){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(W,i);ctx.stroke();}
+  ctx.strokeStyle='rgba(237,232,224,.12)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
+}
+function drawArrow(ctx,cx,cy,vx,vy,col,w,label,dashed){
+  const tx=cx+vx,ty=cy-vy;
+  ctx.save();
+  ctx.strokeStyle=col;ctx.lineWidth=w;ctx.fillStyle=col;
+  if(dashed)ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();
+  ctx.setLineDash([]);
+  // arrowhead
+  const ang=Math.atan2(ty-cy,tx-cx),ahL=10;
+  ctx.beginPath();
+  ctx.moveTo(tx,ty);
+  ctx.lineTo(tx-ahL*Math.cos(ang-0.4),ty-ahL*Math.sin(ang-0.4));
+  ctx.lineTo(tx-ahL*Math.cos(ang+0.4),ty-ahL*Math.sin(ang+0.4));
+  ctx.closePath();ctx.fill();
+  if(label){
+    ctx.font='italic 14px "Instrument Serif",serif';
+    ctx.textBaseline='middle';
+    ctx.textAlign=vx>=0?'left':'right';
+    const lx=tx+(vx>=0?8:-8),ly=ty+(vy>=0?-8:12);
+    ctx.fillText(label,lx,ly);
+  }
+  ctx.restore();
+}
+function softmax(s){const m=Math.max(...s);const e=s.map(x=>Math.exp(x-m));const Z=e.reduce((a,b)=>a+b,0);return e.map(x=>x/Z);}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: C_k update decomposition
+// ═══════════════════════════════════════════════════════════════════════════
+const CK_ETA=0.4;
+const CK_SCALE=60; // px per unit
+let ckIsTrue=true;
+let ckPk=0.20;
+let ckW=[1.6,0.9];     // centre vector
+let ckCk=[-0.6,1.3];   // initial context vector
+let ckCkInit=[...ckCk];
+
+function drawCK(){
+  const canvas=document.getElementById('ckCanvas');
+  const {ctx,W,H}=setupCanvas(canvas,700,380);
+  drawAxes(ctx,W,H);
+  const cx=W/2,cy=H/2;
+
+  // Always draw W (orange) and C_k (blue)
+  drawArrow(ctx,cx,cy,ckW[0]*CK_SCALE,ckW[1]*CK_SCALE,'#e8a84c',4,'W');
+  drawArrow(ctx,cx,cy,ckCk[0]*CK_SCALE,ckCk[1]*CK_SCALE,'#4ca8e8',3,'C_k');
+
+  // Draw correction vector: ΔC_k = -η(p_k - q_k) W
+  const q=ckIsTrue?1:0;
+  const gap=ckPk-q;
+  const delta=[-CK_ETA*gap*ckW[0],-CK_ETA*gap*ckW[1]];
+  // Display as dashed arrow starting at the tip of C_k
+  const ckTipX=cx+ckCk[0]*CK_SCALE;
+  const ckTipY=cy-ckCk[1]*CK_SCALE;
+  const dx=delta[0]*CK_SCALE;
+  const dy=delta[1]*CK_SCALE;
+  if(Math.hypot(dx,dy)>1){
+    drawArrow(ctx,ckTipX,ckTipY,dx,dy,ckIsTrue?'#7fff6b':'#ff6b6b',2.5,'ΔC_k',true);
+    // Also show where C_k would land (faint blue)
+    const newCk=[ckCk[0]+delta[0],ckCk[1]+delta[1]];
+    ctx.save();
+    ctx.globalAlpha=0.35;
+    drawArrow(ctx,cx,cy,newCk[0]*CK_SCALE,newCk[1]*CK_SCALE,'#4ca8e8',2,null);
+    ctx.restore();
+  }
+
+  // Origin
+  ctx.fillStyle='#ede8e0';
+  ctx.beginPath();ctx.arc(cx,cy,3,0,Math.PI*2);ctx.fill();
+
+  // Formula readout
+  const host=document.getElementById('ckFormula');
+  const gapStr=(gap>=0?'+':'')+gap.toFixed(3);
+  const deltaMag=Math.hypot(delta[0],delta[1]);
+  const direction=ckIsTrue?'<span class="up">toward W (pulled in)</span>':'<span class="down">away from W (pushed out)</span>';
+  host.innerHTML=`
+    ΔC<sub>k</sub> = −η (p<sub>k</sub> − q<sub>k</sub>) · W &nbsp; = &nbsp; −${CK_ETA} × (${ckPk.toFixed(2)} − ${q}) · W &nbsp; = &nbsp; <strong>${gapStr}</strong> · W × (−η)
+    <br>Direction: C<sub>k</sub> moves ${direction}. Magnitude |ΔC<sub>k</sub>| = ${deltaMag.toFixed(3)}.
+  `;
+}
+document.getElementById('ckTrue').addEventListener('click',()=>{
+  ckIsTrue=true;
+  document.getElementById('ckTrue').classList.add('on');
+  document.getElementById('ckFalse').classList.remove('on');
+  drawCK();
+});
+document.getElementById('ckFalse').addEventListener('click',()=>{
+  ckIsTrue=false;
+  document.getElementById('ckFalse').classList.add('on');
+  document.getElementById('ckTrue').classList.remove('on');
+  drawCK();
+});
+document.getElementById('ckSlider').addEventListener('input',e=>{
+  ckPk=parseFloat(e.target.value)/1000;
+  document.getElementById('ckPVal').textContent=ckPk.toFixed(2);
+  drawCK();
+});
+document.getElementById('ckStep').addEventListener('click',()=>{
+  const q=ckIsTrue?1:0;
+  const gap=ckPk-q;
+  ckCk[0]-=CK_ETA*gap*ckW[0];
+  ckCk[1]-=CK_ETA*gap*ckW[1];
+  drawCK();
+});
+document.getElementById('ckReset').addEventListener('click',()=>{
+  ckCk=[...ckCkInit];
+  drawCK();
+});
+drawCK();
+window.addEventListener('resize',drawCK);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: W update as weighted sum
+// ═══════════════════════════════════════════════════════════════════════════
+const WU_ETA=0.3;
+const WU_SCALE=55;
+const WU_WORDS=['love','dog','cat','friends'];
+const WU_COLORS=['#e8a84c','#7fff6b','#c084fc','#ff6b6b'];
+// Context vectors in 2D
+let wuCk=[[1.5,0.4],[0.8,1.3],[1.1,1.1],[-0.7,-1.2]];
+let wuCkInit=wuCk.map(v=>[...v]);
+let wuScores=[1.5, 0.8, 0.6, -0.2];
+let wuW=[0.5,0.3];
+let wuWInit=[...wuW];
+let wuTrueIdx=0;
+
+function drawWU(){
+  const canvas=document.getElementById('wuCanvas');
+  const {ctx,W,H}=setupCanvas(canvas,700,420);
+  drawAxes(ctx,W,H);
+  const cx=W/2,cy=H/2;
+
+  // Probabilities
+  const p=softmax(wuScores);
+  // Individual contribution vectors: (p_k - q_k) * C_k
+  const contribs=p.map((pv,i)=>{
+    const q=i===wuTrueIdx?1:0;
+    return [(pv-q)*wuCk[i][0], (pv-q)*wuCk[i][1]];
+  });
+  // Total correction (we'll move W in the NEGATIVE direction of this)
+  const totalCorr=[
+    contribs.reduce((s,c)=>s+c[0],0),
+    contribs.reduce((s,c)=>s+c[1],0)
+  ];
+
+  // Draw all C_k vectors (dimmer)
+  wuCk.forEach((v,i)=>{
+    const col=WU_COLORS[i];
+    const isTrue=i===wuTrueIdx;
+    ctx.save();
+    ctx.globalAlpha=isTrue?0.9:0.55;
+    drawArrow(ctx,cx,cy,v[0]*WU_SCALE,v[1]*WU_SCALE,col,isTrue?3:2,'C_'+WU_WORDS[i]);
+    ctx.restore();
+  });
+
+  // Draw W
+  drawArrow(ctx,cx,cy,wuW[0]*WU_SCALE,wuW[1]*WU_SCALE,'#ede8e0',4,'W');
+
+  // Draw the full correction vector (dashed grey) from tip of W
+  const corrMag=Math.hypot(totalCorr[0],totalCorr[1]);
+  if(corrMag>0.01){
+    const wTipX=cx+wuW[0]*WU_SCALE;
+    const wTipY=cy-wuW[1]*WU_SCALE;
+    // ΔW = -η * totalCorr
+    const dw=[-WU_ETA*totalCorr[0],-WU_ETA*totalCorr[1]];
+    drawArrow(ctx,wTipX,wTipY,dw[0]*WU_SCALE,dw[1]*WU_SCALE,'#ede8e0',2.5,'ΔW',true);
+    // Show where W would land
+    const newW=[wuW[0]+dw[0],wuW[1]+dw[1]];
+    ctx.save();
+    ctx.globalAlpha=0.3;
+    drawArrow(ctx,cx,cy,newW[0]*WU_SCALE,newW[1]*WU_SCALE,'#ede8e0',2,null);
+    ctx.restore();
+  }
+
+  // Origin
+  ctx.fillStyle='#ede8e0';
+  ctx.beginPath();ctx.arc(cx,cy,3,0,Math.PI*2);ctx.fill();
+
+  // ── Render contribution bars ──
+  const contribHost=document.getElementById('wuContribs');
+  contribHost.innerHTML='';
+  const maxAbsGap=Math.max(...p.map((pv,i)=>Math.abs(pv-(i===wuTrueIdx?1:0))),0.01);
+  p.forEach((pv,i)=>{
+    const q=i===wuTrueIdx?1:0;
+    const gap=pv-q;
+    const isTrue=i===wuTrueIdx;
+    const pct=Math.abs(gap)/maxAbsGap*48;
+    const barHTML=gap>0
+      ? `<div class="wu-contrib-zero"></div><div class="wu-contrib-fill pos" style="left:50%;width:${pct}%"></div>`
+      : `<div class="wu-contrib-zero"></div><div class="wu-contrib-fill neg" style="right:50%;width:${pct}%"></div>`;
+    const row=document.createElement('div');
+    row.className='wu-contrib-row'+(isTrue?' true':'');
+    row.innerHTML=`
+      <span class="w ${isTrue?'true':''}">C_${WU_WORDS[i]}</span>
+      <div class="wu-contrib-bar">${barHTML}</div>
+      <span class="wu-contrib-gap">${gap>=0?'+':''}${gap.toFixed(3)}</span>
+      <span class="wu-contrib-val">p=${(pv*100).toFixed(0)}%</span>
+    `;
+    contribHost.appendChild(row);
+  });
+
+  // Summary
+  const sumHost=document.getElementById('wuSummary');
+  const lossNow=-Math.log(Math.max(1e-12,p[wuTrueIdx]));
+  sumHost.innerHTML=`
+    ΔW = −η · Σ<sub>k</sub>(p<sub>k</sub> − q<sub>k</sub>) · C<sub>k</sub> &nbsp; <br>
+    Total correction vector = [${totalCorr[0].toFixed(3)}, ${totalCorr[1].toFixed(3)}] &nbsp; · &nbsp; |ΔW| = <strong>${(WU_ETA*corrMag).toFixed(3)}</strong> &nbsp; · &nbsp; current loss = <strong>${lossNow.toFixed(3)}</strong>
+  `;
+}
+function renderWUSliders(){
+  const host=document.getElementById('wuSliders');
+  host.innerHTML='';
+  wuScores.forEach((s,i)=>{
+    const row=document.createElement('div');
+    row.className='wu-slider-row';
+    row.innerHTML=`
+      <span class="w" style="color:${WU_COLORS[i]}">s_${WU_WORDS[i]}</span>
+      <input type="range" min="-30" max="40" step="1" value="${Math.round(s*10)}" data-idx="${i}">
+      <span class="v" id="wuSliderV${i}">${s.toFixed(1)}</span>
+    `;
+    host.appendChild(row);
+  });
+  host.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      const k=parseInt(e.target.dataset.idx);
+      wuScores[k]=parseFloat(e.target.value)/10;
+      document.getElementById('wuSliderV'+k).textContent=wuScores[k].toFixed(1);
+      drawWU();
+    });
+  });
+}
+function renderWUTruePicker(){
+  const host=document.getElementById('wuTruePicker');
+  host.innerHTML='';
+  WU_WORDS.forEach((w,i)=>{
+    const b=document.createElement('button');
+    b.className='sp-true-btn'+(i===wuTrueIdx?' active':'');
+    b.style.cssText=`padding:.3rem .7rem;border-radius:6px;background:${i===wuTrueIdx?'var(--accent-dim)':'var(--bg-card)'};border:1px solid ${i===wuTrueIdx?'var(--accent)':'var(--border-hover)'};color:${i===wuTrueIdx?'var(--accent)':'var(--muted)'};font-size:.8rem;cursor:pointer;font-family:inherit`;
+    b.textContent=w;
+    b.addEventListener('click',()=>{
+      wuTrueIdx=i;
+      renderWUTruePicker();
+      drawWU();
+    });
+    host.appendChild(b);
+  });
+}
+document.getElementById('wuStep').addEventListener('click',()=>{
+  const p=softmax(wuScores);
+  const corr=[0,0];
+  for(let k=0;k<wuCk.length;k++){
+    const q=k===wuTrueIdx?1:0;
+    corr[0]+=(p[k]-q)*wuCk[k][0];
+    corr[1]+=(p[k]-q)*wuCk[k][1];
+  }
+  wuW[0]-=WU_ETA*corr[0];
+  wuW[1]-=WU_ETA*corr[1];
+  drawWU();
+});
+document.getElementById('wuReset').addEventListener('click',()=>{
+  wuW=[...wuWInit];
+  wuCk=wuCkInit.map(v=>[...v]);
+  drawWU();
+});
+renderWUTruePicker();
+renderWUSliders();
+drawWU();
+window.addEventListener('resize',drawWU);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: full corpus training
+// ═══════════════════════════════════════════════════════════════════════════
+const CORP_WORDS=['I','You','love','my','dog','cat'];
+const CORP_N=CORP_WORDS.length;
+const CORP_D=2; // embedding dim
+const CORP_ETA=0.05;
+const CORP_SENTENCES=[
+  ['I','love','my','dog'],
+  ['I','love','my','cat'],
+  ['You','love','my','dog'],
+  ['You','love','my','cat']
+];
+// Build (centre, context) pairs with window=1
+function buildPairs(){
+  const pairs=[];
+  for(const s of CORP_SENTENCES){
+    for(let i=0;i<s.length;i++){
+      for(let j=Math.max(0,i-1);j<=Math.min(s.length-1,i+1);j++){
+        if(i!==j)pairs.push([s[i],s[j]]);
+      }
+    }
+  }
+  return pairs;
+}
+const CORP_PAIRS=buildPairs();
+let corpWIdx=Object.fromEntries(CORP_WORDS.map((w,i)=>[w,i]));
+
+// State: W (centre embeddings) and C (context embeddings), both [N x D]
+let corpW=null, corpC=null;
+let corpEpoch=0;
+let corpRunning=false;
+let corpRunHandle=null;
+
+function seededRand(seed){
+  // Deterministic random so reset returns to same init
+  let s=seed;
+  return ()=>{s=(s*9301+49297)%233280;return s/233280;};
+}
+function initCorp(seed=42){
+  const rand=seededRand(seed);
+  corpW=[];corpC=[];
+  for(let i=0;i<CORP_N;i++){
+    corpW.push([rand()*2-1,rand()*2-1]);
+    corpC.push([rand()*2-1,rand()*2-1]);
+  }
+  corpEpoch=0;
+  document.getElementById('corpEpoch').textContent='0';
+  document.getElementById('corpLoss').textContent='—';
+}
+function corpForward(centreIdx){
+  const w=corpW[centreIdx];
+  const scores=corpC.map(c=>w[0]*c[0]+w[1]*c[1]);
+  return{scores,probs:softmax(scores)};
+}
+function corpTrainOneStep(centreIdx,targetIdx){
+  const {probs}=corpForward(centreIdx);
+  // gradient on scores: p_k - q_k
+  const grad=probs.map((p,k)=>p-(k===targetIdx?1:0));
+  const w=corpW[centreIdx];
+  // Update each C_k: C_k -= eta * grad[k] * W
+  for(let k=0;k<CORP_N;k++){
+    corpC[k][0]-=CORP_ETA*grad[k]*w[0];
+    corpC[k][1]-=CORP_ETA*grad[k]*w[1];
+  }
+  // Update W: W -= eta * sum_k grad[k] * C_k (use PRE-update C for cleaner semantics)
+  // Actually standard SGD uses the pre-step C, so we saved the original C already — but we've now modified C. Redo with a snapshot:
+  // Simpler: compute delta W using the current-step C_pre. Let's redo properly.
+}
+// Cleaner: compute both updates from a snapshot
+function corpTrainPairProper(centreIdx,targetIdx){
+  const {probs}=corpForward(centreIdx);
+  const grad=probs.map((p,k)=>p-(k===targetIdx?1:0));
+  const wSnap=[corpW[centreIdx][0],corpW[centreIdx][1]];
+  const cSnap=corpC.map(c=>[c[0],c[1]]);
+  // ΔW
+  let dw=[0,0];
+  for(let k=0;k<CORP_N;k++){
+    dw[0]+=grad[k]*cSnap[k][0];
+    dw[1]+=grad[k]*cSnap[k][1];
+  }
+  corpW[centreIdx][0]-=CORP_ETA*dw[0];
+  corpW[centreIdx][1]-=CORP_ETA*dw[1];
+  // ΔC_k for each k
+  for(let k=0;k<CORP_N;k++){
+    corpC[k][0]-=CORP_ETA*grad[k]*wSnap[0];
+    corpC[k][1]-=CORP_ETA*grad[k]*wSnap[1];
+  }
+  return -Math.log(Math.max(1e-12,probs[targetIdx]));
+}
+function corpRunEpoch(){
+  // Shuffle pairs each epoch for stochasticity
+  const shuffled=[...CORP_PAIRS].sort(()=>Math.random()-0.5);
+  let totalLoss=0;
+  for(const [c,t] of shuffled){
+    totalLoss+=corpTrainPairProper(corpWIdx[c],corpWIdx[t]);
+  }
+  corpEpoch++;
+  return totalLoss/shuffled.length;
+}
+
+function cosineSim(a,b){
+  const dot=a[0]*b[0]+a[1]*b[1];
+  const na=Math.hypot(...a),nb=Math.hypot(...b);
+  if(na<1e-8||nb<1e-8)return 0;
+  return dot/(na*nb);
+}
+
+function renderCorpSims(){
+  // Within group: dog-cat, I-You
+  const within=[['dog','cat'],['I','You']];
+  const cross=[['dog','I'],['love','my'],['I','dog'],['You','cat']];
+
+  function makeRow(pair,featured){
+    const [a,b]=pair;
+    const s=cosineSim(corpW[corpWIdx[a]],corpW[corpWIdx[b]]);
+    const isFeatured=featured;
+    // Within-group is good when positive and high. Cross-group is good when NOT high-positive.
+    const isGood=(featured&&s>0.6)||(!featured&&s<0.3);
+    const pct=Math.abs(s)*48;
+    const barHTML=s>=0
+      ? `<div class="corp-sim-zero"></div><div class="corp-sim-fill pos" style="left:50%;width:${pct}%"></div>`
+      : `<div class="corp-sim-zero"></div><div class="corp-sim-fill neg" style="right:50%;width:${pct}%"></div>`;
+    return `
+      <div class="corp-sim-row${isFeatured?' featured':''}">
+        <span class="pair ${isGood?'match':''}">${a} ↔ ${b}</span>
+        <div class="corp-sim-bar">${barHTML}</div>
+        <span class="corp-sim-val ${isGood?'good':''}">${s.toFixed(2)}</span>
+      </div>
+    `;
+  }
+
+  document.getElementById('corpWithin').innerHTML=within.map(p=>makeRow(p,true)).join('');
+  document.getElementById('corpCross').innerHTML=cross.map(p=>makeRow(p,false)).join('');
+}
+
+function drawCorp(){
+  const canvas=document.getElementById('corpCanvas');
+  const {ctx,W,H}=setupCanvas(canvas,700,420);
+  drawAxes(ctx,W,H);
+  const cx=W/2,cy=H/2;
+  const SCALE=55;
+
+  // Assign visual colours and groups
+  const GROUPS={
+    'I':{col:'#c084fc',grp:'pronoun'},
+    'You':{col:'#c084fc',grp:'pronoun'},
+    'love':{col:'#e8a84c',grp:'verb'},
+    'my':{col:'#e8a84c',grp:'verb'},
+    'dog':{col:'#7fff6b',grp:'animal'},
+    'cat':{col:'#7fff6b',grp:'animal'}
+  };
+
+  // Find a reasonable scale so vectors fit
+  let maxNorm=0;
+  for(const v of corpW){maxNorm=Math.max(maxNorm,Math.hypot(v[0],v[1]));}
+  const dynScale=maxNorm>1e-6?Math.min(SCALE,140/maxNorm):SCALE;
+
+  // Draw centre vectors W_word
+  CORP_WORDS.forEach((word,i)=>{
+    const v=corpW[i];
+    const col=GROUPS[word].col;
+    drawArrow(ctx,cx,cy,v[0]*dynScale,v[1]*dynScale,col,2.5,word);
+  });
+
+  // Origin
+  ctx.fillStyle='#ede8e0';
+  ctx.beginPath();ctx.arc(cx,cy,3,0,Math.PI*2);ctx.fill();
+
+  renderCorpSims();
+}
+
+function corpStepEpoch(){
+  const avgLoss=corpRunEpoch();
+  document.getElementById('corpEpoch').textContent=corpEpoch;
+  document.getElementById('corpLoss').textContent=avgLoss.toFixed(3);
+  drawCorp();
+}
+
+document.getElementById('corpStep').addEventListener('click',()=>corpStepEpoch());
+document.getElementById('corpRun').addEventListener('click',()=>{
+  if(corpRunHandle){clearInterval(corpRunHandle);corpRunHandle=null;document.getElementById('corpRun').textContent='Train 50 epochs';corpRunning=false;return;}
+  corpRunning=true;
+  document.getElementById('corpRun').textContent='Stop';
+  let count=0;
+  corpRunHandle=setInterval(()=>{
+    corpStepEpoch();
+    count++;
+    if(count>=50){
+      clearInterval(corpRunHandle);corpRunHandle=null;corpRunning=false;
+      document.getElementById('corpRun').textContent='Train 50 more epochs';
+    }
+  },60);
+});
+document.getElementById('corpReset').addEventListener('click',()=>{
+  if(corpRunHandle){clearInterval(corpRunHandle);corpRunHandle=null;document.getElementById('corpRun').textContent='Train 50 epochs';corpRunning=false;}
+  // new random seed each reset
+  initCorp(Math.floor(Math.random()*10000));
+  drawCorp();
+});
+initCorp(42);
+drawCorp();
+window.addEventListener('resize',drawCorp);
+</script>
+</body>
+</html>

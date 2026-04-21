@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Linked Lists — Operations | Adithya MD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;--ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;--accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);--border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);--display:'Instrument Serif',Georgia,serif;--sans:'Source Sans 3',sans-serif;--hand:'Caveat',cursive;--radius:14px}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.78;font-size:19px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}.d1{animation-delay:.08s}.d2{animation-delay:.16s}
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.85);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:var(--ink)}.brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}.brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}.nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}.nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}.nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}.dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}.dropbtn:hover{color:var(--ink)}.dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}.dropdown:hover .dropdown-content{display:block}.dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}.dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}.dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}.hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}.hamburger.active span:nth-child(2){opacity:0}.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.95);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}.mobile-overlay.active{display:flex}.mobile-overlay a,.mobile-overlay button{font-family:var(--display);font-size:1.5rem;color:var(--body);background:none;border:none;cursor:pointer;padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}.mobile-overlay a:hover,.mobile-overlay button:hover{color:var(--accent)}.mobile-overlay .mobile-sub{display:flex;flex-direction:column;align-items:center}.mobile-overlay .mobile-sub a{font-size:1.15rem;color:var(--muted);padding:.4rem 1.5rem}
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 4rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.4rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.08rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.55rem;color:var(--ink);margin:2.5rem 0 .8rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.35rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.18rem;font-weight:300;margin-bottom:1.15rem}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .callout{margin:1.5rem 0;padding:1.3rem 1.6rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .code-block{margin:1.4rem 0;border-radius:10px;overflow:hidden;border:1px solid rgba(237,232,224,.07)}
+    .code-label{background:#1a1917;padding:.4rem 1rem;font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid rgba(237,232,224,.07)}
+    pre{background:#151513;padding:1.3rem 1.4rem;overflow-x:auto;margin:0}
+    code{font-family:'JetBrains Mono','Fira Code','Courier New',monospace;font-size:.88rem;line-height:1.7;color:#c9c2b8}
+    .kw{color:#e8a84c}.cm{color:#5a5650;font-style:italic}.ty{color:#7ec8a4}.fn{color:#b8a4e8}.nm{color:#c9c2b8}.num{color:#e88c6c}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.2rem 0}
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.1rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}.sidebar-link+.sidebar-link{margin-top:.15rem}.sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.9rem;font-weight:500;color:var(--ink)}.sidebar-link-note{font-size:.75rem;color:var(--muted);margin-top:.15rem}
+    .comments-section{margin-top:2.5rem}.comments-section h2{font-family:var(--display);font-size:1.3rem;color:var(--ink);margin-bottom:1rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}.footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}.footer-copy{font-size:.88rem;color:var(--muted)}
+    .visual-block{margin:1.8rem 0;border:1px solid rgba(237,232,224,.1);border-radius:12px;overflow:hidden;background:#1e1c1a}
+    .visual-title{font-family:var(--hand);font-size:1.1rem;color:var(--accent);padding:.7rem 1.2rem;border-bottom:1px solid rgba(237,232,224,.07)}
+    .visual-canvas{width:100%;display:block}
+    .visual-controls{padding:.8rem 1.2rem;display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap;border-top:1px solid rgba(237,232,224,.07)}
+    .vc-label{font-size:.85rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+    .vc-btn{background:rgba(232,168,76,.12);border:1px solid rgba(232,168,76,.3);color:var(--accent);border-radius:6px;padding:.3rem .9rem;font-size:.82rem;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:background .2s}.vc-btn:hover{background:rgba(232,168,76,.22)}
+    .visual-caption{padding:.7rem 1.2rem .9rem;font-family:var(--display);font-size:1rem;font-style:italic;color:var(--muted);line-height:1.5;border-top:1px solid rgba(237,232,224,.05)}
+    .cost-table{width:100%;border-collapse:collapse;margin:1.4rem 0;font-size:1rem}
+    .cost-table th{text-align:left;padding:.6rem 1rem;background:rgba(232,168,76,.1);color:var(--accent);font-weight:600;font-size:.82rem;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid rgba(232,168,76,.2)}
+    .cost-table td{padding:.55rem 1rem;border-bottom:1px solid var(--border);color:var(--body);font-weight:300}
+    .cost-table tr:last-child td{border-bottom:none}
+    .cost-table tr:hover td{background:rgba(237,232,224,.03)}
+    .badge{display:inline-block;padding:.15rem .55rem;border-radius:4px;font-size:.8rem;font-weight:500;font-family:'JetBrains Mono','Courier New',monospace}
+    .b-green{background:rgba(126,200,164,.12);color:#7ec8a4}
+    .b-amber{background:rgba(232,168,76,.12);color:#e8a84c}
+    .b-red{background:rgba(232,100,80,.12);color:#e86450}
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static;width:100%}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.25rem 3rem}.article{padding:2rem 1.5rem;border-radius:12px}.article h1{font-size:1.85rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a><a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a><a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button><div class="dropdown-content"><a href="../teaching.html">Teaching Roles</a><a href="../workshops.html">Workshops</a><a href="../talks.html">Talks</a></div></div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a><a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a><a href="../startup.html">Moisture Meter</a>
+  <div class="mobile-sub"><button style="color:var(--ink);font-size:1.3rem">Beyond the Desk</button><a href="../teaching.html">Teaching Roles</a><a href="../workshops.html">Workshops</a><a href="../talks.html">Talks</a></div>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>DSA from First Principles</span>
+  <h1>Linked Lists — Operations</h1>
+  <p class="blog-subtitle">Insertion, deletion, the doubly linked list, and the honest comparison against arrays.</p>
+
+  <h2>The operation that justifies the whole structure</h2>
+
+  <p>In the last post you saw that a linked list is a chain of nodes scattered across the heap, connected by pointers. You saw how to walk it. Now the question is: what can you do with it that an array cannot do as efficiently?</p>
+
+  <p>The answer is insertion and deletion — but with an important nuance that most explanations skip. Both operations have two parts: finding the position and performing the change. The linked list only wins on the second part. Understanding exactly where the win applies is the whole point of this post.</p>
+
+  <h2>Insertion at the front — prepend</h2>
+
+  <p>With an array, inserting at position 0 shifts every element. Ten thousand elements means ten thousand moves regardless of what value you are inserting.</p>
+
+  <p>With a linked list, inserting at the front is three steps regardless of how long the list is. Create a new node. Point it at the current head. Return it as the new head.</p>
+
+  <div class="code-block">
+    <div class="code-label">C — prepend</div>
+    <pre><code>Node* <span class="fn">prepend</span>(Node *head, <span class="ty">int</span> value) {
+    Node *n  = <span class="fn">malloc</span>(<span class="kw">sizeof</span>(Node));
+    n->value = value;
+    n->next  = head;   <span class="cm">// new node points to old head</span>
+    <span class="kw">return</span> n;           <span class="cm">// caller assigns this back to head</span>
+}
+
+<span class="cm">// usage</span>
+head = <span class="fn">prepend</span>(head, <span class="num">10</span>);</code></pre>
+  </div>
+
+  <p>The order of the two middle lines matters. You must point the new node at the old head <em>before</em> updating head. If you update head first, you lose the reference to the old list.</p>
+
+  <p>Nothing in the existing list moves. Nothing shifts. The only change is one new node and one pointer update. A million-node list takes the same three operations as an empty one. That is O(1).</p>
+
+  <!-- VISUAL 1: Prepend stepper -->
+  <div class="visual-block">
+    <div class="visual-title">Prepend — inserting at the front step by step</div>
+    <canvas class="visual-canvas" id="cvPrepend" height="220"></canvas>
+    <div class="visual-controls">
+      <button class="vc-btn" id="prependNext">Next step</button>
+      <button class="vc-btn" id="prependReset">Reset</button>
+      <span class="vc-label" id="prependStatus" style="color:var(--accent);font-weight:600"></span>
+    </div>
+    <div class="visual-caption">The existing nodes never move. Only one new node is created and one pointer is updated. The list length is irrelevant to the cost.</div>
+  </div>
+
+  <h2>Insertion in the middle — insert after</h2>
+
+  <p>Inserting after a known node requires rewiring two pointers. The new node takes the place between prev and whatever prev used to point to.</p>
+
+  <p>The order is critical: connect the new node forward first, then redirect prev. If you redirect prev first, you lose the reference to the rest of the list.</p>
+
+  <div class="code-block">
+    <div class="code-label">C — insert after a known node</div>
+    <pre><code><span class="ty">void</span> <span class="fn">insert_after</span>(Node *prev, <span class="ty">int</span> value) {
+    <span class="kw">if</span> (prev == <span class="kw">NULL</span>) <span class="kw">return</span>;
+
+    Node *n    = <span class="fn">malloc</span>(<span class="kw">sizeof</span>(Node));
+    n->value   = value;
+    n->next    = prev->next;   <span class="cm">// step 1: connect forward first</span>
+    prev->next = n;             <span class="cm">// step 2: then redirect prev</span>
+}</code></pre>
+  </div>
+
+  <p>If you already have a pointer to prev, this is O(1). Two pointer assignments. No shifting. No copying. No matter how long the list is.</p>
+
+  <p>If you have to find prev first by walking from head, that walk is O(n). The insertion itself stays O(1) — but the total operation becomes O(n) because of the search.</p>
+
+  <div class="callout">Both arrays and linked lists are O(n) for insertion when you include the search. The linked list's advantage only shows when you already have the position, or when you are always inserting at the front where head gives you O(1) access.</div>
+
+  <!-- VISUAL 2: Insert after stepper -->
+  <div class="visual-block">
+    <div class="visual-title">Insert after — two pointer assignments, nothing moves</div>
+    <canvas class="visual-canvas" id="cvInsert" height="220"></canvas>
+    <div class="visual-controls">
+      <button class="vc-btn" id="insertNext">Next step</button>
+      <button class="vc-btn" id="insertReset">Reset</button>
+      <span class="vc-label" id="insertStatus" style="color:var(--accent);font-weight:600"></span>
+    </div>
+    <div class="visual-caption">Step 1 connects the new node forward. Step 2 redirects prev. If you reverse the order, the reference to the rest of the list is lost permanently.</div>
+  </div>
+
+  <h2>Deletion</h2>
+
+  <p>Deletion is the same two-pointer logic as insertion but in reverse. Instead of inserting a new node between two existing ones, you cut an existing node out of the chain.</p>
+
+  <p>The core operation is a bypass. You find the node before the target — prev. You set prev->next to skip over the target and point directly at whatever came after it. Then you free the target.</p>
+
+  <div class="code-block">
+    <div class="code-label">C — delete the node after prev</div>
+    <pre><code><span class="ty">void</span> <span class="fn">delete_after</span>(Node *prev) {
+    <span class="kw">if</span> (prev == <span class="kw">NULL</span>)       <span class="kw">return</span>;
+    <span class="kw">if</span> (prev->next == <span class="kw">NULL</span>) <span class="kw">return</span>;
+
+    Node *target   = prev->next;        <span class="cm">// node to remove</span>
+    prev->next     = target->next;      <span class="cm">// bypass it</span>
+    <span class="fn">free</span>(target);
+    target         = <span class="kw">NULL</span>;
+}</code></pre>
+  </div>
+
+  <p>Again the order matters. Save target before bypassing. Bypass before freeing. If you free first, you can no longer read target->next to complete the bypass.</p>
+
+  <h3>Deleting the head — special case</h3>
+
+  <p>The bypass requires a prev node. The head has no prev. So deleting the head is handled separately.</p>
+
+  <div class="code-block">
+    <div class="code-label">C — delete head</div>
+    <pre><code>Node* <span class="fn">delete_head</span>(Node *head) {
+    <span class="kw">if</span> (head == <span class="kw">NULL</span>) <span class="kw">return</span> <span class="kw">NULL</span>;
+    Node *new_head = head->next;
+    <span class="fn">free</span>(head);
+    <span class="kw">return</span> new_head;   <span class="cm">// caller updates head</span>
+}
+
+head = <span class="fn">delete_head</span>(head);</code></pre>
+  </div>
+
+  <h3>Deleting by value</h3>
+
+  <div class="code-block">
+    <div class="code-label">C — delete node with a specific value</div>
+    <pre><code>Node* <span class="fn">delete_value</span>(Node *head, <span class="ty">int</span> value) {
+    <span class="kw">if</span> (head == <span class="kw">NULL</span>) <span class="kw">return</span> <span class="kw">NULL</span>;
+
+    <span class="cm">// special case: target is the head</span>
+    <span class="kw">if</span> (head->value == value)
+        <span class="kw">return</span> <span class="fn">delete_head</span>(head);
+
+    <span class="cm">// walk — stop one node BEFORE the target</span>
+    Node *prev = head;
+    <span class="kw">while</span> (prev->next != <span class="kw">NULL</span> && prev->next->value != value)
+        prev = prev->next;
+
+    <span class="kw">if</span> (prev->next != <span class="kw">NULL</span>)
+        <span class="fn">delete_after</span>(prev);
+
+    <span class="kw">return</span> head;
+}</code></pre>
+  </div>
+
+  <p>Notice the walk stops one node before the target — at prev, not at the target itself. You need prev to perform the bypass. This is the key difference from a search where you stop at the target.</p>
+
+  <!-- VISUAL 3: Deletion stepper -->
+  <div class="visual-block">
+    <div class="visual-title">Deletion — the bypass operation step by step</div>
+    <canvas class="visual-canvas" id="cvDelete" height="220"></canvas>
+    <div class="visual-controls">
+      <button class="vc-btn" id="deleteNext">Next step</button>
+      <button class="vc-btn" id="deleteReset">Reset</button>
+      <span class="vc-label" id="deleteStatus" style="color:var(--accent);font-weight:600"></span>
+    </div>
+    <div class="visual-caption">The bypass cuts the target node out of the chain. Surrounding nodes never move. One pointer change, one free.</div>
+  </div>
+
+  <h2>The doubly linked list</h2>
+
+  <p>Every operation above has one limitation. In a singly linked list you can only walk forward. If you have a pointer to a node and want to delete it, you still need to walk from head to find its predecessor — because the bypass requires updating prev->next and you have no way to reach prev from the node itself.</p>
+
+  <p>The doubly linked list fixes this by adding a second pointer to each node pointing backward.</p>
+
+  <div class="code-block">
+    <div class="code-label">C — doubly linked list node</div>
+    <pre><code><span class="kw">typedef</span> <span class="kw">struct</span> DNode {
+    <span class="ty">int</span>           value;
+    <span class="kw">struct</span> DNode *next;
+    <span class="kw">struct</span> DNode *prev;   <span class="cm">// points backward to the previous node</span>
+} DNode;</code></pre>
+  </div>
+
+  <p>With both neighbors directly accessible, deletion of a known node becomes O(1). No walking needed.</p>
+
+  <div class="code-block">
+    <div class="code-label">C — delete a known node in a doubly linked list</div>
+    <pre><code><span class="ty">void</span> <span class="fn">delete_node</span>(DNode *node) {
+    <span class="kw">if</span> (node->prev) node->prev->next = node->next;
+    <span class="kw">if</span> (node->next) node->next->prev = node->prev;
+    <span class="fn">free</span>(node);
+}</code></pre>
+  </div>
+
+  <p>Three lines. Both neighbors update their pointers to skip over the deleted node. No walking from head. The cost is one extra pointer per node — 8 bytes on a 64-bit system — and the payoff is O(1) deletion anywhere in the list when you have the pointer.</p>
+
+  <!-- VISUAL 4: Doubly linked list — deletion of known node -->
+  <div class="visual-block">
+    <div class="visual-title">Doubly linked list — O(1) deletion of a known node</div>
+    <canvas class="visual-canvas" id="cvDouble" height="200"></canvas>
+    <div class="visual-controls">
+      <button class="vc-btn" id="doubleNext">Next step</button>
+      <button class="vc-btn" id="doubleReset">Reset</button>
+      <span class="vc-label" id="doubleStatus" style="color:var(--accent);font-weight:600"></span>
+    </div>
+    <div class="visual-caption">With prev pointers, each node can reach both its neighbors directly. No walk from head needed. Deletion is O(1) the moment you have the pointer.</div>
+  </div>
+
+  <h2>The complete cost picture</h2>
+
+  <table class="cost-table">
+    <thead>
+      <tr><th>Operation</th><th>Singly LL</th><th>Doubly LL</th><th>Array</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Access by index</td><td><span class="badge b-red">O(n)</span></td><td><span class="badge b-red">O(n)</span></td><td><span class="badge b-green">O(1)</span></td></tr>
+      <tr><td>Search by value</td><td><span class="badge b-amber">O(n)</span></td><td><span class="badge b-amber">O(n)</span></td><td><span class="badge b-amber">O(n)</span></td></tr>
+      <tr><td>Insert at front</td><td><span class="badge b-green">O(1)</span></td><td><span class="badge b-green">O(1)</span></td><td><span class="badge b-red">O(n)</span></td></tr>
+      <tr><td>Insert at back (no tail)</td><td><span class="badge b-red">O(n)</span></td><td><span class="badge b-red">O(n)</span></td><td><span class="badge b-green">O(1)</span></td></tr>
+      <tr><td>Insert at back (with tail)</td><td><span class="badge b-green">O(1)</span></td><td><span class="badge b-green">O(1)</span></td><td><span class="badge b-green">O(1)</span></td></tr>
+      <tr><td>Insert after known node</td><td><span class="badge b-green">O(1)</span></td><td><span class="badge b-green">O(1)</span></td><td><span class="badge b-red">O(n)</span></td></tr>
+      <tr><td>Delete head</td><td><span class="badge b-green">O(1)</span></td><td><span class="badge b-green">O(1)</span></td><td><span class="badge b-red">O(n)</span></td></tr>
+      <tr><td>Delete known node</td><td><span class="badge b-red">O(n)*</span></td><td><span class="badge b-green">O(1)</span></td><td><span class="badge b-red">O(n)</span></td></tr>
+      <tr><td>Delete by value</td><td><span class="badge b-amber">O(n)</span></td><td><span class="badge b-amber">O(n)</span></td><td><span class="badge b-amber">O(n)</span></td></tr>
+    </tbody>
+  </table>
+
+  <p>* Singly linked list requires walking from head to find prev even when you have a pointer to the node itself.</p>
+
+  <h2>The thing complexity analysis does not tell you — cache behavior</h2>
+
+  <p>Looking at the table you might conclude that linked lists are broadly competitive with arrays and better in several cases. That conclusion is technically correct but practically misleading because of something the O notation deliberately ignores: the constant factor.</p>
+
+  <p>When your CPU fetches memory it does not fetch one byte. It fetches a cache line — 64 bytes on modern hardware. When you traverse an array, the next element is almost certainly already in the same cache line. The CPU prefetcher detects the sequential access pattern and loads data ahead of time automatically. Array traversal is extremely fast.</p>
+
+  <p>When you traverse a linked list, every node is at a random address on the heap. Each pointer follow potentially lands on a completely different cache line. No prefetching helps. Each step can cause a full cache miss costing 60 to 100 nanoseconds.</p>
+
+  <p>In practice this means sequential traversal of a linked list is dramatically slower than an array traversal of the same data, even though both are O(n). The O notation says the same thing. The hardware says something very different.</p>
+
+  <p>On your STM32 this matters even more. The L1 cache is tiny, RAM is slow relative to the CPU, and the heap is small. Scattered nodes mean scattered fetches. An array traversal can be multiple times faster than a linked list traversal even for identical algorithmic complexity.</p>
+
+  <h2>The honest tradeoff</h2>
+
+  <p>Use an array when you access elements by index frequently, traverse sequentially, or know the size roughly in advance. The cache behavior alone makes it the default choice for most workloads.</p>
+
+  <p>Use a linked list when you insert or delete at the front constantly, when you are building a stack or queue, or when you already have pointers to positions and need O(1) insertion and deletion at those positions. The browser history, the undo stack, the task scheduler in an RTOS — these are natural fits.</p>
+
+  <div class="callout">The linked list is not a general-purpose array replacement. It is a specialized tool for programs that insert and delete constantly at known positions and rarely need random access. In every other case the array wins — not just algorithmically but physically, because of how caches work.</div>
+
+  <hr class="sep">
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js" data-repo="adimd/AMD_Website" data-repo-id="R_kgDOQlniOw" data-category="General" data-category-id="DIC_kwDOQlniO84CzoR1" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="dark" data-lang="en" crossorigin="anonymous" async></script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">DSA from First Principles</h2>
+    <a class="sidebar-link" href="why-dsa-v3.html"><div class="sidebar-link-title">Topic 1: Why DSA Exists</div></a>
+    <a class="sidebar-link" href="what-memory-is-v2.html"><div class="sidebar-link-title">Topic 2: What Memory Actually Is</div></a>
+    <a class="sidebar-link" href="pointers.html"><div class="sidebar-link-title">Topic 3: Pointers</div></a>
+    <a class="sidebar-link" href="arrays-v3.html"><div class="sidebar-link-title">Topic 4: Arrays</div></a>
+    <a class="sidebar-link" href="linked-list-foundation-v2.html"><div class="sidebar-link-title">Topic 5: Linked Lists — Foundation</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Topic 6: Linked Lists — Operations</div><div class="sidebar-link-note">You are here.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Topic 7: Complexity Analysis</div><div class="sidebar-link-note">Coming next.</div></a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas in this post</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Prepend — O(1) front insertion</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Insert after — two pointer rule</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The bypass — deletion</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Doubly linked list</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Cache behavior reality</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Array vs linked list — the honest answer</div></a>
+  </div>
+</aside>
+</div></div>
+
+<footer class="site-footer"><p class="footer-tagline">Thanks for reading.</p><p class="footer-copy">© <span id="year"></span> Adithya MD</p></footer>
+
+<script>
+document.getElementById("year").textContent=new Date().getFullYear();
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':''});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow=''}));
+
+const ACCENT='#e8a84c',MUTED='#7d766b',INK='#ede8e0',BG2='#232220',GREEN='#7ec8a4',RED='#e86450',PURPLE='#b8a4e8',DIM='rgba(237,232,224,0.08)';
+function resize(cv,h){const r=window.devicePixelRatio||1,w=cv.parentElement.clientWidth;cv.width=w*r;cv.height=h*r;cv.style.width=w+'px';cv.style.height=h+'px';cv.getContext('2d').scale(r,r);return{w,h};}
+function rnd(ctx,x,y,w,h,r,fill,stroke,lw=1){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();}}
+function txt(ctx,t,x,y,size,color,align='left',weight=''){ctx.font=`${weight}${size}px 'Source Sans 3',sans-serif`;ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(t,x,y);}
+function mono(ctx,t,x,y,size,color,align='left'){ctx.font=`${size}px 'JetBrains Mono','Courier New',monospace`;ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(t,x,y);}
+function arw(ctx,x1,y1,x2,y2,color,lw=1.5,dashed=false){
+  ctx.save();ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+  ctx.strokeStyle=color;ctx.lineWidth=lw;
+  if(dashed)ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);
+  const a=Math.atan2(y2-y1,x2-x1);
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-9*Math.cos(a-.4),y2-9*Math.sin(a-.4));ctx.lineTo(x2-9*Math.cos(a+.4),y2-9*Math.sin(a+.4));ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.restore();
+}
+
+function drawNode(ctx,x,y,val,col,dim,w=80,h=50){
+  const hw=w/2;
+  rnd(ctx,x,y,hw,h,4,col?`rgba(${col},0.15)`:BG2,col?`rgba(${col},0.8)`:DIM,col?1.5:1);
+  mono(ctx,String(val),x+hw/2,y+h/2+5,12,col?INK:GREEN,'center');
+  rnd(ctx,x+hw,y,hw,h,4,BG2,dim?`rgba(${dim},0.4)`:DIM);
+  mono(ctx,'→',x+hw+hw/2,y+h/2+5,10,MUTED,'center');
+}
+
+const GCOL={accent:'232,168,76',green:'126,200,164',red:'232,100,80',purple:'184,164,232'};
+
+// ── VISUAL 1: Prepend stepper ─────────────────────────────────────────────────
+(function(){
+  const cv=document.getElementById('cvPrepend'),btnN=document.getElementById('prependNext'),btnR=document.getElementById('prependReset'),stat=document.getElementById('prependStatus');
+  const existing=[20,30];
+  const steps=[
+    {phase:'before', note:'Before: head → 20 → 30 → NULL. We want to insert 10 at the front.'},
+    {phase:'create', note:'Step 1: malloc a new node. n->value = 10, n->next = NULL. Floating, not connected.'},
+    {phase:'connect',note:'Step 2: n->next = head. New node now points at the old head (20). Forward link set.'},
+    {phase:'update', note:'Step 3: head = n. Head now points at the new node. List is 10 → 20 → 30 → NULL.'},
+  ];
+  let step=0;
+  function draw(){
+    const{w,h}=resize(cv,220);const ctx=cv.getContext('2d');ctx.clearRect(0,0,w,h);
+    const nw=80,nh=50,pad=20,gap=14,startY=40;
+    const s=steps[step];
+    // existing nodes
+    existing.forEach((v,i)=>{
+      const x=pad+80+(i+1)*(nw+gap);
+      const active=(s.phase==='update'||s.phase==='connect');
+      drawNode(ctx,x,startY,v,null,null,nw,nh);
+      if(i<existing.length-1) arw(ctx,x+nw+2,startY+nh/2,x+nw+gap-2,startY+nh/2,MUTED);
+    });
+    // NULL
+    mono(ctx,'NULL',pad+80+(existing.length+1)*(nw+gap)+8,startY+nh/2+5,10,MUTED);
+    // head arrow
+    const headTarget=(s.phase==='update')?pad+80+nw+gap:pad+80+(nw+gap);
+    txt(ctx,'head',pad,startY+nh/2+5,10,GREEN);
+    arw(ctx,pad+40,startY+nh/2,headTarget,startY+nh/2,s.phase==='update'?ACCENT:GREEN);
+    // new node
+    if(s.phase!=='before'){
+      const nx=pad+80,ny=startY+(s.phase==='connect'||s.phase==='update'?0:80);
+      const col=s.phase==='update'?GCOL.green:GCOL.accent;
+      drawNode(ctx,nx,ny,10,col,null,nw,nh);
+      txt(ctx,'n',nx+nw/2,ny+nh+14,10,ACCENT,'center');
+      // connect arrow
+      if(s.phase==='connect'||s.phase==='update'){
+        arw(ctx,nx+nw+2,ny+nh/2,pad+80+(nw+gap),startY+nh/2,ACCENT,2);
+      }
+    }
+    // code line
+    const codes=['Node *head points to 20','Node *n = malloc(...)  n->value = 10','n->next = head','head = n'];
+    rnd(ctx,pad,h-36,w-pad*2,26,4,'rgba(26,25,23,0.7)',DIM);
+    mono(ctx,codes[step],pad+8,h-18,10,ACCENT);
+    stat.textContent=`Step ${step+1} / ${steps.length}`;
+    txt(ctx,s.note,pad,h-44,9,MUTED);
+  }
+  draw();
+  btnN.addEventListener('click',()=>{if(step<steps.length-1){step++;draw();}});
+  btnR.addEventListener('click',()=>{step=0;draw();});
+  window.addEventListener('resize',draw);
+})();
+
+// ── VISUAL 2: Insert after stepper ───────────────────────────────────────────
+(function(){
+  const cv=document.getElementById('cvInsert'),btnN=document.getElementById('insertNext'),btnR=document.getElementById('insertReset'),stat=document.getElementById('insertStatus');
+  const vals=[10,30,40];
+  const steps=[
+    {phase:'before', note:'Before: 10 → 30 → 40. We want to insert 20 after node 10 (prev).'},
+    {phase:'create', note:'Step 1: malloc new node n, n->value = 20, n->next = NULL.'},
+    {phase:'connect',note:'Step 2: n->next = prev->next. New node points at 30. Forward link set first.'},
+    {phase:'redirect',note:'Step 3: prev->next = n. Node 10 now points at new node. Done: 10 → 20 → 30 → 40.'},
+  ];
+  let step=0;
+  function draw(){
+    const{w,h}=resize(cv,220);const ctx=cv.getContext('2d');ctx.clearRect(0,0,w,h);
+    const nw=76,nh=50,pad=16,gap=12,startY=36;
+    const s=steps[step];
+    // draw existing nodes
+    vals.forEach((v,i)=>{
+      const x=pad+(i+1)*(nw+gap);
+      const isPrev=(i===0),isSkipped=(s.phase==='redirect'&&i===1);
+      drawNode(ctx,x,startY,v,isPrev?GCOL.accent:null,null,nw,nh);
+      if(i===0) txt(ctx,'prev',x+nw/2,startY+nh+14,10,ACCENT,'center');
+    });
+    // arrows between existing
+    for(let i=0;i<vals.length-1;i++){
+      const x1=pad+(i+1)*(nw+gap)+nw+2,y1=startY+nh/2;
+      const x2=pad+(i+2)*(nw+gap),y2=startY+nh/2;
+      if(s.phase==='redirect'&&i===0) continue;
+      arw(ctx,x1,y1,x2,y2,MUTED);
+    }
+    // NULL
+    mono(ctx,'NULL',pad+(vals.length+1)*(nw+gap)+8,startY+nh/2+5,10,MUTED);
+    arw(ctx,pad+vals.length*(nw+gap)+nw+2,startY+nh/2,pad+(vals.length+1)*(nw+gap),startY+nh/2,MUTED);
+    // head
+    txt(ctx,'head',pad-14,startY+nh/2+5,10,GREEN);
+    arw(ctx,pad+16,startY+nh/2,pad+(nw+gap),startY+nh/2,GREEN);
+    // new node
+    if(s.phase!=='before'){
+      const nx=pad+(nw+gap),ny=startY+(s.phase==='redirect'?0:90);
+      drawNode(ctx,nx,ny,20,GCOL.green,null,nw,nh);
+      txt(ctx,'n',nx+nw/2,ny+nh+14,10,GREEN,'center');
+      if(s.phase==='connect'||s.phase==='redirect'){
+        // n->next points to 30
+        const tx=pad+2*(nw+gap);
+        arw(ctx,nx+nw+2,ny+nh/2,tx,startY+nh/2,GREEN,2);
+      }
+      if(s.phase==='redirect'){
+        // prev->next points to n
+        arw(ctx,pad+(nw+gap)+nw+2,startY+nh/2,nx,ny+nh/2,ACCENT,2);
+      }
+    }
+    const codes=['10 → 30 → 40 → NULL','n = malloc(...)  n->value = 20','n->next = prev->next   (points at 30)','prev->next = n   (10 now points at 20)'];
+    rnd(ctx,pad,h-36,w-pad*2,26,4,'rgba(26,25,23,0.7)',DIM);
+    mono(ctx,codes[step],pad+8,h-18,10,ACCENT);
+    stat.textContent=`Step ${step+1} / ${steps.length}`;
+    txt(ctx,s.note,pad,h-44,9,MUTED);
+  }
+  draw();
+  btnN.addEventListener('click',()=>{if(step<steps.length-1){step++;draw();}});
+  btnR.addEventListener('click',()=>{step=0;draw();});
+  window.addEventListener('resize',draw);
+})();
+
+// ── VISUAL 3: Delete stepper ──────────────────────────────────────────────────
+(function(){
+  const cv=document.getElementById('cvDelete'),btnN=document.getElementById('deleteNext'),btnR=document.getElementById('deleteReset'),stat=document.getElementById('deleteStatus');
+  const vals=[10,20,30,40];
+  const steps=[
+    {phase:'before',  note:'Before: 10 → 20 → 30 → 40. We want to delete node 20.'},
+    {phase:'walk',    note:'Walk prev until prev->next->value == 20. prev stops at node 10.'},
+    {phase:'target',  note:'target = prev->next. target now points at node 20.'},
+    {phase:'bypass',  note:'prev->next = target->next. Node 10 now skips over 20 and points at 30.'},
+    {phase:'free',    note:'free(target). Node 20 is gone. List is now 10 → 30 → 40 → NULL.'},
+  ];
+  let step=0;
+  function draw(){
+    const{w,h}=resize(cv,220);const ctx=cv.getContext('2d');ctx.clearRect(0,0,w,h);
+    const nw=76,nh=50,pad=16,gap=12,startY=36;
+    const s=steps[step];
+    vals.forEach((v,i)=>{
+      if(s.phase==='free'&&i===1) return;
+      const x=pad+(i+1)*(nw+gap);
+      const isPrev=(i===0&&(s.phase==='walk'||s.phase==='target'||s.phase==='bypass'||s.phase==='free'));
+      const isTarget=(i===1&&(s.phase==='target'||s.phase==='bypass'));
+      const col=isTarget?GCOL.red:isPrev?GCOL.accent:null;
+      drawNode(ctx,x,startY,v,col,null,nw,nh);
+      if(isPrev) txt(ctx,'prev',x+nw/2,startY+nh+14,10,ACCENT,'center');
+      if(isTarget) txt(ctx,'target',x+nw/2,startY+nh+14,10,RED,'center');
+    });
+    // arrows
+    for(let i=0;i<vals.length-1;i++){
+      if(s.phase==='free'&&(i===0||i===1)) continue;
+      if(s.phase==='bypass'&&i===0) continue;
+      const x1=pad+(i+1)*(nw+gap)+nw+2,y1=startY+nh/2;
+      const skip=(s.phase==='free'&&i===0)?2:1;
+      const x2=pad+(i+1+skip)*(nw+gap),y2=startY+nh/2;
+      arw(ctx,x1,y1,x2,y2,MUTED);
+    }
+    // bypass arrow
+    if(s.phase==='bypass'||s.phase==='free'){
+      const x1=pad+(nw+gap)+nw+2,y1=startY+nh/2;
+      const x2=pad+3*(nw+gap),y2=startY+nh/2;
+      arw(ctx,x1,y1,x2,y2,ACCENT,2);
+    }
+    // NULL
+    mono(ctx,'NULL',pad+(vals.length+1)*(nw+gap)+8,startY+nh/2+5,10,MUTED);
+    arw(ctx,pad+vals.length*(nw+gap)+nw+2,startY+nh/2,pad+(vals.length+1)*(nw+gap),startY+nh/2,MUTED);
+    txt(ctx,'head',pad-14,startY+nh/2+5,10,GREEN);
+    arw(ctx,pad+16,startY+nh/2,pad+(nw+gap),startY+nh/2,GREEN);
+    const codes=['10 → 20 → 30 → 40','walk: prev = head (value 10)','target = prev->next (value 20)','prev->next = target->next (points at 30)','free(target)  — node 20 is released'];
+    rnd(ctx,pad,h-36,w-pad*2,26,4,'rgba(26,25,23,0.7)',DIM);
+    mono(ctx,codes[step],pad+8,h-18,10,step===4?RED:ACCENT);
+    stat.textContent=`Step ${step+1} / ${steps.length}`;
+    txt(ctx,s.note,pad,h-44,9,MUTED);
+  }
+  draw();
+  btnN.addEventListener('click',()=>{if(step<steps.length-1){step++;draw();}});
+  btnR.addEventListener('click',()=>{step=0;draw();});
+  window.addEventListener('resize',draw);
+})();
+
+// ── VISUAL 4: Doubly linked list deletion ────────────────────────────────────
+(function(){
+  const cv=document.getElementById('cvDouble'),btnN=document.getElementById('doubleNext'),btnR=document.getElementById('doubleReset'),stat=document.getElementById('doubleStatus');
+  const vals=[10,20,30];
+  const steps=[
+    {phase:'before', note:'Doubly linked list: each node has both next and prev pointers.'},
+    {phase:'target', note:'We have a direct pointer to node 20. No walk needed.'},
+    {phase:'bypass', note:'node->prev->next = node->next  AND  node->next->prev = node->prev. Both neighbors updated.'},
+    {phase:'free',   note:'free(node). Node 20 is gone. O(1) — no walk from head, no shifting.'},
+  ];
+  let step=0;
+  function draw(){
+    const{w,h}=resize(cv,200);const ctx=cv.getContext('2d');ctx.clearRect(0,0,w,h);
+    const nw=90,nh=56,pad=20,gap=20,startY=28;
+    const s=steps[step];
+    vals.forEach((v,i)=>{
+      if(s.phase==='free'&&i===1) return;
+      const x=pad+i*(nw+gap);
+      const isTarget=(i===1);
+      const col=isTarget&&s.phase!=='before'?GCOL.red:null;
+      rnd(ctx,x,startY,nw,nh,5,col?`rgba(${col},0.12)`:BG2,col?`rgba(${col},0.8)`:DIM,col?1.5:1);
+      mono(ctx,String(v),x+nw/2,startY+nh/2+5,13,col?INK:GREEN,'center');
+      if(isTarget&&(s.phase==='target'||s.phase==='bypass')) txt(ctx,'node',x+nw/2,startY+nh+14,10,RED,'center');
+    });
+    // next arrows (top)
+    const drawN=s.phase!=='free';
+    for(let i=0;i<vals.length-1;i++){
+      if(!drawN&&i===0) continue;
+      const x1=pad+i*(nw+gap)+nw+2,y1=startY+14;
+      const skip=(s.phase==='free'&&i===0)?2:1;
+      const x2=pad+(i+skip)*(nw+gap)-2,y2=startY+14;
+      arw(ctx,x1,y1,x2,y2,s.phase==='bypass'&&i===0?ACCENT:MUTED,s.phase==='bypass'&&i===0?2:1.5);
+    }
+    // prev arrows (bottom)
+    for(let i=vals.length-1;i>0;i--){
+      if(!drawN&&i===1) continue;
+      const x1=pad+i*(nw+gap)-2,y1=startY+nh-14;
+      const skip=(s.phase==='free'&&i===2)?2:1;
+      const x2=pad+(i-skip)*(nw+gap)+nw+2,y2=startY+nh-14;
+      arw(ctx,x1,y1,x2,y2,s.phase==='bypass'&&i===2?ACCENT:MUTED,s.phase==='bypass'&&i===2?2:1.5);
+    }
+    // bypass arrows
+    if(s.phase==='bypass'){
+      arw(ctx,pad+nw+2,startY+14,pad+2*(nw+gap)-2,startY+14,ACCENT,2);
+      arw(ctx,pad+2*(nw+gap)-2,startY+nh-14,pad+nw+2,startY+nh-14,ACCENT,2);
+    }
+    const codes=['doubly linked: each node has next and prev','node = pointer to 20 (direct — no walk)','node->prev->next = node->next  AND  node->next->prev = node->prev','free(node)  →  O(1) deletion complete'];
+    rnd(ctx,pad,h-34,w-pad*2,24,4,'rgba(26,25,23,0.7)',DIM);
+    mono(ctx,codes[step],pad+8,h-16,9,step===3?GREEN:ACCENT);
+    stat.textContent=`Step ${step+1} / ${steps.length}`;
+    txt(ctx,s.note,pad,h-42,9,MUTED);
+  }
+  draw();
+  btnN.addEventListener('click',()=>{if(step<steps.length-1){step++;draw();}});
+  btnR.addEventListener('click',()=>{step=0;draw();});
+  window.addEventListener('resize',draw);
+})();
+</script>
+</body>
+</html>

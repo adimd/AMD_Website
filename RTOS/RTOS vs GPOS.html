@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RTOS vs GPOS | How RTOS Works</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;--ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;--accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);--border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);--display:'Instrument Serif',Georgia,serif;--sans:'Source Sans 3',sans-serif;--hand:'Caveat',cursive;--radius:14px}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.78;font-size:19px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}.d1{animation-delay:.08s}.d2{animation-delay:.16s}
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.85);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:var(--ink)}.brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}.brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}.nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}.nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}.nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}.dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}.dropbtn:hover{color:var(--ink)}.dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}.dropdown:hover .dropdown-content{display:block}.dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}.dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}.dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}.hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}.hamburger.active span:nth-child(2){opacity:0}.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.95);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}.mobile-overlay.active{display:flex}.mobile-overlay a,.mobile-overlay button{font-family:var(--display);font-size:1.5rem;color:var(--body);background:none;border:none;cursor:pointer;padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}.mobile-overlay a:hover,.mobile-overlay button:hover{color:var(--accent)}.mobile-overlay .mobile-sub{display:flex;flex-direction:column;align-items:center}.mobile-overlay .mobile-sub a{font-size:1.15rem;color:var(--muted);padding:.4rem 1.5rem}
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 4rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.4rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.08rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.55rem;color:var(--ink);margin:2.5rem 0 .8rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.35rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.18rem;font-weight:300;margin-bottom:1.15rem}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.95em;background:rgba(237,232,224,.08);padding:.15rem .4rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .callout{margin:1.5rem 0;padding:1.3rem 1.6rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.2rem 0}
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.1rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}.sidebar-link+.sidebar-link{margin-top:.15rem}.sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.9rem;font-weight:500;color:var(--ink)}.sidebar-link-note{font-size:.75rem;color:var(--muted);margin-top:.15rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .comments-section{margin-top:2.5rem}.comments-section h2{font-family:var(--display);font-size:1.3rem;color:var(--ink);margin-bottom:1rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}.footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}.footer-copy{font-size:.88rem;color:var(--muted)}
+    .viz-block{margin:2.2rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.75rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center}
+    .viz-title{font-family:var(--hand);font-size:1.1rem;color:var(--accent)}
+    .viz-body{padding:1.4rem}
+    canvas{display:block;width:100%;border-radius:6px}
+    .viz-note{font-size:.85rem;color:var(--muted);margin-top:.9rem;font-style:italic;line-height:1.6}
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static;width:100%}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.25rem 3rem}.article{padding:2rem 1.5rem;border-radius:12px}.article h1{font-size:1.85rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a>
+      <a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a>
+      <a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown">
+        <button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a>
+  <a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a>
+  <a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <div class="mobile-sub">
+    <button style="color:var(--ink);font-size:1.3rem">Beyond the Desk</button>
+    <a href="../teaching.html">Teaching Roles</a>
+    <a href="../workshops.html">Workshops</a>
+    <a href="../talks.html">Talks</a>
+  </div>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+  <div class="blog-layout">
+    <main class="blog-main anim d1">
+      <article class="article">
+
+        <span class="series-tag"><span class="series-dot"></span>How RTOS Works</span>
+        <h1>RTOS vs GPOS</h1>
+        <p class="blog-subtitle">Two operating systems, two completely different jobs. Understanding why they are built differently is the key to understanding what an RTOS actually is.</p>
+
+        <h2>Two systems, two problems</h2>
+
+        <p>Think about your phone right now. It might be playing music, syncing email, running a background update, and waiting for you to tap the screen, all at the same time, on one processor. The software managing all of this is called an <strong>operating system</strong>, and its job is to share that processor fairly among everything competing for it. Linux, Windows, and macOS all do this. They are called <strong>General Purpose Operating Systems</strong>, or GPOSes.</p>
+
+        <p>Now think about the computer inside an ABS braking system. It has one job: check the wheel speed sensors, compute a correction, and send a command to the brake valve, all within about 10ms, every cycle, forever. Nobody needs fairness here. There are no other apps competing. What this computer needs is a guarantee that its one job always runs on time, no matter what. That is a <strong>Real-Time Operating System</strong>, or RTOS.</p>
+
+        <p>The same word covers two things with almost opposite design goals. Fair sharing versus guaranteed timing. And those two goals are fundamentally in conflict with each other.</p>
+
+        <h2>What the GPOS scheduler actually does</h2>
+
+        <p>The part of an operating system that decides what runs next is called the <strong>scheduler</strong>. On Linux, the default scheduler is called the <strong>Completely Fair Scheduler</strong>, or CFS. The name says it all. It tracks how much CPU time every program has received and tries to equalise it. If a low-priority task has been waiting a long time, the scheduler bumps it up. If a high-priority task just ran, it steps back in line.</p>
+
+        <p>This produces good <strong>average latency</strong>, meaning the typical wait before getting the CPU is short. But it gives you no control over <strong>worst-case latency</strong>, meaning the maximum time a program might ever wait. There is no rule that says "this task runs within X milliseconds." There is only fairness, which produces good average behaviour but zero guarantees.</p>
+
+        <p>And there is one more problem. Linux has a <strong>kernel</strong>, the core of the OS that manages hardware, memory, and system calls. When your program asks the kernel to do something (read a file, open a network connection, allocate memory), it enters kernel space. While the kernel is busy with that work, it may not be interruptible. A higher-priority task arrives and has to wait until the kernel finishes what it started. Usually this wait is microseconds and nobody notices. But "usually fine" is not acceptable for a brake controller. The time between a task becoming ready and actually getting the CPU, called <strong>scheduling latency</strong>, is unbounded in a GPOS.</p>
+
+        <h2>What the RTOS scheduler does instead</h2>
+
+        <p>An RTOS uses a completely different approach called <strong>fixed-priority preemptive scheduling</strong>. Every task is assigned a priority number when it is created. The scheduler has one rule it never breaks: the highest-priority task that is ready to run gets the CPU immediately.</p>
+
+        <p>The word <strong>preemptive</strong> is the key part. The moment a high-priority task becomes ready, because a sensor fired, a timer expired, or another task signalled it, the OS immediately stops whatever is currently running. It saves the state of the paused task (its registers, where it was in the code, everything), runs the high-priority task to completion, then restores the paused task exactly where it left off. That save-and-restore operation is called a <strong>context switch</strong>, and it happens in a known, bounded time, typically a few microseconds on ARM Cortex-M hardware.</p>
+
+        <p>The <strong>scheduling latency</strong> on a well-designed RTOS is not a statistic. It is a specification. FreeRTOS on a 168MHz STM32 achieves scheduling latency in the range of 1 to 2 microseconds. That number is guaranteed, not hoped for.</p>
+
+        <!-- VISUAL 1: Scheduling comparison -->
+        <div class="viz-block">
+          <div class="viz-header"><span class="viz-title">What actually happens when a high-priority task becomes ready</span></div>
+          <div class="viz-body">
+            <canvas id="c_sched" height="310"></canvas>
+            <p class="viz-note">On the left, the GPOS keeps running low and medium tasks to stay fair, even though a high-priority task is sitting ready and waiting. On the right, the RTOS stops everything the moment a higher-priority task is ready and hands it the CPU immediately. The paused tasks resume exactly where they left off once the important work is done.</p>
+          </div>
+        </div>
+
+        <hr class="sep">
+
+        <h2>The cost of real-time guarantees</h2>
+
+        <p>This guarantee is not free. An RTOS gives up real things to buy it.</p>
+
+        <p>The first thing it gives up is fairness itself. A strict priority scheduler will leave a low-priority task sitting idle even when the high-priority task is just waiting for a sensor to respond. A fair scheduler would use that idle time productively. On a system with many tasks of similar importance, an RTOS can waste CPU time that a GPOS would have put to work.</p>
+
+        <p>The second thing is richness. Linux comes with a filesystem, a network stack, a device driver model, package management, and decades of accumulated software libraries. An RTOS gives you a scheduler and a handful of ways for tasks to communicate with each other. Want a filesystem? Pick one and integrate it yourself. Want networking? Same answer. The <strong>kernel</strong> is minimal by design. FreeRTOS is around 10,000 lines of C, small enough to read in a weekend. That minimalism is actually a feature: fewer lines of code means fewer places something unexpected can happen, which makes it much easier to prove worst-case timing behaviour. As a system grows in size, the number of possible interactions multiplies, and bounding the worst case across all of them becomes harder and harder. A small kernel keeps that problem manageable.</p>
+
+        <p>The third thing it gives up is memory protection. Without virtual memory, one task can accidentally write into another task's memory and the OS cannot stop it. A bug in one part of the code can corrupt data somewhere else entirely. Safety-critical systems deal with this through rigorous code review and testing rather than relying on the OS to catch mistakes at runtime.</p>
+
+        <!-- VISUAL 2: What each gives up -->
+        <div class="viz-block">
+          <div class="viz-header"><span class="viz-title">The trade-off at a glance</span></div>
+          <div class="viz-body">
+            <canvas id="c_tradeoff" height="200"></canvas>
+            <p class="viz-note">Neither is better in absolute terms. Each is the right tool for a specific job. The mistake is choosing one when you actually need the other.</p>
+          </div>
+        </div>
+
+        <h2>The pit crew analogy</h2>
+
+        <p>Imagine two restaurants. The first is a busy café. One kitchen, lots of customers, all ordering different things. The scheduler tries to keep everyone happy, rotates through orders fairly, keeps average wait time low. Sometimes your coffee takes longer because someone else ordered first. Nobody expects a timing guarantee. That is the GPOS model.</p>
+
+        <p>The second is a Formula 1 pit crew. One car, every person has exactly one job, and the moment the car stops those jobs execute in a precise sequence. The target is under 2.5 seconds, every single time, not on average. That is the RTOS model.</p>
+
+        <p>Same basic concept, getting work done. Completely different execution, because the cost of being late is completely different.</p>
+
+        <h2>Where each one belongs</h2>
+
+        <p>An RTOS is the right choice when you have hard timing requirements, when you are running on a <strong>microcontroller</strong> with kilobytes of RAM, and when the system does one well-defined job. Brake controllers, pacemakers, motor drives, industrial sensors.</p>
+
+        <p>A GPOS is the right choice when you have lots of varied tasks, none of them demanding timing guarantees, and you want the richness of a full software ecosystem. Laptops, servers, phones, anything where average responsiveness matters more than worst-case guarantees and where the cost of a slow response is annoyance rather than catastrophe.</p>
+
+        <p>There is a middle ground worth knowing about: <strong>PREEMPT_RT Linux</strong>, a modified version of Linux that applies a set of patches making the kernel fully preemptible. It closes most of the scheduling latency gaps and is used in industrial systems that need better timing than standard Linux but also need the richness of a full Linux environment. It gets you much better than stock Linux, which is good enough for many applications, just not for anything requiring a mathematical proof of worst-case timing.</p>
+
+        <div class="callout">A GPOS asks: how do I share one CPU fairly among many competing programs? An RTOS asks: how do I guarantee the most important thing always runs first, within a bounded time? Same surface, opposite design. Choosing the wrong one is not a configuration problem. It is an architectural one that no amount of tuning will fix.</div>
+
+        <hr class="sep">
+
+        <section id="comments" class="comments-section">
+          <h2>Comments</h2>
+          <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+          </script>
+        </section>
+
+      </article>
+    </main>
+
+    <aside class="blog-sidebar anim d2">
+      <div class="sidebar-card">
+        <h2 class="sidebar-title">How RTOS Works</h2>
+        <a class="sidebar-link" href="lesson1_1.html"><div class="sidebar-link-title">1.1 The bare-metal problem</div></a>
+        <a class="sidebar-link" href="lesson1_2.html"><div class="sidebar-link-title">1.2 What "real-time" means</div></a>
+        <a class="sidebar-link active-topic" href="#">
+          <div class="sidebar-link-title">1.3 RTOS vs GPOS</div>
+          <div class="sidebar-link-note">You are here.</div>
+        </a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.4 The kernel</div><div class="sidebar-link-note">Coming next.</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.5 Ticks and time</div><div class="sidebar-link-note">Coming soon.</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.6 The hardware picture</div><div class="sidebar-link-note">Coming soon.</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.7 FreeRTOS first look</div><div class="sidebar-link-note">Coming soon.</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.8 Hello World</div><div class="sidebar-link-note">Coming soon.</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.9 Determinism and WCET</div><div class="sidebar-link-note">Coming soon.</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.10 Phase 1 capstone</div><div class="sidebar-link-note">Coming soon.</div></a>
+      </div>
+      <div class="sidebar-card">
+        <h2 class="sidebar-title">Key ideas in this post</h2>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">GPOS vs RTOS</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">The scheduler</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">Completely Fair Scheduler</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">Fixed-priority preemptive</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">Scheduling latency</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">Context switch</div></a>
+        <a class="sidebar-link" href="#"><div class="sidebar-link-title">PREEMPT_RT Linux</div></a>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+const hb = document.getElementById('hamburger'), mo = document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ── VISUAL 1: Scheduling comparison ─────────────────────────────────────────
+function drawSched() {
+  const el = document.getElementById('c_sched');
+  const dpr = window.devicePixelRatio || 1;
+  const W = el.clientWidth, H = 310;
+  el.width = W*dpr; el.height = H*dpr;
+  el.style.height = H+'px';
+  const ctx = el.getContext('2d'); ctx.scale(dpr,dpr);
+  ctx.fillStyle = '#1e1c1a'; ctx.fillRect(0,0,W,H);
+
+  // Each side occupies half the canvas
+  // labelW = left margin for row labels
+  // pT = top padding (leaves room for title + event label)
+  const half = W/2 - 8;
+  const labelW = 46, rowH = 34, gap = 14, pT = 58;
+  const tlW = half - labelW - 10;
+  const msW = tlW / 100;
+
+  const rowCols  = ['#888780', '#534AB7', '#1D9E75'];
+  const rowFills = ['#88878028', '#534AB728', '#1D9E7528'];
+
+  function block(x, y, w, fillHex, strokeHex) {
+    ctx.fillStyle = fillHex; ctx.strokeStyle = strokeHex; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(x, y, w, rowH, 4); ctx.fill(); ctx.stroke();
+  }
+
+  function side(ox, isRTOS) {
+    const tlX = ox + labelW;
+    const evAt = 28;
+    const evX  = tlX + evAt * msW;
+
+    // Title — sits at top with enough room below for event label
+    ctx.fillStyle = isRTOS ? '#1D9E75' : '#7F77DD';
+    ctx.font = '500 13px "Source Sans 3"';
+    ctx.textAlign = 'center';
+    ctx.fillText(
+      isRTOS ? 'RTOS  (fixed-priority preemptive)' : 'GPOS  (Completely Fair Scheduler)',
+      ox + half/2, 16
+    );
+
+    // Event label — sits on its own line below title, left-aligned to event position
+    ctx.fillStyle = '#e8a84c';
+    ctx.font = 'bold 12px "Source Sans 3"';
+    ctx.textAlign = evX > ox + half*0.6 ? 'right' : 'left';
+    ctx.fillText('high task becomes ready', evX + (evX > ox + half*0.6 ? -4 : 4), 34);
+
+    // Row labels
+    ['low','med','high'].forEach((label, i) => {
+      ctx.fillStyle = rowCols[i];
+      ctx.font = '500 13px "Source Sans 3"';
+      ctx.textAlign = 'right';
+      ctx.fillText(label, ox + labelW - 6, pT + i*(rowH+gap) + rowH/2 + 5);
+    });
+
+    // Event vertical line (runs through all rows)
+    ctx.strokeStyle = '#e8a84c'; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    ctx.moveTo(evX, 40);
+    ctx.lineTo(evX, pT + 2*(rowH+gap) + rowH + 40);
+    ctx.stroke(); ctx.setLineDash([]);
+
+    if (!isRTOS) {
+      // GPOS: fair rotation continues after high becomes ready
+      // low: t=0-18, t=32-42, t=54-62
+      // med: t=18-32, t=42-54, t=82-94
+      // high: FINALLY runs at t=62-82 (after all the fairness)
+      const segs = [
+        {row:0, s:0,  d:18},
+        {row:1, s:18, d:14},
+        {row:0, s:32, d:10},
+        {row:1, s:42, d:12},
+        {row:0, s:54, d:8},
+        {row:2, s:62, d:20},
+        {row:1, s:82, d:12},
+      ];
+      segs.forEach(({row,s,d}) =>
+        block(tlX+s*msW, pT+row*(rowH+gap), d*msW, rowFills[row], rowCols[row])
+      );
+
+      // Latency bracket: event (t=28) to when high finally runs (t=62)
+      const highRunX = tlX + 62*msW;
+      const bY = pT + 2*(rowH+gap) + rowH + 14;
+      ctx.strokeStyle = '#E24B4A'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(evX, bY); ctx.lineTo(highRunX, bY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(evX, bY-5); ctx.lineTo(evX, bY+5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(highRunX, bY-5); ctx.lineTo(highRunX, bY+5); ctx.stroke();
+      ctx.fillStyle = '#E24B4A'; ctx.font = 'bold 12px "Source Sans 3"';
+      ctx.textAlign = 'center';
+      ctx.fillText('scheduling latency: unbounded', (evX+highRunX)/2, bY+18);
+
+    } else {
+      // RTOS: high preempts immediately. Low and med are paused, resume after high finishes.
+      const highDur  = 20;
+      const resumeX  = evX + highDur * msW;
+      const resumeDur = 28;
+
+      // low and med: run before event
+      block(tlX, pT+0*(rowH+gap), evAt*msW, rowFills[0], rowCols[0]);
+      block(tlX, pT+1*(rowH+gap), evAt*msW, rowFills[1], rowCols[1]);
+
+      // paused gap (hatched region between evX and resumeX for low and med)
+      [0,1].forEach(i => {
+        const y = pT + i*(rowH+gap);
+        ctx.fillStyle = 'rgba(237,232,224,0.03)';
+        ctx.strokeStyle = rowCols[i]+'40'; ctx.lineWidth = 1;
+        ctx.setLineDash([3,3]);
+        ctx.beginPath(); ctx.roundRect(evX, y, highDur*msW, rowH, 4); ctx.fill(); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#7d766b'; ctx.font = 'italic 11px "Source Sans 3"';
+        ctx.textAlign = 'center';
+        ctx.fillText('paused', evX + (highDur*msW)/2, y + rowH/2 + 4);
+      });
+
+      // high: runs immediately, full solid block
+      block(evX, pT+2*(rowH+gap), highDur*msW, rowFills[2], rowCols[2]);
+      // label inside high block
+      ctx.fillStyle = '#1D9E75'; ctx.font = '500 11px "Source Sans 3"';
+      ctx.textAlign = 'center';
+      ctx.fillText('runs now', evX+(highDur*msW)/2, pT+2*(rowH+gap)+rowH/2+4);
+
+      // low and med resume — blocks start exactly at resumeX
+      block(resumeX, pT+0*(rowH+gap), resumeDur*msW, rowFills[0], rowCols[0]);
+      block(resumeX, pT+1*(rowH+gap), resumeDur*msW, rowFills[1], rowCols[1]);
+
+      // "resumes" labels
+      [0,1].forEach(i => {
+        ctx.fillStyle = rowCols[i]; ctx.font = 'italic 10px "Source Sans 3"';
+        ctx.textAlign = 'center';
+        ctx.fillText('resumes', resumeX+(resumeDur*msW)/2, pT+i*(rowH+gap)+rowH/2+4);
+      });
+
+      // Latency annotation — just a label, no misleading bracket
+      const bY = pT + 2*(rowH+gap) + rowH + 14;
+      ctx.fillStyle = '#1D9E75'; ctx.font = 'bold 12px "Source Sans 3"';
+      ctx.textAlign = 'left';
+      ctx.fillText('latency: ~2 microseconds', evX + 4, bY + 5);
+      // small tick at evX
+      ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(evX, bY-4); ctx.lineTo(evX, bY+10); ctx.stroke();
+    }
+  }
+
+  // Centre divider
+  ctx.strokeStyle = 'rgba(237,232,224,0.08)'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(W/2, 6); ctx.lineTo(W/2, H-6); ctx.stroke();
+  ctx.setLineDash([]);
+
+  side(0, false);
+  side(W/2+8, true);
+}
+drawSched();
+
+// ── VISUAL 2: Trade-off table ────────────────────────────────────────────────
+function drawTradeoff() {
+  const el = document.getElementById('c_tradeoff');
+  const dpr = window.devicePixelRatio || 1;
+  const W = el.clientWidth, H = 200;
+  el.width = W*dpr; el.height = H*dpr;
+  el.style.height = H+'px';
+  const ctx = el.getContext('2d'); ctx.scale(dpr,dpr);
+  ctx.fillStyle = '#1e1c1a'; ctx.fillRect(0,0,W,H);
+
+  const cols = [
+    {label:'',          gpos:'GPOS',        rtos:'RTOS',        gCol:'#534AB7', rCol:'#1D9E75', header:true},
+    {label:'Scheduling',gpos:'fair sharing', rtos:'priority first'},
+    {label:'Latency',   gpos:'unbounded',    rtos:'guaranteed bound'},
+    {label:'Kernel',    gpos:'millions of lines', rtos:'~10,000 lines'},
+    {label:'Memory',    gpos:'virtual, pageable', rtos:'flat, all in RAM'},
+    {label:'Best for',  gpos:'rich, varied apps', rtos:'one job, hard deadlines'},
+  ];
+
+  const rowH = 28, pL = 90, colW = (W - pL - 20) / 2;
+
+  cols.forEach(({label,gpos,rtos,gCol,rCol,header},i)=>{
+    const y = 10 + i * rowH;
+    if(header){
+      ctx.fillStyle=gCol+'40'; ctx.strokeStyle=gCol; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.roundRect(pL, y, colW-4, rowH-2, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=rCol+'40'; ctx.strokeStyle=rCol;
+      ctx.beginPath(); ctx.roundRect(pL+colW+4, y, colW-4, rowH-2, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=gCol; ctx.font='500 12px "Source Sans 3"';
+      ctx.textAlign='center'; ctx.fillText(gpos, pL+colW/2, y+rowH/2+4);
+      ctx.fillStyle=rCol;
+      ctx.fillText(rtos, pL+colW+4+colW/2, y+rowH/2+4);
+    } else {
+      if(i%2===0){
+        ctx.fillStyle='rgba(237,232,224,0.03)';
+        ctx.fillRect(0, y, W, rowH-2);
+      }
+      ctx.fillStyle='#7d766b'; ctx.font='11px "Source Sans 3"';
+      ctx.textAlign='right'; ctx.fillText(label, pL-8, y+rowH/2+4);
+      ctx.fillStyle='#534AB7'; ctx.font='11px "Source Sans 3"';
+      ctx.textAlign='center'; ctx.fillText(gpos, pL+colW/2, y+rowH/2+4);
+      ctx.fillStyle='#1D9E75';
+      ctx.fillText(rtos, pL+colW+4+colW/2, y+rowH/2+4);
+    }
+  });
+}
+drawTradeoff();
+
+window.addEventListener('resize', ()=>{ drawSched(); drawTradeoff(); });
+</script>
+</body>
+</html>

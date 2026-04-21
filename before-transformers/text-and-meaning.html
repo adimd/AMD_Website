@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Text Was a Problem Long Before AI | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* images */
+    .img-block{margin:2rem 0 1.6rem}
+    .img-frame{max-width:100%;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);cursor:zoom-in;position:relative}
+    .img-frame img{width:100%;display:block}
+    .img-label{position:absolute;bottom:8px;right:10px;font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);background:rgba(26,25,23,.8);padding:.25rem .6rem;border-radius:999px}
+    .img-caption{margin:.55rem 0 0;font-size:.9rem;color:var(--muted);font-style:italic;line-height:1.55}
+    .img-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:9999}
+    .img-modal.open{display:flex}
+    .img-modal-inner{position:relative;max-width:90vw;max-height:90vh}
+    .img-modal-inner img{max-width:100%;max-height:85vh;border-radius:var(--radius);box-shadow:0 18px 45px rgba(0,0,0,.5)}
+    .img-modal-cap{margin-top:.5rem;font-size:.9rem;color:var(--accent);text-align:center}
+    .img-modal-close{position:absolute;top:-10px;right:-10px;border:none;background:var(--ink);color:var(--bg);border-radius:50%;width:28px;height:28px;font-size:1.1rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz blocks — same system as Topic 3 for series consistency */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* unicode visualiser */
+    .uni-input{width:100%;padding:.8rem 1rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--ink);font-family:'Courier New',monospace;font-size:1.05rem;outline:none;transition:border-color .2s}
+    .uni-input:focus{border-color:var(--accent)}
+    .uni-grid{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.2rem;min-height:80px}
+    .uni-cell{background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;padding:.6rem .7rem;min-width:70px;text-align:center;transition:all .25s;animation:rise .35s cubic-bezier(.22,1,.36,1) both}
+    .uni-cell-char{font-family:var(--display);font-size:1.5rem;color:var(--ink);line-height:1}
+    .uni-cell-code{font-family:'Courier New',monospace;font-size:.72rem;color:var(--accent);margin-top:.35rem;letter-spacing:.02em}
+    .uni-cell-dec{font-family:'Courier New',monospace;font-size:.7rem;color:var(--muted);margin-top:.15rem}
+    .uni-cell.space{background:rgba(237,232,224,.03);border-style:dashed}
+    .uni-cell.space .uni-cell-char{color:var(--muted);font-family:var(--sans);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;line-height:1.8}
+    .uni-presets{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+    .uni-preset{padding:.35rem .8rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.82rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .uni-preset:hover{border-color:var(--accent);color:var(--accent)}
+
+    /* similarity visualiser */
+    .sim-row{display:flex;align-items:center;gap:1rem;padding:.9rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;margin-bottom:.7rem;flex-wrap:wrap}
+    .sim-pair{font-family:var(--display);font-size:1.3rem;color:var(--ink);min-width:120px}
+    .sim-pair em{color:var(--accent);font-style:normal}
+    .sim-bar-wrap{flex:1;min-width:160px;position:relative;height:28px;background:rgba(237,232,224,.05);border-radius:14px;overflow:hidden}
+    .sim-bar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--blue),var(--accent));border-radius:14px;transition:width .8s cubic-bezier(.22,1,.36,1)}
+    .sim-bar-label{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-family:'Courier New',monospace;font-size:.82rem;color:var(--ink);z-index:2}
+    .sim-verdict{font-size:.9rem;color:var(--muted);min-width:140px;font-style:italic}
+    .sim-verdict.intuitive{color:var(--green)}
+    .sim-verdict.misleading{color:var(--red)}
+    .sim-legend{display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);font-size:.85rem;color:var(--muted)}
+    .sim-legend span{display:inline-flex;align-items:center;gap:.4rem}
+    .sim-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+    /* tokeniser visualiser */
+    .tok-modes{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+    .tok-mode-btn{padding:.45rem 1rem;border-radius:8px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--muted);font-size:.88rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .tok-mode-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .tok-input{width:100%;padding:.8rem 1rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--ink);font-size:1rem;outline:none;resize:vertical;font-family:inherit;min-height:60px}
+    .tok-input:focus{border-color:var(--accent)}
+    .tok-output{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:1.1rem;padding:1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;min-height:60px;align-items:center}
+    .tok-chip{padding:.28rem .6rem;border-radius:6px;font-family:'Courier New',monospace;font-size:.9rem;animation:rise .25s cubic-bezier(.22,1,.36,1) both;white-space:pre}
+    .tok-chip.t0{background:rgba(232,168,76,.18);color:#f0be6e;border:1px solid rgba(232,168,76,.35)}
+    .tok-chip.t1{background:rgba(76,168,232,.18);color:#7cc0ef;border:1px solid rgba(76,168,232,.35)}
+    .tok-chip.t2{background:rgba(127,255,107,.14);color:#a5ff95;border:1px solid rgba(127,255,107,.3)}
+    .tok-chip.t3{background:rgba(255,107,107,.15);color:#ff9595;border:1px solid rgba(255,107,107,.3)}
+    .tok-chip.t4{background:rgba(192,132,252,.15);color:#d0a3ff;border:1px solid rgba(192,132,252,.3)}
+    .tok-stats{display:flex;gap:1.5rem;margin-top:.9rem;font-size:.85rem;color:var(--muted);flex-wrap:wrap}
+    .tok-stats strong{color:var(--accent);font-family:'Courier New',monospace}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}.sim-row{flex-direction:column;align-items:stretch}.sim-verdict{text-align:left}}
+  </style>
+</head>
+<body>
+
+<div id="img-modal" class="img-modal" aria-hidden="true">
+  <div class="img-modal-inner">
+    <button class="img-modal-close" aria-label="Close">&times;</button>
+    <img id="img-modal-img" alt="">
+    <p id="img-modal-cap" class="img-modal-cap"></p>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Before Transformers: How Embeddings Learn Meaning</span>
+  <h1>Text Was a Problem Long Before AI</h1>
+  <p class="blog-subtitle">The overlooked history that explains why tokenisation exists at all.</p>
+
+  <p>I watched <em>The Imitation Game</em> a while back. It was good. Brilliant people under impossible pressure, machines doing clever things. You come away feeling inspired. But I realised something afterwards: at no point did the film feel like a story about <em>text</em>. And text is what I actually spend most of my computing life doing. Typing, reading, searching, asking questions in words and getting answers back in words.</p>
+
+  <p>Later, I visited the Alan Turing memorial in Manchester and ended up standing there longer than I meant to. I wasn't thinking about intelligence or computation. I was thinking about something much more basic. I use text with machines every single day. Terminals, documents, chat windows. It feels completely natural, like it was always this way. But standing there, one question kept nagging at me: why did I ever assume text <em>belonged</em> inside a machine?</p>
+
+  <div class="callout">Why did I ever assume text belonged inside a machine?</div>
+
+  <div class="img-block">
+    <div class="img-frame">
+      <img src="../assets/LLM_Series/Blog1/Alan_Turing.jpg" alt="Alan Turing memorial in Manchester">
+      <span class="img-label">Alan Turing memorial, Manchester</span>
+    </div>
+    <p class="img-caption">From the internet. I later realised I'm terrible at taking photos.</p>
+  </div>
+
+  <p>Today we talk about language models reasoning, understanding, generating text. Underneath all of that sits a much stranger assumption: that text can <em>enter</em> a machine in the first place. We never question it because text editors, browsers, chat windows and terminals are everywhere. It feels fundamental, like it was always there.</p>
+
+  <p>It wasn't. And understanding why it wasn't is the key to understanding why tokenisation exists.</p>
+
+  <h2>What "computer" actually meant</h2>
+
+  <p>Before machines, a computer was a person. Literally a job title. They sat at desks with tables, slide rules and formulas, grinding through calculations by hand. The output was always numbers. When machines eventually showed up, they were built to replace exactly that: the repetitive number crunching. Take the human error and fatigue out of arithmetic. That was the entire ambition. Nobody was thinking about words or language. It wasn't on the radar.</p>
+
+  <h2>Numbers in, numbers out</h2>
+
+  <p>The first electronic computers were built for ballistics, trajectories, weather forecasting. Problems that already lived inside mathematics. Numbers went in, numbers came out. The machine's job was to do it faster and without mistakes. No documents to process, no questions to answer, no text to deal with. Language wasn't missing from these machines because they were bad at it. Language was irrelevant. It simply wasn't part of the job description.</p>
+
+  <div class="img-block">
+    <div class="img-frame">
+      <img src="../assets/LLM_Series/Blog1/ENIAC.jpg" alt="Early electronic computer">
+      <span class="img-label">Early electronic computers</span>
+    </div>
+  </div>
+
+  <p>Look at photos of these machines. Rooms full of cables, vacuum tubes and switches. They weren't built as thinking machines. They were engines for doing maths really fast. Asking one to handle a sentence of English would be like asking a calculator to appreciate a poem. Not because the calculator is bad at poetry. Because poetry doesn't exist in its universe. The machine only knows exact states and exact operations. Ambiguity isn't just hard for it. Ambiguity is meaningless.</p>
+
+  <h2>What the inside of a machine actually looked like</h2>
+
+  <p>No letters in there. No words. Just voltages moving through circuits, switches flipping, counters ticking. The machine's entire world was: add, subtract, multiply, compare, branch, look up a value from a table. That was everything. If something couldn't be expressed in that form, it didn't exist as far as the machine was concerned.</p>
+
+  <p>If you had handed one of these machines a paragraph of English, it wouldn't have misunderstood it. It wouldn't have rejected it either. It would have had no way to even recognise that you'd given it anything at all. Language didn't fail inside early computers. Language never got through the door.</p>
+
+  <div class="callout">For a machine, meaning only exists after it's been reduced to numbers.</div>
+
+  <p>The important bit is easy to miss from where we stand today. These machines didn't start out bad at language and slowly get better. They started in a world where language <em>didn't exist</em>. There was no text to be bad at. For text to get inside a machine, it had to be completely transformed first, squeezed and compressed into pure numbers. And that transformation didn't begin with anything fancy like learning or intelligence. It began with a much more basic question: how do you shove language through a system that has no concept of it?</p>
+
+  <hr class="sep">
+
+  <h2>Humans had already solved this once before</h2>
+
+  <p>With wires. Long before computers.</p>
+
+  <p>The telegraph forced the issue. A wire doesn't know what a letter is. It doesn't know what a word is. All it can do is carry electrical pulses. On, off, long, short, silence. So if you wanted to send language through a wire, you had to change the language first.</p>
+
+  <p>Morse code was the answer. And it's worth understanding what Morse code actually <em>was</em>, because it set the pattern for everything that came after. It wasn't an attempt to teach the wire what language means. It was the opposite: an acceptance that the wire would never understand anything. Letters got stripped down to patterns of short and long signals. Dots and dashes. These were chosen not because they represented letters well, but because they survived noise and could be reliably detected at the other end. The meaning got removed at the sending end, the bare structure went through the wire, and a human at the other end reconstructed the meaning.</p>
+
+  <div class="img-block">
+    <div class="img-frame">
+      <img src="../assets/LLM_Series/Blog1/Morse_code.jpg" alt="Telegraph and Morse code">
+      <span class="img-label">Morse code</span>
+    </div>
+    <p class="img-caption">Language reduced to pulses. Meaning removed, structure preserved, human reassembles.</p>
+  </div>
+
+  <div class="callout">The wire never understood a thing. It just preserved enough structure for a human to recover the meaning on the other side.</div>
+
+  <p>This is the template. Meaning doesn't travel. Structure does. A human encodes at one end, the system carries the signal, a human decodes at the other end. The system in between is completely ignorant. Every encoding system that came after Morse follows this same basic pattern, even if the details change.</p>
+
+  <hr class="sep">
+
+  <h2>Then every machine invented its own language</h2>
+
+  <p>By the time electronic computers arrived, we'd already accepted the deal: language doesn't enter machines as language. It enters as numbers. That lesson came from telegraph wires. Fine. Symbols become numbers, numbers are what machines handle, should be straightforward from here.</p>
+
+  <p>It wasn't. Because nobody agreed on <em>which</em> numbers. Every machine had its own ideas. How many bits per character. Which bit patterns mapped to which letters. What counted as valid input. These decisions were made locally, based on hardware constraints and engineering convenience. There was no shared standard. The result was that the same bits could mean completely different characters on different machines. A document that worked perfectly on one system could turn into gibberish the moment it moved to another.</p>
+
+  <div class="img-block">
+    <div class="img-frame">
+      <img src="../assets/LLM_Series/Blog1/Punch_Tapes.jpg" alt="Punch cards and paper tapes">
+      <span class="img-label">Early encodings</span>
+    </div>
+    <p class="img-caption">Text that couldn't survive being moved.</p>
+  </div>
+
+  <p>What made this unsettling was that nothing was technically broken. Every machine was doing exactly what it was supposed to do. The data was intact. The failure happened in the gap <em>between</em> systems, where one machine's assumptions didn't match another's. A document could physically cross a room and lose its meaning. Text in machines wasn't just a technical problem. It was a coordination problem.</p>
+
+  <div class="callout">A document could cross a room and lose its meaning.</div>
+
+  <hr class="sep">
+
+  <h2>ASCII, and then Unicode</h2>
+
+  <p>ASCII was the first serious attempt at getting everyone to agree. Seven bits, one table, a small set of characters. It wasn't rich. It wasn't expressive. But if one machine said <code>A</code>, another machine would hear <code>A</code>. Agreement. That was the point. And it was enough to make computing practical at scale.</p>
+
+  <p>As computing spread beyond its original English-speaking world, ASCII's limitations became obvious. Different regions adopted different encodings for their scripts. The same stream of bytes could be interpreted differently depending on which encoding the receiving system assumed. Once interpretation diverged, the text collapsed into noise.</p>
+
+  <div class="img-block">
+    <div class="img-frame">
+      <img src="../assets/LLM_Series/Blog1/Unicode.jpg" alt="Unicode character map">
+      <span class="img-label">Unicode</span>
+    </div>
+  </div>
+
+  <p>Unicode was the attempt to fix this permanently. The idea: give every character used by every human language a unique number that means the same thing everywhere. One table for the entire planet. And it largely worked. Text could finally be stored and transmitted globally without breaking.</p>
+
+  <p>But people misunderstand what Unicode actually solved. It solved <em>representation</em>: making sure symbols have consistent numerical identities everywhere. It did not solve <em>structure</em>. Two Unicode characters might form a word together. They might carry a grammatical relationship. They might be semantically related. Unicode knows nothing about any of that. To the machine they're just integers sitting next to each other in memory. They don't know they're neighbours. They don't know they're part of a word.</p>
+
+  <div class="callout">Unicode solved representation. It didn't solve structure.</div>
+
+  <!-- VIZ 1: Unicode inspector -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">See what the machine sees</span></div>
+    <div class="viz-body">
+      <input type="text" id="uniInput" class="uni-input" maxlength="40" placeholder="Type anything — a word, a phrase, an emoji..." value="hello">
+      <div class="uni-presets">
+        <button class="uni-preset" data-text="hello">hello</button>
+        <button class="uni-preset" data-text="café">café</button>
+        <button class="uni-preset" data-text="नमस्ते">नमस्ते</button>
+        <button class="uni-preset" data-text="猫">猫</button>
+        <button class="uni-preset" data-text="🌊">🌊</button>
+      </div>
+      <div class="uni-grid" id="uniGrid"></div>
+      <p class="viz-note">Each character becomes a number. The number is stable: the same character gets the same code point whether you type it in Bangalore or Berlin. That's what Unicode fixed. But look at what the machine gets. A flat list of integers. No notion of which ones form a word, which ones are related, which ones matter together. Just numbers in a row.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The moment everything changed</h2>
+
+  <p>For a long time this didn't matter. All we wanted from machines was to store text, transmit it and display it correctly. Unicode was perfect for that. But the moment we started asking machines to <em>learn from</em> text, the rules changed.</p>
+
+  <p>A learning system doesn't just need to preserve symbols. It needs to find patterns. What repeats? What varies? What tends to show up together? And this is where Unicode's limitation becomes a real problem.</p>
+
+  <p>Take three words: <em>cat</em>, <em>car</em>, <em>dog</em>. To you and me, <em>cat</em> and <em>dog</em> feel more related than <em>cat</em> and <em>car</em>. They're both animals. We know this instantly. But under Unicode, each letter is just a number. So <em>cat</em> and <em>car</em> share their first two numbers, which makes them look similar to the machine. <em>Cat</em> and <em>dog</em> share <em>zero</em> numbers. They look completely unrelated. The relationship that matters most to us is the one that's totally invisible to the system.</p>
+
+  <!-- VIZ 2: cat / car / dog similarity -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">cat, car, dog — what the machine thinks is similar</span></div>
+    <div class="viz-body">
+      <div id="simRows"></div>
+      <div class="sim-legend">
+        <span><span class="sim-dot" style="background:linear-gradient(90deg,var(--blue),var(--accent))"></span>character-level overlap (what Unicode shows the machine)</span>
+      </div>
+      <p class="viz-note">The bars show how similar each pair looks based purely on shared characters. The right column shows whether that matches human intuition. <em>cat</em> and <em>car</em> score high because they share two out of three letters. <em>cat</em> and <em>dog</em> score zero because no letters overlap. A model starting from raw Unicode has to climb out of this hole before it can learn anything real about meaning.</p>
+    </div>
+  </div>
+
+  <div class="callout">Unicode shows the machine surface form. It hides the meaning underneath.</div>
+
+  <p>A model working from raw Unicode can eventually figure out that <em>cat</em> and <em>dog</em> are related, but only by observing thousands of contexts where they appear in similar positions. It has to discover from scratch something we already know, because the representation gave it no help at all. Not impossible. Just wasteful. The model burns capacity rediscovering basic linguistic units that humans take for granted, because the text was handed to it in a form that highlights the wrong similarities.</p>
+
+  <hr class="sep">
+
+  <h2>And this is why tokenisation exists</h2>
+
+  <p>Tokenisation fills exactly this gap. It doesn't replace Unicode. Unicode still does the job of assigning numbers to symbols. Tokenisation sits on top and reorganises text into units that are actually useful for a learner.</p>
+
+  <p>Instead of handing a model a flat stream of individual characters, tokenisation carves text into chunks that repeat often, recombine in useful ways, and carry statistical weight. Sometimes that means treating <em>cat</em> as a single token. Sometimes it means breaking a rare word like <em>unforgettable</em> into pieces — <em>un</em>, <em>forget</em>, <em>able</em> — that the model already knows from other contexts. The model doesn't have to learn <em>unforgettable</em> from zero. It can build on structure it has already seen.</p>
+
+  <!-- VIZ 3: Tokeniser -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Three ways to slice the same sentence</span></div>
+    <div class="viz-body">
+      <div class="tok-modes">
+        <button class="tok-mode-btn" data-mode="char">By character</button>
+        <button class="tok-mode-btn active" data-mode="word">By word</button>
+        <button class="tok-mode-btn" data-mode="bpe">Subword (BPE-style)</button>
+      </div>
+      <textarea id="tokInput" class="tok-input" rows="2">The unforgettable taste of overcooked pasta</textarea>
+      <div class="tok-output" id="tokOutput"></div>
+      <div class="tok-stats">
+        <span>Tokens: <strong id="tokCount">0</strong></span>
+        <span>Characters: <strong id="tokChars">0</strong></span>
+        <span>Mode: <strong id="tokModeLabel">word</strong></span>
+      </div>
+      <p class="viz-note">Type anything and switch modes. Character tokenisation produces the longest sequences and loses all word structure. Word tokenisation is clean but breaks on rare or new words. Subword tokenisation splits rare words into familiar pieces while keeping common words whole. This last approach is what real LLMs use. Notice how <em>unforgettable</em> survives as a unit in word mode, but in subword mode it decomposes into parts the model has seen a thousand times before in other words.</p>
+    </div>
+  </div>
+
+  <div class="callout">Tokenisation isn't about correctness. It's about making text learnable.</div>
+
+  <p>This is the first moment in the whole story where numbers are chosen <em>deliberately to help a machine learn</em>, instead of just to make text fit inside a machine. Every previous step was about storage and transmission. Tokenisation is about learning. Once you understand that shift, everything that comes after in the modern language model pipeline starts to click.</p>
+
+  <p>The learner is no longer staring at raw symbols. It's staring at structure. And that changes everything.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Before Transformers: How Embeddings Learn Meaning</h2>
+    <a class="sidebar-link" href="text-and-meaning.html">
+      <div class="sidebar-link-title">Part 1: Text Was a Problem</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="similarity-and-representation.html">
+      <div class="sidebar-link-title">Part 2: From Characters to Concepts</div>
+      <div class="sidebar-link-note">Why text alone isn't enough.</div>
+    </a>
+    <a class="sidebar-link" href="embeddings-from-first-principles.html">
+      <div class="sidebar-link-title">Part 3: From Words to Spaces</div>
+      <div class="sidebar-link-note">Language becomes geometry.</div>
+    </a>
+    <a class="sidebar-link" href="meaning-as-geometry.html">
+      <div class="sidebar-link-title">Part 4: From Counting to Learning</div>
+      <div class="sidebar-link-note">Meaning becomes geometry.</div>
+    </a>
+    <a class="sidebar-link" href="center-context-alignment.html">
+      <div class="sidebar-link-title">Part 5: What the Dot Product Measures</div>
+      <div class="sidebar-link-note">Centre and context.</div>
+    </a>
+    <a class="sidebar-link" href="from-scores-to-probabilities.html">
+      <div class="sidebar-link-title">Part 6: Why Raw Dot Products Aren't Enough</div>
+      <div class="sidebar-link-note">Scores to probabilities.</div>
+    </a>
+    <a class="sidebar-link" href="model-vs-data-distributions.html">
+      <div class="sidebar-link-title">Part 7: Two Distributions, One Goal</div>
+      <div class="sidebar-link-note">P_data and P_model.</div>
+    </a>
+    <a class="sidebar-link" href="why-neg-log.html">
+      <div class="sidebar-link-title">Part 8: Why −log P?</div>
+      <div class="sidebar-link-note">The shape of error.</div>
+    </a>
+    <a class="sidebar-link" href="learning-signal.html">
+      <div class="sidebar-link-title">Part 9: Creating the Learning Signal</div>
+      <div class="sidebar-link-note">From loss to p_k − q_k.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="#">
+      <div class="sidebar-link-title">Part 10: From Signal to Geometry</div>
+      <div class="sidebar-link-note">Connecting back to the geometry of meaning</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why text was never a first-class citizen</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The Morse template: meaning doesn't travel, structure does</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Representation vs structure</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why cat and dog look unrelated to a machine</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Tokenisation as a shift in purpose</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// image zoom
+(function(){
+  const modal=document.getElementById('img-modal'),mImg=document.getElementById('img-modal-img'),mCap=document.getElementById('img-modal-cap'),mClose=document.querySelector('.img-modal-close');
+  if(!modal)return;
+  document.querySelectorAll('.img-frame img').forEach(img=>{
+    img.addEventListener('click',()=>{
+      mImg.src=img.src;mImg.alt=img.alt||'';
+      const cap=img.closest('.img-block')?.querySelector('.img-caption');
+      mCap.textContent=cap?cap.textContent.trim():(img.alt||'');
+      modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+    });
+  });
+  function close(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');mImg.src='';mCap.textContent='';}
+  mClose.addEventListener('click',close);
+  modal.addEventListener('click',e=>{if(e.target===modal)close();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))close();});
+})();
+
+// ── VIZ 1: Unicode inspector ─────────────────────────────────────────────────
+const uniInput=document.getElementById('uniInput');
+const uniGrid=document.getElementById('uniGrid');
+function renderUnicode(txt){
+  uniGrid.innerHTML='';
+  // use Array.from to respect surrogate pairs / combining where possible
+  const chars=Array.from(txt);
+  chars.forEach((ch,i)=>{
+    const cp=ch.codePointAt(0);
+    const cell=document.createElement('div');
+    cell.className='uni-cell'+(ch===' '?' space':'');
+    cell.style.animationDelay=(i*0.03)+'s';
+    const char=ch===' '?'space':ch;
+    const hex='U+'+cp.toString(16).toUpperCase().padStart(4,'0');
+    cell.innerHTML=`<div class="uni-cell-char">${char}</div><div class="uni-cell-code">${hex}</div><div class="uni-cell-dec">${cp}</div>`;
+    uniGrid.appendChild(cell);
+  });
+  if(chars.length===0){
+    uniGrid.innerHTML='<div style="color:var(--muted);font-style:italic;padding:.5rem">Start typing to see each character become a number.</div>';
+  }
+}
+uniInput.addEventListener('input',e=>renderUnicode(e.target.value));
+document.querySelectorAll('.uni-preset').forEach(b=>{
+  b.addEventListener('click',()=>{
+    uniInput.value=b.dataset.text;
+    renderUnicode(b.dataset.text);
+  });
+});
+renderUnicode(uniInput.value);
+
+// ── VIZ 2: similarity ────────────────────────────────────────────────────────
+const pairs=[
+  {a:'cat',b:'car',human:'low',humanNote:'unrelated (animal vs vehicle)'},
+  {a:'cat',b:'dog',human:'high',humanNote:'both animals — very related'},
+  {a:'cat',b:'cap',human:'low',humanNote:'unrelated (animal vs hat)'},
+  {a:'king',b:'queen',human:'high',humanNote:'both royalty — very related'},
+  {a:'king',b:'kind',human:'low',humanNote:'coincidence of letters'}
+];
+function charOverlap(a,b){
+  const sa=new Set(a),sb=new Set(b);
+  const inter=[...sa].filter(c=>sb.has(c)).length;
+  const union=new Set([...sa,...sb]).size;
+  return union===0?0:inter/union;
+}
+function renderSim(){
+  const host=document.getElementById('simRows');
+  host.innerHTML='';
+  pairs.forEach((p,idx)=>{
+    const sim=charOverlap(p.a,p.b);
+    const pct=Math.round(sim*100);
+    const machineThinks=pct>=50?'similar':'different';
+    let verdictClass='',verdictText='';
+    if(p.human==='high'&&machineThinks==='similar'){verdictClass='intuitive';verdictText='matches intuition ✓';}
+    else if(p.human==='low'&&machineThinks==='different'){verdictClass='intuitive';verdictText='matches intuition ✓';}
+    else{verdictClass='misleading';verdictText='misleading! '+p.humanNote;}
+    const row=document.createElement('div');
+    row.className='sim-row';
+    row.style.animationDelay=(idx*0.08)+'s';
+    row.innerHTML=`
+      <div class="sim-pair"><em>${p.a}</em> vs <em>${p.b}</em></div>
+      <div class="sim-bar-wrap"><div class="sim-bar" style="width:0"></div><span class="sim-bar-label">${pct}%</span></div>
+      <div class="sim-verdict ${verdictClass}">${verdictText}</div>`;
+    host.appendChild(row);
+    // animate bar
+    setTimeout(()=>{row.querySelector('.sim-bar').style.width=pct+'%';},50+idx*80);
+  });
+}
+renderSim();
+
+// ── VIZ 3: tokeniser ─────────────────────────────────────────────────────────
+// demonstration BPE — small hand-crafted vocabulary for recognisable merges
+const bpeMerges=[
+  'the','The','and','of','in','to','for','with','that','is','was','it','as','on','at',
+  'ing','able','ness','tion','ment','ed','ly','er','est','un','re','pre','over','under',
+  'forget','eat','cook','taste','pasta','un forget able','over cook ed',
+  'hello','world','machine','learning','language','model','text','word'
+];
+// we will do simple greedy subword: try longest match from a vocab built on top of words
+const bpeVocab=new Set([
+  'the','The','of','in','to','for','with','and','is','was','it','as','on','at','a','an',
+  'over','under','un','re','pre',
+  'cook','ed','ing','able','ness','tion','ment','ly','er','est','s',
+  'forget','eat','taste','pasta','walk','run','play',
+  'hello','world','machine','learn','lang','uage','model','text','word','a','I',
+  'of','my'
+]);
+function tokCharacter(txt){
+  return Array.from(txt).map(c=>c===' '?'␣':c).filter(Boolean);
+}
+function tokWord(txt){
+  // split on whitespace but preserve the tokens as typed
+  const parts=txt.split(/(\s+)/).filter(x=>x!=='');
+  return parts.map(p=>/^\s+$/.test(p)?'␣':p);
+}
+function tokSubword(txt){
+  // split into whitespace-separated words, then greedy longest-match on vocab, fall back to chars
+  const out=[];
+  const parts=txt.split(/(\s+)/).filter(x=>x!=='');
+  parts.forEach(p=>{
+    if(/^\s+$/.test(p)){out.push('␣');return;}
+    // try whole word lowercase first
+    const low=p.toLowerCase();
+    if(bpeVocab.has(low)){out.push(p);return;}
+    // greedy from left
+    let i=0;
+    while(i<p.length){
+      let matched=null;
+      for(let j=p.length;j>i;j--){
+        const sub=p.slice(i,j).toLowerCase();
+        if(bpeVocab.has(sub)){matched={piece:p.slice(i,j),len:j-i};break;}
+      }
+      if(matched){
+        out.push((i===0?'':'##')+matched.piece);
+        i+=matched.len;
+      }else{
+        out.push((i===0?'':'##')+p[i]);
+        i++;
+      }
+    }
+  });
+  return out;
+}
+let tokMode='word';
+const tokInput=document.getElementById('tokInput');
+const tokOutput=document.getElementById('tokOutput');
+const tokCount=document.getElementById('tokCount');
+const tokChars=document.getElementById('tokChars');
+const tokModeLabel=document.getElementById('tokModeLabel');
+function renderTokens(){
+  const txt=tokInput.value;
+  let tokens=[];
+  if(tokMode==='char')tokens=tokCharacter(txt);
+  else if(tokMode==='word')tokens=tokWord(txt);
+  else tokens=tokSubword(txt);
+  tokOutput.innerHTML='';
+  tokens.forEach((t,i)=>{
+    const chip=document.createElement('span');
+    chip.className='tok-chip t'+(i%5);
+    chip.textContent=t;
+    chip.style.animationDelay=(i*0.015)+'s';
+    tokOutput.appendChild(chip);
+  });
+  if(tokens.length===0){
+    tokOutput.innerHTML='<span style="color:var(--muted);font-style:italic">Type something above.</span>';
+  }
+  tokCount.textContent=tokens.filter(t=>t!=='␣').length;
+  tokChars.textContent=txt.length;
+  tokModeLabel.textContent=tokMode==='char'?'character':tokMode==='word'?'word':'subword';
+}
+document.querySelectorAll('.tok-mode-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tok-mode-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    tokMode=b.dataset.mode;
+    renderTokens();
+  });
+});
+tokInput.addEventListener('input',renderTokens);
+renderTokens();
+</script>
+</body>
+</html>
