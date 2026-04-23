@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ownership in the Type System | Understanding Memory From the Ground Up</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --purple:#c678dd;--purple-dim:rgba(198,120,221,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* code blocks */
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.3rem 0;font-family:'Courier New',monospace;font-size:.92rem;line-height:1.7;overflow-x:auto;color:var(--body);white-space:pre}
+    .codeblock .kw{color:#c678dd}
+    .codeblock .tp{color:#e06c75}
+    .codeblock .nm{color:#e8a84c}
+    .codeblock .vl{color:#7fff6b}
+    .codeblock .cm{color:var(--muted);font-style:italic}
+    .codeblock .op{color:#4ca8e8}
+    .codeblock .st{color:#98c379}
+    .codeblock .err{background:rgba(255,107,107,.14);display:inline-block;padding:0 .3em;border-radius:3px}
+
+    /* side-by-side raw vs smart */
+    .compare{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin:1.3rem 0}
+    @media(max-width:800px){.compare{grid-template-columns:1fr}}
+    .compare-panel{background:#14130f;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+    .compare-header{padding:.55rem 1rem;font-size:.72rem;font-family:'Courier New',monospace;font-weight:600;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--border)}
+    .compare-panel.raw .compare-header{background:rgba(255,107,107,.08);color:var(--red)}
+    .compare-panel.smart .compare-header{background:rgba(127,255,107,.08);color:var(--green)}
+    .compare-code{padding:.9rem 1.1rem;font-family:'Courier New',monospace;font-size:.88rem;line-height:1.7;color:var(--body);white-space:pre;overflow-x:auto;flex:1}
+    .compare-code .kw{color:#c678dd}.compare-code .tp{color:#e06c75}.compare-code .nm{color:#e8a84c}
+    .compare-code .vl{color:#7fff6b}.compare-code .cm{color:var(--muted);font-style:italic}.compare-code .op{color:#4ca8e8}.compare-code .st{color:#98c379}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz base */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+    .btn{padding:.5rem 1.05rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);cursor:pointer;font-size:.88rem;font-family:inherit;transition:all .2s}
+    .btn:hover{border-color:var(--accent);color:var(--accent)}
+    .btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .btn.primary{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .btn.primary:hover{background:rgba(232,168,76,.22)}
+
+    /* ── VIZ 1: RAII stack animation ──────────────────────────────────── */
+    .v1-wrap{display:flex;flex-direction:column;gap:1rem}
+    .v1-scenario{display:flex;gap:.4rem;flex-wrap:wrap}
+    .v1-stage{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;align-items:stretch}
+    @media(max-width:800px){.v1-stage{grid-template-columns:1fr}}
+    .v1-side{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.6rem}
+    .v1-side-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);display:flex;align-items:center;justify-content:space-between}
+    .v1-badge{font-size:.7rem;font-family:'Courier New',monospace;padding:.2rem .55rem;border-radius:999px}
+    .v1-badge.stack{color:var(--blue);background:var(--blue-dim);border:1px solid rgba(76,168,232,.3)}
+    .v1-badge.heap{color:var(--accent);background:var(--accent-dim);border:1px solid rgba(232,168,76,.3)}
+    .v1-cells{display:flex;flex-direction:column-reverse;gap:.3rem;min-height:130px;padding:.4rem;background:#14130f;border-radius:6px;border:1px dashed var(--border-hover)}
+    .v1-cell{padding:.45rem .7rem;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:4px;font-family:'Courier New',monospace;font-size:.85rem;color:var(--body);display:flex;justify-content:space-between;align-items:center;transition:all .35s cubic-bezier(.22,1,.36,1)}
+    .v1-cell.new{border-color:var(--green);background:var(--green-dim);color:var(--ink)}
+    .v1-cell.dying{border-color:var(--red);background:var(--red-dim);color:var(--red);text-decoration:line-through;opacity:.6}
+    .v1-cell-label{font-size:.72rem;color:var(--muted);font-family:var(--sans)}
+    .v1-step-label{font-family:var(--hand);font-size:1.1rem;color:var(--accent);text-align:center;padding:.3rem 0}
+    .v1-controls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+    .v1-log{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;font-family:'Courier New',monospace;font-size:.85rem;line-height:1.7;color:var(--body);max-height:160px;overflow-y:auto}
+    .v1-log-line{padding:.1rem 0}
+    .v1-log-line .step{color:var(--muted);margin-right:.5rem}
+    .v1-log-line .op{color:var(--accent)}
+    .v1-log-line .ok{color:var(--green)}
+    .v1-log-line .leak{color:var(--red)}
+    .v1-verdict{padding:.9rem 1.1rem;border-radius:8px;font-size:.95rem;line-height:1.6}
+    .v1-verdict.ok{background:var(--green-dim);border-left:3px solid var(--green);color:var(--body)}
+    .v1-verdict.bad{background:var(--red-dim);border-left:3px solid var(--red);color:var(--body)}
+    .v1-verdict strong{color:var(--ink)}
+
+    /* ── VIZ 2: shared_ptr refcount ───────────────────────────────────── */
+    .v2-wrap{display:flex;flex-direction:column;gap:1rem}
+    .v2-stage{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+    @media(max-width:800px){.v2-stage{grid-template-columns:1fr}}
+    .v2-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.6rem;min-height:260px}
+    .v2-panel-title{font-family:var(--display);font-size:1.05rem;color:var(--ink)}
+    .v2-ptrs{display:flex;flex-direction:column;gap:.4rem;min-height:110px}
+    .v2-ptr{padding:.5rem .8rem;border-radius:6px;font-family:'Courier New',monospace;font-size:.85rem;display:flex;justify-content:space-between;align-items:center;transition:all .3s}
+    .v2-ptr.shared{background:var(--blue-dim);border:1px solid rgba(76,168,232,.3);color:var(--blue)}
+    .v2-ptr.weak{background:var(--purple-dim);border:1px solid rgba(198,120,221,.3);color:var(--purple)}
+    .v2-ptr.dead{opacity:.35;text-decoration:line-through}
+    .v2-obj{background:#14130f;border:2px solid var(--border-hover);border-radius:10px;padding:1rem 1.1rem;text-align:center;display:flex;flex-direction:column;gap:.4rem;transition:all .4s}
+    .v2-obj.alive{border-color:var(--green)}
+    .v2-obj.destroyed{border-color:var(--red);background:var(--red-dim);opacity:.75}
+    .v2-obj-name{font-family:var(--hand);font-size:1.3rem;color:var(--ink)}
+    .v2-obj.destroyed .v2-obj-name{color:var(--red);text-decoration:line-through}
+    .v2-counts{display:flex;gap:.7rem;justify-content:center;font-family:'Courier New',monospace;font-size:.85rem}
+    .v2-count{padding:.3rem .7rem;border-radius:999px;background:var(--bg-elevated);border:1px solid var(--border-hover);color:var(--body)}
+    .v2-count .val{color:var(--ink);font-weight:700;margin-left:.25rem}
+    .v2-count.strong .val{color:var(--blue)}
+    .v2-count.weak .val{color:var(--purple)}
+    .v2-code{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;font-family:'Courier New',monospace;font-size:.85rem;line-height:1.6;color:var(--body);white-space:pre;overflow-x:auto}
+    .v2-code .kw{color:#c678dd}.v2-code .tp{color:#e06c75}.v2-code .nm{color:#e8a84c}
+    .v2-code .cm{color:var(--muted);font-style:italic}.v2-code .op{color:#4ca8e8}.v2-code .current{background:rgba(232,168,76,.18);color:var(--accent)}
+    .v2-controls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+
+    /* ── VIZ 3: ownership decider ─────────────────────────────────────── */
+    .v3-wrap{display:flex;flex-direction:column;gap:1rem}
+    .v3-question{font-family:var(--display);font-size:1.15rem;color:var(--ink);line-height:1.5}
+    .v3-opts{display:flex;gap:.5rem;flex-wrap:wrap}
+    .v3-opt{padding:.55rem 1rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);cursor:pointer;font-size:.92rem;font-family:inherit;transition:all .2s}
+    .v3-opt:hover{border-color:var(--accent);color:var(--accent)}
+    .v3-opt.selected{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .v3-path{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.55rem}
+    .v3-path-title{font-family:var(--hand);font-size:1.1rem;color:var(--accent)}
+    .v3-crumb{font-size:.88rem;color:var(--body);line-height:1.55;padding:.45rem .7rem;background:var(--bg-elevated);border-radius:6px;border-left:2px solid var(--border-hover)}
+    .v3-crumb strong{color:var(--ink)}
+    .v3-answer{padding:1.1rem 1.3rem;border-radius:10px;font-size:1rem;line-height:1.7;display:none;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .v3-answer.show{display:flex;flex-direction:column;gap:.6rem}
+    .v3-answer.unique{background:var(--green-dim);border-left:3px solid var(--green)}
+    .v3-answer.shared{background:var(--blue-dim);border-left:3px solid var(--blue)}
+    .v3-answer.weak{background:var(--purple-dim);border-left:3px solid var(--purple)}
+    .v3-answer.raw{background:var(--accent-dim);border-left:3px solid var(--accent)}
+    .v3-answer-title{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .v3-answer-code{background:#14130f;border:1px solid var(--border);border-radius:6px;padding:.7rem .95rem;font-family:'Courier New',monospace;font-size:.85rem;color:var(--body);white-space:pre;overflow-x:auto}
+    .v3-answer-code .kw{color:#c678dd}.v3-answer-code .tp{color:#e06c75}.v3-answer-code .nm{color:#e8a84c}
+    .v3-reset{text-align:right}
+
+    /* self-test quiz */
+    .quiz-intro{font-size:1.05rem;color:var(--body);margin-bottom:1.4rem;line-height:1.7}
+    .quiz-intro strong{color:var(--ink)}
+    .quiz-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem 1.8rem;margin:1.3rem 0;position:relative;overflow:hidden}
+    .quiz-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent 60%)}
+    .quiz-num{font-family:var(--hand);font-size:1.4rem;color:var(--accent);line-height:1;margin-bottom:.4rem;display:inline-block}
+    .quiz-q{font-family:var(--display);font-size:1.28rem;color:var(--ink);line-height:1.5;margin-bottom:1rem}
+    .quiz-code{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;margin:.8rem 0;font-family:'Courier New',monospace;font-size:.9rem;line-height:1.7;overflow-x:auto;white-space:pre}
+    .quiz-code .kw{color:#c678dd}.quiz-code .tp{color:#e06c75}.quiz-code .nm{color:#e8a84c}
+    .quiz-code .vl{color:#7fff6b}.quiz-code .cm{color:var(--muted);font-style:italic}.quiz-code .op{color:#4ca8e8}.quiz-code .st{color:#98c379}
+    .quiz-options{display:flex;flex-direction:column;gap:.5rem;margin:.8rem 0}
+    .quiz-option{display:flex;align-items:flex-start;gap:.7rem;padding:.7rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;cursor:pointer;transition:all .2s;font-size:.98rem;color:var(--body);text-align:left;font-family:inherit}
+    .quiz-option:hover{border-color:var(--accent);color:var(--ink)}
+    .quiz-option.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+    .quiz-option.correct{border-color:var(--green);background:var(--green-dim);color:var(--ink)}
+    .quiz-option.incorrect{border-color:var(--red);background:var(--red-dim);color:var(--ink);opacity:.8}
+    .quiz-option-letter{font-family:'Courier New',monospace;font-weight:700;color:var(--accent);min-width:1.3rem}
+    .quiz-option.correct .quiz-option-letter{color:var(--green)}
+    .quiz-option.incorrect .quiz-option-letter{color:var(--red)}
+    .quiz-reveal{margin-top:.8rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+    .quiz-btn{padding:.5rem 1.1rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);cursor:pointer;font-size:.9rem;font-family:inherit;font-weight:500;transition:all .2s}
+    .quiz-btn:hover{background:rgba(232,168,76,.22)}
+    .quiz-answer{margin-top:1rem;padding:1rem 1.2rem;background:rgba(127,255,107,.06);border:1px solid rgba(127,255,107,.25);border-left:3px solid var(--green);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.7;display:none;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .quiz-answer.show{display:block}
+    .quiz-answer strong{color:var(--ink)}
+    .quiz-answer code{background:rgba(237,232,224,.08);padding:.1rem .4rem;border-radius:3px;font-family:'Courier New',monospace;color:var(--ink);font-size:.88em}
+    .quiz-answer .verdict{font-family:var(--display);font-size:1.1rem;color:var(--green);margin-bottom:.4rem;display:block}
+    .quiz-textarea{width:100%;min-height:80px;padding:.7rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--ink);font-size:.95rem;outline:none;font-family:inherit;resize:vertical;line-height:1.6}
+    .quiz-textarea:focus{border-color:var(--accent)}
+    .quiz-scorecard{margin-top:2rem;padding:1.4rem 1.8rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);text-align:center}
+    .quiz-scorecard-title{font-family:var(--display);font-size:1.35rem;color:var(--ink);margin-bottom:.4rem}
+    .quiz-scorecard-msg{font-size:1rem;color:var(--body);line-height:1.6}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Pointers: Thinking in Memory</span>
+  <h1>Ownership in the Type System</h1>
+  <p class="blog-subtitle">A raw pointer doesn't say who owns it. A smart pointer does, in the type itself, checked by the compiler. This post is about how C++ turns "who owns this, and when does it die?" from a comment into a contract, using three tools: <code>unique_ptr</code>, <code>shared_ptr</code>, and <code>weak_ptr</code>. We start with the idea that makes all of them work (RAII), then meet each one next to its raw-pointer equivalent, so the upgrade is visible.</p>
+
+  <h2>The raw-pointer problem, restated</h2>
+
+  <p>Everything we've covered so far in this series has been about raw pointers. They're powerful, flexible, and completely silent about ownership. Look at this function signature:</p>
+
+<pre class="codeblock"><span class="tp">void</span> <span class="nm">process</span>(<span class="nm">Widget</span><span class="op">*</span> <span class="nm">w</span>);</pre>
+
+  <p>Does <code>process</code> take ownership of the widget and <code>delete</code> it when done? Does it borrow the widget briefly and leave the caller to clean up? Is it storing the pointer somewhere, to be used later? The signature doesn't say. You have to read the implementation or trust the documentation, and if either of them lies, you get a memory bug at some undetermined point in the future.</p>
+
+  <p>Every major memory-safety failure in C-family languages comes down to this silence. <strong>Memory leaks</strong> happen when nobody remembers they're the owner. <strong>Double-frees</strong> happen when two people think they are. <strong>Dangling pointers</strong> happen when a non-owner keeps using memory after the owner freed it. <strong>Use-after-free</strong> is the general name for the whole family.</p>
+
+  <p>Smart pointers fix this by putting the ownership story into the type. Three types, three stories: "I'm the only owner" (<code>unique_ptr</code>), "we share ownership" (<code>shared_ptr</code>), and "I'm watching but don't own" (<code>weak_ptr</code>). Pick the right one and the compiler enforces the rules of that story for free.</p>
+
+  <div class="callout">A raw pointer is an address. A smart pointer is an address <em>plus a story about who owns it</em>. The story lives in the type, so the compiler can check it.</div>
+
+  <hr class="sep">
+
+  <h2>The engine underneath: RAII</h2>
+
+  <p>Before we meet the smart pointers themselves, we need the idea they rest on: <strong>RAII</strong>, which stands for "Resource Acquisition Is Initialisation." It's one of C++'s core ideas, and it's simpler than the name makes it sound.</p>
+
+  <p>The rule: <strong>tie a resource's lifetime to the lifetime of an object on the stack</strong>. When the object is created, it acquires the resource. When the object goes out of scope, its destructor releases it. Because C++ guarantees that destructors run when scope ends (even if the scope exits via an exception), you get automatic cleanup without having to remember anything.</p>
+
+  <p>Here's RAII for dynamic memory, written by hand:</p>
+
+<pre class="codeblock"><span class="kw">class</span> <span class="nm">IntHolder</span> {
+    <span class="tp">int</span><span class="op">*</span> <span class="nm">ptr</span>;
+<span class="kw">public</span>:
+    <span class="nm">IntHolder</span>(<span class="tp">int</span> <span class="nm">v</span>) : <span class="nm">ptr</span>(<span class="kw">new</span> <span class="tp">int</span>(<span class="nm">v</span>)) {}   <span class="cm">// acquire</span>
+    ~<span class="nm">IntHolder</span>()                  { <span class="kw">delete</span> <span class="nm">ptr</span>; }   <span class="cm">// release</span>
+    <span class="tp">int</span> <span class="nm">get</span>() <span class="kw">const</span>             { <span class="kw">return</span> <span class="op">*</span><span class="nm">ptr</span>; }
+};
+
+<span class="tp">void</span> <span class="nm">example</span>() {
+    <span class="nm">IntHolder</span> <span class="nm">h</span>(<span class="vl">42</span>);      <span class="cm">// new int(42) happens here</span>
+    <span class="nm">std</span>::<span class="nm">cout</span> <span class="op">&lt;&lt;</span> <span class="nm">h</span>.<span class="nm">get</span>();
+}                           <span class="cm">// h's destructor runs here, delete ptr; done.</span></pre>
+
+  <p>Notice what we've gained: there's no way for <code>example</code> to leak the int. Whether it returns normally, returns early, or throws an exception, <code>h</code>'s destructor runs and cleans up. The memory management is automatic because we embedded it into an object whose lifetime the compiler already manages.</p>
+
+  <p>But we've also created a new problem. What happens if we copy <code>h</code>?</p>
+
+<pre class="codeblock"><span class="nm">IntHolder</span> <span class="nm">a</span>(<span class="vl">42</span>);
+<span class="nm">IntHolder</span> <span class="nm">b</span> <span class="op">=</span> <span class="nm">a</span>;      <span class="cm">// default copy: b.ptr = a.ptr (same address!)</span>
+                      <span class="cm">// when both go out of scope: double-free UB</span></pre>
+
+  <p>The default copy constructor copies the pointer itself, not what it points at. Now <code>a</code> and <code>b</code> both hold the same address, and when both destructors run, you <code>delete</code> the same memory twice. This is why, whenever a class manages a resource, you have to think carefully about what copies, moves, and assignments mean. That discipline is called the <strong>Rule of Five</strong>: if you write (or need) any of destructor, copy constructor, copy assignment, move constructor, or move assignment, you probably need to think about all five.</p>
+
+  <h3>Move semantics, briefly</h3>
+
+  <p>C++11 added <strong>move semantics</strong>, which is the other half of the smart-pointer story. A move is like a copy, except the original gets emptied out in the process. Instead of duplicating the resource, you transfer it. The source ends in a valid-but-empty state; the destination has everything.</p>
+
+<pre class="codeblock"><span class="cm">// Pseudo-code for what "move" does with a pointer:</span>
+<span class="nm">b</span>.<span class="nm">ptr</span> <span class="op">=</span> <span class="nm">a</span>.<span class="nm">ptr</span>;   <span class="cm">// b takes over</span>
+<span class="nm">a</span>.<span class="nm">ptr</span> <span class="op">=</span> <span class="kw">nullptr</span>; <span class="cm">// a is now empty, destructor will do nothing</span></pre>
+
+  <p>Now when <code>a</code> and <code>b</code> go out of scope, <code>b</code>'s destructor frees the memory (once), and <code>a</code>'s destructor sees <code>nullptr</code> and does nothing. No double-free, no leak. The pattern is enforced by the compiler: some objects are <em>movable but not copyable</em>, and the type system won't let you accidentally copy them. This is exactly what <code>unique_ptr</code> is.</p>
+
+  <div class="callout">RAII ties a resource to a stack object's lifetime. Move semantics let you transfer ownership without copying the resource. Together they're the foundation of every smart pointer.</div>
+
+  <!-- VIZ 1: RAII stack animation -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Step through. Watch where the cleanup happens (or doesn't).</span></div>
+    <div class="viz-body">
+
+      <div class="v1-wrap">
+        <div class="v1-scenario">
+          <button class="btn active" data-v1="raw">Raw pointer (easy to leak)</button>
+          <button class="btn" data-v1="rawexc">Raw pointer + exception</button>
+          <button class="btn" data-v1="raii">unique_ptr (automatic)</button>
+          <button class="btn" data-v1="raiiexc">unique_ptr + exception</button>
+        </div>
+
+        <div class="v1-stage">
+          <div class="v1-side">
+            <div class="v1-side-title">Stack <span class="v1-badge stack">automatic</span></div>
+            <div class="v1-cells" id="v1Stack"></div>
+          </div>
+          <div class="v1-side">
+            <div class="v1-side-title">Heap <span class="v1-badge heap">manual</span></div>
+            <div class="v1-cells" id="v1Heap"></div>
+          </div>
+        </div>
+
+        <div class="v1-step-label" id="v1StepLabel"></div>
+
+        <div class="v1-controls">
+          <button class="btn primary" id="v1Next">Next step →</button>
+          <button class="btn" id="v1Reset">Reset</button>
+        </div>
+
+        <div class="v1-log" id="v1Log"></div>
+
+        <div class="v1-verdict" id="v1Verdict"></div>
+      </div>
+
+      <p class="viz-note">The stack manages itself; everything on it gets destroyed in reverse creation order when scope ends. The heap does not. A raw-pointer function has to explicitly <code>delete</code> before every exit path, and if anything throws, the cleanup gets skipped. A <code>unique_ptr</code> on the stack embeds the <code>delete</code> into its destructor, so <em>any</em> way the scope ends, the heap memory is freed.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>unique_ptr: exactly one owner</h2>
+
+  <p>The most common smart pointer, and the default one. A <code>unique_ptr&lt;T&gt;</code> holds a pointer to a <code>T</code> on the heap, and guarantees that exactly one <code>unique_ptr</code> owns that <code>T</code> at any time. When the <code>unique_ptr</code> goes out of scope, it deletes the <code>T</code>. When you want to transfer ownership somewhere else, you <em>move</em> the <code>unique_ptr</code>; you can't copy it.</p>
+
+  <p>Here it is next to the raw-pointer equivalent:</p>
+
+  <div class="compare">
+    <div class="compare-panel raw">
+      <div class="compare-header">RAW POINTER</div>
+      <div class="compare-code"><span class="tp">void</span> <span class="nm">example</span>() {
+    <span class="nm">Widget</span><span class="op">*</span> <span class="nm">w</span> <span class="op">=</span> <span class="kw">new</span> <span class="nm">Widget</span>();
+
+    <span class="kw">if</span> (<span class="op">!</span><span class="nm">w</span><span class="op">-&gt;</span><span class="nm">init</span>()) {
+        <span class="kw">delete</span> <span class="nm">w</span>;            <span class="cm">// don't forget!</span>
+        <span class="kw">return</span>;
+    }
+
+    <span class="nm">w</span><span class="op">-&gt;</span><span class="nm">do_work</span>();
+    <span class="kw">delete</span> <span class="nm">w</span>;                <span class="cm">// and here too</span>
+}</div>
+    </div>
+    <div class="compare-panel smart">
+      <div class="compare-header">UNIQUE_PTR</div>
+      <div class="compare-code"><span class="tp">void</span> <span class="nm">example</span>() {
+    <span class="kw">auto</span> <span class="nm">w</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_unique</span>&lt;<span class="nm">Widget</span>&gt;();
+
+    <span class="kw">if</span> (<span class="op">!</span><span class="nm">w</span><span class="op">-&gt;</span><span class="nm">init</span>()) {
+        <span class="kw">return</span>;              <span class="cm">// destructor runs,</span>
+                              <span class="cm">// Widget freed</span>
+    }
+
+    <span class="nm">w</span><span class="op">-&gt;</span><span class="nm">do_work</span>();
+                              <span class="cm">// destructor runs,</span>
+}                             <span class="cm">// Widget freed</span></div>
+    </div>
+  </div>
+
+  <p>The raw version is longer and buggier. Every early return needs a <code>delete</code>. Forget one, leak. Add an exception path, leak. The <code>unique_ptr</code> version compiles down to roughly the same assembly but deletes the Widget automatically on every exit path.</p>
+
+  <p>The most important rule: <strong>always prefer <code>std::make_unique&lt;T&gt;(args...)</code> over <code>std::unique_ptr&lt;T&gt;(new T(args...))</code></strong>. It's shorter, it's exception-safe in ways the <code>new</code> version isn't, and it's the idiom the compiler and reader expect. Use <code>make_unique</code>.</p>
+
+  <h3>Ownership transfer via move</h3>
+
+  <p>You can't copy a <code>unique_ptr</code>. You can only move it. That's the language enforcing "exactly one owner":</p>
+
+<pre class="codeblock"><span class="nm">std</span>::<span class="nm">unique_ptr</span>&lt;<span class="nm">Widget</span>&gt; <span class="nm">a</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_unique</span>&lt;<span class="nm">Widget</span>&gt;();
+
+<span class="nm">std</span>::<span class="nm">unique_ptr</span>&lt;<span class="nm">Widget</span>&gt; <span class="nm">b</span> <span class="op">=</span> <span class="nm">a</span>;               <span class="cm">// ERROR: can't copy</span>
+<span class="nm">std</span>::<span class="nm">unique_ptr</span>&lt;<span class="nm">Widget</span>&gt; <span class="nm">c</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">move</span>(<span class="nm">a</span>);     <span class="cm">// OK: ownership transferred</span>
+                                              <span class="cm">// a is now empty (nullptr)</span>
+
+<span class="kw">if</span> (<span class="nm">a</span>) <span class="nm">std</span>::<span class="nm">cout</span> <span class="op">&lt;&lt;</span> <span class="st">"still owns"</span>;      <span class="cm">// won't print</span>
+<span class="nm">c</span><span class="op">-&gt;</span><span class="nm">do_work</span>();                                <span class="cm">// fine, c is the owner now</span></pre>
+
+  <p>This is the type system making "exactly one owner" an invariant. If you tried to copy, the compiler refuses. If you move, the language guarantees the source is left empty so only the destination owns. No runtime check, no reference count, no overhead beyond the raw pointer itself.</p>
+
+  <h3>unique_ptr in function signatures</h3>
+
+  <p>The real power of <code>unique_ptr</code> shows up in function signatures. Each way of using it communicates exactly one ownership intent:</p>
+
+<pre class="codeblock"><span class="cm">// "I take ownership. The caller's unique_ptr is emptied."</span>
+<span class="tp">void</span> <span class="nm">consume</span>(<span class="nm">std</span>::<span class="nm">unique_ptr</span>&lt;<span class="nm">Widget</span>&gt; <span class="nm">w</span>);
+
+<span class="cm">// "I borrow briefly. Caller keeps owning, and I promise not to delete."</span>
+<span class="tp">void</span> <span class="nm">inspect</span>(<span class="kw">const</span> <span class="nm">Widget</span><span class="op">*</span> <span class="nm">w</span>);
+<span class="cm">// or:</span>
+<span class="tp">void</span> <span class="nm">inspect</span>(<span class="kw">const</span> <span class="nm">Widget</span><span class="op">&amp;</span> <span class="nm">w</span>);
+
+<span class="cm">// "I create and return ownership to the caller."</span>
+<span class="nm">std</span>::<span class="nm">unique_ptr</span>&lt;<span class="nm">Widget</span>&gt; <span class="nm">make_widget</span>();</pre>
+
+  <p>Contrast with the raw-pointer world, where <code>void f(Widget* w)</code> tells you nothing: takes ownership? borrows? stores? The <code>unique_ptr</code> version says the answer in the type. This is why modern C++ style guides (Google, LLVM, Abseil, the C++ Core Guidelines) all push hard for smart pointers in signatures.</p>
+
+  <div class="callout"><code>unique_ptr</code> is the default smart pointer. Use it whenever one piece of code owns a heap allocation from cradle to grave. Reach for something else only when you actually have to share.</div>
+
+  <hr class="sep">
+
+  <h2>shared_ptr: counted sharing</h2>
+
+  <p>Sometimes a single owner isn't the right story. Multiple parts of your program legitimately share a resource, and it should live as long as <em>any</em> of them still need it. That's what <code>shared_ptr</code> is for.</p>
+
+  <p>Internally, a <code>shared_ptr&lt;T&gt;</code> holds two things: a pointer to the <code>T</code>, and a pointer to a small <strong>control block</strong> that counts references. Every time you copy the <code>shared_ptr</code>, the count goes up. Every time one is destroyed, the count goes down. When the count hits zero, the <code>T</code> is deleted. It's deterministic, automatic reference counting in a box.</p>
+
+  <div class="compare">
+    <div class="compare-panel raw">
+      <div class="compare-header">RAW POINTER (ad-hoc refcount)</div>
+      <div class="compare-code"><span class="kw">struct</span> <span class="nm">Widget</span> {
+    <span class="tp">int</span> <span class="nm">refs</span> <span class="op">=</span> <span class="vl">1</span>;
+    <span class="tp">void</span> <span class="nm">addref</span>() { <span class="nm">refs</span><span class="op">++</span>; }
+    <span class="tp">void</span> <span class="nm">release</span>() {
+        <span class="kw">if</span> (<span class="op">--</span><span class="nm">refs</span> <span class="op">==</span> <span class="vl">0</span>) <span class="kw">delete</span> <span class="kw">this</span>;
+    }
+};
+
+<span class="nm">Widget</span><span class="op">*</span> <span class="nm">w</span> <span class="op">=</span> <span class="kw">new</span> <span class="nm">Widget</span>();
+<span class="nm">store</span>(<span class="nm">w</span>);  <span class="nm">w</span><span class="op">-&gt;</span><span class="nm">addref</span>();
+<span class="nm">w</span><span class="op">-&gt;</span><span class="nm">release</span>();          <span class="cm">// caller's ref</span>
+<span class="cm">// every caller must pair addref/release.</span></div>
+    </div>
+    <div class="compare-panel smart">
+      <div class="compare-header">SHARED_PTR</div>
+      <div class="compare-code"><span class="kw">auto</span> <span class="nm">w</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_shared</span>&lt;<span class="nm">Widget</span>&gt;();
+
+<span class="nm">store</span>(<span class="nm">w</span>);          <span class="cm">// count: 2</span>
+<span class="cm">// w goes out of scope:  count: 1</span>
+<span class="cm">// store's copy dies:    count: 0</span>
+<span class="cm">// Widget deleted.</span>
+
+
+
+
+
+<span class="cm">// no manual addref/release anywhere.</span></div>
+    </div>
+  </div>
+
+  <p>The raw version is what people wrote before <code>shared_ptr</code> existed (and what reference-counted types in older codebases still do). Every caller has to pair every <code>addref</code> with a <code>release</code>, and one mistake leaks or double-frees. The <code>shared_ptr</code> version ties the ref-count to construction and destruction, so it can't be forgotten.</p>
+
+  <p>As with unique, always prefer <strong><code>std::make_shared&lt;T&gt;(args...)</code></strong> over <code>std::shared_ptr&lt;T&gt;(new T(args...))</code>. Here there's an extra reason: <code>make_shared</code> allocates the object and the control block in a single allocation, which is faster and uses less memory than two separate <code>new</code>s.</p>
+
+  <h3>When to reach for shared_ptr</h3>
+
+  <p>A good rule of thumb: if you can state "this one thing owns this" without lying, use <code>unique_ptr</code>. Only reach for <code>shared_ptr</code> when there's genuinely no single owner: the object participates in a graph, or it's cached and might be used from several independent code paths, or its lifetime is determined by "last user wins" across threads.</p>
+
+  <p>The cost of <code>shared_ptr</code> is real and worth naming:</p>
+
+  <ul>
+    <li><strong>Memory:</strong> a control block per allocation (16 bytes on typical 64-bit systems), and every <code>shared_ptr</code> is twice the size of a raw pointer.</li>
+    <li><strong>Time:</strong> every copy and destruction involves atomic increment/decrement of the ref count. Atomics are cheap but not free, and in hot paths they add up.</li>
+    <li><strong>Cycles:</strong> two <code>shared_ptr</code>s pointing at each other never hit zero, so neither is ever deleted. This is the classic <code>shared_ptr</code> leak. The fix is <code>weak_ptr</code>, which is next.</li>
+  </ul>
+
+  <h3>The cycle problem</h3>
+
+  <p>Here's the leak that motivates the third smart pointer. Consider two nodes that point at each other:</p>
+
+<pre class="codeblock"><span class="kw">struct</span> <span class="nm">Node</span> {
+    <span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Node</span>&gt; <span class="nm">neighbour</span>;
+};
+
+<span class="kw">auto</span> <span class="nm">a</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_shared</span>&lt;<span class="nm">Node</span>&gt;();
+<span class="kw">auto</span> <span class="nm">b</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_shared</span>&lt;<span class="nm">Node</span>&gt;();
+<span class="nm">a</span><span class="op">-&gt;</span><span class="nm">neighbour</span> <span class="op">=</span> <span class="nm">b</span>;    <span class="cm">// b's refcount: 2</span>
+<span class="nm">b</span><span class="op">-&gt;</span><span class="nm">neighbour</span> <span class="op">=</span> <span class="nm">a</span>;    <span class="cm">// a's refcount: 2</span>
+
+<span class="cm">// End of scope. Local a dies (refcount drops to 1, still &gt; 0).</span>
+<span class="cm">// Local b dies (refcount drops to 1, still &gt; 0).</span>
+<span class="cm">// Neither is ever deleted. Memory leaked, no crash.</span></pre>
+
+  <p>This is a memory leak caused by <code>shared_ptr</code> being too eager to keep things alive. The two nodes are keeping each other alive through their mutual references, and nothing outside the cycle holds a pointer to either. The fix is to break the cycle: exactly one direction should be a <em>non-owning</em> reference. That's what <code>weak_ptr</code> is for.</p>
+
+  <div class="callout"><code>shared_ptr</code> buys flexibility with atomic overhead and cycle risk. Use it when sharing is real, not when you couldn't be bothered to think about ownership.</div>
+
+  <!-- VIZ 2: shared_ptr refcount -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Step through. Watch the refcount drive the object's life.</span></div>
+    <div class="viz-body">
+      <div class="v2-wrap">
+        <div class="v2-scenario" style="display:flex;gap:.4rem;flex-wrap:wrap">
+          <button class="btn active" data-v2="simple">Simple sharing</button>
+          <button class="btn" data-v2="cycle">Cycle (leak)</button>
+          <button class="btn" data-v2="weak">Weak breaks cycle</button>
+        </div>
+
+        <div class="v2-stage">
+          <div class="v2-panel">
+            <div class="v2-panel-title">Source</div>
+            <div class="v2-code" id="v2Code"></div>
+          </div>
+          <div class="v2-panel">
+            <div class="v2-panel-title">Memory view</div>
+            <div class="v2-ptrs" id="v2Ptrs"></div>
+            <div class="v2-obj" id="v2Obj1"></div>
+            <div class="v2-obj" id="v2Obj2"></div>
+          </div>
+        </div>
+
+        <div class="v2-controls">
+          <button class="btn primary" id="v2Next">Next step →</button>
+          <button class="btn" id="v2Reset">Reset</button>
+          <span style="font-size:.85rem;color:var(--muted);margin-left:.5rem" id="v2Progress"></span>
+        </div>
+      </div>
+
+      <p class="viz-note">The first scenario shows normal sharing: the object dies when the last owner releases it. The second shows the cycle: both nodes end with refcount 1, nothing hits zero, memory leaks silently. The third replaces one edge with <code>weak_ptr</code>, which doesn't increment the refcount, so when the strong refs all release, the count hits zero and cleanup happens properly.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>weak_ptr: observe without owning</h2>
+
+  <p>A <code>weak_ptr&lt;T&gt;</code> is a non-owning observer of a <code>shared_ptr</code>-managed object. It holds a pointer to the control block, can tell you whether the object is still alive, and can give you a <code>shared_ptr</code> if it is. But it does <em>not</em> contribute to the reference count. The object can die while <code>weak_ptr</code>s are still watching; the <code>weak_ptr</code>s will detect that.</p>
+
+  <p>Here's its shape:</p>
+
+<pre class="codeblock"><span class="kw">auto</span> <span class="nm">s</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_shared</span>&lt;<span class="nm">Widget</span>&gt;();   <span class="cm">// refcount: 1</span>
+<span class="nm">std</span>::<span class="nm">weak_ptr</span>&lt;<span class="nm">Widget</span>&gt; <span class="nm">w</span> <span class="op">=</span> <span class="nm">s</span>;             <span class="cm">// refcount: still 1 (weak doesn't count)</span>
+
+<span class="cm">// Later, to use the widget, ask the weak_ptr to promote to shared_ptr:</span>
+<span class="kw">if</span> (<span class="kw">auto</span> <span class="nm">locked</span> <span class="op">=</span> <span class="nm">w</span>.<span class="nm">lock</span>()) {           <span class="cm">// nullptr if Widget is gone</span>
+    <span class="nm">locked</span><span class="op">-&gt;</span><span class="nm">do_work</span>();                      <span class="cm">// refcount temporarily up to 2</span>
+}                                            <span class="cm">// back to 1</span>
+
+<span class="nm">s</span>.<span class="nm">reset</span>();   <span class="cm">// refcount hits 0, Widget deleted</span>
+<span class="kw">if</span> (<span class="nm">w</span>.<span class="nm">expired</span>()) <span class="nm">std</span>::<span class="nm">cout</span> <span class="op">&lt;&lt;</span> <span class="st">"Widget's gone\n"</span>;   <span class="cm">// yes it is</span></pre>
+
+  <p>Two operations do most of the work. <code>lock()</code> tries to upgrade the weak reference to a strong one; if the object is still alive, you get a valid <code>shared_ptr</code>, otherwise <code>nullptr</code>. <code>expired()</code> checks without upgrading. The check-and-use pattern (<code>if (auto p = w.lock())</code>) is the idiom for "use it if it's still there."</p>
+
+  <h3>Two things weak_ptr is actually for</h3>
+
+  <p><strong>1. Breaking cycles.</strong> In the <code>Node</code> example above, change one direction to <code>weak_ptr</code> and the cycle disappears:</p>
+
+<pre class="codeblock"><span class="kw">struct</span> <span class="nm">Node</span> {
+    <span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Node</span>&gt; <span class="nm">next</span>;      <span class="cm">// owning forward link</span>
+    <span class="nm">std</span>::<span class="nm">weak_ptr</span>&lt;<span class="nm">Node</span>&gt;   <span class="nm">prev</span>;      <span class="cm">// non-owning back-link</span>
+};</pre>
+
+  <p>This is the classic recipe for doubly-linked lists, parent/child trees, and any graph where one direction is "the real relationship" and the other is "also nice to have." The <code>shared_ptr</code>s form a DAG of ownership; the <code>weak_ptr</code>s are observers that don't contribute to keeping things alive.</p>
+
+  <p><strong>2. Caches and observers.</strong> Sometimes you want to remember that you gave out a pointer, but not keep the pointee alive just because you have a record of it. A cache that maps names to <code>shared_ptr</code>s would leak forever (the cache would be the last holder of everything ever inserted); a cache that maps names to <code>weak_ptr</code>s lets objects die naturally when the rest of the program releases them, and the cache quietly forgets them:</p>
+
+<pre class="codeblock"><span class="nm">std</span>::<span class="nm">unordered_map</span>&lt;<span class="nm">std</span>::<span class="nm">string</span>, <span class="nm">std</span>::<span class="nm">weak_ptr</span>&lt;<span class="nm">Texture</span>&gt;&gt; <span class="nm">cache</span>;
+
+<span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Texture</span>&gt; <span class="nm">load_texture</span>(<span class="kw">const</span> <span class="nm">std</span>::<span class="nm">string</span><span class="op">&amp;</span> <span class="nm">name</span>) {
+    <span class="kw">if</span> (<span class="kw">auto</span> <span class="nm">hit</span> <span class="op">=</span> <span class="nm">cache</span>[<span class="nm">name</span>].<span class="nm">lock</span>()) <span class="kw">return</span> <span class="nm">hit</span>;  <span class="cm">// still alive? reuse.</span>
+    <span class="kw">auto</span> <span class="nm">fresh</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_shared</span>&lt;<span class="nm">Texture</span>&gt;(<span class="nm">name</span>);
+    <span class="nm">cache</span>[<span class="nm">name</span>] <span class="op">=</span> <span class="nm">fresh</span>;                           <span class="cm">// remember, but don't own.</span>
+    <span class="kw">return</span> <span class="nm">fresh</span>;
+}</pre>
+
+  <p>The cache is a lookup helper, not an owner. Textures stay alive while the game is using them, and drop out of memory when nothing else is holding on. Perfect use of <code>weak_ptr</code>.</p>
+
+  <div class="callout"><code>weak_ptr</code> is how you observe without owning. Use it to break cycles and to hold non-owning references that survive the pointee's death.</div>
+
+  <hr class="sep">
+
+  <h2>Putting it together: picking the right one</h2>
+
+  <p>Three pointers, three stories. The decision is almost mechanical once you ask the right questions.</p>
+
+  <p>Start by asking: <em>does this piece of memory need dynamic lifetime at all?</em> If the lifetime is tied to a scope, you don't need any smart pointer. Put the object on the stack, pass it by reference or const-reference, and you're done. Smart pointers are for heap allocations.</p>
+
+  <p>If it does need heap lifetime, ask: <em>is there one owner, or several?</em> If one owner, <code>unique_ptr</code>. If genuinely several, <code>shared_ptr</code>.</p>
+
+  <p>If there's a <code>shared_ptr</code>, ask: <em>does anything need to observe the object without keeping it alive?</em> Back-references, caches, observers. Those are <code>weak_ptr</code>.</p>
+
+  <p>And ask: <em>does a non-owning function need to borrow it briefly?</em> Pass a raw pointer or reference. Raw pointers still exist in modern C++; they just mean "non-owning, borrowed for this call." The smart pointers are for ownership; raw pointers and references are for access.</p>
+
+  <!-- VIZ 3: ownership decider -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Answer a few questions, get a smart-pointer recommendation.</span></div>
+    <div class="viz-body">
+      <div class="v3-wrap">
+        <div class="v3-path">
+          <div class="v3-path-title">Your answers so far</div>
+          <div id="v3Trail"></div>
+        </div>
+
+        <div id="v3QBlock"></div>
+
+        <div class="v3-answer" id="v3Answer"></div>
+
+        <div class="v3-reset">
+          <button class="btn" id="v3Reset">Start over</button>
+        </div>
+      </div>
+
+      <p class="viz-note">Four questions, at most. The decision tree isn't deep because the concepts aren't; you almost always want <code>unique_ptr</code>, you sometimes want <code>shared_ptr</code>, you rarely want <code>weak_ptr</code>, and you reach for a raw pointer or reference when the code isn't responsible for the lifetime at all.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Custom deleters and other knobs</h2>
+
+  <p>A few advanced features worth knowing about, even if you don't use them every day.</p>
+
+  <p><strong>Custom deleters.</strong> Smart pointers can manage things other than heap memory: file handles, OS resources, arena allocations. You supply a custom deleter, and the smart pointer calls it instead of <code>delete</code>:</p>
+
+<pre class="codeblock"><span class="cm">// Managing a FILE* from stdio, which needs fclose, not delete:</span>
+<span class="kw">auto</span> <span class="nm">closer</span> <span class="op">=</span> [](<span class="nm">std</span>::<span class="nm">FILE</span><span class="op">*</span> <span class="nm">f</span>) { <span class="kw">if</span> (<span class="nm">f</span>) <span class="nm">std</span>::<span class="nm">fclose</span>(<span class="nm">f</span>); };
+<span class="nm">std</span>::<span class="nm">unique_ptr</span>&lt;<span class="nm">std</span>::<span class="nm">FILE</span>, <span class="kw">decltype</span>(<span class="nm">closer</span>)&gt; <span class="nm">f</span>(
+    <span class="nm">std</span>::<span class="nm">fopen</span>(<span class="st">"data.txt"</span>, <span class="st">"r"</span>), <span class="nm">closer</span>);</pre>
+
+  <p>This is RAII applied to any resource with a paired acquire/release API. Every C resource-handle pattern can be wrapped in a <code>unique_ptr</code> with a custom deleter, and the result is exception-safe and leak-proof.</p>
+
+  <p><strong>Arrays.</strong> <code>unique_ptr&lt;T[]&gt;</code> and <code>make_unique&lt;T[]&gt;(n)</code> work for array allocations, calling <code>delete[]</code> correctly. (<code>shared_ptr</code> only got proper array support in C++17 with <code>shared_ptr&lt;T[]&gt;</code>; before that you had to supply a custom deleter.)</p>
+
+  <p><strong>enable_shared_from_this.</strong> If a class method needs to hand out a <code>shared_ptr</code> to itself (for callback registration, for instance), you cannot just write <code>shared_ptr&lt;Self&gt;(this)</code>. That creates a <em>second</em> control block with a refcount of 1, and the object will be double-deleted. The correct pattern is to inherit from <code>std::enable_shared_from_this&lt;Self&gt;</code> and call <code>shared_from_this()</code>, which gives you a <code>shared_ptr</code> sharing the existing control block. It's niche but essential when the shape of the problem demands it.</p>
+
+  <p><strong>No standard intrusive pointers.</strong> In performance-critical code (game engines, some embedded) you'll see <em>intrusive</em> reference-counted pointers, where the count is stored in the managed object itself rather than in a separate control block. The standard library doesn't ship one; projects use Boost's <code>intrusive_ptr</code> or roll their own.</p>
+
+  <hr class="sep">
+
+  <h2>Common pitfalls</h2>
+
+  <p>Four traps that catch people even after they know the basic rules.</p>
+
+  <p><strong>1. Mixing smart and raw ownership.</strong> If you write <code>Widget* raw = smart.get();</code>, the <code>raw</code> is a borrowed pointer. It's fine to pass to functions that take raw parameters. It is <em>not</em> fine to <code>delete</code> it, or to hand it to another smart pointer, or to outlive the original smart pointer. "Get a raw pointer for non-owning access" is the correct use; "get a raw pointer to manage lifetime separately" is a bug.</p>
+
+  <p><strong>2. Passing <code>shared_ptr</code> by value everywhere.</strong> Every time you pass a <code>shared_ptr</code> by value, that's an atomic increment at the call and an atomic decrement at the return. In a hot path with a pointer that's passed through ten levels of calls, that adds up fast. Pass by <code>const&amp;</code> when the callee doesn't need to extend the lifetime, and by value when it genuinely takes (shared) ownership.</p>
+
+  <p><strong>3. Using <code>make_shared</code> for large objects in memory-constrained environments.</strong> Because <code>make_shared</code> allocates the object and the control block together, the memory stays allocated until the <em>last</em> <code>weak_ptr</code> is gone, not just the last <code>shared_ptr</code>. For large objects with many observers, this can keep a lot of memory alive. <code>shared_ptr&lt;T&gt;(new T(...))</code> separates the two allocations; the object can be freed as soon as the last <code>shared_ptr</code> dies, even if <code>weak_ptr</code>s remain. This is one of the few cases where <code>make_shared</code> is the wrong choice.</p>
+
+  <p><strong>4. Using <code>shared_ptr</code> as a "default."</strong> In codebases that migrated from Java or Python, people sometimes make every owning pointer a <code>shared_ptr</code> out of habit. This is almost always wrong in C++. It costs time, memory, and clarity. The ownership graph of a program should look like a tree or DAG with <code>unique_ptr</code>s; <code>shared_ptr</code> is for the exceptional nodes where sharing is genuinely needed.</p>
+
+  <div class="callout">Smart pointers are not training wheels. Each one encodes a specific ownership story, and using the wrong one costs something. Pick deliberately.</div>
+
+  <hr class="sep">
+
+  <h2>A note on performance</h2>
+
+  <p>A question that comes up often: are smart pointers slower than raw pointers? The short answer is "<code>unique_ptr</code> is basically free; <code>shared_ptr</code> has real cost; <code>weak_ptr</code> is similar to <code>shared_ptr</code> but usually colder."</p>
+
+  <p><code>unique_ptr</code> compiles down to the same code as a raw pointer plus a destructor call at scope exit. No ref count, no atomics, no indirection. Modern compilers are very good at optimising this; there's no measurable overhead versus a well-written raw-pointer program. Use it freely.</p>
+
+  <p><code>shared_ptr</code> has two atomic operations per copy (increment on assignment, decrement on destruction), an extra indirection through the control block on each access, and a larger pointer (16 bytes vs 8 on 64-bit). On a hot loop, this shows up on profiles. On normal code it's invisible.</p>
+
+  <p><code>weak_ptr</code> itself is cheap; its cost is mostly paid when you call <code>lock()</code>, which does an atomic read-and-increment on the control block to make sure the object hasn't been destroyed mid-call. Still cheaper than whatever bug you were about to write instead.</p>
+
+  <p>Measure before optimising. The "smart pointers are slow" reputation comes from codebases that reached for <code>shared_ptr</code> as a default; use <code>unique_ptr</code> as the default and the overhead is usually invisible.</p>
+
+  <hr class="sep">
+
+  <h2>Summing up</h2>
+
+  <p>Raw pointers carry no ownership information. Smart pointers put ownership in the type system, where the compiler can check it.</p>
+
+  <p><strong><code>unique_ptr&lt;T&gt;</code></strong> is "exactly one owner." Move-only, zero runtime overhead, the default smart pointer. Create with <code>std::make_unique&lt;T&gt;(args...)</code>, transfer ownership with <code>std::move</code>, never copy.</p>
+
+  <p><strong><code>shared_ptr&lt;T&gt;</code></strong> is "shared ownership with a reference count." Use when no single owner exists, with awareness of the atomic overhead and cycle risk. Create with <code>std::make_shared&lt;T&gt;(args...)</code> for efficiency.</p>
+
+  <p><strong><code>weak_ptr&lt;T&gt;</code></strong> is "observe without owning." Use to break <code>shared_ptr</code> cycles and to hold caching references that let their pointees die. Access via <code>lock()</code>, which returns a <code>shared_ptr</code> or <code>nullptr</code>.</p>
+
+  <p>Underneath them all is RAII, C++'s core pattern of tying resource lifetime to stack-object lifetime, combined with move semantics to transfer ownership without duplicating the resource. Once those two ideas click, smart pointers stop being magic and start being the obvious way to write leak-free, exception-safe C++.</p>
+
+  <p>Raw pointers still have a role: as non-owning access, for function parameters that borrow, for C interop. The thing that's gone away, in modern C++ practice, is raw pointers as owners. When you own something on the heap, use a smart pointer. The compiler will catch the rest.</p>
+
+  <hr class="sep">
+
+  <h2>What's next</h2>
+
+  <p>Part 11, the finale of this series, is <strong>Undefined Behaviour</strong>. We've met UB in passing already: strict aliasing violations, writing through cast-away const, use-after-free. Part 11 pulls these together, explains <em>why</em> compilers are allowed to be so aggressive about UB, and walks through the debugging tools (sanitizers, valgrind, static analysers) that turn "mystery crash in release builds" into "caught at compile time." It's the post where everything we've learned about pointers earns its pay against the compiler's paranoia.</p>
+
+  <div class="callout">You've now seen every pointer tool C and C++ hand you. Next: the rules governing what happens when those tools are misused, and the discipline for catching misuse before it ships.</div>
+
+  <hr class="sep">
+
+  <h2>Test yourself</h2>
+
+  <p class="quiz-intro">Seven questions covering RAII, the three smart pointers, move semantics, and common pitfalls. Five correct means you're ready for Part 11.</p>
+
+  <!-- Q1 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q1</span>
+    <div class="quiz-q">Which statements about <code>unique_ptr</code> are true?</div>
+    <div class="quiz-options multi" data-quiz="q1" data-answer="a,c,e">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span>It cannot be copied, only moved.</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span>It maintains a reference count internally.</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span>It has zero runtime overhead compared to a raw pointer with a matching <code>delete</code>.</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span>It cannot be used with arrays (<code>T[]</code>).</span></button>
+      <button class="quiz-option" data-val="e"><span class="quiz-option-letter">E</span><span><code>std::make_unique</code> is the preferred way to create one.</span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a1">Reveal answer</button></div>
+    <div class="quiz-answer" id="a1">
+      <span class="verdict">True: A, C, E. False: B, D.</span>
+      <strong>A is true.</strong> The copy constructor and copy assignment are deleted. You transfer ownership with <code>std::move</code>.<br>
+      <strong>B is false.</strong> That's <code>shared_ptr</code>. <code>unique_ptr</code> holds just the pointer (plus the deleter if one is specified), with no refcount overhead.<br>
+      <strong>C is true.</strong> The destructor call is the only "extra" code, and it compiles to the same instructions as a manual <code>delete</code>. Sizewise, <code>unique_ptr</code> with the default deleter is the same size as a raw pointer.<br>
+      <strong>D is false.</strong> <code>unique_ptr&lt;T[]&gt;</code> is fully supported and calls <code>delete[]</code> correctly. <code>std::make_unique&lt;T[]&gt;(n)</code> is the idiomatic creator.<br>
+      <strong>E is true.</strong> Shorter, exception-safer, and avoids the <code>new</code>/<code>delete</code> asymmetry that hides bugs.
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q2</span>
+    <div class="quiz-q">A legacy API takes a raw <code>Widget*</code> and returns a raw <code>Widget*</code>:</div>
+<pre class="quiz-code"><span class="nm">Widget</span><span class="op">*</span> <span class="nm">load_widget</span>(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">path</span>);     <span class="cm">// returns owning pointer, caller must delete</span>
+<span class="tp">void</span>     <span class="nm">inspect</span>(<span class="nm">Widget</span><span class="op">*</span> <span class="nm">w</span>);                   <span class="cm">// borrows, does not take ownership</span></pre>
+    <div class="quiz-q" style="margin-top:.6rem;font-size:1.1rem">You want to wrap <code>load_widget</code>'s return in a smart pointer and pass it to <code>inspect</code> without transferring ownership. Write the code.</div>
+    <textarea class="quiz-textarea" placeholder="Show the wrap, the inspect call, and any cleanup."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a2">Reveal answer</button></div>
+    <div class="quiz-answer" id="a2">
+      <span class="verdict">Wrap in <code>unique_ptr</code>, pass via <code>.get()</code> for non-owning access.</span>
+<pre class="quiz-code"><span class="nm">std</span>::<span class="nm">unique_ptr</span>&lt;<span class="nm">Widget</span>&gt; <span class="nm">w</span>(<span class="nm">load_widget</span>(<span class="st">"config.yml"</span>));
+
+<span class="nm">inspect</span>(<span class="nm">w</span>.<span class="nm">get</span>());   <span class="cm">// borrow without transferring ownership</span>
+
+<span class="cm">// w's destructor calls delete on the widget at scope exit. No leak.</span></pre>
+      <strong>Why this works:</strong> the <code>unique_ptr</code> constructor takes a raw pointer and assumes ownership, so <code>w</code> is now the sole owner. <code>.get()</code> returns the underlying raw pointer <em>without</em> releasing ownership; it's a view, not a handoff. <code>inspect</code> uses it and returns; <code>w</code> still owns the widget; the destructor cleans up.<br><br>
+      <strong>Common wrong answers:</strong> passing the <code>unique_ptr</code> by value would move-transfer ownership into <code>inspect</code>, leaving <code>w</code> empty and the widget deleted at the end of <code>inspect</code>'s parameter scope, except <code>inspect</code> doesn't take a <code>unique_ptr</code>, so it wouldn't even compile. Using <code>w.release()</code> would return the raw pointer <em>and</em> drop ownership, so when <code>w</code> dies it won't clean up, and the widget leaks.
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q3</span>
+    <div class="quiz-q">Why does this code leak memory, and how would you fix it?</div>
+<pre class="quiz-code"><span class="kw">struct</span> <span class="nm">Node</span> {
+    <span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Node</span>&gt; <span class="nm">next</span>;
+    <span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Node</span>&gt; <span class="nm">prev</span>;
+};
+
+<span class="kw">auto</span> <span class="nm">a</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_shared</span>&lt;<span class="nm">Node</span>&gt;();
+<span class="kw">auto</span> <span class="nm">b</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_shared</span>&lt;<span class="nm">Node</span>&gt;();
+<span class="nm">a</span>-&gt;<span class="nm">next</span> = <span class="nm">b</span>;
+<span class="nm">b</span>-&gt;<span class="nm">prev</span> = <span class="nm">a</span>;
+<span class="cm">// local a and b go out of scope here</span></pre>
+    <textarea class="quiz-textarea" placeholder="Explain the leak and show the fix."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a3">Reveal answer</button></div>
+    <div class="quiz-answer" id="a3">
+      <span class="verdict">Cycle: refcounts never hit zero. Fix with <code>weak_ptr</code> on the back-edge.</span>
+      <strong>What happens:</strong> after both assignments, <code>a</code>'s refcount is 2 (local + <code>b-&gt;prev</code>) and <code>b</code>'s refcount is 2 (local + <code>a-&gt;next</code>). When the locals go out of scope, each refcount drops to 1, but neither hits zero because the two nodes keep each other alive through their mutual ownership. Nothing outside the cycle holds a reference, so the memory is orphaned and leaked.<br><br>
+      <strong>Fix:</strong>
+<pre class="quiz-code"><span class="kw">struct</span> <span class="nm">Node</span> {
+    <span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Node</span>&gt; <span class="nm">next</span>;    <span class="cm">// forward: owning</span>
+    <span class="nm">std</span>::<span class="nm">weak_ptr</span>&lt;<span class="nm">Node</span>&gt;   <span class="nm">prev</span>;    <span class="cm">// back:   non-owning</span>
+};</pre>
+      Now <code>b-&gt;prev = a</code> doesn't bump <code>a</code>'s refcount, so when local <code>a</code> dies, <code>a</code>'s count hits zero and cleanup runs, which drops <code>a-&gt;next</code> (the last strong ref to <code>b</code>), which drops <code>b</code>'s count to 1, then to 0 when local <code>b</code> dies. To use <code>prev</code>, you call <code>.lock()</code>: <code>if (auto p = b-&gt;prev.lock()) p-&gt;do_stuff();</code>.<br><br>
+      The general pattern: if two <code>shared_ptr</code>s point at each other, one of them must become a <code>weak_ptr</code>. Pick the direction that's "secondary" (the back-edge, the observer, the cache-lookup); keep the primary direction owning.
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q4</span>
+    <div class="quiz-q">A colleague writes this function to hand out copies of an internal widget:</div>
+<pre class="quiz-code"><span class="kw">class</span> <span class="nm">Widget</span> {
+<span class="kw">public</span>:
+    <span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Widget</span>&gt; <span class="nm">clone_handle</span>() {
+        <span class="kw">return</span> <span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Widget</span>&gt;(<span class="kw">this</span>);   <span class="cm">// hand out a shared_ptr to self</span>
+    }
+};</pre>
+    <div class="quiz-q" style="margin-top:.6rem;font-size:1.1rem">What goes wrong, and what's the correct idiom?</div>
+    <textarea class="quiz-textarea" placeholder="Describe the bug and the fix."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a4">Reveal answer</button></div>
+    <div class="quiz-answer" id="a4">
+      <span class="verdict">Double-free via two separate control blocks. Use <code>enable_shared_from_this</code>.</span>
+      <strong>What goes wrong:</strong> <code>std::shared_ptr&lt;Widget&gt;(this)</code> creates a <em>brand-new</em> control block with refcount 1, completely independent of whatever <code>shared_ptr</code> already manages this object. Now there are two control blocks pointing at the same Widget. Each will, when its refcount hits zero, call <code>delete</code> on the same pointer. The result is a double-free and undefined behaviour.<br><br>
+      <strong>Fix:</strong> inherit from <code>std::enable_shared_from_this</code> and use <code>shared_from_this()</code>:
+<pre class="quiz-code"><span class="kw">class</span> <span class="nm">Widget</span> : <span class="kw">public</span> <span class="nm">std</span>::<span class="nm">enable_shared_from_this</span>&lt;<span class="nm">Widget</span>&gt; {
+<span class="kw">public</span>:
+    <span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Widget</span>&gt; <span class="nm">clone_handle</span>() {
+        <span class="kw">return</span> <span class="nm">shared_from_this</span>();         <span class="cm">// shares the existing control block</span>
+    }
+};</pre>
+      <strong>The precondition:</strong> <code>shared_from_this()</code> only works if the object is <em>already</em> owned by a <code>shared_ptr</code>. Calling it inside a constructor, or on an object allocated on the stack, will throw <code>bad_weak_ptr</code>. So the class has to be created via <code>std::make_shared</code>.<br><br>
+      This is a surprisingly common footgun. Any method that needs to hand out a <code>shared_ptr</code> to <code>this</code> must use this pattern. Callback registration, async operations that capture the object for later, parent/child relationships that need a back-pointer, all of these need <code>enable_shared_from_this</code> in C++.
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q5</span>
+    <div class="quiz-q">Which smart pointer (or raw pointer/reference) is most appropriate for each scenario?</div>
+    <div class="quiz-options multi" data-quiz="q5" data-answer="a,b,c,d">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span><strong>A function returning a heap-allocated widget for the caller to own</strong> → <code>unique_ptr&lt;Widget&gt;</code></span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span><strong>A cache that should allow its entries to be freed when no-one else uses them</strong> → <code>weak_ptr&lt;T&gt;</code> inside the cache</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span><strong>A non-owning function that reads a widget's name and returns</strong> → <code>const Widget&amp;</code> parameter</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span><strong>A graph where multiple unrelated components hold references to shared nodes</strong> → <code>shared_ptr&lt;Node&gt;</code></span></button>
+    </div>
+    <p style="font-size:.85rem;color:var(--muted);margin:.3rem 0 0;font-style:italic">Select every pairing that's correct.</p>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a5">Reveal answer</button></div>
+    <div class="quiz-answer" id="a5">
+      <span class="verdict">All four pairings are correct.</span>
+      <strong>A:</strong> The caller is the intended sole owner. Returning <code>unique_ptr&lt;Widget&gt;</code> documents this in the type and makes ownership transfer automatic (via move, since the return value is an rvalue).<br>
+      <strong>B:</strong> A cache with <code>shared_ptr</code>s would leak memory forever (the cache would be the last holder of every entry). With <code>weak_ptr</code>, entries only live as long as something else holds a <code>shared_ptr</code>, and the cache gracefully forgets expired entries on <code>lock()</code>.<br>
+      <strong>C:</strong> For borrowing access, a reference is better than any pointer. It's non-null by construction, non-owning by definition, and the compiler enforces it. Use <code>const Widget&amp;</code> for read, <code>Widget&amp;</code> for read-write.<br>
+      <strong>D:</strong> Genuinely shared ownership across independent components is what <code>shared_ptr</code> is for. (Watch out for cycles; if the graph has them, mix in <code>weak_ptr</code> for back-edges.)<br><br>
+      The pattern: start with "does this code <em>own</em>?" If no, raw pointer or reference. If yes and solo, <code>unique_ptr</code>. If yes and shared, <code>shared_ptr</code>. If observing a shared resource without owning, <code>weak_ptr</code>.
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q6</span>
+    <div class="quiz-q">Given this code, what happens?</div>
+<pre class="quiz-code"><span class="kw">auto</span> <span class="nm">a</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_unique</span>&lt;<span class="nm">Widget</span>&gt;();
+<span class="kw">auto</span> <span class="nm">b</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">move</span>(<span class="nm">a</span>);   <span class="cm">// line 2</span>
+
+<span class="nm">a</span>-&gt;<span class="nm">do_work</span>();               <span class="cm">// line 3</span>
+<span class="nm">b</span>-&gt;<span class="nm">do_work</span>();               <span class="cm">// line 4</span></pre>
+    <div class="quiz-options" data-quiz="q6" data-answer="c">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span>Both lines 3 and 4 work; a and b both point at the same Widget.</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span>Line 2 is a compile error; you can't move a <code>unique_ptr</code>.</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span>Line 3 is undefined behaviour (null dereference); line 4 works fine.</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span>Line 4 is a compile error because the Widget has been destroyed.</span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a6">Reveal answer</button></div>
+    <div class="quiz-answer" id="a6">
+      <span class="verdict">C. After the move, <code>a</code> is null; dereferencing it is UB.</span>
+      <strong>Line 2:</strong> <code>std::move(a)</code> doesn't actually move anything. It casts <code>a</code> to an rvalue reference. The <em>move constructor</em> of <code>unique_ptr</code> then transfers the underlying raw pointer from <code>a</code> to <code>b</code>, leaving <code>a</code> holding <code>nullptr</code>.<br>
+      <strong>Line 3:</strong> <code>a-&gt;do_work()</code> dereferences a null pointer. Undefined behaviour, typically a segfault. The compiler won't warn you; in the type system, <code>a</code> is still a perfectly valid <code>unique_ptr</code>, just an empty one.<br>
+      <strong>Line 4:</strong> <code>b</code> now owns the Widget and works normally.<br><br>
+      <strong>The rule:</strong> after <code>std::move(a)</code>, treat <code>a</code> as if its contents are gone. Don't dereference, don't rely on its value. The standard says <code>a</code> is "in a valid but unspecified state": the legal operations are destruction and assignment. Anything else depends on the type and is at best non-portable.<br><br>
+      This is one of the real costs of move semantics. The source object isn't destroyed, just emptied, and the compiler doesn't stop you from using it. The convention is "don't."
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q7</span>
+    <div class="quiz-q">You're designing the API for a rendering engine. A <code>Scene</code> owns its <code>Mesh</code>es. A <code>Renderer</code> needs to access meshes to draw them but must not extend their lifetime. Occasionally a <code>MeshInspector</code> debug tool needs to observe a mesh and safely detect if it's been deleted between frames. Write the relevant declarations.</div>
+    <textarea class="quiz-textarea" placeholder="Declare Scene, Renderer, and MeshInspector with appropriate pointer types and explain each choice."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a7">Reveal answer</button></div>
+    <div class="quiz-answer" id="a7">
+      <span class="verdict">Three different relationships, three different pointer types.</span>
+<pre class="quiz-code"><span class="kw">class</span> <span class="nm">Scene</span> {
+    <span class="nm">std</span>::<span class="nm">vector</span>&lt;<span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Mesh</span>&gt;&gt; <span class="nm">meshes</span>;   <span class="cm">// owns, allows sharing</span>
+<span class="kw">public</span>:
+    <span class="kw">const</span> <span class="nm">std</span>::<span class="nm">vector</span>&lt;<span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Mesh</span>&gt;&gt;<span class="op">&amp;</span> <span class="nm">get_meshes</span>() <span class="kw">const</span> {
+        <span class="kw">return</span> <span class="nm">meshes</span>;
+    }
+};
+
+<span class="kw">class</span> <span class="nm">Renderer</span> {
+<span class="kw">public</span>:
+    <span class="tp">void</span> <span class="nm">draw_frame</span>(<span class="kw">const</span> <span class="nm">Scene</span><span class="op">&amp;</span> <span class="nm">scene</span>) {
+        <span class="kw">for</span> (<span class="kw">const</span> <span class="kw">auto</span><span class="op">&amp;</span> <span class="nm">m</span> : <span class="nm">scene</span>.<span class="nm">get_meshes</span>()) {
+            <span class="nm">draw</span>(<span class="op">*</span><span class="nm">m</span>);                                <span class="cm">// use without extending lifetime</span>
+        }
+    }
+};
+
+<span class="kw">class</span> <span class="nm">MeshInspector</span> {
+    <span class="nm">std</span>::<span class="nm">weak_ptr</span>&lt;<span class="nm">Mesh</span>&gt; <span class="nm">watched</span>;             <span class="cm">// observer, survives deletion</span>
+<span class="kw">public</span>:
+    <span class="tp">void</span> <span class="nm">watch</span>(<span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="nm">Mesh</span>&gt; <span class="nm">m</span>) { <span class="nm">watched</span> = <span class="nm">m</span>; }
+    <span class="tp">void</span> <span class="nm">debug_dump</span>() {
+        <span class="kw">if</span> (<span class="kw">auto</span> <span class="nm">m</span> = <span class="nm">watched</span>.<span class="nm">lock</span>()) {
+            <span class="nm">std</span>::<span class="nm">cout</span> <span class="op">&lt;&lt;</span> <span class="st">"mesh is alive: "</span> <span class="op">&lt;&lt;</span> <span class="nm">m</span>-&gt;<span class="nm">name</span>() <span class="op">&lt;&lt;</span> <span class="st">"\n"</span>;
+        } <span class="kw">else</span> {
+            <span class="nm">std</span>::<span class="nm">cout</span> <span class="op">&lt;&lt;</span> <span class="st">"mesh was destroyed\n"</span>;
+        }
+    }
+};</pre>
+      <strong>Scene</strong> owns the meshes via <code>shared_ptr</code>, not <code>unique_ptr</code>, because the design calls for meshes that can be referenced elsewhere (the inspector). If no sharing were needed, <code>unique_ptr</code> would be cleaner.<br>
+      <strong>Renderer</strong> takes the scene by <code>const Scene&amp;</code> and iterates meshes via a const reference. It doesn't need to touch lifetime at all; this is exactly the "raw access without ownership" case that references are best at.<br>
+      <strong>MeshInspector</strong> holds a <code>weak_ptr</code>, which lets the mesh die naturally (when the Scene drops it) while the inspector still exists. The <code>lock()</code>-returns-maybe pattern is the textbook use of <code>weak_ptr</code>.<br><br>
+      <strong>What you should not do:</strong> make <code>Renderer</code> hold its own <code>shared_ptr</code>s (would unnecessarily keep meshes alive across frames); make <code>MeshInspector</code> hold a raw pointer (no way to detect if the mesh was freed since last check); make <code>Scene</code>'s meshes <code>unique_ptr</code>s (forbids the sharing the design requires).
+    </div>
+  </div>
+
+  <div class="quiz-scorecard">
+    <div class="quiz-scorecard-title">How did you do?</div>
+    <div class="quiz-scorecard-msg">
+      5 or more correct, you're ready for Part 11. Less than that, the common trouble spots are Q3 (cycle detection) and Q6 (what "use after move" means). Re-read "The cycle problem" and "Ownership transfer via move", then try again.
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Pointers: Thinking in Memory</h2>
+    <a class="sidebar-link" href="why-pointers.html">
+      <div class="sidebar-link-title">Part 1: Why Pointers?</div>
+      <div class="sidebar-link-note">The motivation.</div>
+    </a>
+    <a class="sidebar-link" href="addresses.html">
+      <div class="sidebar-link-title">Part 2: Addresses, &amp;, and *</div>
+      <div class="sidebar-link-note">Syntax and mental model.</div>
+    </a>
+    <a class="sidebar-link" href="arrays-are-not-pointers.html">
+      <div class="sidebar-link-title">Part 3: Arrays Are Not Pointers</div>
+      <div class="sidebar-link-note">Decay and the sizeof trap.</div>
+    </a>
+    <a class="sidebar-link" href="pointers-lifetime.html">
+      <div class="sidebar-link-title">Part 4: Stack, Heap, and Lifetime</div>
+      <div class="sidebar-link-note">Where memory lives.</div>
+    </a>
+    <a class="sidebar-link" href="pointer-villains.html">
+      <div class="sidebar-link-title">Part 5: The Three Villains</div>
+      <div class="sidebar-link-note">Null, wild, dangling.</div>
+    </a>
+    <a class="sidebar-link" href="pointers-and-functions.html">
+      <div class="sidebar-link-title">Part 6: Pointers and Functions</div>
+      <div class="sidebar-link-note">Callbacks and all.</div>
+    </a>
+    <a class="sidebar-link" href="const-pointers.html">
+      <div class="sidebar-link-title">Part 7: The const Puzzle</div>
+      <div class="sidebar-link-note">Three forms, two positions.</div>
+    </a>
+    <a class="sidebar-link" href="pointers-aliasing.html">
+      <div class="sidebar-link-title">Part 8: Aliasing</div>
+      <div class="sidebar-link-note">The compiler's paranoia.</div>
+    </a>
+    <a class="sidebar-link" href="pointers-void.html">
+      <div class="sidebar-link-title">Part 9: The Typeless Pointer</div>
+      <div class="sidebar-link-note">void* and type erasure.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="smart-pointers.html">
+      <div class="sidebar-link-title">Part 10: Smart Pointers</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="undefined-behaviour.html">
+      <div class="sidebar-link-title">Part 11: Undefined Behaviour</div>
+      <div class="sidebar-link-note">Where seniors earn their pay.</div>
+    </a>
+  </div>
+
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas in this post</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">RAII: resource = stack object's life</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Move semantics transfer without copy</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">unique_ptr: exactly one owner</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">shared_ptr: counted sharing</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">weak_ptr: observe without owning</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Cycles leak shared_ptr memory</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Raw pointers: non-owning access only</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: RAII STACK ANIMATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Each scenario is a list of steps. Each step describes the state of the stack/heap
+// and a log line to add.
+const V1_SCENARIOS = {
+  raw: {
+    steps: [
+      {stack: [], heap: [], log: '<span class="step">0:</span> void example() entered', label: 'enter function'},
+      {stack: [{n:'Widget* w', k:'ptr'}], heap: [{n:'Widget@0x7f1', k:'live'}], log: '<span class="step">1:</span> <span class="op">Widget* w = new Widget();</span> (heap allocation)', label: 'new Widget()', newHeap: 0},
+      {stack: [{n:'Widget* w', k:'ptr'}], heap: [{n:'Widget@0x7f1', k:'live'}], log: '<span class="step">2:</span> <span class="op">w->do_work();</span>', label: 'do_work()'},
+      {stack: [{n:'Widget* w', k:'ptr'}], heap: [], log: '<span class="step">3:</span> <span class="op">delete w;</span> (programmer remembered)', label: 'delete w', dieHeap: 0},
+      {stack: [], heap: [], log: '<span class="step">4:</span> function returns, stack frame gone', label: 'return'},
+    ],
+    verdict: {cls: 'ok', text: '<strong>No leak</strong>, because the programmer remembered to <code>delete</code>. But notice how much depends on them remembering. Add an exception or an early return, and the <code>delete</code> gets skipped.'},
+  },
+  rawexc: {
+    steps: [
+      {stack: [], heap: [], log: '<span class="step">0:</span> void example() entered', label: 'enter function'},
+      {stack: [{n:'Widget* w', k:'ptr'}], heap: [{n:'Widget@0x7f1', k:'live'}], log: '<span class="step">1:</span> <span class="op">Widget* w = new Widget();</span>', label: 'new Widget()', newHeap: 0},
+      {stack: [{n:'Widget* w', k:'ptr'}], heap: [{n:'Widget@0x7f1', k:'live'}], log: '<span class="step">2:</span> <span class="op">w->init();</span> <span class="leak">throws!</span>', label: 'exception thrown'},
+      {stack: [], heap: [{n:'Widget@0x7f1', k:'live'}], log: '<span class="step">3:</span> stack unwinds past <code>delete w;</code>, <span class="leak">memory leaked</span>', label: 'unwind, no cleanup'},
+    ],
+    verdict: {cls: 'bad', text: '<strong>Leak.</strong> The <code>delete w;</code> line is between the <code>init()</code> call and the end of the function. When <code>init()</code> throws, control unwinds directly out of the function, skipping every line of code between there and the return. The Widget is orphaned on the heap. This is what "not exception safe" means.'},
+  },
+  raii: {
+    steps: [
+      {stack: [], heap: [], log: '<span class="step">0:</span> void example() entered', label: 'enter function'},
+      {stack: [{n:'unique_ptr<Widget> w', k:'raii'}], heap: [{n:'Widget@0x7f1', k:'live'}], log: '<span class="step">1:</span> <span class="op">auto w = make_unique&lt;Widget&gt;();</span>', label: 'make_unique', newHeap: 0},
+      {stack: [{n:'unique_ptr<Widget> w', k:'raii'}], heap: [{n:'Widget@0x7f1', k:'live'}], log: '<span class="step">2:</span> <span class="op">w->do_work();</span>', label: 'do_work()'},
+      {stack: [{n:'unique_ptr<Widget> w', k:'raii dying'}], heap: [{n:'Widget@0x7f1', k:'dying'}], log: '<span class="step">3:</span> function returns; <code>w</code>\'s destructor fires', label: 'scope end', dieStack: 0, dieHeap: 0},
+      {stack: [], heap: [], log: '<span class="step">4:</span> destructor called <span class="ok">delete on heap Widget</span>', label: 'all gone'},
+    ],
+    verdict: {cls: 'ok', text: '<strong>No leak, no explicit <code>delete</code>.</strong> The <code>unique_ptr</code> on the stack has a destructor that calls <code>delete</code> on whatever it owns. When the function returns, the stack frame is destroyed, which fires the destructor, which frees the heap Widget.'},
+  },
+  raiiexc: {
+    steps: [
+      {stack: [], heap: [], log: '<span class="step">0:</span> void example() entered', label: 'enter function'},
+      {stack: [{n:'unique_ptr<Widget> w', k:'raii'}], heap: [{n:'Widget@0x7f1', k:'live'}], log: '<span class="step">1:</span> <span class="op">auto w = make_unique&lt;Widget&gt;();</span>', label: 'make_unique', newHeap: 0},
+      {stack: [{n:'unique_ptr<Widget> w', k:'raii'}], heap: [{n:'Widget@0x7f1', k:'live'}], log: '<span class="step">2:</span> <span class="op">w->init();</span> <span class="leak">throws!</span>', label: 'exception thrown'},
+      {stack: [{n:'unique_ptr<Widget> w', k:'raii dying'}], heap: [{n:'Widget@0x7f1', k:'dying'}], log: '<span class="step">3:</span> stack unwinds, destructors still run on the way out', label: 'unwind', dieStack: 0, dieHeap: 0},
+      {stack: [], heap: [], log: '<span class="step">4:</span> <span class="ok">Widget freed during unwind, exception propagates</span>', label: 'cleaned up'},
+    ],
+    verdict: {cls: 'ok', text: '<strong>Exception-safe.</strong> Stack unwinding calls the destructors of every object in the current scope, in reverse order of construction. The <code>unique_ptr</code>\'s destructor runs, which deletes the Widget. The exception continues to propagate up, but the heap is clean. This is RAII\'s killer feature: it turns exception safety from a discipline into a default.'},
+  },
+};
+
+let v1State = { key: 'raw', step: 0 };
+
+function v1Render() {
+  const s = V1_SCENARIOS[v1State.key];
+  const step = s.steps[v1State.step];
+  const nextStep = s.steps[v1State.step + 1];
+
+  const stackEl = document.getElementById('v1Stack');
+  const heapEl = document.getElementById('v1Heap');
+  const labelEl = document.getElementById('v1StepLabel');
+  const logEl = document.getElementById('v1Log');
+
+  stackEl.innerHTML = step.stack.map((c, i) => {
+    let cls = 'v1-cell';
+    if (step.dieStack === i) cls += ' dying';
+    else if (i === step.newStack) cls += ' new';
+    return `<div class="${cls}"><span>${c.n}</span><span class="v1-cell-label">${c.k}</span></div>`;
+  }).join('') || '<div style="color:var(--muted);text-align:center;font-style:italic;padding:2rem 0">(empty)</div>';
+
+  heapEl.innerHTML = step.heap.map((c, i) => {
+    let cls = 'v1-cell';
+    if (step.dieHeap === i) cls += ' dying';
+    else if (i === step.newHeap) cls += ' new';
+    return `<div class="${cls}"><span>${c.n}</span><span class="v1-cell-label">${c.k}</span></div>`;
+  }).join('') || '<div style="color:var(--muted);text-align:center;font-style:italic;padding:2rem 0">(empty)</div>';
+
+  labelEl.textContent = step.label;
+
+  const logs = s.steps.slice(0, v1State.step + 1).map(x => `<div class="v1-log-line">${x.log}</div>`).join('');
+  logEl.innerHTML = logs;
+  logEl.scrollTop = logEl.scrollHeight;
+
+  const verdictEl = document.getElementById('v1Verdict');
+  if (v1State.step === s.steps.length - 1) {
+    verdictEl.className = 'v1-verdict ' + s.verdict.cls;
+    verdictEl.innerHTML = s.verdict.text;
+    verdictEl.style.display = 'block';
+  } else {
+    verdictEl.style.display = 'none';
+  }
+}
+
+function v1Next() {
+  const s = V1_SCENARIOS[v1State.key];
+  if (v1State.step < s.steps.length - 1) {
+    v1State.step++;
+    v1Render();
+  }
+}
+function v1Reset() { v1State.step = 0; v1Render(); }
+
+document.querySelectorAll('[data-v1]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-v1]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    v1State.key = b.dataset.v1;
+    v1State.step = 0;
+    v1Render();
+  });
+});
+document.getElementById('v1Next').onclick = v1Next;
+document.getElementById('v1Reset').onclick = v1Reset;
+v1Render();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: SHARED_PTR REFCOUNT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const V2_SCENARIOS = {
+  simple: {
+    code: [
+      'auto a = make_shared&lt;Widget&gt;();   // count: 1',
+      'auto b = a;                      // count: 2',
+      'b.reset();                       // count: 1',
+      'a.reset();                       // count: 0 → delete',
+    ],
+    steps: [
+      {objs: [{n:'Widget', strong:0, weak:0, state:'pre'}], ptrs: [], current: -1},
+      {objs: [{n:'Widget', strong:1, weak:0, state:'alive'}], ptrs: [{n:'a', t:'shared', alive:true}], current: 0},
+      {objs: [{n:'Widget', strong:2, weak:0, state:'alive'}], ptrs: [{n:'a', t:'shared', alive:true},{n:'b', t:'shared', alive:true}], current: 1},
+      {objs: [{n:'Widget', strong:1, weak:0, state:'alive'}], ptrs: [{n:'a', t:'shared', alive:true},{n:'b', t:'shared', alive:false}], current: 2},
+      {objs: [{n:'Widget', strong:0, weak:0, state:'destroyed'}], ptrs: [{n:'a', t:'shared', alive:false},{n:'b', t:'shared', alive:false}], current: 3},
+    ],
+  },
+  cycle: {
+    code: [
+      'struct Node { shared_ptr&lt;Node&gt; neighbour; };',
+      'auto a = make_shared&lt;Node&gt;();     // A: 1',
+      'auto b = make_shared&lt;Node&gt;();     // B: 1',
+      'a-&gt;neighbour = b;                // B: 2',
+      'b-&gt;neighbour = a;                // A: 2',
+      'local a dies    // A: 1 (leak)',
+      'local b dies    // B: 1 (leak)',
+    ],
+    steps: [
+      {objs: [{n:'A', strong:0, weak:0, state:'pre'},{n:'B', strong:0, weak:0, state:'pre'}], ptrs: [], current: -1},
+      {objs: [{n:'A', strong:0, weak:0, state:'pre'},{n:'B', strong:0, weak:0, state:'pre'}], ptrs: [], current: 0},
+      {objs: [{n:'A', strong:1, weak:0, state:'alive'},{n:'B', strong:0, weak:0, state:'pre'}], ptrs: [{n:'local a', t:'shared', alive:true}], current: 1},
+      {objs: [{n:'A', strong:1, weak:0, state:'alive'},{n:'B', strong:1, weak:0, state:'alive'}], ptrs: [{n:'local a', t:'shared', alive:true},{n:'local b', t:'shared', alive:true}], current: 2},
+      {objs: [{n:'A', strong:1, weak:0, state:'alive'},{n:'B', strong:2, weak:0, state:'alive'}], ptrs: [{n:'local a', t:'shared', alive:true},{n:'local b', t:'shared', alive:true},{n:'a→neighbour', t:'shared', alive:true}], current: 3},
+      {objs: [{n:'A', strong:2, weak:0, state:'alive'},{n:'B', strong:2, weak:0, state:'alive'}], ptrs: [{n:'local a', t:'shared', alive:true},{n:'local b', t:'shared', alive:true},{n:'a→neighbour', t:'shared', alive:true},{n:'b→neighbour', t:'shared', alive:true}], current: 4},
+      {objs: [{n:'A', strong:1, weak:0, state:'alive'},{n:'B', strong:2, weak:0, state:'alive'}], ptrs: [{n:'local a', t:'shared', alive:false},{n:'local b', t:'shared', alive:true},{n:'a→neighbour', t:'shared', alive:true},{n:'b→neighbour', t:'shared', alive:true}], current: 5},
+      {objs: [{n:'A', strong:1, weak:0, state:'alive leak'},{n:'B', strong:1, weak:0, state:'alive leak'}], ptrs: [{n:'local a', t:'shared', alive:false},{n:'local b', t:'shared', alive:false},{n:'a→neighbour', t:'shared', alive:true},{n:'b→neighbour', t:'shared', alive:true}], current: 6},
+    ],
+  },
+  weak: {
+    code: [
+      'struct Node {',
+      '    shared_ptr&lt;Node&gt; next;    // owning',
+      '    weak_ptr&lt;Node&gt;   prev;    // non-owning',
+      '};',
+      'auto a = make_shared&lt;Node&gt;();     // A: 1',
+      'auto b = make_shared&lt;Node&gt;();     // B: 1',
+      'a-&gt;next = b;                     // B: 2',
+      'b-&gt;prev = a;                     // A: 1 (weak!)',
+      'local a dies    // A: 0 → delete',
+      '  → a-&gt;next released // B: 1',
+      'local b dies    // B: 0 → delete',
+    ],
+    steps: [
+      {objs: [{n:'A', strong:0, weak:0, state:'pre'},{n:'B', strong:0, weak:0, state:'pre'}], ptrs: [], current: -1},
+      {objs: [{n:'A', strong:1, weak:0, state:'alive'},{n:'B', strong:0, weak:0, state:'pre'}], ptrs: [{n:'local a', t:'shared', alive:true}], current: 4},
+      {objs: [{n:'A', strong:1, weak:0, state:'alive'},{n:'B', strong:1, weak:0, state:'alive'}], ptrs: [{n:'local a', t:'shared', alive:true},{n:'local b', t:'shared', alive:true}], current: 5},
+      {objs: [{n:'A', strong:1, weak:0, state:'alive'},{n:'B', strong:2, weak:0, state:'alive'}], ptrs: [{n:'local a', t:'shared', alive:true},{n:'local b', t:'shared', alive:true},{n:'a→next', t:'shared', alive:true}], current: 6},
+      {objs: [{n:'A', strong:1, weak:1, state:'alive'},{n:'B', strong:2, weak:0, state:'alive'}], ptrs: [{n:'local a', t:'shared', alive:true},{n:'local b', t:'shared', alive:true},{n:'a→next', t:'shared', alive:true},{n:'b→prev', t:'weak', alive:true}], current: 7},
+      {objs: [{n:'A', strong:0, weak:1, state:'destroyed'},{n:'B', strong:1, weak:0, state:'alive'}], ptrs: [{n:'local a', t:'shared', alive:false},{n:'local b', t:'shared', alive:true},{n:'a→next', t:'shared', alive:false},{n:'b→prev', t:'weak', alive:true}], current: 9},
+      {objs: [{n:'A', strong:0, weak:0, state:'destroyed'},{n:'B', strong:0, weak:0, state:'destroyed'}], ptrs: [{n:'local a', t:'shared', alive:false},{n:'local b', t:'shared', alive:false},{n:'a→next', t:'shared', alive:false},{n:'b→prev', t:'weak', alive:false}], current: 10},
+    ],
+  },
+};
+
+let v2State = { key: 'simple', step: 0 };
+
+function v2Render() {
+  const s = V2_SCENARIOS[v2State.key];
+  const step = s.steps[v2State.step];
+
+  // Code
+  const codeHtml = s.code.map((line, i) => {
+    const cls = i === step.current ? 'current' : '';
+    // basic syntax colouring
+    const coloured = line
+      .replace(/\/\/[^\n]*/g, m => `<span class="cm">${m}</span>`)
+      .replace(/\b(auto|shared_ptr|weak_ptr|make_shared|struct|local)\b/g, '<span class="kw">$1</span>')
+      .replace(/\b(Widget|Node)\b/g, '<span class="tp">$1</span>')
+      .replace(/\b(a|b)\b/g, '<span class="nm">$1</span>');
+    return `<div class="${cls}">${coloured}</div>`;
+  }).join('');
+  document.getElementById('v2Code').innerHTML = codeHtml;
+
+  // Pointers
+  const ptrsHtml = step.ptrs.map(p => {
+    return `<div class="v2-ptr ${p.t} ${p.alive ? '' : 'dead'}"><span>${p.n}</span><span>${p.t}_ptr</span></div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:.82rem;font-style:italic">(no owning pointers yet)</div>';
+  document.getElementById('v2Ptrs').innerHTML = ptrsHtml;
+
+  // Objects
+  const obj1El = document.getElementById('v2Obj1');
+  const obj2El = document.getElementById('v2Obj2');
+
+  const renderObj = (o, el) => {
+    if (!o) { el.style.display = 'none'; return; }
+    el.style.display = 'flex';
+    let cls = 'v2-obj ';
+    if (o.state.includes('destroyed')) cls += 'destroyed';
+    else if (o.state.includes('alive')) cls += 'alive';
+    else cls += '';
+    const extra = o.state.includes('leak') ? ' <span style="color:var(--red);font-size:.75rem;font-family:\'Courier New\',monospace">(LEAKED)</span>' : '';
+    el.className = cls;
+    el.innerHTML = `
+      <div class="v2-obj-name">${o.n}${extra}</div>
+      <div class="v2-counts">
+        <div class="v2-count strong">strong <span class="val">${o.strong}</span></div>
+        <div class="v2-count weak">weak <span class="val">${o.weak}</span></div>
+      </div>
+    `;
+  };
+  renderObj(step.objs[0], obj1El);
+  renderObj(step.objs[1], obj2El);
+
+  // Progress
+  document.getElementById('v2Progress').textContent = `step ${v2State.step} / ${s.steps.length - 1}`;
+}
+
+function v2Next() {
+  const s = V2_SCENARIOS[v2State.key];
+  if (v2State.step < s.steps.length - 1) {
+    v2State.step++;
+    v2Render();
+  }
+}
+function v2Reset() { v2State.step = 0; v2Render(); }
+
+document.querySelectorAll('[data-v2]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-v2]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    v2State.key = b.dataset.v2;
+    v2State.step = 0;
+    v2Render();
+  });
+});
+document.getElementById('v2Next').onclick = v2Next;
+document.getElementById('v2Reset').onclick = v2Reset;
+v2Render();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: OWNERSHIP DECIDER
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Simple decision tree
+const V3_TREE = {
+  start: {
+    q: 'Does this memory need dynamic (heap) lifetime?',
+    opts: [
+      {label: 'No, scope-bound is fine', next: 'scope'},
+      {label: 'Yes, needs to outlive the scope', next: 'owner'},
+    ],
+  },
+  scope: {
+    answer: 'raw',
+    title: 'Use a stack object, or a reference.',
+    blurb: 'If the lifetime fits inside a scope, you don\'t need any smart pointer. Put the object on the stack. Pass it by <code>const&amp;</code> for read access, by <code>&amp;</code> for read-write. This is the cheapest and clearest choice. Smart pointers are for heap lifetimes.',
+    code: '<span class="tp">Widget</span> <span class="nm">w</span>;                        <span class="cm">// stack</span>\n<span class="nm">use</span>(<span class="nm">w</span>);                       <span class="cm">// pass by value</span>\n<span class="nm">read</span>(<span class="kw">const</span> <span class="tp">Widget</span><span class="op">&amp;</span> <span class="nm">ref</span>);       <span class="cm">// non-owning read</span>\n<span class="nm">edit</span>(<span class="tp">Widget</span><span class="op">&amp;</span> <span class="nm">ref</span>);             <span class="cm">// non-owning read/write</span>',
+  },
+  owner: {
+    q: 'How many pieces of code will own this?',
+    opts: [
+      {label: 'Exactly one', next: 'unique'},
+      {label: 'Genuinely several', next: 'shared-q'},
+    ],
+  },
+  unique: {
+    answer: 'unique',
+    title: 'Use unique_ptr.',
+    blurb: 'The default choice. One owner, explicit move-only transfer, zero overhead. Create with <code>make_unique</code>, return from factory functions, use <code>.get()</code> to hand out non-owning views.',
+    code: '<span class="kw">auto</span> <span class="nm">w</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_unique</span>&lt;<span class="tp">Widget</span>&gt;();\n<span class="nm">inspect</span>(<span class="nm">w</span>.<span class="nm">get</span>());             <span class="cm">// non-owning borrow</span>\n<span class="nm">consume</span>(<span class="nm">std</span>::<span class="nm">move</span>(<span class="nm">w</span>));         <span class="cm">// transfer ownership</span>',
+  },
+  'shared-q': {
+    q: 'Does any code need to observe the object without keeping it alive?',
+    opts: [
+      {label: 'No, all references are owning', next: 'shared'},
+      {label: 'Yes, some references are observers', next: 'sharedweak'},
+    ],
+  },
+  shared: {
+    answer: 'shared',
+    title: 'Use shared_ptr.',
+    blurb: 'Reference-counted sharing, with atomic increments. Use <code>make_shared</code> for a single allocation with the control block, avoid passing it by value in hot paths, and watch for cycles.',
+    code: '<span class="kw">auto</span> <span class="nm">w</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_shared</span>&lt;<span class="tp">Widget</span>&gt;();\n<span class="nm">store</span>(<span class="nm">w</span>);                       <span class="cm">// pass by value to share</span>\n<span class="nm">inspect</span>(<span class="op">*</span><span class="nm">w</span>);                   <span class="cm">// by reference for non-owning read</span>',
+  },
+  sharedweak: {
+    answer: 'weak',
+    title: 'Use shared_ptr + weak_ptr.',
+    blurb: 'The owning parts hold <code>shared_ptr</code>; the observers hold <code>weak_ptr</code>. Observers call <code>.lock()</code> when they need to use the object, and get <code>nullptr</code> gracefully if the object is gone.',
+    code: '<span class="nm">std</span>::<span class="nm">shared_ptr</span>&lt;<span class="tp">Widget</span>&gt; <span class="nm">owner</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">make_shared</span>&lt;<span class="tp">Widget</span>&gt;();\n<span class="nm">std</span>::<span class="nm">weak_ptr</span>&lt;<span class="tp">Widget</span>&gt; <span class="nm">watcher</span> <span class="op">=</span> <span class="nm">owner</span>;\n\n<span class="kw">if</span> (<span class="kw">auto</span> <span class="nm">live</span> <span class="op">=</span> <span class="nm">watcher</span>.<span class="nm">lock</span>()) {\n    <span class="nm">live</span><span class="op">-&gt;</span><span class="nm">do_work</span>();              <span class="cm">// promoted to shared_ptr</span>\n}',
+  },
+};
+
+let v3State = { node: 'start', trail: [] };
+
+function v3Render() {
+  const node = V3_TREE[v3State.node];
+  const qBlock = document.getElementById('v3QBlock');
+  const answerEl = document.getElementById('v3Answer');
+  const trailEl = document.getElementById('v3Trail');
+
+  // Trail
+  if (v3State.trail.length === 0) {
+    trailEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem;font-style:italic">Answer the first question to get started.</div>';
+  } else {
+    trailEl.innerHTML = v3State.trail.map(t =>
+      `<div class="v3-crumb"><strong>Q:</strong> ${t.q}<br><strong>A:</strong> ${t.a}</div>`
+    ).join('');
+  }
+
+  if (node.q) {
+    // Question
+    qBlock.innerHTML = `
+      <div class="v3-question">${node.q}</div>
+      <div class="v3-opts">
+        ${node.opts.map((o, i) => `<button class="v3-opt" data-opt="${i}">${o.label}</button>`).join('')}
+      </div>
+    `;
+    qBlock.querySelectorAll('[data-opt]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.dataset.opt, 10);
+        const opt = node.opts[i];
+        v3State.trail.push({q: node.q, a: opt.label});
+        v3State.node = opt.next;
+        v3Render();
+      });
+    });
+    answerEl.className = 'v3-answer';
+    answerEl.innerHTML = '';
+  } else {
+    // Answer
+    qBlock.innerHTML = '';
+    answerEl.className = 'v3-answer show ' + node.answer;
+    answerEl.innerHTML = `
+      <div class="v3-answer-title">${node.title}</div>
+      <div>${node.blurb}</div>
+      <div class="v3-answer-code">${node.code}</div>
+    `;
+  }
+}
+
+function v3Reset() {
+  v3State = { node: 'start', trail: [] };
+  v3Render();
+}
+document.getElementById('v3Reset').addEventListener('click', v3Reset);
+v3Render();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.quiz-options').forEach(group=>{
+  const isMulti=group.classList.contains('multi');
+  group.querySelectorAll('.quiz-option').forEach(opt=>{
+    opt.addEventListener('click',()=>{
+      if(isMulti){opt.classList.toggle('selected');}
+      else{group.querySelectorAll('.quiz-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');}
+    });
+  });
+});
+document.querySelectorAll('[data-reveal]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const id=btn.dataset.reveal;
+    const answer=document.getElementById(id);
+    if(!answer)return;
+    answer.classList.toggle('show');
+    btn.textContent=answer.classList.contains('show')?'Hide answer':'Reveal answer';
+    const card=btn.closest('.quiz-card');
+    if(card){
+      const group=card.querySelector('.quiz-options');
+      if(group && answer.classList.contains('show')){
+        const correct=group.dataset.answer.split(',');
+        group.querySelectorAll('.quiz-option').forEach(opt=>{
+          const val=opt.dataset.val;
+          const isSelected=opt.classList.contains('selected');
+          const isCorrect=correct.includes(val);
+          if(isCorrect)opt.classList.add('correct');
+          else if(isSelected)opt.classList.add('incorrect');
+        });
+      }else if(group && !answer.classList.contains('show')){
+        group.querySelectorAll('.quiz-option').forEach(opt=>opt.classList.remove('correct','incorrect'));
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>

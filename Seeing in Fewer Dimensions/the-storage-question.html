@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Storage Question | Seeing in Fewer Dimensions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz shell */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* ── VIZ 1: the storage question ──────────────────────────────────────── */
+    .storage-wrap{display:grid;grid-template-columns:1.35fr 1fr;gap:1.3rem;align-items:start}
+    @media(max-width:840px){.storage-wrap{grid-template-columns:1fr}}
+    .storage-col{display:flex;flex-direction:column;gap:.8rem;min-width:0}
+    .storage-section-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.1rem}
+    .canvas-wrap{position:relative;background:#14130f;border:1px solid var(--border);border-radius:10px;overflow:hidden;aspect-ratio:1.2/1}
+    #storageCanvas{width:100%;height:100%;display:block;cursor:crosshair;touch-action:none}
+    .canvas-hint{position:absolute;top:.55rem;left:.7rem;font-size:.72rem;color:var(--muted);font-family:var(--sans);pointer-events:none;background:rgba(20,19,15,.7);padding:.15rem .5rem;border-radius:4px}
+    .storage-controls{display:flex;gap:.4rem;flex-wrap:wrap}
+    .storage-btn{padding:.4rem .85rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.82rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .storage-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .storage-btn.danger:hover{border-color:var(--red);color:var(--red)}
+    .noise-row{display:flex;gap:.7rem;align-items:center;flex-wrap:wrap}
+    .noise-slider{flex:1;min-width:140px;accent-color:var(--accent)}
+    .noise-val{font-family:'Courier New',monospace;font-size:.85rem;color:var(--accent);min-width:42px;text-align:right}
+    .cost-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.45rem;transition:border-color .3s}
+    .cost-card.naive{border-left:3px solid var(--red)}
+    .cost-card.compressed{border-left:3px solid var(--green)}
+    .cost-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+    .cost-formula{font-family:'Courier New',monospace;font-size:.88rem;color:var(--body)}
+    .cost-formula strong{color:var(--accent)}
+    .cost-number{font-family:var(--display);font-size:2.1rem;line-height:1;color:var(--ink)}
+    .cost-number.small{color:var(--green)}
+    .cost-number.big{color:var(--red)}
+    .cost-caption{font-size:.8rem;color:var(--muted);line-height:1.5}
+    .savings-card{background:linear-gradient(135deg,rgba(232,168,76,.12),rgba(127,255,107,.06));border:1px solid var(--border-hover);border-radius:10px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.4rem;transition:all .3s}
+    .savings-card.warn{background:linear-gradient(135deg,rgba(255,107,107,.1),rgba(232,168,76,.05));border-color:rgba(255,107,107,.3)}
+    .savings-pct{font-family:var(--display);font-size:2.3rem;line-height:1;color:var(--accent)}
+    .savings-pct.warn{color:var(--red)}
+    .savings-text{font-size:.88rem;color:var(--body);line-height:1.55}
+
+    /* ── VIZ 2: scale explosion ───────────────────────────────────────────── */
+    .scale-block{margin:2.5rem 0}
+    .scale-controls{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1.1rem;align-items:center}
+    .scale-slider-group{display:flex;flex-direction:column;gap:.3rem}
+    .scale-slider-label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .scale-slider{width:200px;accent-color:var(--accent)}
+    .scale-val{font-family:'Courier New',monospace;color:var(--accent);font-size:.9rem}
+    .scale-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:640px){.scale-row{grid-template-columns:1fr}}
+    .scale-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.1rem;display:flex;flex-direction:column;gap:.5rem}
+    .scale-card.raw{border-left:3px solid var(--red)}
+    .scale-card.comp{border-left:3px solid var(--green)}
+    .scale-big-num{font-family:var(--display);font-size:1.9rem;line-height:1;color:var(--ink)}
+    .scale-big-num.big{color:var(--red)}
+    .scale-big-num.small{color:var(--green)}
+    .scale-formula{font-family:'Courier New',monospace;font-size:.85rem;color:var(--muted)}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Seeing in Fewer Dimensions</span>
+  <h1>The Storage Question</h1>
+  <p class="blog-subtitle">How many real numbers do you actually need to represent your data? The answer is almost always less than you think, and that gap is where dimensionality reduction lives.</p>
+
+  <h2>A question no one asks until they have to</h2>
+
+  <p>When you first look at a dataset, the question that pops up is "what does it mean?" Then maybe "how do I plot it?" Eventually "what model do I fit?" The question almost nobody asks first is the most practical one you could imagine: <em>how many real numbers do I actually need to store this?</em></p>
+
+  <p>It sounds like a question for someone worrying about their cloud bill. It isn't. Once you take it seriously, it forces the entire machinery of dimensionality reduction into existence. PCA, autoencoders, and every embedding technique you've ever used are, deep down, elaborate answers to this one question.</p>
+
+  <p>Let's start small. Suppose I hand you four data points in 2D:</p>
+
+  <p>\[ \mathcal{D} = \left\{ \begin{bmatrix} -7 \\ -14 \end{bmatrix},\ \begin{bmatrix} 2 \\ 4 \end{bmatrix},\ \begin{bmatrix} 0.5 \\ 1 \end{bmatrix},\ \begin{bmatrix} 0 \\ 0 \end{bmatrix} \right\} \]</p>
+
+  <p>How many real numbers do you need to store this? The obvious answer: four points, two coordinates each, so eight numbers. Done. Move on.</p>
+
+  <div class="callout">Except every single one of those points lies on the line \(y = 2x\).</div>
+
+  <p>Notice what that means. If I tell you once that "the direction is \([1, 2]\)", I don't need to tell you both coordinates of each point anymore. I just need to tell you <em>how far along that direction</em> each point sits. Point one: scale the direction by \(-7\). Point two: scale by \(2\). Point three: scale by \(0.5\). Point four: scale by \(0\). That's four scalars, plus two numbers for the direction itself. Six numbers total.</p>
+
+  <p>We just shaved 25% off the storage cost, and nothing was lost. The points are exactly where they were. We didn't approximate anything.</p>
+
+  <hr class="sep">
+
+  <h2>Two ways to describe the same data</h2>
+
+  <p>What just happened is small and, on this toy example, not very impressive. But it reveals a distinction that's going to run through the entire series. There are two fundamentally different ways to write down a dataset.</p>
+
+  <p>The <strong>naive way</strong> is what a spreadsheet does, what a CSV does, what you do when you type numbers into NumPy. Every coordinate of every point sits in memory. If you have \(n\) points in \(d\) dimensions, that's \(n \cdot d\) numbers. No structure assumed, no structure exploited.</p>
+
+  <p>The <strong>structured way</strong> separates two things: <em>what shape the data takes</em>, and <em>where each point sits within that shape</em>. In our example, the shape is "the line through the origin with direction \([1, 2]\)" and the position of each point is a single scalar. That splits the \(nd\) numbers into two much smaller buckets. The shape costs \(d\) numbers (one per dimension of the ambient space). Each point's position costs \(1\) number. Total: \(d + n\).</p>
+
+  <div class="callout">Naive storage: \(nd\). Structured storage: \(d + n\).</div>
+
+  <p>When \(n\) and \(d\) are both small this barely matters. When they're large it stops being a rounding error and starts being the difference between "this fits on my laptop" and "this doesn't fit anywhere at all."</p>
+
+  <!-- VIZ 1: Interactive storage question -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Drag the points. Watch what perfect structure costs.</span></div>
+    <div class="viz-body">
+
+      <div class="storage-wrap">
+        <div class="storage-col">
+          <div class="storage-section-label">Your dataset</div>
+          <div class="canvas-wrap">
+            <canvas id="storageCanvas"></canvas>
+            <span class="canvas-hint">Drag any point • Click empty space to add</span>
+          </div>
+          <div class="storage-controls">
+            <button class="storage-btn" data-preset="line">On the line y=2x</button>
+            <button class="storage-btn" data-preset="noisy">Nearly on the line</button>
+            <button class="storage-btn" data-preset="cloud">Scattered cloud</button>
+            <button class="storage-btn danger" data-preset="clear">Clear</button>
+          </div>
+          <div class="noise-row">
+            <span class="storage-section-label" style="margin:0">Jitter</span>
+            <input type="range" id="noiseSlider" class="noise-slider" min="0" max="100" value="0">
+            <span class="noise-val" id="noiseVal">0%</span>
+          </div>
+        </div>
+
+        <div class="storage-col">
+          <div class="storage-section-label">How many numbers does this take?</div>
+          <div class="cost-card naive">
+            <span class="cost-label">Naive: store every coordinate</span>
+            <span class="cost-formula">n × d = <strong id="naiveBreakdown">4 × 2</strong></span>
+            <span class="cost-number big" id="naiveCost">8</span>
+            <span class="cost-caption">One row per point. Every coordinate written out.</span>
+          </div>
+          <div class="cost-card compressed">
+            <span class="cost-label">Structured: direction + scalars</span>
+            <span class="cost-formula">d + n = <strong id="compBreakdown">2 + 4</strong></span>
+            <span class="cost-number small" id="compCost">6</span>
+            <span class="cost-caption">One direction for the whole dataset. One scalar per point.</span>
+          </div>
+          <div class="savings-card" id="savingsCard">
+            <span class="cost-label" id="savingsLabel">Savings</span>
+            <span class="savings-pct" id="savingsPct">25%</span>
+            <span class="savings-text" id="savingsText">Every point lies on a single line through the origin. The structured form is exact, with no information lost.</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="viz-note">Start with "On the line", where the points sit perfectly on <code>y = 2x</code> and the structured form recovers them exactly. Now drag the <em>jitter</em> slider up, or grab a point and pull it off the line. The geometry of the dataset stops being one-dimensional, and the single-direction trick stops working. By the time you reach a real cloud, you'd need two directions to reconstruct the points exactly, which means the compression has evaporated.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Why the savings stop being optional</h2>
+
+  <p>On four 2D points, the difference between 8 numbers and 6 numbers is a curiosity. At any realistic scale, the story changes fast. Imagine a dataset of one million face images, each 192 by 168 pixels in greyscale. Every image is a point in a space with \(d = 192 \times 168 = 32{,}256\) dimensions. Store that naively and you have \(nd = 10^6 \times 32{,}256 \approx 3.2 \times 10^{10}\) numbers. Thirty-two billion floats. At four bytes each, that's about 128 gigabytes, which is already uncomfortable.</p>
+
+  <p>Now suppose (and this turns out to be roughly true in practice) that faces actually live on a much lower-dimensional surface inside that huge pixel space. Say \(k = 100\) directions are enough to capture the vast majority of the variation. Then the structured cost is \(kd + kn = 100 \times 32{,}256 + 100 \times 10^6 \approx 1.03 \times 10^8\) numbers. Around 400 megabytes. A 300× saving, and it's the difference between a dataset that fits in RAM and one that doesn't.</p>
+
+  <!-- VIZ 2: the scale explosion -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The same trick at realistic sizes</span></div>
+    <div class="viz-body">
+      <div class="scale-controls">
+        <div class="scale-slider-group">
+          <span class="scale-slider-label">Samples n: <span class="scale-val" id="nScaleVal">1,000,000</span></span>
+          <input type="range" id="nSlider" class="scale-slider" min="1000" max="1000000" value="1000000" step="1000">
+        </div>
+        <div class="scale-slider-group">
+          <span class="scale-slider-label">Dimensions d: <span class="scale-val" id="dScaleVal">32,256</span></span>
+          <input type="range" id="dSlider" class="scale-slider" min="100" max="100000" value="32256" step="100">
+        </div>
+        <div class="scale-slider-group">
+          <span class="scale-slider-label">Kept directions k: <span class="scale-val" id="kScaleVal">100</span></span>
+          <input type="range" id="kSlider" class="scale-slider" min="1" max="500" value="100" step="1">
+        </div>
+      </div>
+      <div class="scale-row">
+        <div class="scale-card raw">
+          <span class="cost-label">Naive storage</span>
+          <span class="scale-formula">n × d</span>
+          <span class="scale-big-num big" id="rawSize">128 GB</span>
+          <span class="cost-caption" id="rawCount">32,256,000,000 floats</span>
+        </div>
+        <div class="scale-card comp">
+          <span class="cost-label">Structured storage</span>
+          <span class="scale-formula">k × d + k × n</span>
+          <span class="scale-big-num small" id="compSize">413 MB</span>
+          <span class="cost-caption" id="compCount">103,225,600 floats • <strong id="shrinkFactor" style="color:var(--accent)">312× smaller</strong></span>
+        </div>
+      </div>
+      <p class="viz-note">Crank <em>d</em> up and the naive cost explodes linearly. Crank <em>k</em> down and the structured cost barely moves. That asymmetry is the engine behind every dimensionality reduction method. The whole game is finding a small <em>k</em> that still captures what matters.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The catch, spelled out</h2>
+
+  <p>Everything in this post has been based on a quiet assumption, and it's time to say it out loud. Our storage trick only works because the data <em>actually</em> lies on a line. The moment a single point drifts off that line, the structured form can no longer reproduce the data exactly. You still get a description, the closest point on the line, say, but it's an approximation. The original is gone.</p>
+
+  <p>Real data never lies perfectly on a line. Or a plane. Or any other neat surface you might draw through it. It's always a bit scattered, a bit noisy, a bit messy. So the strict version of our trick, "exact reconstruction with fewer numbers", doesn't survive contact with reality.</p>
+
+  <div class="callout">The question changes. We can't ask for exact reconstruction anymore. We have to ask: what's the best approximation we can get for our budget?</div>
+
+  <p>That reframe is the whole series. Once we accept that representation will be lossy, a dozen sharper questions appear. Which direction to project onto? How to measure "best"? What if one direction isn't enough? What if the underlying structure isn't a line at all? Every post from here on picks up one of those questions and answers it.</p>
+
+  <hr class="sep">
+
+  <h2>Where this is going</h2>
+
+  <p>We started by noticing that structured data can be stored with far fewer numbers than its raw form suggests, and that the savings grow dramatically with scale. We ended by conceding that real data doesn't sit on perfect lines, so we'll have to settle for approximations. That concession isn't a failure. It's where the interesting mathematics starts.</p>
+
+  <p>Next post, we'll take a single point and a single candidate line and ask the most basic version of the approximation question. If this point isn't on that line, what's the closest point on the line to it? The answer is a short piece of calculus, but it sets up everything that follows: projection, error, and the first real derivation of the series.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Seeing in Fewer Dimensions</h2>
+    <a class="sidebar-link active-topic" href="#">
+      <div class="sidebar-link-title">Part 1: The Storage Question</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="giving-up-on-perfect.html">
+      <div class="sidebar-link-title">Part 2: Giving Up on Perfect</div>
+      <div class="sidebar-link-note">Projection and the error vector.</div>
+    </a>
+    <a class="sidebar-link" href="line-that-loses-least.html">
+      <div class="sidebar-link-title">Part 3: The Line That Loses the Least</div>
+      <div class="sidebar-link-note">Min error = max variance.</div>
+    </a>
+    <a class="sidebar-link" href="covariance-appears.html">
+      <div class="sidebar-link-title">Part 4: The Covariance Matrix Appears</div>
+      <div class="sidebar-link-note">Where C comes from.</div>
+    </a>
+    <a class="sidebar-link" href="eigenvector-revelation.html">
+      <div class="sidebar-link-title">Part 5: Lagrange and the Eigenvector Revelation</div>
+      <div class="sidebar-link-note">Cw = λw was inevitable.</div>
+    </a>
+    <a class="sidebar-link" href="stacking-directions.html">
+      <div class="sidebar-link-title">Part 6: Stacking Directions</div>
+      <div class="sidebar-link-note">A basis, not just a line.</div>
+    </a>
+    <a class="sidebar-link" href="more-dims-than-data.html">
+      <div class="sidebar-link-title">Part 7: More Dimensions Than Data</div>
+      <div class="sidebar-link-note">When d dwarfs n.</div>
+    </a>
+    <a class="sidebar-link" href="dual-pca.html">
+      <div class="sidebar-link-title">Part 8: Dual PCA</div>
+      <div class="sidebar-link-note">The trick that saves you.</div>
+    </a>
+    <a class="sidebar-link" href="when-linear-fails.html">
+      <div class="sidebar-link-title">Part 9: When Linear Isn't Enough</div>
+      <div class="sidebar-link-note">Circles in R² become lines in R⁶.</div>
+    </a>
+    <a class="sidebar-link" href="kernel-trick.html">
+      <div class="sidebar-link-title">Part 10: The Kernel Trick</div>
+      <div class="sidebar-link-note">PCA in spaces you never build.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Naive storage costs nd</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Structured storage costs d + n</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Direction + scalar per point</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Exact reconstruction needs perfect structure</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Real data forces approximation</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">kd + kn scales beautifully</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1 — STORAGE QUESTION
+// The pedagogical heart: watch what happens to the compression claim
+// as the data drifts off a perfect line.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const PRESETS = {
+  // "perfect" configurations — all points on y = 2x. Jitter defaults to 0.
+  line: [[-3.5,-7],[1,2],[0.25,0.5],[0,0],[2.5,5]],
+  // light scatter around y = 2x
+  noisy: [[-3.5,-6.6],[1.1,2.3],[0.2,0.7],[0.1,-0.3],[2.4,4.6],[-2,-3.7]],
+  // a real 2D cloud with no dominant direction
+  cloud: [[-2,2.5],[3,-1],[1.5,2],[-1,-2.5],[2.5,1.5],[-2.5,-1],[0.5,-2]],
+  clear: []
+};
+
+let points = PRESETS.line.map(p=>[...p]);
+let noise = 0;
+// to keep jitter stable across redraws, we freeze a jitter seed per point
+let jitterSeeds = points.map(()=>({jx:Math.random()*2-1, jy:Math.random()*2-1}));
+
+const canvas = document.getElementById('storageCanvas');
+const ctx = canvas.getContext('2d');
+
+// coordinate system: data is in roughly [-4,4] x [-4,4]. We map into canvas px.
+const DATA_RANGE = 5; // ±5 on each axis
+let CW=600, CH=500;
+
+function resizeCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  CW = rect.width; CH = rect.height;
+  canvas.width = CW*dpr; canvas.height = CH*dpr;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+}
+
+function dataToCanvas(x,y){
+  const scale = Math.min(CW,CH)/(2*DATA_RANGE);
+  return [CW/2 + x*scale, CH/2 - y*scale];
+}
+function canvasToData(px,py){
+  const scale = Math.min(CW,CH)/(2*DATA_RANGE);
+  return [(px - CW/2)/scale, -(py - CH/2)/scale];
+}
+
+function jitteredPoints(){
+  // apply noise to each point using its stable seed
+  return points.map((p,i)=>{
+    const s = jitterSeeds[i] || {jx:0,jy:0};
+    const amt = noise/100 * 1.5; // max ~1.5 units of jitter
+    return [p[0] + s.jx*amt, p[1] + s.jy*amt];
+  });
+}
+
+function drawGrid(){
+  ctx.fillStyle = '#14130f';
+  ctx.fillRect(0,0,CW,CH);
+  // faint grid
+  ctx.strokeStyle = 'rgba(237,232,224,0.04)';
+  ctx.lineWidth = 1;
+  const scale = Math.min(CW,CH)/(2*DATA_RANGE);
+  for(let i=-DATA_RANGE;i<=DATA_RANGE;i++){
+    if(i===0) continue;
+    const [x1,y1] = dataToCanvas(i,-DATA_RANGE);
+    const [x2,y2] = dataToCanvas(i,DATA_RANGE);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    const [a1,b1] = dataToCanvas(-DATA_RANGE,i);
+    const [a2,b2] = dataToCanvas(DATA_RANGE,i);
+    ctx.beginPath(); ctx.moveTo(a1,b1); ctx.lineTo(a2,b2); ctx.stroke();
+  }
+  // axes
+  ctx.strokeStyle = 'rgba(237,232,224,0.18)';
+  ctx.lineWidth = 1.2;
+  const [cx,cy] = dataToCanvas(0,0);
+  ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(CW,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,CH); ctx.stroke();
+}
+
+// Estimate how well the data fits onto a single direction.
+// We compute the best-fit direction through the origin (top eigenvector of
+// sum of x_i x_i^T for a 2x2 matrix — closed form) and the fraction of
+// total squared norm it captures. That fraction IS our "compression works" signal.
+function bestLineCapture(pts){
+  if(pts.length === 0) return {captured:1, angle:0};
+  // build 2x2 scatter matrix S = sum x_i x_i^T
+  let a=0,b=0,c=0;
+  let total=0;
+  pts.forEach(([x,y])=>{
+    a += x*x; b += x*y; c += y*y;
+    total += x*x + y*y;
+  });
+  if(total < 1e-9) return {captured:1, angle:0};
+  // top eigenvalue of [[a,b],[b,c]] via closed form
+  const tr = a+c, det = a*c - b*b;
+  const disc = Math.sqrt(Math.max(0, tr*tr/4 - det));
+  const l1 = tr/2 + disc;
+  // eigenvector: for matrix M with eigenvalue λ, (M - λI)v = 0
+  // use (a-λ, b; b, c-λ); take v = [b, λ-a] if b is nonzero, else [1,0] or [0,1]
+  let vx, vy;
+  if(Math.abs(b) > 1e-9){ vx = b; vy = l1 - a; }
+  else { vx = a >= c ? 1 : 0; vy = a >= c ? 0 : 1; }
+  const n = Math.sqrt(vx*vx + vy*vy) || 1;
+  vx/=n; vy/=n;
+  return {captured: total > 0 ? l1/total : 1, angle: Math.atan2(vy,vx), vx, vy};
+}
+
+function drawFitLine(fit){
+  // draw the best-fit line through origin
+  if(!fit || points.length < 2) return;
+  const len = DATA_RANGE * 1.5;
+  const x1 = -fit.vx*len, y1 = -fit.vy*len;
+  const x2 = fit.vx*len, y2 = fit.vy*len;
+  const [cx1,cy1] = dataToCanvas(x1,y1);
+  const [cx2,cy2] = dataToCanvas(x2,y2);
+  // line colour fades with quality — strong amber when captured ~ 1, faded when not
+  const q = fit.captured;
+  const alpha = 0.2 + 0.6 * q;
+  ctx.strokeStyle = `rgba(232,168,76,${alpha})`;
+  ctx.lineWidth = 1.8;
+  ctx.setLineDash(q > 0.99 ? [] : [6,5]);
+  ctx.beginPath(); ctx.moveTo(cx1,cy1); ctx.lineTo(cx2,cy2); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawPoints(pts, fit){
+  pts.forEach(([x,y],i)=>{
+    const [cx,cy] = dataToCanvas(x,y);
+    // draw projection residual line (how much the structured form would miss)
+    if(fit && points.length >= 2){
+      const dot = x*fit.vx + y*fit.vy;
+      const [px,py] = dataToCanvas(dot*fit.vx, dot*fit.vy);
+      ctx.strokeStyle = 'rgba(255,107,107,0.35)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(px,py); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // point itself
+    ctx.fillStyle = i === draggingIdx ? '#f0be6e' : '#e8a84c';
+    ctx.strokeStyle = 'rgba(20,19,15,0.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx,cy,7,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  });
+}
+
+function render(){
+  resizeCanvas();
+  drawGrid();
+  const pts = jitteredPoints();
+  const fit = bestLineCapture(pts);
+  drawFitLine(fit);
+  drawPoints(pts, fit);
+  updateCostPanel(pts, fit);
+}
+
+function updateCostPanel(pts, fit){
+  const n = pts.length, d = 2;
+  const naive = n*d;
+  const compressed = d + n;
+  document.getElementById('naiveBreakdown').textContent = `${n} × ${d}`;
+  document.getElementById('compBreakdown').textContent = `${d} + ${n}`;
+  document.getElementById('naiveCost').textContent = naive;
+  document.getElementById('compCost').textContent = compressed;
+
+  const card = document.getElementById('savingsCard');
+  const pctEl = document.getElementById('savingsPct');
+  const textEl = document.getElementById('savingsText');
+  const labelEl = document.getElementById('savingsLabel');
+
+  if(n === 0){
+    card.className = 'savings-card';
+    labelEl.textContent = 'Savings';
+    pctEl.textContent = '0%';
+    pctEl.className = 'savings-pct';
+    textEl.textContent = 'Add some points by clicking in the canvas.';
+    return;
+  }
+
+  const saving = 1 - compressed/naive;
+  const captured = fit ? fit.captured : 1;
+  const pct = Math.max(0, Math.round(saving*100));
+
+  // decision: compression is "honest" only if the single direction explains
+  // essentially all of the variance. We use a tight threshold so the reader
+  // can feel it fail as they drift off the line.
+  if(captured > 0.995 || n < 2){
+    card.className = 'savings-card';
+    labelEl.textContent = n < 2 ? 'Savings (trivially)' : 'Savings (exact)';
+    pctEl.className = 'savings-pct';
+    pctEl.textContent = pct + '%';
+    textEl.textContent = n < 2
+      ? 'One point is always "on a line through the origin." Add more.'
+      : 'Every point lies on a single line through the origin. The structured form is exact, with no information lost.';
+  } else if(captured > 0.9){
+    card.className = 'savings-card warn';
+    labelEl.textContent = 'Savings (approximate)';
+    pctEl.className = 'savings-pct';
+    pctEl.textContent = pct + '%';
+    textEl.textContent = `The line captures ${Math.round(captured*100)}% of the data's spread. The structured form is close but no longer exact. Points have drifted off the line (red residuals).`;
+  } else {
+    card.className = 'savings-card warn';
+    labelEl.textContent = 'Compression breaks';
+    pctEl.className = 'savings-pct warn';
+    pctEl.textContent = pct + '%';
+    textEl.textContent = `The line only captures ${Math.round(captured*100)}% of the spread. One direction isn't enough anymore. You'd need a second to reconstruct the data, which is exactly the failure mode that motivates the rest of the series.`;
+  }
+}
+
+// interaction
+let draggingIdx = -1;
+function getPointerPos(e){
+  const rect = canvas.getBoundingClientRect();
+  const p = e.touches ? e.touches[0] : e;
+  return [p.clientX - rect.left, p.clientY - rect.top];
+}
+function hitTestPoint(px, py){
+  const pts = jitteredPoints();
+  for(let i=0;i<pts.length;i++){
+    const [cx,cy] = dataToCanvas(pts[i][0], pts[i][1]);
+    const dx = cx-px, dy = cy-py;
+    if(dx*dx + dy*dy <= 144) return i; // 12px hit radius
+  }
+  return -1;
+}
+
+canvas.addEventListener('pointerdown',e=>{
+  const [px,py] = getPointerPos(e);
+  const idx = hitTestPoint(px,py);
+  if(idx >= 0){
+    draggingIdx = idx;
+    canvas.setPointerCapture(e.pointerId);
+  } else {
+    // add a new point at click location — store WITHOUT jitter
+    const [dx,dy] = canvasToData(px,py);
+    if(Math.abs(dx) <= DATA_RANGE && Math.abs(dy) <= DATA_RANGE){
+      points.push([dx,dy]);
+      jitterSeeds.push({jx:Math.random()*2-1, jy:Math.random()*2-1});
+      render();
+    }
+  }
+});
+canvas.addEventListener('pointermove',e=>{
+  if(draggingIdx < 0) return;
+  const [px,py] = getPointerPos(e);
+  const [dx,dy] = canvasToData(px,py);
+  // Note: user drags the jittered position. We store base so that base + jitter = current target.
+  const s = jitterSeeds[draggingIdx];
+  const amt = noise/100 * 1.5;
+  points[draggingIdx] = [dx - s.jx*amt, dy - s.jy*amt];
+  render();
+});
+canvas.addEventListener('pointerup',()=>{ draggingIdx = -1; });
+canvas.addEventListener('pointercancel',()=>{ draggingIdx = -1; });
+
+// presets
+document.querySelectorAll('.storage-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const p = b.dataset.preset;
+    points = PRESETS[p].map(x=>[...x]);
+    jitterSeeds = points.map(()=>({jx:Math.random()*2-1, jy:Math.random()*2-1}));
+    // clear button also resets noise for clarity
+    if(p === 'line'){
+      noise = 0;
+      document.getElementById('noiseSlider').value = 0;
+      document.getElementById('noiseVal').textContent = '0%';
+    }
+    render();
+  });
+});
+// noise slider
+const noiseSlider = document.getElementById('noiseSlider');
+const noiseValEl = document.getElementById('noiseVal');
+noiseSlider.addEventListener('input',()=>{
+  noise = parseInt(noiseSlider.value);
+  noiseValEl.textContent = noise + '%';
+  render();
+});
+
+window.addEventListener('resize', render);
+// initial render — wait a tick so layout settles
+requestAnimationFrame(render);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2 — SCALE EXPLOSION
+// ═══════════════════════════════════════════════════════════════════════════
+const nSlider = document.getElementById('nSlider');
+const dSlider = document.getElementById('dSlider');
+const kSlider = document.getElementById('kSlider');
+const nScaleVal = document.getElementById('nScaleVal');
+const dScaleVal = document.getElementById('dScaleVal');
+const kScaleVal = document.getElementById('kScaleVal');
+
+function fmtCount(n){
+  return n.toLocaleString();
+}
+function fmtBytes(floats){
+  const b = floats * 4;
+  if(b >= 1024**3) return (b/1024**3).toFixed(1) + ' GB';
+  if(b >= 1024**2) return (b/1024**2).toFixed(1) + ' MB';
+  if(b >= 1024) return (b/1024).toFixed(1) + ' KB';
+  return b + ' B';
+}
+
+function updateScale(){
+  const n = parseInt(nSlider.value);
+  const d = parseInt(dSlider.value);
+  const k = parseInt(kSlider.value);
+  nScaleVal.textContent = n.toLocaleString();
+  dScaleVal.textContent = d.toLocaleString();
+  kScaleVal.textContent = k.toLocaleString();
+  const raw = n * d;
+  const comp = k*d + k*n;
+  document.getElementById('rawSize').textContent = fmtBytes(raw);
+  document.getElementById('compSize').textContent = fmtBytes(comp);
+  document.getElementById('rawCount').textContent = fmtCount(raw) + ' floats';
+  const ratio = raw/comp;
+  document.getElementById('compCount').innerHTML = fmtCount(comp) + ` floats • <strong style="color:var(--accent)">${ratio >= 2 ? Math.round(ratio)+'× smaller' : ratio < 1 ? 'larger than naive' : ratio.toFixed(1)+'× smaller'}</strong>`;
+  document.getElementById('shrinkFactor').textContent = ratio >= 2 ? Math.round(ratio)+'× smaller' : ratio < 1 ? 'larger than naive' : ratio.toFixed(1)+'× smaller';
+}
+nSlider.addEventListener('input',updateScale);
+dSlider.addEventListener('input',updateScale);
+kSlider.addEventListener('input',updateScale);
+updateScale();
+
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
+</html>

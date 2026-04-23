@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Typeless Pointer | Understanding Memory From the Ground Up</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --purple:#c678dd;--purple-dim:rgba(198,120,221,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* code blocks */
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.3rem 0;font-family:'Courier New',monospace;font-size:.92rem;line-height:1.7;overflow-x:auto;color:var(--body);white-space:pre}
+    .codeblock .kw{color:#c678dd}
+    .codeblock .tp{color:#e06c75}
+    .codeblock .nm{color:#e8a84c}
+    .codeblock .vl{color:#7fff6b}
+    .codeblock .cm{color:var(--muted);font-style:italic}
+    .codeblock .op{color:#4ca8e8}
+    .codeblock .st{color:#98c379}
+    .codeblock .err{background:rgba(255,107,107,.14);display:inline-block;padding:0 .3em;border-radius:3px}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz base */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+    .btn{padding:.5rem 1.05rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);cursor:pointer;font-size:.88rem;font-family:inherit;transition:all .2s}
+    .btn:hover{border-color:var(--accent);color:var(--accent)}
+    .btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .btn.primary{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .btn.primary:hover{background:rgba(232,168,76,.22)}
+
+    /* ── VIZ 1: type erasure & recovery ───────────────────────────────── */
+    .v1-wrap{display:flex;flex-direction:column;gap:1rem}
+    .v1-picker{display:flex;gap:.4rem;flex-wrap:wrap}
+    .v1-stage{display:grid;grid-template-columns:1fr auto 1fr;gap:.9rem;align-items:center}
+    @media(max-width:800px){.v1-stage{grid-template-columns:1fr}}
+    .v1-side{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.5rem;min-height:160px}
+    .v1-side-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);display:flex;align-items:center;justify-content:space-between}
+    .v1-type-chip{font-family:'Courier New',monospace;font-size:.78rem;padding:.2rem .55rem;border-radius:999px;background:var(--bg-elevated);border:1px solid var(--border-hover);color:var(--body)}
+    .v1-type-chip.typed{color:var(--blue);border-color:rgba(76,168,232,.3);background:var(--blue-dim)}
+    .v1-type-chip.void{color:var(--purple);border-color:rgba(198,120,221,.3);background:var(--purple-dim)}
+    .v1-type-chip.recovered{color:var(--green);border-color:rgba(127,255,107,.3);background:var(--green-dim)}
+    .v1-type-chip.wrong{color:var(--red);border-color:rgba(255,107,107,.35);background:var(--red-dim)}
+    .v1-cells{display:flex;gap:.25rem;flex-wrap:wrap;padding:.5rem 0}
+    .v1-byte{min-width:34px;height:34px;padding:.25rem;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:4px;text-align:center;font-family:'Courier New',monospace;font-size:.72rem;color:var(--body);display:flex;align-items:center;justify-content:center}
+    .v1-label{font-size:.8rem;color:var(--muted);font-style:italic}
+    .v1-arrow{font-family:var(--hand);font-size:1.4rem;color:var(--accent);text-align:center}
+    @media(max-width:800px){.v1-arrow{transform:rotate(90deg)}}
+    .v1-reading{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.8rem 1rem;font-family:'Courier New',monospace;font-size:.88rem;line-height:1.6;color:var(--body)}
+    .v1-reading strong{color:var(--ink)}
+    .v1-reading .val{color:var(--green)}
+    .v1-reading .val.wrong{color:var(--red)}
+    .v1-verdict{padding:.9rem 1.1rem;border-radius:8px;font-size:.95rem;line-height:1.6;margin-top:.3rem}
+    .v1-verdict.ok{background:var(--green-dim);border-left:3px solid var(--green);color:var(--body)}
+    .v1-verdict.bad{background:var(--red-dim);border-left:3px solid var(--red);color:var(--body)}
+    .v1-verdict strong{color:var(--ink)}
+
+    /* ── VIZ 2: qsort sorter ──────────────────────────────────────────── */
+    .v2-wrap{display:flex;flex-direction:column;gap:1rem}
+    .v2-picker{display:flex;gap:.4rem;flex-wrap:wrap}
+    .v2-code{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;font-family:'Courier New',monospace;font-size:.85rem;line-height:1.6;color:var(--body);white-space:pre;overflow-x:auto}
+    .v2-code .kw{color:#c678dd}.v2-code .tp{color:#e06c75}.v2-code .nm{color:#e8a84c}
+    .v2-code .vl{color:#7fff6b}.v2-code .cm{color:var(--muted);font-style:italic}.v2-code .op{color:#4ca8e8}.v2-code .st{color:#98c379}
+    .v2-array{display:flex;gap:.35rem;flex-wrap:wrap;padding:.4rem 0}
+    .v2-item{padding:.5rem .8rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:6px;font-family:'Courier New',monospace;font-size:.88rem;color:var(--ink);transition:all .3s;min-width:50px;text-align:center}
+    .v2-item.compare{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);transform:translateY(-3px);box-shadow:0 4px 12px rgba(232,168,76,.22)}
+    .v2-item.swap{border-color:var(--blue);background:var(--blue-dim);color:var(--blue)}
+    .v2-item.sorted{border-color:rgba(127,255,107,.3);background:var(--green-dim);color:var(--green)}
+    .v2-stats{display:flex;gap:1.2rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted);padding:.3rem 0}
+    .v2-stats .val{color:var(--ink);font-family:'Courier New',monospace}
+    .v2-controls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+
+    /* ── VIZ 3: opaque pointer view ───────────────────────────────────── */
+    .v3-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:900px){.v3-wrap{grid-template-columns:1fr}}
+    .v3-col{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.6rem}
+    .v3-col.header{border-left:3px solid var(--blue)}
+    .v3-col.impl{border-left:3px solid var(--accent)}
+    .v3-col-title{font-family:var(--display);font-size:1.1rem;color:var(--ink);display:flex;align-items:center;justify-content:space-between}
+    .v3-col-tag{font-size:.72rem;font-family:'Courier New',monospace;color:var(--muted);padding:.18rem .55rem;border-radius:999px;background:var(--bg-elevated);border:1px solid var(--border-hover)}
+    .v3-col.header .v3-col-tag{color:var(--blue);border-color:rgba(76,168,232,.3);background:var(--blue-dim)}
+    .v3-col.impl .v3-col-tag{color:var(--accent);border-color:rgba(232,168,76,.3);background:var(--accent-dim)}
+    .v3-code{background:#14130f;border:1px solid var(--border);border-radius:6px;padding:.75rem .95rem;font-family:'Courier New',monospace;font-size:.82rem;line-height:1.55;color:var(--body);white-space:pre;overflow-x:auto}
+    .v3-code .kw{color:#c678dd}.v3-code .tp{color:#e06c75}.v3-code .nm{color:#e8a84c}
+    .v3-code .vl{color:#7fff6b}.v3-code .cm{color:var(--muted);font-style:italic}.v3-code .op{color:#4ca8e8}.v3-code .st{color:#98c379}
+    .v3-code .hidden{color:var(--muted);font-style:italic;opacity:.6}
+    .v3-notes{font-size:.88rem;color:var(--body);line-height:1.6}
+    .v3-notes strong{color:var(--ink)}
+    .v3-toggle-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem}
+
+    /* self-test quiz */
+    .quiz-intro{font-size:1.05rem;color:var(--body);margin-bottom:1.4rem;line-height:1.7}
+    .quiz-intro strong{color:var(--ink)}
+    .quiz-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem 1.8rem;margin:1.3rem 0;position:relative;overflow:hidden}
+    .quiz-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent 60%)}
+    .quiz-num{font-family:var(--hand);font-size:1.4rem;color:var(--accent);line-height:1;margin-bottom:.4rem;display:inline-block}
+    .quiz-q{font-family:var(--display);font-size:1.28rem;color:var(--ink);line-height:1.5;margin-bottom:1rem}
+    .quiz-code{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;margin:.8rem 0;font-family:'Courier New',monospace;font-size:.9rem;line-height:1.7;overflow-x:auto;white-space:pre}
+    .quiz-code .kw{color:#c678dd}.quiz-code .tp{color:#e06c75}.quiz-code .nm{color:#e8a84c}
+    .quiz-code .vl{color:#7fff6b}.quiz-code .cm{color:var(--muted);font-style:italic}.quiz-code .op{color:#4ca8e8}.quiz-code .st{color:#98c379}
+    .quiz-options{display:flex;flex-direction:column;gap:.5rem;margin:.8rem 0}
+    .quiz-option{display:flex;align-items:flex-start;gap:.7rem;padding:.7rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;cursor:pointer;transition:all .2s;font-size:.98rem;color:var(--body);text-align:left;font-family:inherit}
+    .quiz-option:hover{border-color:var(--accent);color:var(--ink)}
+    .quiz-option.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+    .quiz-option.correct{border-color:var(--green);background:var(--green-dim);color:var(--ink)}
+    .quiz-option.incorrect{border-color:var(--red);background:var(--red-dim);color:var(--ink);opacity:.8}
+    .quiz-option-letter{font-family:'Courier New',monospace;font-weight:700;color:var(--accent);min-width:1.3rem}
+    .quiz-option.correct .quiz-option-letter{color:var(--green)}
+    .quiz-option.incorrect .quiz-option-letter{color:var(--red)}
+    .quiz-reveal{margin-top:.8rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+    .quiz-btn{padding:.5rem 1.1rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);cursor:pointer;font-size:.9rem;font-family:inherit;font-weight:500;transition:all .2s}
+    .quiz-btn:hover{background:rgba(232,168,76,.22)}
+    .quiz-answer{margin-top:1rem;padding:1rem 1.2rem;background:rgba(127,255,107,.06);border:1px solid rgba(127,255,107,.25);border-left:3px solid var(--green);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.7;display:none;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .quiz-answer.show{display:block}
+    .quiz-answer strong{color:var(--ink)}
+    .quiz-answer code{background:rgba(237,232,224,.08);padding:.1rem .4rem;border-radius:3px;font-family:'Courier New',monospace;color:var(--ink);font-size:.88em}
+    .quiz-answer .verdict{font-family:var(--display);font-size:1.1rem;color:var(--green);margin-bottom:.4rem;display:block}
+    .quiz-textarea{width:100%;min-height:80px;padding:.7rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--ink);font-size:.95rem;outline:none;font-family:inherit;resize:vertical;line-height:1.6}
+    .quiz-textarea:focus{border-color:var(--accent)}
+    .quiz-scorecard{margin-top:2rem;padding:1.4rem 1.8rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);text-align:center}
+    .quiz-scorecard-title{font-family:var(--display);font-size:1.35rem;color:var(--ink);margin-bottom:.4rem}
+    .quiz-scorecard-msg{font-size:1rem;color:var(--body);line-height:1.6}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Pointers: Thinking in Memory</span>
+  <h1>The Typeless Pointer</h1>
+  <p class="blog-subtitle">A <code>void*</code> is a pointer that has forgotten what it points at. This sounds useless until you realise it's how <code>malloc</code> returns memory, how <code>qsort</code> sorts anything, how callbacks carry user data, and how libraries hide their internals. This post is about when to reach for <code>void*</code>, how to do it without hurting yourself, and why the very thing that makes it powerful also makes it dangerous.</p>
+
+  <h2>What a void* actually is</h2>
+
+  <p>Every pointer we've met so far has had a type attached. <code>int*</code> points at an <code>int</code>, <code>char*</code> points at a <code>char</code>, <code>struct Node*</code> points at a <code>Node</code>. The type does two jobs: it tells the compiler how big the pointee is (for pointer arithmetic and dereferencing), and it tells the programmer what kind of thing lives at that address.</p>
+
+  <p>A <code>void*</code> is a pointer that has neither of those. It's an address with no type information attached. The compiler knows something lives at that location, but nothing about what. You can't dereference it. You can't do pointer arithmetic on it. You can only pass it around, store it, or cast it back to a real pointer type when you want to actually use it.</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">x</span> <span class="op">=</span> <span class="vl">42</span>;
+<span class="tp">void</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> <span class="op">&amp;</span><span class="nm">x</span>;     <span class="cm">// fine: any pointer converts to void* implicitly</span>
+
+<span class="op">*</span><span class="nm">p</span>;                <span class="cm">// ERROR: can't dereference void*, don't know the size</span>
+<span class="nm">p</span><span class="op">++</span>;               <span class="cm">// ERROR: can't do arithmetic on void*, don't know the stride</span>
+
+<span class="tp">int</span><span class="op">*</span> <span class="nm">q</span> <span class="op">=</span> (<span class="tp">int</span><span class="op">*</span>)<span class="nm">p</span>; <span class="cm">// cast back to int*, now we can use it</span>
+<span class="nm">printf</span>(<span class="st">"%d\n"</span>, <span class="op">*</span><span class="nm">q</span>); <span class="cm">// 42</span></pre>
+
+  <p>If you're coming from higher-level languages, <code>void*</code> is similar in spirit to "any pointer" types: <code>Object</code> in Java, <code>interface{}</code> (or <code>any</code>) in Go, <code>Any</code> in Swift. The key difference is that those languages remember the original type at runtime, so they can check casts for you. C doesn't. A <code>void*</code> is just an address; nothing anywhere tracks what type was originally stored there. If you cast it to the wrong type, you get silence from the compiler and garbage (or worse) at runtime.</p>
+
+  <div class="callout">A <code>void*</code> is an address without a type. That's its superpower (it fits any pointer) and its curse (the compiler can't help you if you get the type wrong).</div>
+
+  <h3>Casting rules</h3>
+
+  <p>Two rules, and they are asymmetric. In C, any pointer converts to <code>void*</code> <em>implicitly</em>; no cast needed. Going the other way, from <code>void*</code> back to a typed pointer, also works implicitly in C but requires an explicit cast in C++:</p>
+
+<pre class="codeblock"><span class="cm">// C</span>
+<span class="tp">int</span> <span class="nm">x</span> <span class="op">=</span> <span class="vl">42</span>;
+<span class="tp">void</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> <span class="op">&amp;</span><span class="nm">x</span>;       <span class="cm">// implicit, both C and C++</span>
+<span class="tp">int</span><span class="op">*</span> <span class="nm">q</span> <span class="op">=</span> <span class="nm">p</span>;            <span class="cm">// implicit in C, error in C++</span>
+
+<span class="cm">// C++</span>
+<span class="tp">int</span><span class="op">*</span> <span class="nm">q</span> <span class="op">=</span> (<span class="tp">int</span><span class="op">*</span>)<span class="nm">p</span>;     <span class="cm">// explicit cast required</span>
+<span class="tp">int</span><span class="op">*</span> <span class="nm">q2</span> <span class="op">=</span> <span class="kw">static_cast</span>&lt;<span class="tp">int</span><span class="op">*</span>&gt;(<span class="nm">p</span>);   <span class="cm">// C++'s preferred spelling</span></pre>
+
+  <p>The C++ rule is stricter on purpose. C++'s designers felt that casting from <code>void*</code> back to a typed pointer is the exact step where things can go wrong, and wanted to make it visible at the call site. You'll see this difference echo through a lot of the C-to-C++ porting experience.</p>
+
+  <!-- VIZ 1: type erasure & recovery -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Watch a typed pointer lose its type and (maybe) recover it.</span></div>
+    <div class="viz-body">
+      <div class="v1-wrap">
+        <div class="v1-picker">
+          <button class="btn active" data-v1="int">Erase an int</button>
+          <button class="btn" data-v1="double">Erase a double</button>
+          <button class="btn" data-v1="struct">Erase a struct Point</button>
+          <button class="btn" data-v1="wrong">Recover as the wrong type</button>
+        </div>
+
+        <div class="v1-stage">
+          <div class="v1-side">
+            <div class="v1-side-title">Original pointer <span class="v1-type-chip typed" id="v1OrigChip"></span></div>
+            <div class="v1-cells" id="v1OrigCells"></div>
+            <div class="v1-label" id="v1OrigLabel"></div>
+          </div>
+          <div class="v1-arrow">→<br><span style="font-size:.7rem;color:var(--muted)">assign to void*</span></div>
+          <div class="v1-side">
+            <div class="v1-side-title">After recovery <span class="v1-type-chip" id="v1RecChip"></span></div>
+            <div class="v1-cells" id="v1RecCells"></div>
+            <div class="v1-label" id="v1RecLabel"></div>
+          </div>
+        </div>
+
+        <div class="v1-reading" id="v1Reading"></div>
+
+        <div class="v1-verdict" id="v1Verdict"></div>
+      </div>
+
+      <p class="viz-note">The bytes in memory never change. What changes is how you interpret them. In the first three cases, the recovery is correct and you read back what you wrote. In the last case, the recovery type disagrees with the original type, and what you get is nonsense. Nothing in the language stops this; the discipline has to come from you.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Where void* actually shows up</h2>
+
+  <p>If you only ever wrote application code, you'd almost never need to declare a <code>void*</code> yourself. But you'd use functions that return or take one every day, because <code>void*</code> is how C's standard library implements things that the type system can't express.</p>
+
+  <h3>1. <code>malloc</code> and friends</h3>
+
+  <p>The most familiar example:</p>
+
+<pre class="codeblock"><span class="tp">void</span><span class="op">*</span> <span class="nm">malloc</span>(<span class="tp">size_t</span> <span class="nm">size</span>);
+<span class="tp">void</span> <span class="nm">free</span>(<span class="tp">void</span><span class="op">*</span> <span class="nm">ptr</span>);</pre>
+
+  <p>Think about what <code>malloc</code> is being asked to do. The caller says "give me 40 bytes." <code>malloc</code> doesn't know if those 40 bytes are going to hold ten <code>int</code>s, or five <code>double</code>s, or one <code>struct Book</code>. It shouldn't have to know. It just returns an address, and the caller interprets the bytes however they want. A typed return (say, <code>int*</code>) would force a cast at every other use site; a <code>void*</code> return is honest about the fact that the allocator doesn't care.</p>
+
+<pre class="codeblock"><span class="tp">int</span><span class="op">*</span> <span class="nm">numbers</span> <span class="op">=</span> <span class="nm">malloc</span>(<span class="vl">10</span> <span class="op">*</span> <span class="kw">sizeof</span>(<span class="tp">int</span>));     <span class="cm">// C: implicit cast</span>
+<span class="tp">double</span><span class="op">*</span> <span class="nm">values</span> <span class="op">=</span> <span class="nm">malloc</span>(<span class="vl">5</span> <span class="op">*</span> <span class="kw">sizeof</span>(<span class="tp">double</span>));  <span class="cm">// same function, different interpretation</span>
+
+<span class="kw">struct</span> <span class="nm">Book</span><span class="op">*</span> <span class="nm">b</span> <span class="op">=</span> <span class="nm">malloc</span>(<span class="kw">sizeof</span>(<span class="kw">struct</span> <span class="nm">Book</span>));      <span class="cm">// same function, struct interpretation</span>
+
+<span class="nm">free</span>(<span class="nm">numbers</span>);   <span class="cm">// free takes void*, so any pointer type goes in</span>
+<span class="nm">free</span>(<span class="nm">values</span>);
+<span class="nm">free</span>(<span class="nm">b</span>);</pre>
+
+  <p>This is <code>void*</code> at its most helpful. The function is genuinely type-agnostic, and the type erasure is the whole point. (In C++ you'd write <code>new int[10]</code> instead, which is typed end-to-end; we'll get to why in Part 10.)</p>
+
+  <h3>2. <code>qsort</code> and the generic algorithm trick</h3>
+
+  <p>The standard library's <code>qsort</code> is a more interesting case:</p>
+
+<pre class="codeblock"><span class="tp">void</span> <span class="nm">qsort</span>(<span class="tp">void</span><span class="op">*</span> <span class="nm">base</span>, <span class="tp">size_t</span> <span class="nm">nmemb</span>, <span class="tp">size_t</span> <span class="nm">size</span>,
+           <span class="tp">int</span> (<span class="op">*</span><span class="nm">compar</span>)(<span class="kw">const</span> <span class="tp">void</span><span class="op">*</span>, <span class="kw">const</span> <span class="tp">void</span><span class="op">*</span>));</pre>
+
+  <p>The signature is a short story. <code>base</code> is a <code>void*</code>: the start of the array to sort, any element type. <code>nmemb</code> is the number of elements, and <code>size</code> is the byte-width of each element. Together, <code>base</code>, <code>nmemb</code>, and <code>size</code> are the type-erased stand-in for "an array of N somethings." And <code>compar</code> is a function pointer that takes two <code>const void*</code>s and returns a comparison result. The caller supplies that function because only the caller knows what type lives at those pointers.</p>
+
+  <p>Here's what it looks like in practice:</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">cmp_int</span>(<span class="kw">const</span> <span class="tp">void</span><span class="op">*</span> <span class="nm">a</span>, <span class="kw">const</span> <span class="tp">void</span><span class="op">*</span> <span class="nm">b</span>) {
+    <span class="kw">const</span> <span class="tp">int</span><span class="op">*</span> <span class="nm">ia</span> <span class="op">=</span> <span class="nm">a</span>;        <span class="cm">// recover types at the edge</span>
+    <span class="kw">const</span> <span class="tp">int</span><span class="op">*</span> <span class="nm">ib</span> <span class="op">=</span> <span class="nm">b</span>;
+    <span class="kw">return</span> (<span class="op">*</span><span class="nm">ia</span> <span class="op">&gt;</span> <span class="op">*</span><span class="nm">ib</span>) <span class="op">-</span> (<span class="op">*</span><span class="nm">ia</span> <span class="op">&lt;</span> <span class="op">*</span><span class="nm">ib</span>);
+}
+
+<span class="tp">int</span> <span class="nm">arr</span>[] <span class="op">=</span> {<span class="vl">5</span>, <span class="vl">2</span>, <span class="vl">8</span>, <span class="vl">1</span>, <span class="vl">9</span>};
+<span class="nm">qsort</span>(<span class="nm">arr</span>, <span class="vl">5</span>, <span class="kw">sizeof</span>(<span class="tp">int</span>), <span class="nm">cmp_int</span>);</pre>
+
+  <p>Read this as a contract between two parties. <code>qsort</code> says: "I know how to rearrange blobs of bytes in an array; I don't know what those bytes mean." The caller says: "Here's the array, here's the size of each blob, and here's how to compare two of them." They meet in the middle via <code>void*</code>, and neither needs to know the other's full type.</p>
+
+  <p>Compare this with a language that has generics (C++ templates, Rust generics, Java generics). In those languages, <code>sort</code> would take a comparator as a type-safe function and the compiler would check types at compile time. In C there's no such machinery, so <code>void*</code> plus an explicit <code>size</code> is what we get. The trade is type safety for code reuse: one <code>qsort</code> works for every element type, but there's nothing stopping you from passing an <code>int</code> array with a <code>cmp_double</code> comparator and getting nonsense back.</p>
+
+  <div class="callout">The <code>void*</code> plus <code>size_t</code> plus callback pattern is C's template mechanism. It's how one function can operate on any element type, at the cost of losing compile-time type checking.</div>
+
+  <!-- VIZ 2: qsort sorter -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Pick an element type. Watch qsort sort it through void*.</span></div>
+    <div class="viz-body">
+      <div class="v2-wrap">
+        <div class="v2-picker">
+          <button class="btn active" data-v2="ints">int array</button>
+          <button class="btn" data-v2="floats">float array</button>
+          <button class="btn" data-v2="strings">string array</button>
+          <button class="btn" data-v2="structs">struct Book by year</button>
+        </div>
+
+        <div class="v2-code" id="v2Code"></div>
+
+        <div class="v2-array" id="v2Array"></div>
+
+        <div class="v2-stats" id="v2Stats"></div>
+
+        <div class="v2-controls">
+          <button class="btn primary" id="v2Step">Step →</button>
+          <button class="btn" id="v2Run">Run to end</button>
+          <button class="btn" id="v2Reset">Reset</button>
+        </div>
+      </div>
+
+      <p class="viz-note">The same <code>qsort</code> call drives four different element types. What changes between runs is the comparator and the element size; the algorithm's loop over <code>void*</code> chunks is identical. This is what the <code>void*</code> plus <code>size_t</code> trick buys: one sort routine, every element type.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Callbacks with user context</h2>
+
+  <p>The third place <code>void*</code> shows up is in callback APIs, and it's the use case that catches people by surprise the most. Here's the shape:</p>
+
+<pre class="codeblock"><span class="cm">// API:</span>
+<span class="tp">void</span> <span class="nm">for_each_line</span>(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">path</span>,
+                   <span class="tp">void</span> (<span class="op">*</span><span class="nm">cb</span>)(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">line</span>, <span class="tp">void</span><span class="op">*</span> <span class="nm">user</span>),
+                   <span class="tp">void</span><span class="op">*</span> <span class="nm">user</span>);</pre>
+
+  <p>The function reads a file line by line and calls <code>cb</code> on each line. The callback takes the line and a <code>void*</code> called <code>user</code>. That second parameter is the clever bit. Without it, callbacks can only talk to global state, which is terrible for testability, thread safety, and re-entrancy. With it, the caller can pass their own data through to the callback, and the API itself doesn't need to know what that data is.</p>
+
+  <p>In use:</p>
+
+<pre class="codeblock"><span class="kw">struct</span> <span class="nm">Stats</span> { <span class="tp">int</span> <span class="nm">lines</span>; <span class="tp">int</span> <span class="nm">bytes</span>; };
+
+<span class="tp">void</span> <span class="nm">count_line</span>(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">line</span>, <span class="tp">void</span><span class="op">*</span> <span class="nm">user</span>) {
+    <span class="kw">struct</span> <span class="nm">Stats</span><span class="op">*</span> <span class="nm">s</span> <span class="op">=</span> <span class="nm">user</span>;    <span class="cm">// recover the type</span>
+    <span class="nm">s</span>-&gt;<span class="nm">lines</span><span class="op">++</span>;
+    <span class="nm">s</span>-&gt;<span class="nm">bytes</span> <span class="op">+=</span> <span class="nm">strlen</span>(<span class="nm">line</span>);
+}
+
+<span class="kw">struct</span> <span class="nm">Stats</span> <span class="nm">stats</span> <span class="op">=</span> {<span class="vl">0</span>, <span class="vl">0</span>};
+<span class="nm">for_each_line</span>(<span class="st">"input.txt"</span>, <span class="nm">count_line</span>, <span class="op">&amp;</span><span class="nm">stats</span>);
+<span class="nm">printf</span>(<span class="st">"%d lines, %d bytes\n"</span>, <span class="nm">stats</span>.<span class="nm">lines</span>, <span class="nm">stats</span>.<span class="nm">bytes</span>);</pre>
+
+  <p>The API doesn't know <code>Stats</code> exists. The callback does. The <code>void*</code> is the pipe that lets caller-owned context flow through an API that's designed to be generic. This pattern shows up everywhere there are callbacks in C: signal handlers, event loops, thread entry points, library APIs.</p>
+
+  <p>Compare with a library that <em>doesn't</em> provide a user pointer:</p>
+
+<pre class="codeblock"><span class="cm">// Older API without user pointer:</span>
+<span class="tp">void</span> <span class="nm">for_each_line</span>(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">path</span>,
+                   <span class="tp">void</span> (<span class="op">*</span><span class="nm">cb</span>)(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">line</span>));
+
+<span class="cm">// The only way to accumulate state is a global:</span>
+<span class="tp">static</span> <span class="kw">struct</span> <span class="nm">Stats</span> <span class="nm">g_stats</span>;       <span class="cm">// terrible for threading, re-entrancy</span></pre>
+
+  <p>The <code>void*</code> user pointer is what upgraded this pattern from unusable to idiomatic. It's why <code>pthread_create</code>, <code>bsearch</code>, most event-loop libraries, and modern signal handling APIs all have one. The rule of thumb: <strong>if you're designing a callback API in C, always include a <code>void*</code> context parameter, even if your first use case doesn't need it.</strong> You will want it later, and it's very hard to add without breaking every caller.</p>
+
+  <div class="callout">A callback without a user-data pointer forces everyone who uses it into global state. A <code>void*</code> context is the small-piece that makes callbacks actually composable.</div>
+
+  <hr class="sep">
+
+  <h2>Opaque pointers: hiding implementation</h2>
+
+  <p>The last big use of <code>void*</code> (or something closely related) is opaque pointers. This is a design pattern where a library exposes a pointer type but hides what it actually points at. Callers can pass the pointer around and hand it back to library functions, but they cannot peek inside.</p>
+
+  <p>Here's the classic setup, used in countless C libraries (SQLite's <code>sqlite3</code>, FILE from the standard library, most of POSIX's handle types):</p>
+
+<pre class="codeblock"><span class="cm">// database.h (public)</span>
+<span class="kw">typedef</span> <span class="kw">struct</span> <span class="nm">Database</span> <span class="nm">Database</span>;    <span class="cm">// forward declaration, no definition</span>
+
+<span class="nm">Database</span><span class="op">*</span> <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">path</span>);
+<span class="tp">int</span>       <span class="nm">db_query</span>(<span class="nm">Database</span><span class="op">*</span> <span class="nm">db</span>, <span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">sql</span>);
+<span class="tp">void</span>      <span class="nm">db_close</span>(<span class="nm">Database</span><span class="op">*</span> <span class="nm">db</span>);</pre>
+
+<pre class="codeblock"><span class="cm">// database.c (private)</span>
+<span class="kw">struct</span> <span class="nm">Database</span> {
+    <span class="tp">int</span>   <span class="nm">fd</span>;
+    <span class="tp">char</span>  <span class="nm">buf</span>[<span class="vl">4096</span>];
+    <span class="kw">struct</span> <span class="nm">QueryCache</span><span class="op">*</span> <span class="nm">cache</span>;
+    <span class="cm">// ... all the internal machinery</span>
+};
+
+<span class="nm">Database</span><span class="op">*</span> <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">path</span>) {
+    <span class="nm">Database</span><span class="op">*</span> <span class="nm">db</span> <span class="op">=</span> <span class="nm">malloc</span>(<span class="kw">sizeof</span>(<span class="nm">Database</span>));
+    <span class="cm">// ... initialise</span>
+    <span class="kw">return</span> <span class="nm">db</span>;
+}</pre>
+
+  <p>Notice what the public header shows: a <em>name</em> (<code>Database</code>) but no definition. Callers can hold a <code>Database*</code>, pass it around, print its address for debugging. But they can't access <code>db-&gt;fd</code>, because the compiler, reading the header, doesn't know that field exists. The full definition lives in the <code>.c</code> file, where only the library implementation can see it.</p>
+
+  <p>This is called an <strong>opaque pointer</strong> (or "incomplete type" in standard-ese). Strictly speaking it's not a <code>void*</code>, because the pointer has a specific type name. But the mechanism is the same in spirit: the library hands out a typed handle whose internals are hidden, and clients can't reach inside. It's how C libraries enforce encapsulation without classes.</p>
+
+  <p>You get three large benefits from this pattern:</p>
+
+  <p><strong>1. ABI stability.</strong> The library can change the struct's layout, add fields, reorder them, change sizes, without breaking any compiled client code. The clients only know the pointer type, not the struct size.</p>
+
+  <p><strong>2. Access control.</strong> Callers physically cannot reach in and mess with the internals. They must go through the API.</p>
+
+  <p><strong>3. Dependency isolation.</strong> The public header doesn't need to <code>#include</code> all the internal types. A library whose public header pulls in 30 transitive includes is a compile-time nightmare; opaque pointers trim that dependency graph aggressively.</p>
+
+  <p>Some libraries go one step further and expose the handle as a <code>void*</code>:</p>
+
+<pre class="codeblock"><span class="cm">// Even more opaque:</span>
+<span class="kw">typedef</span> <span class="tp">void</span><span class="op">*</span> <span class="nm">DBHandle</span>;
+
+<span class="nm">DBHandle</span> <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">path</span>);</pre>
+
+  <p>This is a weaker pattern. You've thrown away the name, so now a client could accidentally pass a <code>DBHandle</code> to a function expecting some other <code>void*</code>-typed handle, and the compiler would let them. The typed-but-opaque version (<code>Database*</code>) is strictly better: you get all the encapsulation benefits, plus the compiler can still catch type confusion at call sites.</p>
+
+  <!-- VIZ 3: opaque pointer view -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">What each side of the library sees.</span></div>
+    <div class="viz-body">
+      <div class="v3-toggle-row">
+        <button class="btn active" data-v3="transparent">Transparent struct (bad)</button>
+        <button class="btn" data-v3="opaque">Opaque typedef (good)</button>
+        <button class="btn" data-v3="void">void* handle (weakest)</button>
+      </div>
+
+      <div class="v3-wrap">
+        <div class="v3-col header">
+          <div class="v3-col-title">What callers see <span class="v3-col-tag">public header</span></div>
+          <div class="v3-code" id="v3Public"></div>
+          <div class="v3-notes" id="v3PublicNotes"></div>
+        </div>
+        <div class="v3-col impl">
+          <div class="v3-col-title">What the library sees <span class="v3-col-tag">private .c</span></div>
+          <div class="v3-code" id="v3Private"></div>
+          <div class="v3-notes" id="v3PrivateNotes"></div>
+        </div>
+      </div>
+
+      <p class="viz-note">The three approaches trade off along two axes: how much the caller knows about the type name, and how much the caller knows about the layout. The middle approach keeps the type name useful (catches bugs) while keeping the layout private (enables evolution). That's why it's the standard recipe.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The hazards</h2>
+
+  <p>Everything <code>void*</code> gives you, it gives by removing type checking. That means every class of bug that the type system would have caught for you becomes a runtime bug. Four hazards worth learning to watch for:</p>
+
+  <h3>1. Wrong-type recovery</h3>
+
+<pre class="codeblock"><span class="tp">double</span> <span class="nm">x</span> <span class="op">=</span> <span class="vl">3.14</span>;
+<span class="tp">void</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> <span class="op">&amp;</span><span class="nm">x</span>;
+<span class="tp">int</span><span class="op">*</span> <span class="nm">q</span> <span class="op">=</span> <span class="nm">p</span>;             <span class="cm">// compiler doesn't complain in C</span>
+<span class="nm">printf</span>(<span class="st">"%d\n"</span>, <span class="op">*</span><span class="nm">q</span>);    <span class="cm">// reads the first 4 bytes of a double as int: nonsense</span></pre>
+
+  <p>No compiler warning. No runtime check. Just garbage. This is also a strict-aliasing violation (from Part 8), so it's UB on top of being wrong. The typed-pointer-to-typed-pointer version would have failed at compile time. The <code>void*</code> version waits until production.</p>
+
+  <h3>2. Lifetime bugs through callbacks</h3>
+
+<pre class="codeblock"><span class="tp">void</span> <span class="nm">schedule_later</span>() {
+    <span class="kw">struct</span> <span class="nm">Stats</span> <span class="nm">s</span> <span class="op">=</span> {<span class="vl">0</span>, <span class="vl">0</span>};
+    <span class="nm">event_loop_register</span>(<span class="nm">count_line</span>, <span class="op">&amp;</span><span class="nm">s</span>);
+    <span class="cm">// returns here, s goes out of scope</span>
+}
+<span class="cm">// Later, the event loop calls count_line with a pointer to a dead stack slot. UB.</span></pre>
+
+  <p>The <code>void*</code> hid the fact that <code>&amp;s</code> was a stack pointer with a lifetime shorter than the callback's registration. Because the callback signature is generic (<code>void*</code>), nothing in the type system pushed back on this mistake. Callback-with-user-pointer APIs have to document lifetime contracts carefully, because the compiler can't help.</p>
+
+  <h3>3. Pointer arithmetic on void*</h3>
+
+<pre class="codeblock"><span class="tp">void</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">malloc</span>(<span class="vl">100</span>);
+<span class="nm">p</span> <span class="op">+=</span> <span class="vl">10</span>;       <span class="cm">// ERROR in standard C (no size to advance by)</span>
+                <span class="cm">// In GCC/Clang, this is allowed as an extension and treats void as 1 byte.</span>
+                <span class="cm">// Portable code should cast to char* first.</span></pre>
+
+  <p>Pointer arithmetic needs to know the stride, and <code>void</code> has none. Standard C forbids it; GCC and Clang allow it as an extension and pretend <code>void</code> is one byte. Don't rely on this; always cast to <code>char*</code> (or <code>uint8_t*</code>) when you want byte-level arithmetic.</p>
+
+  <h3>4. void* doesn't work with <code>typeof</code> or <code>sizeof</code> the way you'd hope</h3>
+
+<pre class="codeblock"><span class="tp">void</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">malloc</span>(<span class="vl">100</span>);
+<span class="kw">sizeof</span>(<span class="op">*</span><span class="nm">p</span>);           <span class="cm">// ERROR: can't take sizeof(void)</span>
+<span class="kw">sizeof</span>(<span class="nm">p</span>);            <span class="cm">// fine: sizeof a pointer (usually 8 on 64-bit)</span></pre>
+
+  <p>This seems obvious but trips people up in generic code. Anything you want to know about the pointee's size has to be passed in separately, or derived from context. It's why <code>qsort</code> takes a <code>size</code> parameter.</p>
+
+  <div class="callout">Every feature <code>void*</code> lacks (dereference, arithmetic, <code>sizeof</code>) corresponds to a piece of knowledge the type system doesn't have. You have to supply it some other way.</div>
+
+  <hr class="sep">
+
+  <h2>Patterns for using void* well</h2>
+
+  <p>Four rules that keep the chaos contained:</p>
+
+  <p><strong>Recover the type immediately, at the edge.</strong> When a callback receives a <code>void*</code>, the first line of code should be a typed-pointer cast. Don't pass the <code>void*</code> deeper into the function; convert it once, then work in the typed world.</p>
+
+<pre class="codeblock"><span class="cm">// Good:</span>
+<span class="tp">void</span> <span class="nm">callback</span>(<span class="tp">void</span><span class="op">*</span> <span class="nm">user</span>) {
+    <span class="kw">struct</span> <span class="nm">Context</span><span class="op">*</span> <span class="nm">ctx</span> <span class="op">=</span> <span class="nm">user</span>;   <span class="cm">// immediate recovery</span>
+    <span class="nm">do_work</span>(<span class="nm">ctx</span>);                      <span class="cm">// typed from here on</span>
+}</pre>
+
+  <p><strong>Pair void* with a discriminator if you need real type-safety.</strong> If a generic container needs to remember what's in it, store a type tag alongside the pointer:</p>
+
+<pre class="codeblock"><span class="kw">enum</span> <span class="nm">Kind</span> { <span class="nm">KIND_INT</span>, <span class="nm">KIND_DOUBLE</span>, <span class="nm">KIND_STRING</span> };
+
+<span class="kw">struct</span> <span class="nm">Any</span> {
+    <span class="kw">enum</span> <span class="nm">Kind</span> <span class="nm">kind</span>;
+    <span class="tp">void</span><span class="op">*</span>     <span class="nm">data</span>;
+};
+
+<span class="tp">void</span> <span class="nm">print_any</span>(<span class="kw">struct</span> <span class="nm">Any</span> <span class="nm">a</span>) {
+    <span class="kw">switch</span> (<span class="nm">a</span>.<span class="nm">kind</span>) {
+        <span class="kw">case</span> <span class="nm">KIND_INT</span>:    <span class="nm">printf</span>(<span class="st">"%d\n"</span>, <span class="op">*</span>(<span class="tp">int</span><span class="op">*</span>)<span class="nm">a</span>.<span class="nm">data</span>); <span class="kw">break</span>;
+        <span class="kw">case</span> <span class="nm">KIND_DOUBLE</span>: <span class="nm">printf</span>(<span class="st">"%f\n"</span>, <span class="op">*</span>(<span class="tp">double</span><span class="op">*</span>)<span class="nm">a</span>.<span class="nm">data</span>); <span class="kw">break</span>;
+        <span class="kw">case</span> <span class="nm">KIND_STRING</span>: <span class="nm">printf</span>(<span class="st">"%s\n"</span>, (<span class="tp">char</span><span class="op">*</span>)<span class="nm">a</span>.<span class="nm">data</span>); <span class="kw">break</span>;
+    }
+}</pre>
+
+  <p>The <code>enum</code> tag restores enough information for the code to check at runtime what it's looking at. This is called a <em>tagged union</em> or <em>discriminated union</em>. It's not as good as a real sum type (Rust's <code>enum</code>, ML's <code>type</code>), but it's what you have in C.</p>
+
+  <p><strong>Document the lifetime contract of every void*.</strong> Who owns the pointee? Who frees it? How long does it live? When a library accepts a <code>void* user_data</code>, the documentation must answer all three questions. "Caller retains ownership; pointer must remain valid until <code>unregister()</code> is called" is the kind of sentence that saves weekends.</p>
+
+  <p><strong>Prefer typed-but-opaque over void* for library handles.</strong> As we saw, <code>struct Database*</code> (opaque typedef) is strictly better than <code>void*</code> for handle-style APIs. The compiler still gets to catch "wrong handle passed to wrong function."</p>
+
+  <hr class="sep">
+
+  <h2>A brief C++ note</h2>
+
+  <p>C++ has <code>void*</code> too, with the same mechanics, but the idioms are very different. Where a C programmer reaches for <code>void*</code>, a C++ programmer usually reaches for one of:</p>
+
+  <ul>
+    <li><strong>Templates.</strong> For the qsort case, C++ uses <code>std::sort</code>, which is templated on the iterator type. The compiler generates a specialised sort for each element type and does full type-checking along the way. No <code>void*</code>, no size parameter, no comparator-returns-void*.</li>
+    <li><strong><code>std::function</code> and lambda captures.</strong> For the callback case, C++ callbacks typically take a <code>std::function&lt;void(Args)&gt;</code>, and user context gets bundled into the lambda's capture. No user pointer, no manual type-recovery.</li>
+    <li><strong><code>std::any</code> and <code>std::variant</code> (C++17).</strong> For the "any type" case, these are type-safe stand-ins for the tagged union pattern. <code>std::variant</code> is the C++ version of a sum type, and it's checked at compile time.</li>
+  </ul>
+
+  <p>You still see <code>void*</code> in C++ when calling into C APIs (OS calls, legacy libraries, FFI boundaries), and sometimes in highly tuned code that wants type erasure without template bloat. But the default posture in modern C++ is "use templates or <code>std::variant</code> instead." If you find yourself writing raw <code>void*</code> in new C++ code, it's worth asking whether one of these alternatives would fit.</p>
+
+  <p>Opaque pointers, interestingly, are still useful in C++. The PIMPL idiom ("pointer to implementation") is exactly the opaque-pointer pattern we described, adapted to classes. A public class holds a <code>std::unique_ptr&lt;Impl&gt;</code>, where <code>Impl</code> is forward-declared in the header and defined in the <code>.cpp</code>. Same ABI-stability and dependency-isolation benefits as in C, dressed up in C++ clothes.</p>
+
+  <hr class="sep">
+
+  <h2>Summing up</h2>
+
+  <p>A <code>void*</code> is an address without a type. You can't dereference it, can't do arithmetic on it, can't take <code>sizeof</code> the pointee. Its usefulness comes from being the universal pointer, implicitly convertible from (and, in C, to) any other pointer type.</p>
+
+  <p>Four use cases earn their keep: <code>malloc</code>/<code>free</code> (the allocator genuinely doesn't know the type), <code>qsort</code>-style generic algorithms (one function, every element type, via <code>void*</code> plus a size), callback APIs with user context (type-agnostic APIs that still let callers bring their own data), and opaque pointers (library handles whose internals are hidden from callers). The last is usually better expressed as a typed incomplete type (<code>struct Database*</code>) than as a raw <code>void*</code>, because it keeps the compiler's type-checking helpful while still hiding layout.</p>
+
+  <p>The hazards are all about type-checking being turned off: wrong-type recovery gives garbage, lifetime bugs hide behind generic signatures, pointer arithmetic is either illegal or non-portable, and size information has to be carried out-of-band. The disciplines that keep these under control are: recover types at the edge, pair <code>void*</code> with discriminators when necessary, document lifetimes explicitly, and prefer opaque typedefs over raw <code>void*</code> for handles.</p>
+
+  <p>C++ has <code>void*</code> but mostly doesn't use it for new code; templates, <code>std::function</code>, and <code>std::variant</code> do the same jobs with full type-checking. Opaque pointers, rebranded as PIMPL, remain idiomatic in C++ too.</p>
+
+  <hr class="sep">
+
+  <h2>What's next</h2>
+
+  <p>Part 10 moves us into C++ and the idea that <strong>ownership can be encoded in the type system</strong>. So far every pointer we've seen has been a raw address, with ownership invisible to the compiler. Smart pointers turn "who owns this, and when does it die?" from a comment into a type. It's the tool that takes the edge off most of the memory-management pain of this whole series.</p>
+
+  <div class="callout">You've now seen every variety of raw pointer C has to offer. Next: pointers that know who owns them, and why that changes everything.</div>
+
+  <hr class="sep">
+
+  <h2>Test yourself</h2>
+
+  <p class="quiz-intro">Seven questions on <code>void*</code>, its canonical uses, its pitfalls, and the patterns that keep it manageable. Five correct means you're ready for Part 10.</p>
+
+  <!-- Q1 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q1</span>
+    <div class="quiz-q">Which of these statements about <code>void*</code> are true?</div>
+    <div class="quiz-options multi" data-quiz="q1" data-answer="a,c,e">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span>Any pointer type can be implicitly converted to <code>void*</code> in C.</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span>Dereferencing a <code>void*</code> is legal but returns the first byte.</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span>Pointer arithmetic on <code>void*</code> is forbidden by standard C (though some compilers extend it).</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span>In C++, you can implicitly convert <code>void*</code> back to a typed pointer.</span></button>
+      <button class="quiz-option" data-val="e"><span class="quiz-option-letter">E</span><span><code>sizeof(void)</code> is not well-defined; you can't take it.</span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a1">Reveal answer</button></div>
+    <div class="quiz-answer" id="a1">
+      <span class="verdict">True: A, C, E. False: B, D.</span>
+      <strong>A is true.</strong> In C, any object-pointer type converts to <code>void*</code> without a cast. (In C++ this is also true going <em>to</em> <code>void*</code>.)<br>
+      <strong>B is false.</strong> Dereferencing a <code>void*</code> is a compile error, not a runtime byte-read. There's no type to dereference to.<br>
+      <strong>C is true.</strong> Standard C has no stride for <code>void</code>, so pointer arithmetic is not defined. GCC and Clang allow it as a non-portable extension that treats <code>void</code> as 1 byte.<br>
+      <strong>D is false.</strong> C++ requires an explicit cast (<code>static_cast&lt;T*&gt;</code> or C-style) to convert from <code>void*</code> back to a typed pointer. This is a deliberate difference from C.<br>
+      <strong>E is true.</strong> <code>void</code> is an incomplete type with no size, so <code>sizeof(void)</code> is not allowed. This is why generic routines like <code>qsort</code> take a separate <code>size</code> parameter.
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q2</span>
+    <div class="quiz-q">You're calling <code>qsort</code> on an array of doubles. Write a correct comparator function.</div>
+<pre class="quiz-code"><span class="cm">// Starting point, fill in the body:</span>
+<span class="tp">int</span> <span class="nm">cmp_double</span>(<span class="kw">const</span> <span class="tp">void</span><span class="op">*</span> <span class="nm">a</span>, <span class="kw">const</span> <span class="tp">void</span><span class="op">*</span> <span class="nm">b</span>) {
+    <span class="cm">// TODO</span>
+}</pre>
+    <textarea class="quiz-textarea" placeholder="Write the comparator body. Make sure it handles NaN and the subtraction-overflow pitfall."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a2">Reveal answer</button></div>
+    <div class="quiz-answer" id="a2">
+      <span class="verdict">Recover types at the edge, then compare.</span>
+<pre class="quiz-code"><span class="tp">int</span> <span class="nm">cmp_double</span>(<span class="kw">const</span> <span class="tp">void</span><span class="op">*</span> <span class="nm">a</span>, <span class="kw">const</span> <span class="tp">void</span><span class="op">*</span> <span class="nm">b</span>) {
+    <span class="kw">const</span> <span class="tp">double</span><span class="op">*</span> <span class="nm">da</span> <span class="op">=</span> <span class="nm">a</span>;
+    <span class="kw">const</span> <span class="tp">double</span><span class="op">*</span> <span class="nm">db</span> <span class="op">=</span> <span class="nm">b</span>;
+    <span class="kw">if</span> (<span class="op">*</span><span class="nm">da</span> <span class="op">&lt;</span> <span class="op">*</span><span class="nm">db</span>) <span class="kw">return</span> <span class="op">-</span><span class="vl">1</span>;
+    <span class="kw">if</span> (<span class="op">*</span><span class="nm">da</span> <span class="op">&gt;</span> <span class="op">*</span><span class="nm">db</span>) <span class="kw">return</span> <span class="vl">1</span>;
+    <span class="kw">return</span> <span class="vl">0</span>;
+}</pre>
+      <strong>Why not <code>return *da - *db;</code>?</strong> Because that returns a <code>double</code>, which gets truncated when cast to <code>int</code>. Small differences round to zero, giving wrong "equal" verdicts. The integer-subtraction trick (common for ints) doesn't work for doubles at all.<br><br>
+      <strong>Why not <code>return (*da &gt; *db) - (*da &lt; *db);</code>?</strong> For ints that's a neat trick, and it works for doubles too in the normal case. But with NaNs, both comparisons return 0, so NaN "equals" everything, which can cause the sort to loop or produce garbage. The explicit <code>if</code> version above degrades more gracefully. For production code, decide up front how you want to handle NaN (filter them out, treat as always-greatest, etc.) and document it.
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q3</span>
+    <div class="quiz-q">A colleague writes this event-loop registration:</div>
+<pre class="quiz-code"><span class="tp">void</span> <span class="nm">schedule</span>() {
+    <span class="tp">int</span> <span class="nm">counter</span> <span class="op">=</span> <span class="vl">0</span>;
+    <span class="nm">event_loop_on_tick</span>(<span class="nm">increment_callback</span>, <span class="op">&amp;</span><span class="nm">counter</span>);
+}
+
+<span class="tp">void</span> <span class="nm">increment_callback</span>(<span class="tp">void</span><span class="op">*</span> <span class="nm">user</span>) {
+    <span class="tp">int</span><span class="op">*</span> <span class="nm">c</span> <span class="op">=</span> <span class="nm">user</span>;
+    (<span class="op">*</span><span class="nm">c</span>)<span class="op">++</span>;
+}</pre>
+    <div class="quiz-q" style="margin-top:.6rem;font-size:1.1rem">What's wrong, and what does "fix it" actually look like?</div>
+    <textarea class="quiz-textarea" placeholder="Name the issue and describe the fix."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a3">Reveal answer</button></div>
+    <div class="quiz-answer" id="a3">
+      <span class="verdict">The lifetime of <code>counter</code> ends at the <code>}</code> of <code>schedule()</code>, but the callback keeps pointing at it.</span>
+      <code>&amp;counter</code> is a pointer into <code>schedule</code>'s stack frame. When <code>schedule</code> returns, that stack memory gets reused. Later, when the event loop calls <code>increment_callback</code>, <code>user</code> points at whatever garbage occupies that slot now. Classic use-after-free, hidden by the <code>void*</code>.<br><br>
+      The fix depends on who should own the counter:
+<pre class="quiz-code"><span class="cm">// Option 1: heap-allocate it, transfer ownership to the event loop</span>
+<span class="tp">int</span><span class="op">*</span> <span class="nm">counter</span> <span class="op">=</span> <span class="nm">malloc</span>(<span class="kw">sizeof</span>(<span class="tp">int</span>));
+<span class="op">*</span><span class="nm">counter</span> <span class="op">=</span> <span class="vl">0</span>;
+<span class="nm">event_loop_on_tick</span>(<span class="nm">increment_callback</span>, <span class="nm">counter</span>);
+<span class="cm">// callback or the event loop is responsible for free()</span>
+
+<span class="cm">// Option 2: use a static or global</span>
+<span class="tp">static</span> <span class="tp">int</span> <span class="nm">counter</span> <span class="op">=</span> <span class="vl">0</span>;
+<span class="nm">event_loop_on_tick</span>(<span class="nm">increment_callback</span>, <span class="op">&amp;</span><span class="nm">counter</span>);
+<span class="cm">// counter lives forever, but now it's shared state</span>
+
+<span class="cm">// Option 3: make schedule() not return until the callback is done</span></pre>
+      This is the class of bug that C's type system cannot prevent. The <code>void*</code> callback signature is a handshake that says "I'll take anything," and "anything" includes pointers that are about to die. Good callback-API documentation includes a prominent note about the lifetime of <code>user_data</code>; good callers match the lifetime to the registration.
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q4</span>
+    <div class="quiz-q">Which approach to library handles is best, and why?</div>
+<pre class="quiz-code"><span class="cm">// (a) Transparent:</span>
+<span class="kw">struct</span> <span class="nm">Database</span> { <span class="tp">int</span> <span class="nm">fd</span>; <span class="tp">char</span> <span class="nm">buf</span>[<span class="vl">4096</span>]; <span class="cm">/* ... */</span> };
+<span class="kw">struct</span> <span class="nm">Database</span><span class="op">*</span> <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">path</span>);
+
+<span class="cm">// (b) Opaque typedef:</span>
+<span class="kw">typedef</span> <span class="kw">struct</span> <span class="nm">Database</span> <span class="nm">Database</span>;    <span class="cm">// declaration only, no fields</span>
+<span class="nm">Database</span><span class="op">*</span> <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">path</span>);
+
+<span class="cm">// (c) void* handle:</span>
+<span class="kw">typedef</span> <span class="tp">void</span><span class="op">*</span> <span class="nm">DBHandle</span>;
+<span class="nm">DBHandle</span> <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">path</span>);</pre>
+    <div class="quiz-options" data-quiz="q4" data-answer="b">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span>(a) is best because callers can see the full struct layout and optimise access.</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span>(b) is best: callers get a distinct type for type-checking, but can't see the layout.</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span>(c) is best because <code>void*</code> is the most flexible handle type.</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span>They're all equivalent; pick whichever you prefer stylistically.</span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a4">Reveal answer</button></div>
+    <div class="quiz-answer" id="a4">
+      <span class="verdict">B. Opaque typedef is the sweet spot.</span>
+      <strong>(a) is worst.</strong> Exposing the layout couples every client to the struct. Adding a field breaks ABI; reordering fields breaks it. Clients can (and will) reach in and touch internals, bypassing your API. And the header has to pull in every type the struct uses, bloating compile times.<br>
+      <strong>(b) is best.</strong> Callers have a distinct type name, so the compiler catches "passed a <code>FILE*</code> where a <code>Database*</code> was expected." But because the struct has no visible fields, callers can't do <code>db-&gt;fd</code>, can't take <code>sizeof(Database)</code>, and the library is free to change internals at will. Perfect encapsulation.<br>
+      <strong>(c) is worst-of-both.</strong> You lose the distinct type name (now any <code>void*</code> from anywhere can be passed as a <code>DBHandle</code>) without gaining anything in return. The layout is still hidden, but layout was already hidden in (b). Avoid this unless you're genuinely writing a type-erased API (e.g., for FFI or multi-language compatibility).
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q5</span>
+    <div class="quiz-q">You're designing a logging library. The <code>log_set_sink</code> function accepts a function to call for every log event. Design the signature so that users can attach their own state without needing a global. Explain your design choices.</div>
+<pre class="quiz-code"><span class="cm">// Starting point:</span>
+<span class="tp">void</span> <span class="nm">log_set_sink</span>(<span class="tp">void</span> (<span class="op">*</span><span class="nm">fn</span>)(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">msg</span>));</pre>
+    <textarea class="quiz-textarea" placeholder="Rewrite the signature and justify the design."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a5">Reveal answer</button></div>
+    <div class="quiz-answer" id="a5">
+      <span class="verdict">Add a <code>void*</code> context pointer, passed through to the callback.</span>
+<pre class="quiz-code"><span class="tp">void</span> <span class="nm">log_set_sink</span>(<span class="tp">void</span> (<span class="op">*</span><span class="nm">fn</span>)(<span class="kw">const</span> <span class="tp">char</span><span class="op">*</span> <span class="nm">msg</span>, <span class="tp">void</span><span class="op">*</span> <span class="nm">ctx</span>),
+                  <span class="tp">void</span><span class="op">*</span> <span class="nm">ctx</span>);</pre>
+      <strong>Why:</strong> the original signature forces every user of the library to write their sink against global state, because the callback has no way to reach back to the user's own data. Adding a <code>void*</code> context parameter (and threading it through to the callback) means each user can bundle whatever state they need (a file handle, a counter, a buffer, a lock) into a pointer and have it handed back on every call.<br><br>
+      <strong>Two things the documentation must also cover:</strong>
+      <ul style="margin:.4rem 0 .4rem 1.2rem;font-size:.98rem;line-height:1.65">
+        <li><strong>Lifetime:</strong> "The pointer <code>ctx</code> must remain valid until <code>log_set_sink</code> is called again with a different value, or until the program exits." Without this, users will pass stack pointers that die.</li>
+        <li><strong>Thread safety:</strong> "The sink function may be called concurrently from any thread; <code>ctx</code> access inside the sink must be synchronised if the library is used from multiple threads."</li>
+      </ul>
+      These are the things the type system can't express but the API has to enforce socially. The <code>void*</code> is the mechanism; the docs are the seat belt.
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q6</span>
+    <div class="quiz-q">Given the following code, predict what happens and explain why.</div>
+<pre class="quiz-code"><span class="tp">double</span> <span class="nm">d</span> <span class="op">=</span> <span class="vl">1.5</span>;
+<span class="tp">void</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> <span class="op">&amp;</span><span class="nm">d</span>;
+<span class="tp">int</span><span class="op">*</span> <span class="nm">q</span> <span class="op">=</span> <span class="nm">p</span>;          <span class="cm">// cast void* to int*</span>
+<span class="nm">printf</span>(<span class="st">"%d\n"</span>, <span class="op">*</span><span class="nm">q</span>); <span class="cm">// what gets printed?</span></pre>
+    <div class="quiz-options" data-quiz="q6" data-answer="c">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span>Prints <code>1</code> because <code>int</code> truncates the double.</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span>Compile error; you can't cast <code>void*</code> to <code>int*</code>.</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span>Undefined behaviour (strict aliasing), and the printed value is unpredictable.</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span>Runtime crash because the memory isn't 4-byte aligned.</span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a6">Reveal answer</button></div>
+    <div class="quiz-answer" id="a6">
+      <span class="verdict">C. The cast compiles, the read is UB, the output is whatever.</span>
+      <strong>A is wrong.</strong> There's no conversion happening here. <code>*q</code> reads 4 bytes from <code>&amp;d</code> and interprets them as an <code>int</code>'s bit pattern. That bit pattern is part of the IEEE-754 encoding of 1.5, not an integer representation of it. You'd print some large or negative-looking value, depending on endianness.<br>
+      <strong>B is wrong.</strong> In C the cast is implicit and the compiler won't complain. In C++ an explicit cast is needed but still compiles. No compile error in either language.<br>
+      <strong>C is correct.</strong> Reading a <code>double</code> through an <code>int*</code> violates the strict aliasing rule (Part 8). Under UB, the compiler may reorder, cache, or optimise in ways that make the result unpredictable. Even if by coincidence the read returned the "right" bits, the behaviour is undefined and the compiler is not required to preserve it at higher optimisation levels.<br>
+      <strong>D is unlikely.</strong> A <code>double</code> is 8-byte aligned on most platforms, which is also valid alignment for <code>int</code>. An alignment crash would be a more exotic concern than the aliasing UB.<br><br>
+      This is a <code>void*</code>-enabled version of exactly the strict-aliasing violation from Part 8. The <code>void*</code> is the accessory; strict aliasing is the rule being broken.
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q7</span>
+    <div class="quiz-q">You want to write a generic <code>map</code> function that applies a user-supplied transformation to every element of an array. Any element type. Write the function signature, then write the function body. Explain your parameter choices.</div>
+    <textarea class="quiz-textarea" placeholder="Write the signature, body, and a sample call."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a7">Reveal answer</button></div>
+    <div class="quiz-answer" id="a7">
+      <span class="verdict">Same recipe as <code>qsort</code>: <code>void*</code> plus element size plus callback.</span>
+<pre class="quiz-code"><span class="tp">void</span> <span class="nm">map</span>(<span class="tp">void</span><span class="op">*</span> <span class="nm">base</span>,
+         <span class="tp">size_t</span> <span class="nm">nmemb</span>,
+         <span class="tp">size_t</span> <span class="nm">size</span>,
+         <span class="tp">void</span> (<span class="op">*</span><span class="nm">transform</span>)(<span class="tp">void</span><span class="op">*</span> <span class="nm">elem</span>, <span class="tp">void</span><span class="op">*</span> <span class="nm">user</span>),
+         <span class="tp">void</span><span class="op">*</span> <span class="nm">user</span>) {
+    <span class="tp">char</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">base</span>;                <span class="cm">// char* so we can do byte arithmetic</span>
+    <span class="kw">for</span> (<span class="tp">size_t</span> <span class="nm">i</span> <span class="op">=</span> <span class="vl">0</span>; <span class="nm">i</span> <span class="op">&lt;</span> <span class="nm">nmemb</span>; <span class="nm">i</span><span class="op">++</span>) {
+        <span class="nm">transform</span>(<span class="nm">p</span> <span class="op">+</span> <span class="nm">i</span> <span class="op">*</span> <span class="nm">size</span>, <span class="nm">user</span>);
+    }
+}</pre>
+      <strong>Parameter-by-parameter:</strong><br>
+      <code>base</code> is <code>void*</code> because the array element type isn't known to <code>map</code>. <code>nmemb</code> is the number of elements. <code>size</code> is the byte-width of one element; needed because <code>void*</code> arithmetic isn't standard, and it's how we step through the array. <code>transform</code> is the callback that actually knows the element type: it takes <code>void*</code> (recovered inside) and a user context. <code>user</code> is the user context, carried through like in the callback pattern.<br><br>
+      <strong>Note the <code>char*</code> cast inside.</strong> Pointer arithmetic on <code>void*</code> isn't portable, so we cast to <code>char*</code> (which is always 1-byte stride) and multiply by <code>size</code> manually. This is the idiomatic way to step through a type-erased array.<br><br>
+      <strong>Sample call:</strong>
+<pre class="quiz-code"><span class="tp">void</span> <span class="nm">double_it</span>(<span class="tp">void</span><span class="op">*</span> <span class="nm">elem</span>, <span class="tp">void</span><span class="op">*</span> <span class="nm">user</span>) {
+    (<span class="tp">void</span>)<span class="nm">user</span>;                 <span class="cm">// unused here</span>
+    <span class="tp">int</span><span class="op">*</span> <span class="nm">x</span> <span class="op">=</span> <span class="nm">elem</span>;
+    <span class="op">*</span><span class="nm">x</span> <span class="op">*=</span> <span class="vl">2</span>;
+}
+
+<span class="tp">int</span> <span class="nm">arr</span>[] <span class="op">=</span> {<span class="vl">1</span>, <span class="vl">2</span>, <span class="vl">3</span>, <span class="vl">4</span>, <span class="vl">5</span>};
+<span class="nm">map</span>(<span class="nm">arr</span>, <span class="vl">5</span>, <span class="kw">sizeof</span>(<span class="tp">int</span>), <span class="nm">double_it</span>, <span class="nm">NULL</span>);</pre>
+    </div>
+  </div>
+
+  <div class="quiz-scorecard">
+    <div class="quiz-scorecard-title">How did you do?</div>
+    <div class="quiz-scorecard-msg">
+      5 or more correct, you're ready for Part 10. Less than that, the common trouble spots are Q4 (the opaque typedef sweet spot) and Q7 (stepping through a type-erased array). Re-read "Opaque pointers" and "Patterns for using void* well", then try again.
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Pointers: Thinking in Memory</h2>
+    <a class="sidebar-link" href="why-pointers.html">
+      <div class="sidebar-link-title">Part 1: Why Pointers?</div>
+      <div class="sidebar-link-note">The motivation.</div>
+    </a>
+    <a class="sidebar-link" href="addresses.html">
+      <div class="sidebar-link-title">Part 2: Addresses, &amp;, and *</div>
+      <div class="sidebar-link-note">Syntax and mental model.</div>
+    </a>
+    <a class="sidebar-link" href="arrays-are-not-pointers.html">
+      <div class="sidebar-link-title">Part 3: Arrays Are Not Pointers</div>
+      <div class="sidebar-link-note">Decay and the sizeof trap.</div>
+    </a>
+    <a class="sidebar-link" href="pointers-lifetime.html">
+      <div class="sidebar-link-title">Part 4: Stack, Heap, and Lifetime</div>
+      <div class="sidebar-link-note">Where memory lives.</div>
+    </a>
+    <a class="sidebar-link" href="pointer-villains.html">
+      <div class="sidebar-link-title">Part 5: The Three Villains</div>
+      <div class="sidebar-link-note">Null, wild, dangling.</div>
+    </a>
+    <a class="sidebar-link" href="pointers-and-functions.html">
+      <div class="sidebar-link-title">Part 6: Pointers and Functions</div>
+      <div class="sidebar-link-note">Callbacks and all.</div>
+    </a>
+    <a class="sidebar-link" href="const-pointers.html">
+      <div class="sidebar-link-title">Part 7: The const Puzzle</div>
+      <div class="sidebar-link-note">Three forms, two positions.</div>
+    </a>
+    <a class="sidebar-link" href="pointers-aliasing.html">
+      <div class="sidebar-link-title">Part 8: Aliasing</div>
+      <div class="sidebar-link-note">The compiler's paranoia.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="pointers-void.html">
+      <div class="sidebar-link-title">Part 9: The Typeless Pointer</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="smart-pointers.html">
+      <div class="sidebar-link-title">Part 10: Smart Pointers</div>
+      <div class="sidebar-link-note">Ownership, encoded in types./div>
+    </a>
+    <a class="sidebar-link" href="undefined-behaviour.html">
+      <div class="sidebar-link-title">Part 11: Undefined Behaviour</div>
+      <div class="sidebar-link-note">Where seniors earn their pay.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas in this post</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">void* is an address without a type</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">malloc and free use void*</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">qsort: void* plus size_t plus callback</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Callbacks need a user-context pointer</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Opaque typedef beats void* for handles</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Recover types at the edge</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">C++ uses templates instead</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: TYPE ERASURE & RECOVERY
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Helper: convert a JS number or string into a bytes array (little-endian) for display
+function intBytes(v) {
+  const buf = new ArrayBuffer(4);
+  new Int32Array(buf)[0] = v;
+  return Array.from(new Uint8Array(buf));
+}
+function doubleBytes(v) {
+  const buf = new ArrayBuffer(8);
+  new Float64Array(buf)[0] = v;
+  return Array.from(new Uint8Array(buf));
+}
+function hex(b) { return b.toString(16).padStart(2, '0').toUpperCase(); }
+
+const V1_SCENARIOS = {
+  int: {
+    origLabel: 'int x = 42;',
+    origChip: 'int*',
+    bytes: intBytes(42),
+    recLabel: 'int* q = (int*)p;',
+    recChip: 'int*',
+    recChipCls: 'recovered',
+    reading: 'Reading 4 bytes from <strong>q</strong> as int → <span class="val">42</span> ✓',
+    verdict: 'ok',
+    verdictText: '<strong>Correct recovery.</strong> The bytes were written as an int; we recovered as an int. Same bit pattern, same interpretation. Round-trip through <code>void*</code> is lossless as long as you remember the original type.',
+  },
+  double: {
+    origLabel: 'double d = 3.14;',
+    origChip: 'double*',
+    bytes: doubleBytes(3.14),
+    recLabel: 'double* q = (double*)p;',
+    recChip: 'double*',
+    recChipCls: 'recovered',
+    reading: 'Reading 8 bytes from <strong>q</strong> as double → <span class="val">3.14</span> ✓',
+    verdict: 'ok',
+    verdictText: '<strong>Correct recovery.</strong> The 8 bytes of IEEE-754 double come back as the same double. Same pattern as the int case, just more bytes.',
+  },
+  struct: {
+    origLabel: 'struct Point { int x; int y; } pt = {3, 7};',
+    origChip: 'Point*',
+    bytes: [...intBytes(3), ...intBytes(7)],
+    recLabel: 'Point* q = (Point*)p;',
+    recChip: 'Point*',
+    recChipCls: 'recovered',
+    reading: 'Reading 8 bytes from <strong>q</strong> as Point → <span class="val">{x=3, y=7}</span> ✓',
+    verdict: 'ok',
+    verdictText: '<strong>Correct recovery.</strong> Structs work the same way; the <code>void*</code> round-trip preserves all the bytes, and recovering as the same struct type interprets them identically.',
+  },
+  wrong: {
+    origLabel: 'double d = 3.14;',
+    origChip: 'double*',
+    bytes: doubleBytes(3.14),
+    recLabel: 'int* q = (int*)p;   // wrong type!',
+    recChip: 'int* (mismatch)',
+    recChipCls: 'wrong',
+    reading: 'Reading 4 bytes from <strong>q</strong> as int → <span class="val wrong">1374389535</span> (nonsense bits)',
+    verdict: 'bad',
+    verdictText: '<strong>Wrong-type recovery.</strong> The bytes written were the IEEE-754 encoding of 3.14, but we\'re interpreting the first 4 of them as an integer. The number printed is real (that\'s what those bits actually encode as an int) but meaningless. No compiler warning, no runtime check; you only find out by reading the value and noticing it\'s nonsense. This is also a strict-aliasing violation from Part 8, so it\'s undefined behaviour on top of being wrong.',
+  },
+};
+
+function v1Render(key) {
+  const s = V1_SCENARIOS[key];
+  document.getElementById('v1OrigLabel').textContent = s.origLabel;
+  document.getElementById('v1RecLabel').textContent = s.recLabel;
+  document.getElementById('v1OrigChip').textContent = s.origChip;
+  const recChip = document.getElementById('v1RecChip');
+  recChip.textContent = s.recChip;
+  recChip.className = 'v1-type-chip ' + s.recChipCls;
+
+  const cellsHtml = s.bytes.map(b => `<div class="v1-byte">${hex(b)}</div>`).join('');
+  document.getElementById('v1OrigCells').innerHTML = cellsHtml;
+  document.getElementById('v1RecCells').innerHTML = cellsHtml;
+
+  document.getElementById('v1Reading').innerHTML = s.reading;
+
+  const verdictEl = document.getElementById('v1Verdict');
+  verdictEl.className = 'v1-verdict ' + s.verdict;
+  verdictEl.innerHTML = s.verdictText;
+}
+document.querySelectorAll('[data-v1]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-v1]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    v1Render(b.dataset.v1);
+  });
+});
+v1Render('int');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: QSORT SORTER
+// ═══════════════════════════════════════════════════════════════════════════
+
+const V2_CASES = {
+  ints: {
+    code: `<span class="cm">// element size = sizeof(int), comparator:</span>
+<span class="tp">int</span> <span class="nm">cmp</span>(<span class="kw">const</span> <span class="tp">void</span>* <span class="nm">a</span>, <span class="kw">const</span> <span class="tp">void</span>* <span class="nm">b</span>) {
+    <span class="kw">return</span> *(<span class="kw">const</span> <span class="tp">int</span>*)<span class="nm">a</span> - *(<span class="kw">const</span> <span class="tp">int</span>*)<span class="nm">b</span>;
+}
+<span class="nm">qsort</span>(<span class="nm">arr</span>, <span class="vl">7</span>, <span class="kw">sizeof</span>(<span class="tp">int</span>), <span class="nm">cmp</span>);`,
+    initial: [42, 7, 19, 3, 88, 15, 23],
+    display: v => String(v),
+    compare: (a, b) => a - b,
+  },
+  floats: {
+    code: `<span class="cm">// element size = sizeof(float), comparator:</span>
+<span class="tp">int</span> <span class="nm">cmp</span>(<span class="kw">const</span> <span class="tp">void</span>* <span class="nm">a</span>, <span class="kw">const</span> <span class="tp">void</span>* <span class="nm">b</span>) {
+    <span class="tp">float</span> <span class="nm">fa</span> = *(<span class="kw">const</span> <span class="tp">float</span>*)<span class="nm">a</span>;
+    <span class="tp">float</span> <span class="nm">fb</span> = *(<span class="kw">const</span> <span class="tp">float</span>*)<span class="nm">b</span>;
+    <span class="kw">return</span> (<span class="nm">fa</span> &gt; <span class="nm">fb</span>) - (<span class="nm">fa</span> &lt; <span class="nm">fb</span>);
+}
+<span class="nm">qsort</span>(<span class="nm">arr</span>, <span class="vl">6</span>, <span class="kw">sizeof</span>(<span class="tp">float</span>), <span class="nm">cmp</span>);`,
+    initial: [3.14, 1.5, 2.71, 0.5, 4.2, 1.1],
+    display: v => v.toFixed(2),
+    compare: (a, b) => (a > b) - (a < b),
+  },
+  strings: {
+    code: `<span class="cm">// element size = sizeof(char*), comparator:</span>
+<span class="tp">int</span> <span class="nm">cmp</span>(<span class="kw">const</span> <span class="tp">void</span>* <span class="nm">a</span>, <span class="kw">const</span> <span class="tp">void</span>* <span class="nm">b</span>) {
+    <span class="kw">return</span> <span class="nm">strcmp</span>(*(<span class="kw">const</span> <span class="tp">char</span>* <span class="kw">const</span>*)<span class="nm">a</span>,
+                  *(<span class="kw">const</span> <span class="tp">char</span>* <span class="kw">const</span>*)<span class="nm">b</span>);
+}
+<span class="nm">qsort</span>(<span class="nm">arr</span>, <span class="vl">6</span>, <span class="kw">sizeof</span>(<span class="tp">char</span>*), <span class="nm">cmp</span>);`,
+    initial: ['pear', 'apple', 'kiwi', 'fig', 'date', 'banana'],
+    display: v => v,
+    compare: (a, b) => a < b ? -1 : (a > b ? 1 : 0),
+  },
+  structs: {
+    code: `<span class="cm">// struct Book { char* title; int year; }</span>
+<span class="tp">int</span> <span class="nm">cmp_year</span>(<span class="kw">const</span> <span class="tp">void</span>* <span class="nm">a</span>, <span class="kw">const</span> <span class="tp">void</span>* <span class="nm">b</span>) {
+    <span class="kw">const</span> <span class="kw">struct</span> <span class="nm">Book</span>* <span class="nm">ba</span> = <span class="nm">a</span>;
+    <span class="kw">const</span> <span class="kw">struct</span> <span class="nm">Book</span>* <span class="nm">bb</span> = <span class="nm">b</span>;
+    <span class="kw">return</span> <span class="nm">ba</span>-&gt;<span class="nm">year</span> - <span class="nm">bb</span>-&gt;<span class="nm">year</span>;
+}
+<span class="nm">qsort</span>(<span class="nm">books</span>, <span class="vl">5</span>, <span class="kw">sizeof</span>(<span class="kw">struct</span> <span class="nm">Book</span>), <span class="nm">cmp_year</span>);`,
+    initial: [
+      {title: 'Ulysses', year: 1922},
+      {title: '1984', year: 1949},
+      {title: 'Beloved', year: 1987},
+      {title: 'Dune', year: 1965},
+      {title: 'Emma', year: 1815},
+    ],
+    display: v => `${v.title} (${v.year})`,
+    compare: (a, b) => a.year - b.year,
+  },
+};
+
+// Simple bubble-sort style steps so the animation is easy to follow
+let v2State = {
+  key: 'ints',
+  arr: [],
+  i: 0, j: 0,
+  compares: 0, swaps: 0,
+  done: false,
+};
+
+function v2Reset() {
+  const c = V2_CASES[v2State.key];
+  v2State.arr = JSON.parse(JSON.stringify(c.initial));
+  v2State.i = 0; v2State.j = 0;
+  v2State.compares = 0; v2State.swaps = 0;
+  v2State.done = false;
+  v2Render();
+}
+
+function v2Step() {
+  if (v2State.done) return;
+  const c = V2_CASES[v2State.key];
+  const n = v2State.arr.length;
+  if (v2State.i >= n - 1) {
+    v2State.done = true;
+    v2Render({sorted: true});
+    return;
+  }
+  if (v2State.j >= n - 1 - v2State.i) {
+    v2State.i++;
+    v2State.j = 0;
+    v2Step();
+    return;
+  }
+  const j = v2State.j;
+  v2State.compares++;
+  const cmp = c.compare(v2State.arr[j], v2State.arr[j + 1]);
+  let swapped = false;
+  if (cmp > 0) {
+    [v2State.arr[j], v2State.arr[j + 1]] = [v2State.arr[j + 1], v2State.arr[j]];
+    v2State.swaps++;
+    swapped = true;
+  }
+  v2Render({compareIdx: [j, j + 1], swapIdx: swapped ? [j, j + 1] : []});
+  v2State.j++;
+}
+
+function v2RunToEnd() {
+  let guard = 0;
+  while (!v2State.done && guard++ < 10000) v2Step();
+}
+
+function v2Render(opts = {}) {
+  const c = V2_CASES[v2State.key];
+  document.getElementById('v2Code').innerHTML = c.code;
+  const n = v2State.arr.length;
+  const compareSet = new Set(opts.compareIdx || []);
+  const swapSet = new Set(opts.swapIdx || []);
+  document.getElementById('v2Array').innerHTML = v2State.arr.map((v, i) => {
+    let cls = 'v2-item';
+    if (opts.sorted) cls += ' sorted';
+    else if (swapSet.has(i)) cls += ' swap';
+    else if (compareSet.has(i)) cls += ' compare';
+    return `<div class="${cls}">${c.display(v)}</div>`;
+  }).join('');
+  document.getElementById('v2Stats').innerHTML = `
+    <span>element size: <span class="val">${v2State.key === 'structs' ? 'sizeof(struct Book)' : (v2State.key === 'strings' ? 'sizeof(char*)' : 'sizeof(' + (v2State.key === 'floats' ? 'float' : 'int') + ')')}</span></span>
+    <span>compares: <span class="val">${v2State.compares}</span></span>
+    <span>swaps: <span class="val">${v2State.swaps}</span></span>
+    <span>status: <span class="val">${v2State.done ? 'sorted' : 'in progress'}</span></span>
+  `;
+}
+
+document.querySelectorAll('[data-v2]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-v2]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    v2State.key = b.dataset.v2;
+    v2Reset();
+  });
+});
+document.getElementById('v2Step').onclick = v2Step;
+document.getElementById('v2Run').onclick = v2RunToEnd;
+document.getElementById('v2Reset').onclick = v2Reset;
+v2Reset();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: OPAQUE POINTER VIEW
+// ═══════════════════════════════════════════════════════════════════════════
+
+const V3_CASES = {
+  transparent: {
+    public: `<span class="cm">// database.h</span>
+<span class="kw">struct</span> <span class="nm">Database</span> {
+    <span class="tp">int</span>  <span class="nm">fd</span>;
+    <span class="tp">char</span> <span class="nm">buf</span>[<span class="vl">4096</span>];
+    <span class="kw">struct</span> <span class="nm">QueryCache</span>* <span class="nm">cache</span>;
+};
+
+<span class="kw">struct</span> <span class="nm">Database</span>* <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span>* <span class="nm">path</span>);
+<span class="tp">int</span>  <span class="nm">db_query</span>(<span class="kw">struct</span> <span class="nm">Database</span>* <span class="nm">db</span>, <span class="kw">const</span> <span class="tp">char</span>* <span class="nm">sql</span>);
+<span class="tp">void</span> <span class="nm">db_close</span>(<span class="kw">struct</span> <span class="nm">Database</span>* <span class="nm">db</span>);`,
+    publicNotes: `<strong>Caller sees everything.</strong> They can write <code>db-&gt;fd</code>, take <code>sizeof(struct Database)</code>, and their compile depends on <code>struct QueryCache</code> being included. Layout changes break their build.`,
+    private: `<span class="cm">// database.c</span>
+<span class="cm">// The struct definition lives in the header,</span>
+<span class="cm">// so there's nothing new to show here.</span>
+<span class="kw">struct</span> <span class="nm">Database</span>* <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span>* <span class="nm">path</span>) {
+    <span class="kw">struct</span> <span class="nm">Database</span>* <span class="nm">db</span> =
+        <span class="nm">malloc</span>(<span class="kw">sizeof</span>(<span class="kw">struct</span> <span class="nm">Database</span>));
+    <span class="cm">// initialise fields</span>
+    <span class="kw">return</span> <span class="nm">db</span>;
+}`,
+    privateNotes: `<strong>Implementation has nothing hidden.</strong> Every field is public property. Evolving the struct shape requires a coordinated release with every caller.`,
+  },
+  opaque: {
+    public: `<span class="cm">// database.h</span>
+<span class="kw">typedef</span> <span class="kw">struct</span> <span class="nm">Database</span> <span class="nm">Database</span>;
+<span class="cm">// ^^^ declaration only, no fields visible</span>
+
+<span class="nm">Database</span>* <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span>* <span class="nm">path</span>);
+<span class="tp">int</span>       <span class="nm">db_query</span>(<span class="nm">Database</span>* <span class="nm">db</span>, <span class="kw">const</span> <span class="tp">char</span>* <span class="nm">sql</span>);
+<span class="tp">void</span>      <span class="nm">db_close</span>(<span class="nm">Database</span>* <span class="nm">db</span>);`,
+    publicNotes: `<strong>Caller sees the type name but not the layout.</strong> They can hold <code>Database*</code>, pass it around, and the compiler enforces type-checking on every function call. They <em>cannot</em> write <code>db-&gt;fd</code> (field unknown) or take <code>sizeof(Database)</code> (incomplete type).`,
+    private: `<span class="cm">// database.c</span>
+<span class="kw">struct</span> <span class="nm">Database</span> {
+    <span class="tp">int</span>  <span class="nm">fd</span>;
+    <span class="tp">char</span> <span class="nm">buf</span>[<span class="vl">4096</span>];
+    <span class="kw">struct</span> <span class="nm">QueryCache</span>* <span class="nm">cache</span>;
+};
+
+<span class="nm">Database</span>* <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span>* <span class="nm">path</span>) {
+    <span class="nm">Database</span>* <span class="nm">db</span> = <span class="nm">malloc</span>(<span class="kw">sizeof</span>(<span class="nm">Database</span>));
+    <span class="cm">// initialise fields; only this file can.</span>
+    <span class="kw">return</span> <span class="nm">db</span>;
+}`,
+    privateNotes: `<strong>Implementation has full access.</strong> Layout can evolve. Fields can come and go without touching a single caller's source. This is the sweet spot: encapsulation that the compiler checks.`,
+  },
+  void: {
+    public: `<span class="cm">// database.h</span>
+<span class="kw">typedef</span> <span class="tp">void</span>* <span class="nm">DBHandle</span>;
+<span class="cm">// ^^^ type name is just void* in disguise</span>
+
+<span class="nm">DBHandle</span> <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span>* <span class="nm">path</span>);
+<span class="tp">int</span>      <span class="nm">db_query</span>(<span class="nm">DBHandle</span> <span class="nm">db</span>, <span class="kw">const</span> <span class="tp">char</span>* <span class="nm">sql</span>);
+<span class="tp">void</span>     <span class="nm">db_close</span>(<span class="nm">DBHandle</span> <span class="nm">db</span>);`,
+    publicNotes: `<strong>Caller gets no type discrimination.</strong> A <code>DBHandle</code> is just a <code>void*</code>, so any <code>void*</code> from any source passes type-checking. A file handle or a socket can be silently passed to <code>db_query</code>; you'll only find out at runtime.`,
+    private: `<span class="cm">// database.c</span>
+<span class="kw">struct</span> <span class="nm">Database</span> {
+    <span class="tp">int</span>  <span class="nm">fd</span>;
+    <span class="tp">char</span> <span class="nm">buf</span>[<span class="vl">4096</span>];
+    <span class="kw">struct</span> <span class="nm">QueryCache</span>* <span class="nm">cache</span>;
+};
+
+<span class="nm">DBHandle</span> <span class="nm">db_open</span>(<span class="kw">const</span> <span class="tp">char</span>* <span class="nm">path</span>) {
+    <span class="kw">struct</span> <span class="nm">Database</span>* <span class="nm">db</span> = <span class="nm">malloc</span>(<span class="kw">sizeof</span>(<span class="kw">struct</span> <span class="nm">Database</span>));
+    <span class="kw">return</span> <span class="nm">db</span>;   <span class="cm">// implicit cast to void*</span>
+}
+<span class="tp">int</span> <span class="nm">db_query</span>(<span class="nm">DBHandle</span> <span class="nm">h</span>, <span class="kw">const</span> <span class="tp">char</span>* <span class="nm">sql</span>) {
+    <span class="kw">struct</span> <span class="nm">Database</span>* <span class="nm">db</span> = <span class="nm">h</span>;   <span class="cm">// recover type</span>
+    <span class="cm">// ...</span>
+}`,
+    privateNotes: `<strong>Implementation looks similar to the opaque case,</strong> but each function has to recover the real type from <code>void*</code>. Same encapsulation, weaker type-safety. Only worth it for FFI boundaries where you genuinely need type erasure.`,
+  },
+};
+
+function v3Render(key) {
+  const c = V3_CASES[key];
+  document.getElementById('v3Public').innerHTML = c.public;
+  document.getElementById('v3PublicNotes').innerHTML = c.publicNotes;
+  document.getElementById('v3Private').innerHTML = c.private;
+  document.getElementById('v3PrivateNotes').innerHTML = c.privateNotes;
+}
+document.querySelectorAll('[data-v3]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-v3]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    v3Render(b.dataset.v3);
+  });
+});
+v3Render('transparent');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.quiz-options').forEach(group=>{
+  const isMulti=group.classList.contains('multi');
+  group.querySelectorAll('.quiz-option').forEach(opt=>{
+    opt.addEventListener('click',()=>{
+      if(isMulti){opt.classList.toggle('selected');}
+      else{group.querySelectorAll('.quiz-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');}
+    });
+  });
+});
+document.querySelectorAll('[data-reveal]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const id=btn.dataset.reveal;
+    const answer=document.getElementById(id);
+    if(!answer)return;
+    answer.classList.toggle('show');
+    btn.textContent=answer.classList.contains('show')?'Hide answer':'Reveal answer';
+    const card=btn.closest('.quiz-card');
+    if(card){
+      const group=card.querySelector('.quiz-options');
+      if(group && answer.classList.contains('show')){
+        const correct=group.dataset.answer.split(',');
+        group.querySelectorAll('.quiz-option').forEach(opt=>{
+          const val=opt.dataset.val;
+          const isSelected=opt.classList.contains('selected');
+          const isCorrect=correct.includes(val);
+          if(isCorrect)opt.classList.add('correct');
+          else if(isSelected)opt.classList.add('incorrect');
+        });
+      }else if(group && !answer.classList.contains('show')){
+        group.querySelectorAll('.quiz-option').forEach(opt=>opt.classList.remove('correct','incorrect'));
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>

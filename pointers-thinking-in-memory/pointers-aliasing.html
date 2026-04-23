@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Aliasing | Understanding Memory From the Ground Up</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --purple:#c678dd;--purple-dim:rgba(198,120,221,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* code blocks */
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.3rem 0;font-family:'Courier New',monospace;font-size:.92rem;line-height:1.7;overflow-x:auto;color:var(--body);white-space:pre}
+    .codeblock .kw{color:#c678dd}
+    .codeblock .tp{color:#e06c75}
+    .codeblock .nm{color:#e8a84c}
+    .codeblock .vl{color:#7fff6b}
+    .codeblock .cm{color:var(--muted);font-style:italic}
+    .codeblock .op{color:#4ca8e8}
+    .codeblock .st{color:#98c379}
+    .codeblock .err{background:rgba(255,107,107,.14);display:inline-block;padding:0 .3em;border-radius:3px}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz base */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+    .btn{padding:.5rem 1.05rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);cursor:pointer;font-size:.88rem;font-family:inherit;transition:all .2s}
+    .btn:hover{border-color:var(--accent);color:var(--accent)}
+    .btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .btn.primary{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .btn.primary:hover{background:rgba(232,168,76,.22)}
+
+    /* ── VIZ 1: aliasing memory view ──────────────────────────────────── */
+    .v1-mem-wrap{display:flex;flex-direction:column;gap:1rem}
+    .v1-mem-controls{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:.4rem}
+    .v1-scenario-pills{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center;margin-bottom:.3rem}
+    .v1-scenario-pills .btn{font-family:'Courier New',monospace;font-size:.8rem}
+    .v1-memory-grid{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.4rem 1.1rem;position:relative;overflow-x:auto}
+    .v1-mem-label{font-family:var(--hand);font-size:1rem;color:var(--muted);margin-bottom:.7rem;text-align:center}
+    .v1-cells{display:flex;gap:4px;justify-content:center;min-width:320px}
+    .v1-cell{width:46px;height:46px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:.85rem;color:var(--ink);position:relative;transition:all .3s}
+    .v1-cell.highlight-a{border-color:var(--blue);background:var(--blue-dim);box-shadow:0 0 0 1.5px var(--blue)}
+    .v1-cell.highlight-b{border-color:var(--accent);background:var(--accent-dim);box-shadow:0 0 0 1.5px var(--accent)}
+    .v1-cell.highlight-both{border-color:var(--red);background:var(--red-dim);box-shadow:0 0 0 2px var(--red)}
+    .v1-cell.flash{animation:flash .6s ease-out}
+    @keyframes flash{0%{background:var(--green-dim);border-color:var(--green)}100%{}}
+    .v1-pointers{display:flex;gap:1.5rem;justify-content:center;margin-top:1rem;flex-wrap:wrap}
+    .v1-ptr{display:flex;align-items:center;gap:.5rem;font-family:'Courier New',monospace;font-size:.92rem}
+    .v1-ptr-dot{width:12px;height:12px;border-radius:50%}
+    .v1-ptr-dot.a{background:var(--blue)}
+    .v1-ptr-dot.b{background:var(--accent)}
+    .v1-log{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;font-family:'Courier New',monospace;font-size:.88rem;color:var(--body);line-height:1.8;min-height:110px;max-height:160px;overflow-y:auto}
+    .v1-log-entry{margin:.15rem 0;display:flex;gap:.6rem}
+    .v1-log-entry .step{color:var(--muted);min-width:2rem}
+    .v1-log-entry .op{color:var(--accent)}
+    .v1-log-entry .note{color:var(--green);font-style:italic}
+    .v1-verdict{padding:.9rem 1.1rem;border-radius:8px;font-family:var(--display);font-size:1.1rem;line-height:1.5;display:none}
+    .v1-verdict.show{display:block}
+    .v1-verdict.alias{background:var(--red-dim);border:1px solid rgba(255,107,107,.3);color:var(--ink)}
+    .v1-verdict.noalias{background:var(--green-dim);border:1px solid rgba(127,255,107,.25);color:var(--ink)}
+    .v1-verdict strong{color:var(--ink)}
+
+    /* ── VIZ 2: strict aliasing checker ──────────────────────────────── */
+    .v2-wrap{display:flex;flex-direction:column;gap:1rem}
+    .v2-matrix{display:grid;grid-template-columns:auto repeat(6, 1fr);gap:3px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.6rem;overflow-x:auto;min-width:560px}
+    .v2-cell-head{padding:.55rem .35rem;font-family:'Courier New',monospace;font-size:.78rem;color:var(--muted);text-align:center;background:var(--bg-elevated);border-radius:4px;font-weight:600}
+    .v2-cell-row-head{padding:.55rem .35rem;font-family:'Courier New',monospace;font-size:.78rem;color:var(--muted);text-align:right;font-weight:600;display:flex;align-items:center;justify-content:flex-end}
+    .v2-cell{padding:.65rem .3rem;text-align:center;font-family:'Courier New',monospace;font-size:1rem;font-weight:700;border-radius:4px;cursor:pointer;transition:all .2s;user-select:none}
+    .v2-cell.ok{background:rgba(127,255,107,.08);color:var(--green)}
+    .v2-cell.bad{background:rgba(255,107,107,.08);color:var(--red)}
+    .v2-cell.sel{box-shadow:0 0 0 2px var(--accent);transform:scale(1.05)}
+    .v2-cell:hover{box-shadow:0 0 0 1.5px var(--border-hover)}
+    .v2-cell.sel:hover{box-shadow:0 0 0 2px var(--accent)}
+    .v2-explain-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;min-height:150px}
+    .v2-explain-title{font-family:var(--display);font-size:1.15rem;color:var(--ink);margin-bottom:.4rem}
+    .v2-explain-verdict{display:inline-block;padding:.2rem .7rem;border-radius:999px;font-family:'Courier New',monospace;font-size:.78rem;font-weight:600;letter-spacing:.05em;margin-bottom:.8rem}
+    .v2-explain-verdict.ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(127,255,107,.3)}
+    .v2-explain-verdict.bad{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,107,107,.3)}
+    .v2-explain-body{font-size:.98rem;color:var(--body);line-height:1.7}
+    .v2-explain-body code{background:rgba(237,232,224,.08);padding:.08rem .35rem;border-radius:3px;font-family:'Courier New',monospace;color:var(--ink);font-size:.9em}
+    .v2-legend{display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin-top:.3rem}
+    .v2-legend-item{display:flex;align-items:center;gap:.4rem}
+    .v2-legend-swatch{width:16px;height:16px;border-radius:3px}
+    .v2-legend-swatch.ok{background:rgba(127,255,107,.2);border:1px solid var(--green)}
+    .v2-legend-swatch.bad{background:rgba(255,107,107,.2);border:1px solid var(--red)}
+
+    /* ── VIZ 3: restrict optimizer ─────────────────────────────────────── */
+    .v3-wrap{display:flex;flex-direction:column;gap:1rem}
+    .v3-toggle-row{display:flex;gap:.5rem;justify-content:center;align-items:center;flex-wrap:wrap}
+    .v3-toggle-row .btn{min-width:200px}
+    .v3-panels{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:900px){.v3-panels{grid-template-columns:1fr}}
+    .v3-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.6rem}
+    .v3-panel-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);display:flex;justify-content:space-between;align-items:baseline}
+    .v3-panel-tag{font-family:'Courier New',monospace;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .v3-code-box{background:#14130f;border:1px solid var(--border);border-radius:6px;padding:.8rem 1rem;font-family:'Courier New',monospace;font-size:.86rem;line-height:1.7;color:var(--body);white-space:pre;overflow-x:auto;min-height:210px}
+    .v3-code-box .kw{color:#c678dd}.v3-code-box .tp{color:#e06c75}.v3-code-box .nm{color:#e8a84c}
+    .v3-code-box .vl{color:#7fff6b}.v3-code-box .cm{color:var(--muted);font-style:italic}
+    .v3-code-box .op{color:#4ca8e8}.v3-code-box .st{color:#98c379}
+    .v3-code-box .hl{background:rgba(127,255,107,.12);border-radius:3px;padding:0 .2em;display:inline-block}
+    .v3-code-box .hlb{background:rgba(232,168,76,.14);border-radius:3px;padding:0 .2em;display:inline-block}
+    .v3-explain{padding:1rem 1.2rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;font-size:.95rem;line-height:1.7;color:var(--body)}
+    .v3-explain strong{color:var(--ink)}
+    .v3-explain code{background:rgba(237,232,224,.08);padding:.08rem .35rem;border-radius:3px;font-family:'Courier New',monospace;color:var(--ink);font-size:.9em}
+
+    /* self-test quiz */
+    .quiz-intro{font-size:1.05rem;color:var(--body);margin-bottom:1.4rem;line-height:1.7}
+    .quiz-intro strong{color:var(--ink)}
+    .quiz-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem 1.8rem;margin:1.3rem 0;position:relative;overflow:hidden}
+    .quiz-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent 60%)}
+    .quiz-num{font-family:var(--hand);font-size:1.4rem;color:var(--accent);line-height:1;margin-bottom:.4rem;display:inline-block}
+    .quiz-q{font-family:var(--display);font-size:1.28rem;color:var(--ink);line-height:1.5;margin-bottom:1rem}
+    .quiz-code{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;margin:.8rem 0;font-family:'Courier New',monospace;font-size:.9rem;line-height:1.7;overflow-x:auto;white-space:pre}
+    .quiz-code .kw{color:#c678dd}.quiz-code .tp{color:#e06c75}.quiz-code .nm{color:#e8a84c}
+    .quiz-code .vl{color:#7fff6b}.quiz-code .cm{color:var(--muted);font-style:italic}.quiz-code .op{color:#4ca8e8}.quiz-code .st{color:#98c379}
+    .quiz-options{display:flex;flex-direction:column;gap:.5rem;margin:.8rem 0}
+    .quiz-option{display:flex;align-items:flex-start;gap:.7rem;padding:.7rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;cursor:pointer;transition:all .2s;font-size:.98rem;color:var(--body);text-align:left;font-family:inherit}
+    .quiz-option:hover{border-color:var(--accent);color:var(--ink)}
+    .quiz-option.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+    .quiz-option.correct{border-color:var(--green);background:var(--green-dim);color:var(--ink)}
+    .quiz-option.incorrect{border-color:var(--red);background:var(--red-dim);color:var(--ink);opacity:.8}
+    .quiz-option-letter{font-family:'Courier New',monospace;font-weight:700;color:var(--accent);min-width:1.3rem}
+    .quiz-option.correct .quiz-option-letter{color:var(--green)}
+    .quiz-option.incorrect .quiz-option-letter{color:var(--red)}
+    .quiz-reveal{margin-top:.8rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+    .quiz-btn{padding:.5rem 1.1rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);cursor:pointer;font-size:.9rem;font-family:inherit;font-weight:500;transition:all .2s}
+    .quiz-btn:hover{background:rgba(232,168,76,.22)}
+    .quiz-answer{margin-top:1rem;padding:1rem 1.2rem;background:rgba(127,255,107,.06);border:1px solid rgba(127,255,107,.25);border-left:3px solid var(--green);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.7;display:none;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .quiz-answer.show{display:block}
+    .quiz-answer strong{color:var(--ink)}
+    .quiz-answer code{background:rgba(237,232,224,.08);padding:.1rem .4rem;border-radius:3px;font-family:'Courier New',monospace;color:var(--ink);font-size:.88em}
+    .quiz-answer .verdict{font-family:var(--display);font-size:1.1rem;color:var(--green);margin-bottom:.4rem;display:block}
+    .quiz-textarea{width:100%;min-height:80px;padding:.7rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--ink);font-size:.95rem;outline:none;font-family:inherit;resize:vertical;line-height:1.6}
+    .quiz-textarea:focus{border-color:var(--accent)}
+    .quiz-scorecard{margin-top:2rem;padding:1.4rem 1.8rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);text-align:center}
+    .quiz-scorecard-title{font-family:var(--display);font-size:1.35rem;color:var(--ink);margin-bottom:.4rem}
+    .quiz-scorecard-msg{font-size:1rem;color:var(--body);line-height:1.6}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Pointers: Thinking in Memory</span>
+  <h1>Aliasing</h1>
+  <p class="blog-subtitle">Two pointers, one piece of memory. This innocent-sounding arrangement quietly shapes how the compiler reorders your code, why reinterpreting bytes through a different type is a one-way ticket to undefined behaviour, and why one unassuming keyword can make your inner loop twice as fast.</p>
+
+  <h2>The word itself</h2>
+
+  <p>In English, an alias is just another name for the same thing. When someone goes by Bob at work and Robert on their tax return, both names refer to the same person. In C, two pointers <em>alias</em> when they refer to the same chunk of memory. Different names, same address, same object.</p>
+
+  <p>Here's the simplest possible example:</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">x</span> <span class="op">=</span> <span class="vl">10</span>;
+<span class="tp">int</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> <span class="op">&amp;</span><span class="nm">x</span>;
+<span class="tp">int</span><span class="op">*</span> <span class="nm">q</span> <span class="op">=</span> <span class="op">&amp;</span><span class="nm">x</span>;   <span class="cm">// p and q alias. They name the same int.</span>
+
+<span class="op">*</span><span class="nm">p</span> <span class="op">=</span> <span class="vl">42</span>;         <span class="cm">// writing through p ...</span>
+<span class="nm">printf</span>(<span class="st">"%d\n"</span>, <span class="op">*</span><span class="nm">q</span>);   <span class="cm">// ... is visible through q. Prints 42.</span></pre>
+
+  <p>Nothing mysterious on the surface. The word "aliasing" sounds technical, but the idea is just "more than one pointer to the same thing." You already write aliasing code every time you pass a pointer to a function: the function's parameter and the caller's variable alias for the duration of the call.</p>
+
+  <p>So why does aliasing get its own chapter? Because aliasing is the thing compilers worry about when they try to make your code fast, and it's the thing that turns innocent-looking type casts into undefined behaviour. Understanding what the compiler assumes about aliasing is the difference between code that runs and code that runs three times faster, and between code that works and code that quietly stops working when the optimiser turns up.</p>
+
+  <div class="callout">Two pointers that refer to the same memory are aliases. Every write through one is visible through the other. The compiler has to guess which pairs of pointers in your code might alias, and it guesses pessimistically by default.</div>
+
+  <hr class="sep">
+
+  <h2>Why the compiler cares</h2>
+
+  <p>Look at this function:</p>
+
+<pre class="codeblock"><span class="tp">void</span> <span class="nm">add_to_all</span>(<span class="tp">int</span><span class="op">*</span> <span class="nm">arr</span>, <span class="tp">int</span><span class="op">*</span> <span class="nm">delta</span>, <span class="tp">int</span> <span class="nm">n</span>) {
+    <span class="kw">for</span> (<span class="tp">int</span> <span class="nm">i</span> <span class="op">=</span> <span class="vl">0</span>; <span class="nm">i</span> <span class="op">&lt;</span> <span class="nm">n</span>; <span class="nm">i</span><span class="op">++</span>) {
+        <span class="nm">arr</span>[<span class="nm">i</span>] <span class="op">+=</span> <span class="op">*</span><span class="nm">delta</span>;
+    }
+}</pre>
+
+  <p>Looks simple. The loop adds <code>*delta</code> to every element of <code>arr</code>. A natural optimisation is to read <code>*delta</code> once, into a register, and reuse it across the loop. That would save <code>n-1</code> memory loads. Easy win.</p>
+
+  <p>Except the compiler can't do it. Why? Because <code>delta</code> might point inside <code>arr</code>. Imagine the caller does this:</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">nums</span>[] <span class="op">=</span> {<span class="vl">1</span>, <span class="vl">2</span>, <span class="vl">3</span>, <span class="vl">4</span>};
+<span class="nm">add_to_all</span>(<span class="nm">nums</span>, <span class="op">&amp;</span><span class="nm">nums</span>[<span class="vl">0</span>], <span class="vl">4</span>);   <span class="cm">// delta aliases arr[0]</span></pre>
+
+  <p>Now the first iteration reads <code>*delta</code> (which is 1), writes <code>arr[0] = 1 + 1 = 2</code>, and in doing so <em>changes what <code>*delta</code> reads next time</em>. On iteration two, <code>*delta</code> is 2, not 1. The cached value would have been wrong. The compiler, not knowing whether the caller will do this or not, has to play safe: re-read <code>*delta</code> every iteration.</p>
+
+  <p>That's the cost of aliasing. The compiler's default assumption is that any two pointers to the same type <em>might</em> alias, so it can't hoist loads, can't reorder reads and writes freely, and can't fold redundant memory accesses into registers. Every pointer write is a potential surprise for every pointer read.</p>
+
+  <div class="callout">The compiler optimises as if any two same-typed pointers might alias. Until it can prove they don't, every write is a wall and every read is fresh from memory.</div>
+
+  <!-- VIZ 1: aliasing memory view -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Watch what happens when two pointers share a cell.</span></div>
+    <div class="viz-body">
+
+      <div class="v1-scenario-pills">
+        <button class="btn active" data-scenario="no-alias">no alias</button>
+        <button class="btn" data-scenario="alias">alias</button>
+        <button class="btn" data-scenario="partial">partial overlap</button>
+      </div>
+
+      <div class="v1-memory-grid">
+        <div class="v1-mem-label">memory</div>
+        <div class="v1-cells" id="v1Cells"></div>
+        <div class="v1-pointers" id="v1Pointers"></div>
+      </div>
+
+      <div class="v1-mem-controls">
+        <button class="btn primary" id="v1Step">Next step →</button>
+        <button class="btn" id="v1Reset">Reset</button>
+      </div>
+
+      <div class="v1-log" id="v1Log"></div>
+      <div class="v1-verdict" id="v1Verdict"></div>
+
+      <p class="viz-note">Pick a scenario, then step through the operations. Watch how writes through <span style="color:var(--blue)">a</span> do or don't affect reads through <span style="color:var(--accent)">b</span>. The alias scenario shows why the compiler can't optimise: the second pointer's read is hostage to the first pointer's write.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The strict aliasing rule</h2>
+
+  <p>Given that aliasing blocks optimisation, the C standard had a choice. Either leave things as they are and let the compiler stay conservative forever, or give the compiler some aliasing assumptions for free. The standard went with the second option.</p>
+
+  <p>The deal is called the <strong>strict aliasing rule</strong>, and it says, roughly: <em>you can access an object of type T through a pointer of type T, or through a <code>char*</code>, but not through a pointer of some other unrelated type.</em> If you violate this, behaviour is undefined, which in practice means the compiler is allowed to assume you didn't do it, and optimise on that basis.</p>
+
+  <p>The benefit is huge. With strict aliasing in force, the compiler can say: "this <code>int*</code> and that <code>float*</code> can never point at the same memory, because if they did, reading through one after writing through the other would be UB, and the user promises they don't write UB." That assumption unlocks real optimisation. Different-typed pointers are now guaranteed not to alias, and the compiler can reorder and cache across them freely.</p>
+
+  <p>Here's the canonical example of strict aliasing at work:</p>
+
+<pre class="codeblock"><span class="tp">float</span> <span class="nm">f</span> <span class="op">=</span> <span class="vl">3.14f</span>;
+<span class="tp">int</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> (<span class="tp">int</span><span class="op">*</span>)<span class="op">&amp;</span><span class="nm">f</span>;      <span class="cm">// pointing at a float through an int pointer</span>
+<span class="nm">printf</span>(<span class="st">"%d\n"</span>, <span class="op">*</span><span class="nm">p</span>);      <span class="cm">// UNDEFINED BEHAVIOUR</span></pre>
+
+  <p>You've taken a float's bytes and told the compiler to read them as an int. That's not a conversion, that's a reinterpretation, and the standard forbids it outright. Most machines will happily go through with it and give you some integer made of the float's bits, but it's UB, and at high optimisation the compiler might do something stranger. It might assume <code>p</code> doesn't point at a float (because that would be UB, which you promised to avoid), and optimise accordingly.</p>
+
+  <h3>The exceptions you're allowed</h3>
+
+  <p>The rule has a small list of exceptions that keep ordinary code legal:</p>
+
+  <ul>
+    <li><strong>Same type.</strong> You can access a <code>T</code> through a <code>T*</code>. That's the normal case.</li>
+    <li><strong>Signed/unsigned of the same type.</strong> You can access an <code>int</code> through an <code>unsigned int*</code> and vice versa. The standard treats these as compatible for aliasing.</li>
+    <li><strong>A <code>const</code> or <code>volatile</code> qualified version of the type.</strong> A <code>const int*</code> and an <code>int*</code> can point at the same object without trouble.</li>
+    <li><strong>A character type.</strong> <code>char*</code>, <code>unsigned char*</code>, and (in C) <code>signed char*</code> can legally be used to inspect the bytes of <em>any</em> object. This is the escape hatch for writing memcpy, hash functions, byte-level dumpers, and so on.</li>
+    <li><strong>A struct or union that contains the type.</strong> Specific structural rules that let you navigate through aggregates sensibly.</li>
+  </ul>
+
+  <p>Everything else is undefined. Reading a float through an int pointer: UB. Reading a struct through an unrelated struct's pointer: UB. Reading a <code>long</code> through a <code>short*</code>: UB. The rule is stricter than most beginners guess, and the failures tend to hide in release builds because optimisation is what makes the UB bite.</p>
+
+  <div class="callout">You can read an object through a pointer of its own type, through a compatible signed/unsigned or const variant, or through a <code>char*</code>. Everything else is undefined behaviour. The compiler relies on this to optimise.</div>
+
+  <!-- VIZ 2: strict aliasing checker -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Pick a pair of types. See if the aliasing is legal.</span></div>
+    <div class="viz-body">
+
+      <div class="v2-wrap">
+        <div class="v2-matrix" id="v2Matrix"></div>
+
+        <div class="v2-legend">
+          <div class="v2-legend-item"><span class="v2-legend-swatch ok"></span>legal alias</div>
+          <div class="v2-legend-item"><span class="v2-legend-swatch bad"></span>undefined behaviour</div>
+        </div>
+
+        <div class="v2-explain-panel" id="v2Explain"></div>
+      </div>
+
+      <p class="viz-note">Rows are the type of the actual object in memory. Columns are the pointer type you're using to access it. Click any cell to see why it's legal or undefined. Notice the column for <code>char*</code>: it's entirely green, because character pointers can legally peek at anything. That's the memcpy escape hatch.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Type punning (and why you should memcpy)</h2>
+
+  <p>Sooner or later, you'll want to reinterpret some bytes. Maybe you're serialising a float into a network packet and you need its raw bits. Maybe you're reading a binary file and you want to view a buffer as a struct. This is called <strong>type punning</strong>, and there's a right way to do it.</p>
+
+  <p>The wrong way is the pointer-cast we just saw:</p>
+
+<pre class="codeblock"><span class="cm">// WRONG: strict aliasing violation</span>
+<span class="tp">float</span> <span class="nm">f</span> <span class="op">=</span> <span class="vl">3.14f</span>;
+<span class="tp">unsigned</span> <span class="nm">bits</span> <span class="op">=</span> <span class="op">*</span>(<span class="tp">unsigned</span><span class="op">*</span>)<span class="op">&amp;</span><span class="nm">f</span>;   <span class="cm">// UB</span></pre>
+
+  <p>The right way is <code>memcpy</code>:</p>
+
+<pre class="codeblock"><span class="cm">// CORRECT: defined behaviour, and usually just as fast</span>
+<span class="tp">float</span> <span class="nm">f</span> <span class="op">=</span> <span class="vl">3.14f</span>;
+<span class="tp">unsigned</span> <span class="nm">bits</span>;
+<span class="nm">memcpy</span>(<span class="op">&amp;</span><span class="nm">bits</span>, <span class="op">&amp;</span><span class="nm">f</span>, <span class="kw">sizeof</span>(<span class="nm">bits</span>));</pre>
+
+  <p>This looks like it ought to be slower, but in practice every modern optimising compiler recognises this pattern and compiles it down to a single register move. You pay nothing at runtime, and you get defined behaviour. This is the idiom the standard wants you to use, and it's what quality codebases use for every kind of type-punning need.</p>
+
+  <p>Why does this work when the pointer cast doesn't? Because <code>memcpy</code> reads bytes, and byte-level access to any object is one of the explicit exceptions in the strict aliasing rule. Inside memcpy, the source is treated as a stream of bytes, not as a float, so no type rule is violated. The compiler can see what you're doing and generate the same efficient code as the cast, but without the UB.</p>
+
+  <p>In C11 and later, <strong>unions</strong> are also a legal option:</p>
+
+<pre class="codeblock"><span class="kw">union</span> <span class="nm">FloatBits</span> { <span class="tp">float</span> <span class="nm">f</span>; <span class="tp">unsigned</span> <span class="nm">u</span>; };
+<span class="kw">union</span> <span class="nm">FloatBits</span> <span class="nm">fb</span> <span class="op">=</span> {.<span class="nm">f</span> <span class="op">=</span> <span class="vl">3.14f</span>};
+<span class="tp">unsigned</span> <span class="nm">bits</span> <span class="op">=</span> <span class="nm">fb</span>.<span class="nm">u</span>;         <span class="cm">// legal in C</span></pre>
+
+  <p>Note that this is a <em>C</em> guarantee. In C++ it's technically undefined behaviour to read from a union member other than the last one written, although most compilers tolerate it as an extension. When in doubt, across both languages, use <code>memcpy</code>. It's the universally defined choice.</p>
+
+  <div class="callout">Every type-punning need can be expressed as a <code>memcpy</code>. It's defined behaviour, it compiles to the same instructions as the cast you were tempted to write, and it works the same in C and C++. Use it.</div>
+
+  <hr class="sep">
+
+  <h2>restrict: promising the compiler that you won't alias</h2>
+
+  <p>Remember the <code>add_to_all</code> function from earlier? The compiler couldn't hoist <code>*delta</code> out of the loop because <code>delta</code> might have aliased <code>arr</code>. C99 introduced a keyword to let you promise the compiler that you won't do that:</p>
+
+<pre class="codeblock"><span class="tp">void</span> <span class="nm">add_to_all</span>(<span class="tp">int</span><span class="op">*</span> <span class="kw">restrict</span> <span class="nm">arr</span>, <span class="tp">int</span><span class="op">*</span> <span class="kw">restrict</span> <span class="nm">delta</span>, <span class="tp">int</span> <span class="nm">n</span>) {
+    <span class="kw">for</span> (<span class="tp">int</span> <span class="nm">i</span> <span class="op">=</span> <span class="vl">0</span>; <span class="nm">i</span> <span class="op">&lt;</span> <span class="nm">n</span>; <span class="nm">i</span><span class="op">++</span>) {
+        <span class="nm">arr</span>[<span class="nm">i</span>] <span class="op">+=</span> <span class="op">*</span><span class="nm">delta</span>;
+    }
+}</pre>
+
+  <p>The <code>restrict</code> keyword is a promise from you to the compiler: "for the lifetime of this pointer, the object it points at won't be accessed through any other pointer." With that promise in hand, the compiler can now hoist <code>*delta</code> out of the loop, vectorise freely, and produce the optimised code you wanted all along.</p>
+
+  <p>The catch is that <code>restrict</code> is a promise <em>you</em> make, and the compiler trusts it without checking. If you lie, if the caller passes in overlapping pointers, you've written undefined behaviour. The program might work, might produce wrong results, might crash. The compiler did exactly what you said it could do; the bug is yours.</p>
+
+  <p>This is why restrict shows up all through the standard library's signatures. For instance:</p>
+
+<pre class="codeblock"><span class="tp">void</span> <span class="op">*</span><span class="nm">memcpy</span>(<span class="tp">void</span> <span class="op">*</span><span class="kw">restrict</span> <span class="nm">dest</span>, <span class="kw">const</span> <span class="tp">void</span> <span class="op">*</span><span class="kw">restrict</span> <span class="nm">src</span>, <span class="tp">size_t</span> <span class="nm">n</span>);</pre>
+
+  <p>That restrict is the reason <code>memcpy</code> is allowed to be so fast: the standard declares it illegal to call with overlapping buffers, and the compiler can generate code that wouldn't handle overlap correctly. (If you <em>do</em> need to copy overlapping regions, the standard library gives you <code>memmove</code>, which handles overlap at some cost.) When you see restrict in an API, it's telling you "do not pass aliasing pointers into this function."</p>
+
+  <h3>When does restrict actually help?</h3>
+
+  <p>Not every function benefits. The compiler already knows that two differently-typed pointers can't alias (thanks to strict aliasing), so restrict is redundant there. Where restrict earns its keep is when you have multiple pointers of the <em>same</em> type going into a function, and the compiler would otherwise have to assume they might overlap.</p>
+
+  <p>Classic candidates: numerical kernels, image filters, linear algebra routines, encoders and decoders, anything where the inner loop reads from one same-typed buffer and writes to another. In those loops, restrict can be the difference between a scalar loop and a fully vectorised one, and benchmark differences of 2x or more are common.</p>
+
+  <p>A few more practical notes:</p>
+
+  <ul>
+    <li><strong>It's not available in standard C++.</strong> C++ borrows the idea via vendor extensions (<code>__restrict</code> in MSVC, <code>__restrict__</code> in GCC and Clang) but there's no portable spelling. Use the extension your compiler provides.</li>
+    <li><strong>It's a function-level promise.</strong> Typically you put it on function parameters; it says the pointer and its pointees won't be aliased during the function's execution.</li>
+    <li><strong>It's easy to get wrong in refactoring.</strong> If you split a function and pass the same restrict-qualified pointer to two places where they can now alias, you've lied to the compiler without realising it. Keep restrict close to the loop that actually benefits.</li>
+  </ul>
+
+  <div class="callout">restrict is a one-sided contract. You swear the pointer won't alias anything else in its scope; the compiler optimises on your word. Useful for hot numeric loops with same-typed inputs and outputs. Wrong promise, silent bug.</div>
+
+  <!-- VIZ 3: restrict optimizer -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Toggle restrict. Watch what the compiler is allowed to do.</span></div>
+    <div class="viz-body">
+
+      <div class="v3-wrap">
+        <div class="v3-toggle-row">
+          <button class="btn" id="v3Toggle">Toggle restrict: OFF</button>
+        </div>
+
+        <div class="v3-panels">
+          <div class="v3-panel">
+            <div class="v3-panel-title">Source <span class="v3-panel-tag" id="v3SrcTag">no restrict</span></div>
+            <div class="v3-code-box" id="v3Src"></div>
+          </div>
+          <div class="v3-panel">
+            <div class="v3-panel-title">What the compiler emits <span class="v3-panel-tag">pseudo-asm</span></div>
+            <div class="v3-code-box" id="v3Asm"></div>
+          </div>
+        </div>
+
+        <div class="v3-explain" id="v3Explain"></div>
+      </div>
+
+      <p class="viz-note">With restrict off, the compiler reloads <code>*delta</code> on every iteration (it can't trust that the previous write through <code>arr</code> didn't change it). Flip restrict on, and you're telling the compiler that <code>delta</code> and <code>arr</code> don't overlap; the load hoists out of the loop, and vectorisation becomes legal. The keyword is tiny, the optimisation budget it unlocks is not.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Practical debugging: when aliasing bugs strike</h2>
+
+  <p>Aliasing bugs have a signature. Code works in debug builds. Code breaks in release builds. Adding a printf makes the bug go away. The numbers look <em>almost</em> right. You stare at the source, run it in gdb, and everything seems fine; you run it without gdb and it crashes. If this has ever happened to you, strict aliasing is a suspect.</p>
+
+  <p>What makes aliasing bugs hard is that the compiler's optimisations, not your code, are what expose the UB. At <code>-O0</code>, the compiler makes few assumptions and executes your code more or less literally. At <code>-O2</code> or <code>-O3</code>, it starts aggressively using strict aliasing to reorder and cache, and that's when the UB in your cast finally matters. This is why "it worked fine yesterday" often means "I bumped the optimisation level."</p>
+
+  <p>A short toolkit for diagnosing:</p>
+
+  <ul>
+    <li><strong>Compile with <code>-Wstrict-aliasing</code> (GCC and Clang).</strong> At <code>-Wstrict-aliasing=2</code> or 3, the compiler will flag many pointer casts that violate the rule. It misses some cases, but the hits are real and often the whole bug.</li>
+    <li><strong>Build with <code>-fno-strict-aliasing</code> as a diagnostic.</strong> If your bug vanishes, strict aliasing was the cause. This flag tells the compiler to assume everything might alias everything, which kills some optimisations but makes the code behave as most people naively expect. Many large C codebases (notably the Linux kernel) build with this flag permanently.</li>
+    <li><strong>Replace casts with memcpy.</strong> Every <code>*(T*)p</code> that punned a type becomes <code>memcpy</code>. Defined behaviour, usually same machine code.</li>
+    <li><strong>UBSan (<code>-fsanitize=undefined</code>).</strong> The undefined-behaviour sanitiser catches several classes of aliasing UB at runtime, with source-line reports. Expensive but precise.</li>
+  </ul>
+
+  <p>The general lesson is: if you're reinterpreting bytes, use <code>memcpy</code>. If you're telling the compiler two pointers don't alias to unlock an optimisation, use <code>restrict</code> and make sure you're not lying. If a program behaves differently at different optimisation levels, suspect UB first and aliasing second.</p>
+
+  <hr class="sep">
+
+  <h2>A brief C++ note</h2>
+
+  <p>C++ inherits C's strict aliasing rule almost word for word, with one important addition: <code>std::bit_cast</code> (C++20). It's the statically-typed, <code>constexpr</code>-friendly spelling of "reinterpret these bytes as that type." It replaces the memcpy idiom for most uses, with cleaner syntax:</p>
+
+<pre class="codeblock"><span class="cm">// C++20: clean and checked at compile time</span>
+<span class="tp">float</span> <span class="nm">f</span> <span class="op">=</span> <span class="vl">3.14f</span>;
+<span class="kw">auto</span> <span class="nm">bits</span> <span class="op">=</span> <span class="nm">std</span>::<span class="nm">bit_cast</span>&lt;<span class="tp">unsigned</span>&gt;(<span class="nm">f</span>);</pre>
+
+  <p>It requires the source and destination types to be the same size and both trivially copyable, which the compiler checks for you. No UB, no memcpy boilerplate. If you're writing modern C++, this is the preferred tool.</p>
+
+  <p>A second C++ note: <strong>unions for type punning are not portable in C++</strong>, even though they work in C. The C++ standard says reading from a union member other than the last one written is undefined; GCC and Clang tolerate it, but MSVC and the standard disagree. In C++ code, reach for <code>bit_cast</code> (C++20) or <code>memcpy</code> (any version). Avoid unions unless you genuinely need a tagged-union type.</p>
+
+  <hr class="sep">
+
+  <h2>Summing up</h2>
+
+  <p>Two pointers alias when they name the same memory. Aliasing is fine; what's not fine is lying about it, which you can do in two directions. You can lie <em>towards</em> the compiler by casting through an incompatible type (violating strict aliasing), and you can lie <em>to</em> the compiler by putting restrict on a parameter that really does alias. Both are UB, both are hard to debug.</p>
+
+  <p>The strict aliasing rule lets the compiler assume that different-typed pointers don't refer to the same memory. That unlocks optimisation, but it makes casts-through-types undefined behaviour. When you need to reinterpret bytes, <code>memcpy</code> is the defined-behaviour idiom, and every modern compiler turns it into efficient code.</p>
+
+  <p>restrict is the opposite direction: you tell the compiler your same-typed pointers don't alias, and it optimises accordingly. Use it in numerical inner loops where the default assumption of possible aliasing is what's stopping the compiler from caching values and vectorising.</p>
+
+  <p>When aliasing bugs appear, they usually look like optimisation-level-dependent heisenbugs. Build with strict-aliasing warnings turned on, reach for <code>-fno-strict-aliasing</code> to bisect, and replace pointer-cast punning with memcpy.</p>
+
+  <hr class="sep">
+
+  <h2>What's next</h2>
+
+  <p>Part 9 moves into C++ and picks up the thread of <strong>smart pointers</strong>. We've now seen that raw pointers can lie about aliasing, can dangle, can leak. Smart pointers encode ownership directly in the type, so the compiler (not your memory, not your comments) tracks who's responsible for freeing what. It's one of the few places where C++ actually makes memory management easier than C.</p>
+
+  <div class="callout">You've seen how two pointers can secretly share memory. Next: pointers that carry ownership in their types, so the sharing is no longer a secret.</div>
+
+  <hr class="sep">
+
+  <h2>Test yourself</h2>
+
+  <p class="quiz-intro">Seven questions on the strict aliasing rule, type punning, restrict, and aliasing debugging. Five correct means you're ready for Part 9.</p>
+
+  <!-- Q1 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q1</span>
+    <div class="quiz-q">Which of these accesses are <em>legal</em> under the strict aliasing rule? (Select all that apply.)</div>
+<pre class="quiz-code"><span class="tp">int</span> <span class="nm">x</span> <span class="op">=</span> <span class="vl">42</span>;
+<span class="tp">float</span> <span class="nm">f</span> <span class="op">=</span> <span class="vl">3.14f</span>;
+
+<span class="cm">// (A)</span>
+<span class="tp">unsigned</span> <span class="tp">int</span><span class="op">*</span> <span class="nm">up</span> <span class="op">=</span> (<span class="tp">unsigned</span> <span class="tp">int</span><span class="op">*</span>)<span class="op">&amp;</span><span class="nm">x</span>; <span class="tp">unsigned</span> <span class="nm">v</span> <span class="op">=</span> <span class="op">*</span><span class="nm">up</span>;
+
+<span class="cm">// (B)</span>
+<span class="tp">char</span><span class="op">*</span> <span class="nm">cp</span> <span class="op">=</span> (<span class="tp">char</span><span class="op">*</span>)<span class="op">&amp;</span><span class="nm">f</span>; <span class="tp">char</span> <span class="nm">c</span> <span class="op">=</span> <span class="op">*</span><span class="nm">cp</span>;
+
+<span class="cm">// (C)</span>
+<span class="tp">int</span><span class="op">*</span> <span class="nm">ip</span> <span class="op">=</span> (<span class="tp">int</span><span class="op">*</span>)<span class="op">&amp;</span><span class="nm">f</span>; <span class="tp">int</span> <span class="nm">n</span> <span class="op">=</span> <span class="op">*</span><span class="nm">ip</span>;
+
+<span class="cm">// (D)</span>
+<span class="kw">const</span> <span class="tp">int</span><span class="op">*</span> <span class="nm">cip</span> <span class="op">=</span> <span class="op">&amp;</span><span class="nm">x</span>; <span class="tp">int</span> <span class="nm">n</span> <span class="op">=</span> <span class="op">*</span><span class="nm">cip</span>;</pre>
+    <div class="quiz-options multi" data-quiz="q1" data-answer="a,b,d">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span>Reading an <code>int</code> through an <code>unsigned int*</code>.</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span>Reading a <code>float</code>'s bytes through a <code>char*</code>.</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span>Reading a <code>float</code> through an <code>int*</code>.</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span>Reading an <code>int</code> through a <code>const int*</code>.</span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a1">Reveal answer</button></div>
+    <div class="quiz-answer" id="a1">
+      <span class="verdict">Legal: A, B, D. Undefined behaviour: C.</span>
+      <strong>A is legal.</strong> The standard allows signed and unsigned versions of the same integer type to alias. Reading an <code>int</code> through an <code>unsigned int*</code> is fine.<br>
+      <strong>B is legal.</strong> A <code>char*</code> can legally read the bytes of any object. This is the byte-inspection exception, and it's what <code>memcpy</code> depends on.<br>
+      <strong>C is UB.</strong> <code>int</code> and <code>float</code> are unrelated types. The cast is syntactically allowed, but the dereference violates strict aliasing. The bit pattern of <code>3.14f</code> does not become a sensible int; at high optimisation, the compiler may do something entirely unexpected.<br>
+      <strong>D is legal.</strong> Adding <code>const</code> is always safe for aliasing. You can always read an object through a more-qualified version of its type.
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q2</span>
+    <div class="quiz-q">You need to extract the raw IEEE-754 bit pattern of a <code>float</code> as a <code>uint32_t</code>. Which of the following is the recommended approach in portable C?</div>
+    <div class="quiz-options" data-quiz="q2" data-answer="c">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span><code>uint32_t bits = *(uint32_t*)&amp;f;</code></span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span><code>uint32_t bits = (uint32_t)f;</code></span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span><code>uint32_t bits; memcpy(&amp;bits, &amp;f, sizeof(bits));</code></span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span><code>uint32_t bits = (uint32_t)(intptr_t)&amp;f;</code></span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a2">Reveal answer</button></div>
+    <div class="quiz-answer" id="a2">
+      <span class="verdict">C is correct.</span>
+      <strong>A is UB.</strong> A cast-through-unrelated-pointer type is exactly the strict aliasing violation we've been warning against. May appear to work; may silently misbehave at <code>-O2</code>.<br>
+      <strong>B is wrong.</strong> This doesn't extract bits; it performs a <em>value</em> conversion from <code>float</code> to <code>uint32_t</code>. <code>(uint32_t)3.14f</code> yields 3, not the bit pattern <code>0x4048F5C3</code>.<br>
+      <strong>C is correct.</strong> <code>memcpy</code> is defined, portable, type-safe, and compiles down to a single move on any modern optimising compiler. This is the idiomatic answer.<br>
+      <strong>D is meaningless.</strong> That casts the <em>address</em> of <code>f</code> to an integer, not the contents. Useful for printing pointer values, not for reading IEEE bits.
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q3</span>
+    <div class="quiz-q">A function is declared:</div>
+<pre class="quiz-code"><span class="tp">void</span> <span class="nm">blend</span>(<span class="tp">int</span><span class="op">*</span> <span class="kw">restrict</span> <span class="nm">dst</span>,
+           <span class="kw">const</span> <span class="tp">int</span><span class="op">*</span> <span class="kw">restrict</span> <span class="nm">a</span>,
+           <span class="kw">const</span> <span class="tp">int</span><span class="op">*</span> <span class="kw">restrict</span> <span class="nm">b</span>,
+           <span class="tp">int</span> <span class="nm">n</span>);</pre>
+    <div class="quiz-q" style="margin-top:.6rem;font-size:1.1rem">Which of the following calls are safe? (Select all that apply.)</div>
+    <div class="quiz-options multi" data-quiz="q3" data-answer="a,c">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span><code>blend(out, x, y, n);</code> where <code>out</code>, <code>x</code>, <code>y</code> are three distinct arrays.</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span><code>blend(buf, buf, other, n);</code> where <code>dst</code> and <code>a</code> are the same buffer.</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span><code>blend(out, x, x, n);</code> where <code>a</code> and <code>b</code> are the same read-only input.</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span><code>blend(out, out+1, y, n);</code> where <code>dst</code> and <code>a</code> overlap by <code>n-1</code> elements.</span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a3">Reveal answer</button></div>
+    <div class="quiz-answer" id="a3">
+      <span class="verdict">Safe: A, C. Undefined behaviour: B, D.</span>
+      <strong>A is safe.</strong> All three pointers point at distinct, non-overlapping objects. This is exactly what restrict expects.<br>
+      <strong>B is UB.</strong> <code>dst</code> has restrict, and so does <code>a</code>. Passing the same buffer for both violates the restrict contract: the function is permitted to write through <code>dst</code> assuming no read through <code>a</code> sees that write.<br>
+      <strong>C is safe. This one surprises people.</strong> Two <em>read-only</em> inputs being the same buffer is fine, because the function's writes only go to <code>dst</code>. Neither <code>a</code> nor <code>b</code> is written through, so the restrict promise (no write-then-read through aliased pointers) isn't violated. C's strict reading of restrict actually allows read-only sharing among const-qualified restrict parameters.<br>
+      <strong>D is UB.</strong> <code>dst</code> and <code>a</code> overlap in memory, which directly contradicts the restrict promise on both.
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q4</span>
+    <div class="quiz-q">A colleague says: "My code works at <code>-O0</code> but segfaults at <code>-O2</code>. The compiler must have a bug." What's the most likely explanation, and how would you investigate?</div>
+    <textarea class="quiz-textarea" placeholder="Name the likely cause and give at least two diagnostic steps."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a4">Reveal answer</button></div>
+    <div class="quiz-answer" id="a4">
+      <span class="verdict">The code almost certainly has undefined behaviour. Strict aliasing is a strong suspect.</span>
+      Compiler bugs that cause optimisation-level-dependent crashes are very rare; UB in user code is very common. The optimiser exposes UB that the unoptimised build happened to tolerate. Aliasing UB is a classic culprit here because it's invisible in debug builds (no optimisation means no aliasing assumptions) but suddenly matters at <code>-O2</code>.<br><br>
+      <strong>Diagnostic steps, in order:</strong><br>
+      1. Rebuild with <code>-Wall -Wextra -Wstrict-aliasing=2</code>. Check every warning.<br>
+      2. Try <code>-O2 -fno-strict-aliasing</code>. If the crash goes away, strict aliasing is confirmed.<br>
+      3. Run under UBSan (<code>-fsanitize=undefined</code>). It catches a lot of aliasing UB at the moment it happens and prints the source line.<br>
+      4. Grep the code for C-style pointer casts between pointer types (<code>(T*)</code>) and for reinterpret_cast in C++. Each one is a suspect; replace with memcpy or bit_cast.<br>
+      5. Only after all of the above comes up empty should you suspect the compiler. File a bug with a minimal reproducer; expect the maintainers to show that your code was UB.
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q5</span>
+    <div class="quiz-q">Why does the standard library declare <code>memcpy</code> as</div>
+<pre class="quiz-code"><span class="tp">void</span> <span class="op">*</span><span class="nm">memcpy</span>(<span class="tp">void</span> <span class="op">*</span><span class="kw">restrict</span> <span class="nm">dest</span>,
+               <span class="kw">const</span> <span class="tp">void</span> <span class="op">*</span><span class="kw">restrict</span> <span class="nm">src</span>,
+               <span class="tp">size_t</span> <span class="nm">n</span>);</pre>
+    <div class="quiz-q" style="margin-top:.6rem;font-size:1.1rem">and what should you call instead if you need overlapping copies?</div>
+    <div class="quiz-options" data-quiz="q5" data-answer="b">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span>restrict is decorative; it makes no performance difference. Use <code>memcpy</code> either way.</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span>restrict lets memcpy generate faster code by assuming non-overlap. For overlapping buffers, use <code>memmove</code>.</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span>restrict here is a type checker hint, with no effect on generated code. Overlapping buffers require <code>strcpy</code>.</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span>restrict means "restricted to one thread." Use <code>pthread_memcpy</code> for overlap.</span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a5">Reveal answer</button></div>
+    <div class="quiz-answer" id="a5">
+      <span class="verdict">B is correct.</span>
+      The restrict qualifiers on <code>memcpy</code>'s parameters tell the compiler (and document to the caller) that the source and destination must not overlap. With that promise in hand, the compiler can emit a fast forward copy, often using wide SIMD loads and stores that would be incorrect if the buffers overlapped.<br><br>
+      For the overlapping case, C provides <code>memmove</code>, which is specified to handle overlap correctly. It's slightly slower than <code>memcpy</code> because it has to check direction and potentially copy backwards, but it's defined. <code>strcpy</code> copies null-terminated strings and makes no overlap guarantees of its own; don't use it as an overlap-safe copy.
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q6</span>
+    <div class="quiz-q">Read this C99 code. What does the compiler output for the expression in <code>printf</code> at <code>-O2</code>, assuming strict aliasing is enforced?</div>
+<pre class="quiz-code"><span class="tp">int</span> <span class="nm">compute</span>(<span class="tp">int</span><span class="op">*</span> <span class="nm">a</span>, <span class="tp">float</span><span class="op">*</span> <span class="nm">b</span>) {
+    <span class="op">*</span><span class="nm">a</span> <span class="op">=</span> <span class="vl">1</span>;
+    <span class="op">*</span><span class="nm">b</span> <span class="op">=</span> <span class="vl">2.0f</span>;
+    <span class="kw">return</span> <span class="op">*</span><span class="nm">a</span>;
+}
+
+<span class="cm">// Caller:</span>
+<span class="tp">int</span> <span class="nm">x</span>;
+<span class="nm">printf</span>(<span class="st">"%d\n"</span>, <span class="nm">compute</span>(<span class="op">&amp;</span><span class="nm">x</span>, (<span class="tp">float</span><span class="op">*</span>)<span class="op">&amp;</span><span class="nm">x</span>));</pre>
+    <div class="quiz-options" data-quiz="q6" data-answer="d">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span>Guaranteed to print 1, because <code>*a = 1</code> happens after the write of 2.0f.</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span>Guaranteed to print 2, because the float write reinterprets as an int.</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span>Guaranteed to print 0x40000000 (the IEEE bits of 2.0f).</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span>Undefined behaviour in the caller. Anything can happen.</span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a6">Reveal answer</button></div>
+    <div class="quiz-answer" id="a6">
+      <span class="verdict">D. The caller violates strict aliasing. Behaviour is undefined.</span>
+      The cast <code>(float*)&amp;x</code> produces a <code>float*</code> that names an object of type <code>int</code>. The moment <code>compute</code> dereferences <code>b</code> to write <code>2.0f</code>, the program is accessing an <code>int</code> through a <code>float*</code>. That's forbidden under strict aliasing, and the compiler is permitted to assume it didn't happen.<br><br>
+      In practice, under <code>-O2</code>, the compiler <em>will</em> assume <code>a</code> and <code>b</code> can't alias (different types!) and may hoist the final <code>*a</code> to a register loaded before the float write, returning 1 even after <code>*b</code> has clobbered the memory. Under <code>-O0</code>, the write happens through memory and the return reads back whatever bits the float write left behind, so the function might return the IEEE pattern of 2.0f as an int. <strong>Both outcomes are legal. The behaviour is undefined.</strong><br><br>
+      The fix: don't type-pun through pointer casts. Use memcpy if you really need to reinterpret bits.
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q7</span>
+    <div class="quiz-q">You're writing a vector operation that reads two input arrays and writes to an output array:</div>
+<pre class="quiz-code"><span class="tp">void</span> <span class="nm">vec_add</span>(<span class="tp">float</span><span class="op">*</span> <span class="nm">out</span>, <span class="tp">float</span><span class="op">*</span> <span class="nm">a</span>, <span class="tp">float</span><span class="op">*</span> <span class="nm">b</span>, <span class="tp">size_t</span> <span class="nm">n</span>) {
+    <span class="kw">for</span> (<span class="tp">size_t</span> <span class="nm">i</span> <span class="op">=</span> <span class="vl">0</span>; <span class="nm">i</span> <span class="op">&lt;</span> <span class="nm">n</span>; <span class="nm">i</span><span class="op">++</span>) {
+        <span class="nm">out</span>[<span class="nm">i</span>] <span class="op">=</span> <span class="nm">a</span>[<span class="nm">i</span>] <span class="op">+</span> <span class="nm">b</span>[<span class="nm">i</span>];
+    }
+}</pre>
+    <div class="quiz-q" style="margin-top:.6rem;font-size:1.1rem">Benchmarking shows the loop isn't being auto-vectorised. Rewrite the signature to give the compiler what it needs, and explain the tradeoff.</div>
+    <textarea class="quiz-textarea" placeholder="Write the new signature and explain the obligation on the caller."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a7">Reveal answer</button></div>
+    <div class="quiz-answer" id="a7">
+      <span class="verdict">Add <code>restrict</code> to all three pointer parameters.</span>
+<pre class="quiz-code"><span class="tp">void</span> <span class="nm">vec_add</span>(<span class="tp">float</span><span class="op">*</span> <span class="kw">restrict</span> <span class="nm">out</span>,
+             <span class="tp">float</span><span class="op">*</span> <span class="kw">restrict</span> <span class="nm">a</span>,
+             <span class="tp">float</span><span class="op">*</span> <span class="kw">restrict</span> <span class="nm">b</span>,
+             <span class="tp">size_t</span> <span class="nm">n</span>) {
+    <span class="kw">for</span> (<span class="tp">size_t</span> <span class="nm">i</span> <span class="op">=</span> <span class="vl">0</span>; <span class="nm">i</span> <span class="op">&lt;</span> <span class="nm">n</span>; <span class="nm">i</span><span class="op">++</span>) {
+        <span class="nm">out</span>[<span class="nm">i</span>] <span class="op">=</span> <span class="nm">a</span>[<span class="nm">i</span>] <span class="op">+</span> <span class="nm">b</span>[<span class="nm">i</span>];
+    }
+}</pre>
+      Without restrict, all three pointers are <code>float*</code>, and the compiler must assume that <code>out</code> might overlap with <code>a</code> or <code>b</code>. That assumption blocks vectorisation because a SIMD store could clobber values the next iteration wants to read. With restrict, the compiler is permitted to assume no overlap and can emit wide SIMD code (4 or 8 floats per instruction).<br><br>
+      <strong>The tradeoff is on the caller.</strong> They must now guarantee that <code>out</code> doesn't overlap with <code>a</code> or <code>b</code>. Calling <code>vec_add(buf, buf, x, n)</code> to do an in-place add is no longer safe; it's UB. If you need the in-place variant, provide a second function without restrict, or document the restriction clearly so callers don't trip over it. A common pattern is to have two functions: the restrict one for the fast path, and a slower overlap-safe one for the general case, modelled on <code>memcpy</code> vs <code>memmove</code>.
+    </div>
+  </div>
+
+  <div class="quiz-scorecard">
+    <div class="quiz-scorecard-title">How did you do?</div>
+    <div class="quiz-scorecard-msg">
+      5 or more correct, you're ready for Part 9. Less than that, the common trouble spots are Q3 (restrict with multiple parameters) and Q6 (why the caller's cast creates UB, not the function). Re-read "The strict aliasing rule" and "restrict" sections, then try again.
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Pointers: Thinking in Memory</h2>
+    <a class="sidebar-link" href="why-pointers.html">
+      <div class="sidebar-link-title">Part 1: Why Pointers?</div>
+      <div class="sidebar-link-note">The motivation.</div>
+    </a>
+    <a class="sidebar-link" href="addresses.html">
+      <div class="sidebar-link-title">Part 2: Addresses, &amp;, and *</div>
+      <div class="sidebar-link-note">Syntax and mental model.</div>
+    </a>
+    <a class="sidebar-link" href="arrays-are-not-pointers.html">
+      <div class="sidebar-link-title">Part 3: Arrays Are Not Pointers</div>
+      <div class="sidebar-link-note">Decay and the sizeof trap.</div>
+    </a>
+    <a class="sidebar-link" href="pointers-lifetime.html">
+      <div class="sidebar-link-title">Part 4: Stack, Heap, and Lifetime</div>
+      <div class="sidebar-link-note">Where memory lives.</div>
+    </a>
+    <a class="sidebar-link" href="pointer-villains.html">
+      <div class="sidebar-link-title">Part 5: The Three Villains</div>
+      <div class="sidebar-link-note">Null, wild, dangling.</div>
+    </a>
+    <a class="sidebar-link" href="pointers-and-functions.html">
+      <div class="sidebar-link-title">Part 6: Pointers and Functions</div>
+      <div class="sidebar-link-note">Callbacks and all.</div>
+    </a>
+    <a class="sidebar-link" href="const-pointers.html">
+      <div class="sidebar-link-title">Part 7: The const Puzzle</div>
+      <div class="sidebar-link-note">Three forms, two positions.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="pointers-aliasing.html">
+      <div class="sidebar-link-title">Part 8: Aliasing</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="pointers-void.html">
+      <div class="sidebar-link-title">Part 9: The Typeless Pointer</div>
+      <div class="sidebar-link-note">void* and type erasure.</div>
+    </a>
+    <a class="sidebar-link" href="smart-pointers.html">
+      <div class="sidebar-link-title">Part 10: Smart Pointers</div>
+      <div class="sidebar-link-note">Ownership, encoded in types./div>
+    </a>
+    <a class="sidebar-link" href="undefined-behaviour.html">
+      <div class="sidebar-link-title">Part 11: Undefined Behaviour</div>
+      <div class="sidebar-link-note">Where seniors earn their pay.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas in this post</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Aliasing = two names, one memory</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The compiler's pessimism tax</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The strict aliasing rule</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">char* is the escape hatch</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">memcpy for type punning</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">restrict: you promise, it optimises</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Release-only bugs smell like aliasing</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: ALIASING MEMORY VIEW
+// ═══════════════════════════════════════════════════════════════════════════
+
+const V1_SCENARIOS = {
+  'no-alias': {
+    label: 'no alias: a and b point at different cells',
+    cells: [10, 20, 30, 40, 50, 60],
+    ptrA: 1, ptrB: 4,
+    steps: [
+      { op: '*a = 99', cellChanges: {1: 99}, note: 'writes to cell 1' },
+      { op: 'read *b', read: 4, note: 'reads cell 4, unaffected by write to cell 1' },
+      { op: '*a = 77', cellChanges: {1: 77}, note: 'writes to cell 1 again' },
+      { op: 'read *b', read: 4, note: 'still reads cell 4, cleanly' },
+    ],
+    verdict: {
+      type: 'noalias',
+      html: '<strong>No aliasing.</strong> The compiler can freely reorder and cache: writes through <code>a</code> never affect reads through <code>b</code>. If this were a loop, <code>*b</code> could live in a register the whole time.',
+    },
+  },
+  'alias': {
+    label: 'alias: a and b name the same cell',
+    cells: [10, 20, 30, 40, 50, 60],
+    ptrA: 2, ptrB: 2,
+    steps: [
+      { op: '*a = 99', cellChanges: {2: 99}, note: 'writes to cell 2' },
+      { op: 'read *b', read: 2, note: 'reads cell 2, sees 99 because b aliases a' },
+      { op: '*a = 77', cellChanges: {2: 77}, note: 'writes to cell 2 again' },
+      { op: 'read *b', read: 2, note: 'reads 77, the write was visible through b' },
+    ],
+    verdict: {
+      type: 'alias',
+      html: '<strong>Full alias.</strong> Every write through <code>a</code> is visible through <code>b</code>. The compiler cannot cache <code>*b</code>: each write potentially changes it. This is the optimisation barrier.',
+    },
+  },
+  'partial': {
+    label: 'partial: b points inside the range a covers',
+    cells: [10, 20, 30, 40, 50, 60],
+    ptrA: 1, ptrB: 2,
+    steps: [
+      { op: 'a[0] = 99', cellChanges: {1: 99}, note: 'writes to cell 1 (where a points)' },
+      { op: 'read *b', read: 2, note: 'reads cell 2, untouched so far' },
+      { op: 'a[1] = 77', cellChanges: {2: 77}, note: 'writes to cell 2, which b was reading!' },
+      { op: 'read *b', read: 2, note: 'now sees 77, aliasing struck on the second iteration' },
+    ],
+    verdict: {
+      type: 'alias',
+      html: '<strong>Partial overlap.</strong> Array access through <code>a</code> eventually hits the cell <code>b</code> points at. This is the subtle case: it looks fine on iteration zero, then a write lands in the wrong place. The <code>add_to_all</code> bug from earlier lives here.',
+    },
+  },
+};
+
+let v1Key = 'no-alias';
+let v1Step = 0;
+let v1Cells = [];
+
+function renderV1(){
+  const scen = V1_SCENARIOS[v1Key];
+  // render cells
+  const cellsEl = document.getElementById('v1Cells');
+  const ptrsEl = document.getElementById('v1Pointers');
+  const logEl = document.getElementById('v1Log');
+  const verdictEl = document.getElementById('v1Verdict');
+
+  cellsEl.innerHTML = v1Cells.map((val, i)=>{
+    const classes = ['v1-cell'];
+    const isA = i === scen.ptrA;
+    const isB = i === scen.ptrB;
+    if(isA && isB) classes.push('highlight-both');
+    else if(isA) classes.push('highlight-a');
+    else if(isB) classes.push('highlight-b');
+    return `<div class="${classes.join(' ')}" data-i="${i}">${val}</div>`;
+  }).join('');
+
+  ptrsEl.innerHTML = `
+    <div class="v1-ptr"><span class="v1-ptr-dot a"></span><span>a → cell ${scen.ptrA}</span></div>
+    <div class="v1-ptr"><span class="v1-ptr-dot b"></span><span>b → cell ${scen.ptrB}</span></div>
+  `;
+
+  // log
+  const entries = scen.steps.slice(0, v1Step).map((s, i) => {
+    let readInfo = '';
+    if(s.read !== undefined){
+      readInfo = ` → <span class="note">got ${v1Cells[s.read]}</span>`;
+    } else if(s.note){
+      readInfo = ` <span class="note">(${s.note})</span>`;
+    }
+    return `<div class="v1-log-entry"><span class="step">${i+1}.</span><span><span class="op">${s.op}</span>${readInfo}</span></div>`;
+  }).join('');
+  logEl.innerHTML = entries || '<div class="v1-log-entry" style="color:var(--muted);font-style:italic">Press "Next step →" to begin.</div>';
+
+  // verdict
+  if(v1Step >= scen.steps.length){
+    verdictEl.className = 'v1-verdict show ' + scen.verdict.type;
+    verdictEl.innerHTML = scen.verdict.html;
+  } else {
+    verdictEl.className = 'v1-verdict';
+    verdictEl.innerHTML = '';
+  }
+}
+
+function v1ResetState(){
+  const scen = V1_SCENARIOS[v1Key];
+  v1Cells = scen.cells.slice();
+  v1Step = 0;
+  renderV1();
+}
+
+function v1NextStep(){
+  const scen = V1_SCENARIOS[v1Key];
+  if(v1Step >= scen.steps.length) return;
+  const step = scen.steps[v1Step];
+  if(step.cellChanges){
+    Object.entries(step.cellChanges).forEach(([k,v])=>{
+      v1Cells[+k] = v;
+    });
+  }
+  v1Step++;
+  renderV1();
+  // flash the changed cells
+  if(step.cellChanges){
+    Object.keys(step.cellChanges).forEach(k=>{
+      const cell = document.querySelector(`.v1-cell[data-i="${k}"]`);
+      if(cell){
+        cell.classList.add('flash');
+        setTimeout(()=>cell.classList.remove('flash'), 600);
+      }
+    });
+  }
+}
+
+document.querySelectorAll('[data-scenario]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-scenario]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    v1Key = b.dataset.scenario;
+    v1ResetState();
+  });
+});
+document.getElementById('v1Step').onclick = v1NextStep;
+document.getElementById('v1Reset').onclick = v1ResetState;
+v1ResetState();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: STRICT ALIASING CHECKER
+// ═══════════════════════════════════════════════════════════════════════════
+
+// rows = object type, cols = pointer type used to access
+const V2_TYPES = ['int', 'unsigned', 'float', 'double', 'char*', 'struct S*'];
+// legal matrix: same type, signed/unsigned pair, char* accessing anything
+function v2Legal(objType, ptrType){
+  // Normalise: col is "pointer of type X", row is "object is type X"
+  // char* can access any object bytes
+  if(ptrType === 'char*') return true;
+  // same type
+  if(objType === ptrType) return true;
+  // signed/unsigned int pair
+  if((objType === 'int' && ptrType === 'unsigned') ||
+     (objType === 'unsigned' && ptrType === 'int')) return true;
+  // everything else is UB
+  return false;
+}
+
+const V2_EXPLAIN = {
+  'int|int': {
+    ok: true,
+    title: 'Access a plain int through int*',
+    body: 'The ordinary case. Same type on both sides. No aliasing question arises.',
+  },
+  'int|unsigned': {
+    ok: true,
+    title: 'Access an int through unsigned int*',
+    body: 'The standard explicitly allows signed and unsigned versions of the same integer type to alias. Useful for bit-manipulation code that wants to avoid arithmetic-shift semantics.',
+  },
+  'int|float': {
+    ok: false,
+    title: 'Access an int through float*',
+    body: 'Completely unrelated types. Reading an int through a <code>float*</code> (or vice versa) is a classic strict-aliasing violation. The compiler may optimise under the assumption that these pointers can never refer to the same memory.',
+  },
+  'int|double': {
+    ok: false,
+    title: 'Access an int through double*',
+    body: 'Different types, undefined behaviour. Also happens to be a size mismatch on most platforms, but even on ones where the sizes match, the type rule forbids it.',
+  },
+  'int|char*': {
+    ok: true,
+    title: 'Access an int through char*',
+    body: 'Character pointers can legally read the bytes of any object. This is the <em>byte inspection</em> exception, and it is what makes <code>memcpy</code>, hashing, and binary serialisation legal.',
+  },
+  'int|struct S*': {
+    ok: false,
+    title: 'Access an int through struct S*',
+    body: 'A struct pointer accessing a non-struct object is UB. The structural-aliasing exceptions in the standard go the other direction: you can access a struct\'s members through pointers to their declared types, not vice versa.',
+  },
+  'unsigned|int': {
+    ok: true,
+    title: 'Access an unsigned int through int*',
+    body: 'Mirror of the int/unsigned case. The standard allows this in both directions.',
+  },
+  'unsigned|unsigned': {
+    ok: true,
+    title: 'Same type, trivially legal',
+    body: 'Same type, no aliasing concern.',
+  },
+  'unsigned|float': {
+    ok: false,
+    title: 'Access an unsigned through float*',
+    body: 'Unrelated types. UB. If you want to view an unsigned int as a float\'s bit pattern, use <code>memcpy</code>.',
+  },
+  'unsigned|double': {
+    ok: false,
+    title: 'Access an unsigned through double*',
+    body: 'Unrelated types, UB.',
+  },
+  'unsigned|char*': {
+    ok: true,
+    title: 'Access any object through char*',
+    body: 'The byte-inspection exception applies to all types.',
+  },
+  'unsigned|struct S*': {
+    ok: false,
+    title: 'Access an unsigned through struct S*',
+    body: 'Unrelated types, UB.',
+  },
+  'float|int': {
+    ok: false,
+    title: 'Access a float through int*',
+    body: 'The classic type-punning mistake. Looks like it might work (floats and ints are often the same size), but the standard forbids it. Use <code>memcpy</code>.',
+  },
+  'float|unsigned': {
+    ok: false,
+    title: 'Access a float through unsigned*',
+    body: 'Same problem as float-through-int*. Unrelated types. Use <code>memcpy</code>.',
+  },
+  'float|float': {
+    ok: true,
+    title: 'Same type, trivially legal',
+    body: 'Same type, no aliasing concern.',
+  },
+  'float|double': {
+    ok: false,
+    title: 'Access a float through double*',
+    body: 'Different floating-point sizes. UB both for type and often for size.',
+  },
+  'float|char*': {
+    ok: true,
+    title: 'Access a float through char*',
+    body: 'Byte-level inspection is always legal. This is how you read out the IEEE-754 bit pattern legally.',
+  },
+  'float|struct S*': {
+    ok: false,
+    title: 'Access a float through struct S*',
+    body: 'Unrelated types, UB.',
+  },
+  'double|int': {
+    ok: false,
+    title: 'Access a double through int*',
+    body: 'Unrelated types, UB.',
+  },
+  'double|unsigned': {
+    ok: false,
+    title: 'Access a double through unsigned*',
+    body: 'Unrelated types, UB.',
+  },
+  'double|float': {
+    ok: false,
+    title: 'Access a double through float*',
+    body: 'Unrelated floating types, UB. Different sizes, different representations.',
+  },
+  'double|double': {
+    ok: true,
+    title: 'Same type, trivially legal',
+    body: 'Same type, no aliasing concern.',
+  },
+  'double|char*': {
+    ok: true,
+    title: 'Access a double through char*',
+    body: 'Byte-level inspection is always legal.',
+  },
+  'double|struct S*': {
+    ok: false,
+    title: 'Access a double through struct S*',
+    body: 'Unrelated types, UB.',
+  },
+  'char*|int': {
+    ok: false,
+    title: 'Access a char (array) through int*',
+    body: 'Not legal. The char*-access exception goes one way: you can look at any object\'s bytes through char*. You cannot read a char buffer as an int without UB. Use <code>memcpy</code>.',
+  },
+  'char*|unsigned': {
+    ok: false,
+    title: 'Access a char (array) through unsigned*',
+    body: 'Same as above. The direction matters.',
+  },
+  'char*|float': {
+    ok: false,
+    title: 'Access a char (array) through float*',
+    body: 'Not legal. Use <code>memcpy</code> if you need to interpret bytes as a float.',
+  },
+  'char*|double': {
+    ok: false,
+    title: 'Access a char (array) through double*',
+    body: 'Not legal. Use <code>memcpy</code>.',
+  },
+  'char*|char*': {
+    ok: true,
+    title: 'Same type, trivially legal',
+    body: 'Always fine.',
+  },
+  'char*|struct S*': {
+    ok: false,
+    title: 'Access a char buffer through struct S*',
+    body: 'Also UB. A common-and-wrong pattern: cast a <code>char*</code> buffer to <code>struct S*</code> to "overlay" the struct on it. Use <code>memcpy</code> into a properly-typed struct variable instead.',
+  },
+  'struct S*|int': {
+    ok: false,
+    title: 'Access a struct through int*',
+    body: 'Unrelated types. UB.',
+  },
+  'struct S*|unsigned': {
+    ok: false,
+    title: 'Access a struct through unsigned*',
+    body: 'Unrelated types. UB.',
+  },
+  'struct S*|float': {
+    ok: false,
+    title: 'Access a struct through float*',
+    body: 'Unrelated types. UB.',
+  },
+  'struct S*|double': {
+    ok: false,
+    title: 'Access a struct through double*',
+    body: 'Unrelated types. UB.',
+  },
+  'struct S*|char*': {
+    ok: true,
+    title: 'Access a struct through char*',
+    body: 'Legal, by the byte-inspection exception. This is how struct serialisers work.',
+  },
+  'struct S*|struct S*': {
+    ok: true,
+    title: 'Same type, trivially legal',
+    body: 'Same type, no aliasing concern.',
+  },
+};
+
+function renderV2(){
+  const matrix = document.getElementById('v2Matrix');
+  const cells = [];
+  // header row: empty + column labels
+  cells.push(`<div class="v2-cell-head"></div>`);
+  V2_TYPES.forEach(t => {
+    cells.push(`<div class="v2-cell-head">${escapeHTML(t)}</div>`);
+  });
+  // rows
+  V2_TYPES.forEach(row => {
+    cells.push(`<div class="v2-cell-row-head">${escapeHTML(row)}</div>`);
+    V2_TYPES.forEach(col => {
+      const ok = v2Legal(row, col);
+      const key = `${row}|${col}`;
+      const mark = ok ? '✓' : '✗';
+      cells.push(`<div class="v2-cell ${ok?'ok':'bad'}" data-key="${key}" data-ok="${ok}">${mark}</div>`);
+    });
+  });
+  matrix.innerHTML = cells.join('');
+  // bind clicks
+  matrix.querySelectorAll('.v2-cell').forEach(c => {
+    c.addEventListener('click', () => {
+      matrix.querySelectorAll('.v2-cell').forEach(x => x.classList.remove('sel'));
+      c.classList.add('sel');
+      const key = c.dataset.key;
+      const info = V2_EXPLAIN[key];
+      const panel = document.getElementById('v2Explain');
+      if(!info){ panel.innerHTML = ''; return; }
+      panel.innerHTML = `
+        <span class="v2-explain-verdict ${info.ok?'ok':'bad'}">${info.ok?'legal':'undefined behaviour'}</span>
+        <div class="v2-explain-title">${info.title}</div>
+        <div class="v2-explain-body">${info.body}</div>
+      `;
+    });
+  });
+  // default selection
+  const first = matrix.querySelector('[data-key="int|float"]');
+  if(first) first.click();
+}
+
+function escapeHTML(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+renderV2();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: RESTRICT OPTIMIZER
+// ═══════════════════════════════════════════════════════════════════════════
+let v3On = false;
+
+function renderV3(){
+  const srcEl = document.getElementById('v3Src');
+  const asmEl = document.getElementById('v3Asm');
+  const tagEl = document.getElementById('v3SrcTag');
+  const explainEl = document.getElementById('v3Explain');
+  const btn = document.getElementById('v3Toggle');
+
+  btn.textContent = 'Toggle restrict: ' + (v3On ? 'ON' : 'OFF');
+  btn.classList.toggle('primary', v3On);
+  tagEl.textContent = v3On ? 'with restrict' : 'no restrict';
+
+  const src = v3On ? [
+    `<span class="tp">void</span> <span class="nm">add_delta</span>(`,
+    `    <span class="tp">int</span><span class="op">*</span> <span class="hl"><span class="kw">restrict</span></span> <span class="nm">arr</span>,`,
+    `    <span class="tp">const</span> <span class="tp">int</span><span class="op">*</span> <span class="hl"><span class="kw">restrict</span></span> <span class="nm">delta</span>,`,
+    `    <span class="tp">int</span> <span class="nm">n</span>)`,
+    `{`,
+    `    <span class="kw">for</span> (<span class="tp">int</span> <span class="nm">i</span> <span class="op">=</span> <span class="vl">0</span>; <span class="nm">i</span> <span class="op">&lt;</span> <span class="nm">n</span>; <span class="nm">i</span><span class="op">++</span>)`,
+    `        <span class="nm">arr</span>[<span class="nm">i</span>] <span class="op">+=</span> <span class="op">*</span><span class="nm">delta</span>;`,
+    `}`,
+  ] : [
+    `<span class="tp">void</span> <span class="nm">add_delta</span>(`,
+    `    <span class="tp">int</span><span class="op">*</span> <span class="nm">arr</span>,`,
+    `    <span class="tp">const</span> <span class="tp">int</span><span class="op">*</span> <span class="nm">delta</span>,`,
+    `    <span class="tp">int</span> <span class="nm">n</span>)`,
+    `{`,
+    `    <span class="kw">for</span> (<span class="tp">int</span> <span class="nm">i</span> <span class="op">=</span> <span class="vl">0</span>; <span class="nm">i</span> <span class="op">&lt;</span> <span class="nm">n</span>; <span class="nm">i</span><span class="op">++</span>)`,
+    `        <span class="nm">arr</span>[<span class="nm">i</span>] <span class="op">+=</span> <span class="op">*</span><span class="nm">delta</span>;`,
+    `}`,
+  ];
+  srcEl.innerHTML = src.join('\n');
+
+  const asm = v3On ? [
+    `<span class="cm">; prologue</span>`,
+    `  <span class="hlb">mov  eax, [delta]   ; load *delta ONCE</span>`,
+    `  xor  ecx, ecx`,
+    ``,
+    `<span class="cm">; inner loop (vectorisable)</span>`,
+    `.loop:`,
+    `  <span class="hl">vmovdqu ymm0, [arr+ecx*4]  ; load 8 ints</span>`,
+    `  <span class="hl">vpbroadcastd ymm1, eax     ; splat delta</span>`,
+    `  <span class="hl">vpaddd  ymm0, ymm0, ymm1   ; add 8 at a time</span>`,
+    `  <span class="hl">vmovdqu [arr+ecx*4], ymm0  ; store 8 ints</span>`,
+    `  add  ecx, 8`,
+    `  cmp  ecx, n`,
+    `  jl   .loop`,
+  ] : [
+    `<span class="cm">; prologue</span>`,
+    `  xor  ecx, ecx`,
+    ``,
+    `<span class="cm">; inner loop (scalar, reloads delta)</span>`,
+    `.loop:`,
+    `  <span class="hlb">mov  eax, [delta]   ; RELOAD every iteration</span>`,
+    `  add  eax, [arr+ecx*4]`,
+    `  mov  [arr+ecx*4], eax`,
+    `  inc  ecx`,
+    `  cmp  ecx, n`,
+    `  jl   .loop`,
+  ];
+  asmEl.innerHTML = asm.join('\n');
+
+  explainEl.innerHTML = v3On ? `
+    <strong>With restrict:</strong> the compiler assumes <code>arr</code> and <code>delta</code> don't overlap. It hoists the <code>*delta</code> load out of the loop (it can't be changed by writes to <code>arr</code>), and the loop becomes a simple stream: load 8 ints from <code>arr</code>, add the broadcast delta, store 8 ints back. On AVX2 that's roughly <strong>8x the throughput</strong> of the scalar version, plus one load per 8 iterations instead of one per iteration.
+  ` : `
+    <strong>Without restrict:</strong> the compiler must assume <code>delta</code> might point inside <code>arr</code>. The write on each iteration might change <code>*delta</code>, so the compiler has to reload it every time. Vectorisation is off the table because a SIMD store could clobber the cell <code>delta</code> points at, invalidating subsequent iterations. You get a scalar loop with a redundant load on every pass.
+  `;
+}
+
+document.getElementById('v3Toggle').onclick = () => {
+  v3On = !v3On;
+  renderV3();
+};
+renderV3();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.quiz-options').forEach(group=>{
+  const isMulti=group.classList.contains('multi');
+  group.querySelectorAll('.quiz-option').forEach(opt=>{
+    opt.addEventListener('click',()=>{
+      if(isMulti){opt.classList.toggle('selected');}
+      else{group.querySelectorAll('.quiz-option').forEach(o=>o.classList.remove('selected'));opt.classList.add('selected');}
+    });
+  });
+});
+document.querySelectorAll('[data-reveal]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const id=btn.dataset.reveal;
+    const answer=document.getElementById(id);
+    if(!answer)return;
+    answer.classList.toggle('show');
+    btn.textContent=answer.classList.contains('show')?'Hide answer':'Reveal answer';
+    const card=btn.closest('.quiz-card');
+    if(card){
+      const group=card.querySelector('.quiz-options');
+      if(group && answer.classList.contains('show')){
+        const correct=group.dataset.answer.split(',');
+        group.querySelectorAll('.quiz-option').forEach(opt=>{
+          const val=opt.dataset.val;
+          const isSelected=opt.classList.contains('selected');
+          const isCorrect=correct.includes(val);
+          if(isCorrect)opt.classList.add('correct');
+          else if(isSelected)opt.classList.add('incorrect');
+        });
+      }else if(group && !answer.classList.contains('show')){
+        group.querySelectorAll('.quiz-option').forEach(opt=>opt.classList.remove('correct','incorrect'));
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>

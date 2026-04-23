@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pointers: Thinking in Memory | Adithya MD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;--ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;--accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);--green:#7fff6b;--border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);--display:'Instrument Serif',Georgia,serif;--sans:'Source Sans 3',sans-serif;--hand:'Caveat',cursive;--radius:14px}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.78;font-size:19px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}.d1{animation-delay:.08s}.d2{animation-delay:.16s}.d3{animation-delay:.24s}.d4{animation-delay:.32s}
+
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.85);backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:var(--ink)}.brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}.brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}.nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}.nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}.nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}.dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}.dropbtn:hover{color:var(--ink)}.dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}.dropdown:hover .dropdown-content{display:block}.dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}.dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}.dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}.hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}.hamburger.active span:nth-child(2){opacity:0}.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.95);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}.mobile-overlay.active{display:flex}.mobile-overlay a,.mobile-overlay button{font-family:var(--display);font-size:1.5rem;color:var(--body);background:none;border:none;cursor:pointer;padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}.mobile-overlay a:hover,.mobile-overlay button:hover{color:var(--accent)}.mobile-overlay .mobile-sub{display:flex;flex-direction:column;align-items:center}.mobile-overlay .mobile-sub a{font-size:1.15rem;color:var(--muted);padding:.4rem 1.5rem}
+
+    .page-wrap{max-width:920px;margin:0 auto;padding:3.5rem 2rem 5rem}
+
+    /* hero */
+    .hero{margin-bottom:3rem}
+    .hero-label{font-family:var(--hand);font-size:1.4rem;color:var(--accent);margin-bottom:.3rem}
+    .hero h1{font-family:var(--display);font-weight:400;font-size:2.8rem;color:var(--ink);letter-spacing:-.02em;line-height:1.15;margin-bottom:.8rem}
+    .hero-subtitle{font-family:var(--display);font-size:1.4rem;font-style:italic;color:var(--accent);font-weight:400;margin-bottom:1.5rem;line-height:1.35}
+    .hero-desc{font-size:1.12rem;font-weight:300;color:var(--body);max-width:720px;line-height:1.8;margin-bottom:1rem}
+    .hero-status{display:inline-flex;align-items:center;gap:.5rem;margin-top:.8rem;padding:.4rem .9rem;background:rgba(127,255,107,.08);border:1px solid rgba(127,255,107,.25);border-radius:999px;font-size:.85rem;color:var(--green);font-family:'Courier New',monospace}
+    .hero-status .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(127,255,107,.5)}
+
+    /* what/who/why block */
+    .framing{margin:2.8rem 0;display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:640px){.framing{grid-template-columns:1fr}}
+    .frame-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.5rem}
+    .frame-label{font-family:var(--hand);font-size:1.05rem;color:var(--accent);margin-bottom:.45rem}
+    .frame-body{font-size:1rem;font-weight:300;color:var(--body);line-height:1.65}
+    .frame-body strong{color:var(--ink);font-weight:500}
+
+    /* the question arc */
+    .arc{margin-top:2.8rem;padding:1.8rem 2rem;background:var(--bg-elevated);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 12px 12px 0}
+    .arc-label{font-family:var(--hand);font-size:1.15rem;color:var(--accent);margin-bottom:.6rem}
+    .arc-body{font-family:var(--display);font-size:1.2rem;font-style:italic;color:var(--ink);line-height:1.55}
+
+    /* parts */
+    .parts{margin-top:3.2rem}
+    .parts-heading{font-family:var(--display);font-weight:400;font-size:1.55rem;color:var(--ink);margin-bottom:.3rem}
+    .parts-sub{font-size:.95rem;color:var(--muted);margin-bottom:1.4rem}
+    .parts-sub code{background:rgba(237,232,224,.06);padding:.1rem .35rem;border-radius:4px;font-size:.85em}
+
+    .part-card{display:block;text-decoration:none;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.5rem;margin-bottom:.6rem;transition:all .25s;position:relative;overflow:hidden}
+    .part-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent;transition:background .25s}
+    .part-card:hover{border-color:var(--border-hover);background:var(--bg-elevated);transform:translateX(4px)}
+    .part-card:hover::before{background:var(--accent)}
+    .part-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-bottom:.3rem}
+    .part-num{font-family:var(--hand);font-size:1.05rem;color:var(--accent);flex-shrink:0}
+    .part-tag{font-family:'Courier New',monospace;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;flex-shrink:0}
+    .part-title{font-family:var(--display);font-size:1.2rem;color:var(--ink);font-weight:400;margin-bottom:.35rem;line-height:1.35}
+    .part-desc{font-size:.94rem;font-weight:300;color:var(--body);line-height:1.6}
+    .part-why{margin-top:.55rem;padding-top:.55rem;border-top:1px dashed var(--border);font-size:.82rem;color:var(--muted);font-style:italic;line-height:1.5}
+    .part-why strong{color:var(--accent);font-style:normal;font-weight:500}
+
+    /* stage dividers inside parts list */
+    .stage{margin:1.5rem 0 .8rem;padding-left:.2rem;display:flex;align-items:center;gap:.8rem}
+    .stage-num{font-family:var(--hand);font-size:1.1rem;color:var(--accent);white-space:nowrap}
+    .stage-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);font-style:italic}
+    .stage-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border-hover),transparent)}
+
+    /* retrospective */
+    .retro{margin-top:3.2rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:2.2rem 2.4rem;position:relative;overflow:hidden}
+    .retro::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 60%)}
+    .retro-label{font-family:var(--hand);font-size:1.2rem;color:var(--accent);margin-bottom:.8rem}
+    .retro h3{font-family:var(--display);font-weight:400;font-size:1.55rem;color:var(--ink);margin-bottom:1rem;line-height:1.3}
+    .retro p{font-size:1.02rem;font-weight:300;line-height:1.75;margin-bottom:1rem;color:var(--body)}
+    .retro p:last-child{margin-bottom:0}
+    .retro p em{color:var(--ink)}
+
+    /* reader notes */
+    .reader-notes{margin-top:2.2rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:640px){.reader-notes{grid-template-columns:1fr}}
+    .note-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.3rem 1.5rem}
+    .note-label{font-family:var(--hand);font-size:1rem;color:var(--accent);margin-bottom:.4rem}
+    .note-body{font-size:.93rem;font-weight:300;color:var(--body);line-height:1.6}
+
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border);margin-top:4rem}.footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}.footer-copy{font-size:.88rem;color:var(--muted)}
+
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2.5rem 1.25rem 4rem}.hero h1{font-size:2rem}.hero-subtitle{font-size:1.15rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header"><div class="nav-container"><a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a><nav class="nav-links"><a href="../index.html">Home</a><a href="../about.html">About</a><a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a><a href="../startup.html">Moisture Meter</a><div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button><div class="dropdown-content"><a href="../teaching.html">Teaching Roles</a><a href="../workshops.html">Workshops</a><a href="../talks.html">Talks</a></div></div><a href="../contact.html">Contact</a></nav><button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button></div></header>
+<div class="mobile-overlay" id="mobileMenu"><a href="../index.html">Home</a><a href="../about.html">About</a><a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a><a href="../startup.html">Moisture Meter</a><div class="mobile-sub"><button style="color:var(--ink);font-size:1.3rem">Beyond the Desk</button><a href="../teaching.html">Teaching Roles</a><a href="../workshops.html">Workshops</a><a href="../talks.html">Talks</a></div><a href="../contact.html">Contact</a></div>
+
+<div class="page-wrap">
+
+<div class="hero anim d1">
+  <div class="hero-label">Blog Series</div>
+  <h1>Pointers: Thinking in Memory</h1>
+  <div class="hero-subtitle">Eleven posts that rebuild pointers from scratch, one question at a time.</div>
+  <p class="hero-desc">
+    Pointers are the part of C and C++ where most learners give up, most bugs live, and most seniors eventually prove their worth. This series takes them apart slowly. Each post is built around a single idea, derived from the problem it solves, and paired with interactive visualisations you can play with. By the end, every major pointer concept, from addresses to <code>unique_ptr</code> to undefined behaviour, feels like something you built yourself.
+  </p>
+  <div class="hero-status"><span class="dot"></span>Complete · 11 parts</div>
+</div>
+
+<div class="framing anim d2">
+  <div class="frame-card">
+    <div class="frame-label">What this series is</div>
+    <div class="frame-body">
+      A careful construction of <strong>pointers and memory</strong> from first principles. No skipped steps, no hand-wavy metaphors. Every concept gets the same treatment: motivate, introduce, make interactive, test. Covers both C and modern C++.
+    </div>
+  </div>
+  <div class="frame-card">
+    <div class="frame-label">Who it's for</div>
+    <div class="frame-body">
+      Programmers who've seen pointers and want to actually understand them. Students learning C for the first time. Engineers doing systems, embedded, or game work. If you can read basic C syntax, you're ready. You don't need prior memory-management experience.
+    </div>
+  </div>
+</div>
+
+<div class="arc anim d2">
+  <div class="arc-label">The question this series answers</div>
+  <div class="arc-body">
+    How do you reason about a piece of memory you don't own, in a language that won't catch you when you're wrong?
+  </div>
+</div>
+
+<div class="parts anim d3">
+  <div class="parts-heading">The eleven posts</div>
+  <p class="parts-sub">Each part builds on the last. Read in order. Sidebar on each page tracks where you are. Every post ends with a quiz you can use to check yourself before moving on.</p>
+
+  <div class="stage"><span class="stage-num">Act I</span><span class="stage-title">What pointers are and why they exist</span><span class="stage-line"></span></div>
+
+  <a class="part-card" href="why-pointers.html">
+    <div class="part-head"><span class="part-num">Part 1</span><span class="part-tag">Motivation</span></div>
+    <div class="part-title">Why Pointers?</div>
+    <div class="part-desc">Before anything else, the reason. Shared state, dynamic structures, the difference between passing a thing and passing its address. A hands-on argument for why indirection is the feature that unlocks the rest of C.</div>
+    <div class="part-why"><strong>Why it matters:</strong> Pointers aren't syntax. They're a tool, and knowing what they solve is what makes every later concept feel inevitable rather than arbitrary.</div>
+  </a>
+
+  <a class="part-card" href="addresses.html">
+    <div class="part-head"><span class="part-num">Part 2</span><span class="part-tag">Mechanics</span></div>
+    <div class="part-title">Addresses, &amp;, and *</div>
+    <div class="part-desc">The two operators and the mental model. <code>&amp;</code> asks "where?" and <code>*</code> asks "what's there?". A mental picture of memory as numbered boxes, and what it means for one box to hold the number of another.</div>
+    <div class="part-why"><strong>Why it matters:</strong> The vocabulary. Every later post leans on reading declarations and dereferences fluently, without stopping to translate.</div>
+  </a>
+
+  <a class="part-card" href="arrays-are-not-pointers.html">
+    <div class="part-head"><span class="part-num">Part 3</span><span class="part-tag">Common pitfall</span></div>
+    <div class="part-title">Arrays Are Not Pointers</div>
+    <div class="part-desc">They look the same, behave similarly, and break in different places. Array-to-pointer decay, the <code>sizeof</code> trap, and why a function parameter that "takes an array" is really taking a pointer.</div>
+    <div class="part-why"><strong>Why it matters:</strong> The single most common C confusion, and the one that corrupts mental models silently for years. Naming the difference is half the fix.</div>
+  </a>
+
+  <div class="stage"><span class="stage-num">Act II</span><span class="stage-title">Memory and the bugs that live in it</span><span class="stage-line"></span></div>
+
+  <a class="part-card" href="pointers-lifetime.html">
+    <div class="part-head"><span class="part-num">Part 4</span><span class="part-tag">Foundation</span></div>
+    <div class="part-title">Stack, Heap, and Lifetime</div>
+    <div class="part-desc">Where memory actually lives. The stack as a fast, disciplined LIFO; the heap as a pool you manage yourself. What "lifetime" means and why returning a pointer to a local variable is the bug you write exactly once.</div>
+    <div class="part-why"><strong>Why it matters:</strong> Every pointer has a lifetime, and every bug in the next post is about mismatching that lifetime with the pointer's use.</div>
+  </a>
+
+  <a class="part-card" href="pointer-villains.html">
+    <div class="part-head"><span class="part-num">Part 5</span><span class="part-tag">Bug taxonomy</span></div>
+    <div class="part-title">The Three Villains</div>
+    <div class="part-desc">Null, wild, and dangling pointers. Three distinct failure modes with three distinct diagnoses. How to spot each one in code, what produces it, and the first line of defence against each.</div>
+    <div class="part-why"><strong>Why it matters:</strong> Most of the bugs you'll ever write involving pointers fit into one of these three boxes. Having names for them turns "mystery segfault" into a checklist.</div>
+  </a>
+
+  <a class="part-card" href="pointers-and-functions.html">
+    <div class="part-head"><span class="part-num">Part 6</span><span class="part-tag">Composition</span></div>
+    <div class="part-title">Pointers and Functions</div>
+    <div class="part-desc">Pass-by-pointer versus pass-by-value, output parameters, and function pointers as first-class citizens. Why C callbacks look the way they do, and how a library lets you plug in your own logic without knowing what it'll be.</div>
+    <div class="part-why"><strong>Why it matters:</strong> Functions-plus-pointers is where C becomes composable. It's also where void* starts earning its keep, setting up Act IV.</div>
+  </a>
+
+  <div class="stage"><span class="stage-num">Act III</span><span class="stage-title">Contracts the compiler can enforce</span><span class="stage-line"></span></div>
+
+  <a class="part-card" href="const-pointers.html">
+    <div class="part-head"><span class="part-num">Part 7</span><span class="part-tag">Contracts</span></div>
+    <div class="part-title">The const Puzzle</div>
+    <div class="part-desc">Three words, one star, two positions. <code>const int*</code>, <code>int* const</code>, and <code>const int* const</code> look similar and mean very different things. The right-to-left reading rule, top-level vs low-level const, and why const-correctness spreads.</div>
+    <div class="part-why"><strong>Why it matters:</strong> The first place the type system lets you encode intent. Once read fluently, entire codebases become easier to navigate.</div>
+  </a>
+
+  <a class="part-card" href="pointers-aliasing.html">
+    <div class="part-head"><span class="part-num">Part 8</span><span class="part-tag">Compiler's paranoia</span></div>
+    <div class="part-title">Aliasing</div>
+    <div class="part-desc">Two pointers, one address, one very nervous compiler. Strict aliasing, type punning with <code>memcpy</code>, and <code>restrict</code> as a trust contract. Why const and restrict solve different problems, and what the compiler is allowed to assume about each.</div>
+    <div class="part-why"><strong>Why it matters:</strong> Aliasing is the invisible reason hot loops aren't as fast as they could be, and it's behind a whole class of optimisation-level-dependent bugs.</div>
+  </a>
+
+  <a class="part-card" href="pointers-void.html">
+    <div class="part-head"><span class="part-num">Part 9</span><span class="part-tag">Type erasure</span></div>
+    <div class="part-title">The Typeless Pointer</div>
+    <div class="part-desc">A pointer that has forgotten what it points at. How <code>malloc</code>, <code>qsort</code>, callback user data, and opaque library handles all rest on the same mechanism. And the hazards that come with switching off type-checking.</div>
+    <div class="part-why"><strong>Why it matters:</strong> Every generic, composable C API is some variation on the void* trick. Understanding it makes library design in C stop feeling like magic.</div>
+  </a>
+
+  <div class="stage"><span class="stage-num">Act IV</span><span class="stage-title">Modern C++ and where seniors earn their pay</span><span class="stage-line"></span></div>
+
+  <a class="part-card" href="smart-pointers.html">
+    <div class="part-head"><span class="part-num">Part 10</span><span class="part-tag">Modern C++</span></div>
+    <div class="part-title">Smart Pointers</div>
+    <div class="part-desc">Ownership encoded in the type system. RAII, move semantics, and the three-pointer family: <code>unique_ptr</code>, <code>shared_ptr</code>, <code>weak_ptr</code>. When to reach for each, and why one of them is the default.</div>
+    <div class="part-why"><strong>Why it matters:</strong> Half the memory bugs in C++ codebases die when the type system starts tracking ownership for you. Smart pointers are how that happens.</div>
+  </a>
+
+  <a class="part-card" href="undefined-behaviour.html">
+    <div class="part-head"><span class="part-num">Part 11</span><span class="part-tag">The capstone</span></div>
+    <div class="part-title">Undefined Behaviour</div>
+    <div class="part-desc">The finale. Why UB exists, why compilers are allowed to be so aggressive about it, and how every bug from earlier posts traces back to the same shape of contract violation. A tour of the sanitizer toolkit (ASan, UBSan, TSan) and the discipline that keeps a codebase honest.</div>
+    <div class="part-why"><strong>Why it matters:</strong> UB is what separates programmers who ship systems code from those who just write it. This post is where all ten previous parts cash in.</div>
+  </a>
+</div>
+
+<div class="retro anim d4">
+  <div class="retro-label">What this series gave you</div>
+  <h3>A complete, working picture of memory in C and C++, built from its own questions.</h3>
+  <p>
+    Starting from "a pointer is a variable that holds an address," eleven posts later you've covered everything a working C or C++ programmer actually uses: the mechanics, the bugs, the contracts, the modern-C++ tools for ownership, and the discipline for staying out of undefined behaviour. You've seen the ideas motivated, not announced. You've watched the pieces assemble.
+  </p>
+  <p>
+    The tools and habits from these posts are what the rest of a C or C++ career is built on. Every complicated system, every clever data structure, every optimised inner loop, is some combination of <em>addresses, lifetime, ownership, aliasing, and the type-system contracts that hold it all together</em>. Get those right and the rest follows.
+  </p>
+  <p>
+    The next step isn't more reading. It's writing. Build something with dynamic memory. Ship it. Run it under AddressSanitizer. Read a serious C or C++ codebase and argue with its ownership decisions. The knowledge in this series turns into fluency the moment you start stress-testing it against real code.
+  </p>
+</div>
+
+<div class="reader-notes anim d4">
+  <div class="note-card">
+    <div class="note-label">If you're new here</div>
+    <div class="note-body">Start with Part 1 and read in order. Each post takes 20–30 minutes, including the quiz. The interactives reward pausing and playing. Every post ends with a seven-question self-test; five correct means you're ready for the next one.</div>
+  </div>
+  <div class="note-card">
+    <div class="note-label">Where to go after</div>
+    <div class="note-body">For C, the canonical next reads are <em>K&amp;R</em> (still unmatched for its terseness) and Chris Wellons's blog. For modern C++, Scott Meyers's <em>Effective Modern C++</em> and the <em>C++ Core Guidelines</em> are where the foundations you've built here start paying dividends at scale.</div>
+  </div>
+</div>
+
+</div>
+
+<footer class="site-footer"><p class="footer-tagline">Thanks for reading. All eleven posts.</p><p class="footer-copy">© <span id="year"></span> Adithya MD</p></footer>
+<script>
+document.getElementById("year").textContent=new Date().getFullYear();
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':''});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow=''}));
+</script>
+</body>
+</html>
