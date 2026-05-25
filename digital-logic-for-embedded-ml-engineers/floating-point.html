@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>How Computers Store Fractions | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --purple:#c89cff;--purple-dim:rgba(200,156,255,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .history-box{margin:2rem 0;padding:1.4rem 1.7rem;border:1px dashed rgba(200,156,255,.4);background:rgba(200,156,255,.04);border-radius:var(--radius);font-size:1.04rem;line-height:1.75}
+    .history-box .h-label{font-family:var(--hand);font-size:1.15rem;color:var(--purple);margin-bottom:.4rem}
+    .history-box p{font-size:1.04rem;font-weight:300;margin-bottom:.8rem;line-height:1.75}
+    .history-box p:last-child{margin-bottom:0}
+    .history-box em{color:var(--ink)}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* code blocks */
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);margin:1.2rem 0;overflow-x:auto;line-height:1.65}
+    .codeblock .c-comment{color:var(--muted);font-style:italic}
+    .codeblock .c-keyword{color:var(--purple)}
+    .codeblock .c-num{color:var(--accent)}
+    .codeblock .c-out{color:var(--green)}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* ── VIZ 1: float32 decoder ─────────────────────────────────────────────── */
+    .fd-wrap{display:flex;flex-direction:column;gap:1.2rem}
+    .fd-input-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.9rem 1.2rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+    .fd-input-label{font-size:.85rem;color:var(--muted);font-weight:600}
+    .fd-input{background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:6px;padding:.5rem .8rem;color:var(--accent);font-family:'Courier New',monospace;font-size:1.15rem;font-weight:700;outline:none;width:160px;text-align:center}
+    .fd-input:focus{border-color:var(--accent)}
+    .fd-presets{display:flex;gap:.4rem;flex-wrap:wrap}
+    .fd-preset{padding:.4rem .85rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.78rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .fd-preset:hover{border-color:var(--accent);color:var(--accent)}
+    .fd-bits-row{display:flex;gap:2px;justify-content:center;flex-wrap:nowrap;overflow-x:auto;padding:.3rem 0}
+    .fd-bit{flex:0 0 auto;width:26px;height:36px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:.95rem;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s;user-select:none;border:1.5px solid;color:#fff}
+    .fd-bit:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+    .fd-bit.sign{background:rgba(255,107,107,0.18);border-color:rgba(255,107,107,0.55);color:#ff6b6b}
+    .fd-bit.sign.set{background:rgba(255,107,107,0.55);color:#fff}
+    .fd-bit.exp{background:rgba(232,168,76,0.12);border-color:rgba(232,168,76,0.45);color:#e8a84c}
+    .fd-bit.exp.set{background:rgba(232,168,76,0.55);color:#fff}
+    .fd-bit.mant{background:rgba(76,168,232,0.1);border-color:rgba(76,168,232,0.4);color:#4ca8e8}
+    .fd-bit.mant.set{background:rgba(76,168,232,0.5);color:#fff}
+    .fd-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem}
+    @media(max-width:640px){.fd-fields{grid-template-columns:1fr}}
+    .fd-field{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:.7rem .9rem}
+    .fd-field.sign{border-left:3px solid #ff6b6b}
+    .fd-field.exp{border-left:3px solid #e8a84c}
+    .fd-field.mant{border-left:3px solid #4ca8e8}
+    .fd-field-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem}
+    .fd-field-name{font-family:var(--display);font-size:1rem;color:var(--ink);margin-bottom:.3rem}
+    .fd-field-bits{font-family:'Courier New',monospace;font-size:.85rem;color:var(--body);letter-spacing:.04em;background:rgba(237,232,224,0.04);padding:.3rem .5rem;border-radius:4px;word-break:break-all;margin-bottom:.3rem}
+    .fd-field-meaning{font-family:'Courier New',monospace;font-size:.85rem;color:var(--ink);font-weight:600}
+    .fd-decoded{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1rem 1.3rem;font-family:'Courier New',monospace;line-height:1.7;display:flex;flex-direction:column;gap:.4rem;overflow-x:auto}
+    .fd-decoded .step{display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap;font-size:.92rem}
+    .fd-decoded .label{color:var(--muted);min-width:130px;font-size:.8rem}
+    .fd-decoded .value{color:var(--ink);font-weight:600}
+    .fd-decoded .value.accent{color:var(--accent)}
+    .fd-decoded .value.green{color:var(--green)}
+    .fd-decoded .formula{color:var(--blue);font-size:.85em}
+    .fd-result{background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;text-align:center;font-family:'Courier New',monospace;font-size:1.1rem;color:var(--ink)}
+    .fd-result strong{color:var(--accent);font-size:1.3rem}
+    .fd-result .err{color:var(--red);font-size:.9em;display:block;margin-top:.2rem}
+
+    /* ── VIZ 2: float32 gap explorer ───────────────────────────────────────── */
+    .gap-wrap{display:flex;flex-direction:column;gap:1.1rem}
+    .gap-axis-stage{width:100%;background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1rem .9rem .6rem}
+    .gap-axis-svg{width:100%;height:auto;display:block;max-height:140px}
+    .gap-axis-svg .axis-line{stroke:rgba(237,232,224,0.22);stroke-width:2;fill:none}
+    .gap-axis-svg .axis-tick-major{stroke:rgba(237,232,224,0.45);stroke-width:1.5}
+    .gap-axis-svg .axis-tick-minor{stroke:rgba(237,232,224,0.18);stroke-width:1}
+    .gap-axis-svg .axis-label{fill:rgba(237,232,224,0.7);font-family:'Courier New',monospace;font-size:11px;font-weight:600;text-anchor:middle}
+    .gap-axis-svg .axis-label-band{fill:rgba(125,118,107,0.55);font-family:'Source Sans 3',sans-serif;font-size:10.5px;font-style:italic;text-anchor:middle}
+    .gap-axis-svg .precision-bar{transition:fill .25s,opacity .25s}
+    .gap-axis-svg .probe-line{stroke:#e8a84c;stroke-width:2.5;stroke-linecap:round;transition:transform .15s linear;transform-origin:center}
+    .gap-axis-svg .probe-marker{fill:#e8a84c;filter:drop-shadow(0 0 6px rgba(232,168,76,0.55));transition:transform .15s linear}
+    .gap-axis-svg .probe-label{fill:#e8a84c;font-family:'Caveat',cursive;font-size:14px;font-weight:600;text-anchor:middle;transition:transform .15s linear}
+
+    .gap-slider-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.7rem 1rem}
+    .gap-slider-label{font-family:'Courier New',monospace;font-size:.8rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+    .gap-slider{flex:1;min-width:160px;accent-color:var(--accent)}
+    .gap-jump{padding:.32rem .7rem;border-radius:999px;background:transparent;border:1px solid var(--border-hover);color:var(--body);font-size:.74rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .gap-jump:hover{border-color:var(--accent);color:var(--accent)}
+
+    .gap-readout{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.1rem;display:flex;flex-direction:column;gap:.45rem}
+    .gap-readout-row{display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;flex-wrap:wrap}
+    .gap-readout-label{font-family:'Source Sans 3',sans-serif;font-size:.88rem;color:var(--muted)}
+    .gap-readout-val{font-family:'Courier New',monospace;font-size:1.05rem;color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+    .gap-readout-val.accent{color:var(--accent);font-size:1.2rem}
+    .gap-readout-explain{font-size:.85rem;color:var(--muted);font-style:italic;line-height:1.55;border-top:1px solid var(--border);padding-top:.45rem}
+
+    .gap-collide-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.95rem 1.15rem;display:flex;flex-direction:column;gap:.7rem}
+    .gap-collide-title{font-family:var(--display);font-size:1.05rem;color:var(--ink)}
+    .gap-collide-row{display:grid;grid-template-columns:1fr auto 1fr;gap:.5rem;align-items:center}
+    @media(max-width:560px){.gap-collide-row{grid-template-columns:1fr;gap:.3rem}}
+    .gap-collide-input-block{display:flex;flex-direction:column;gap:.25rem;background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.5rem .8rem;transition:border-color .25s,background .25s}
+    .gap-collide-input-block.collided{border-color:var(--red);background:rgba(255,107,107,0.06)}
+    .gap-collide-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+    .gap-collide-display{font-family:'Courier New',monospace;font-size:1.05rem;color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums;word-break:break-all}
+    .gap-collide-input-block.collided .gap-collide-display{color:var(--red)}
+    .gap-collide-vs{font-family:var(--hand);font-size:1.4rem;color:var(--muted);text-align:center;padding:0 .3rem;transition:color .25s}
+    .gap-collide-vs.collided{color:var(--red)}
+    @media(max-width:560px){.gap-collide-vs{padding:.1rem 0}}
+
+    .gap-collide-deltarow{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+    .gap-collide-deltalabel{font-family:'Courier New',monospace;font-size:.85rem;color:var(--muted);font-weight:600;min-width:120px}
+    .gap-collide-deltalabel span{color:var(--accent);font-weight:700}
+    .gap-delta-slider{flex:1;min-width:160px;accent-color:var(--accent)}
+
+    .gap-verdict{font-family:var(--hand);font-size:1.1rem;line-height:1.45;text-align:center;padding:.55rem .8rem;border-radius:8px;background:var(--green-dim);border:1px solid rgba(127,255,107,0.25);color:var(--green);transition:all .25s}
+    .gap-verdict.collided{background:rgba(255,107,107,0.08);border-color:rgba(255,107,107,0.3);color:var(--red)}
+
+    /* ── VIZ 3: 0.1 problem ────────────────────────────────────────────────── */
+    .errviz-wrap{display:flex;flex-direction:column;gap:1rem}
+    .errviz-input-row{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+    .errviz-input-label{font-size:.85rem;color:var(--muted);font-weight:600}
+    .errviz-input{background:var(--bg-card);border:1px solid var(--border-hover);border-radius:6px;padding:.5rem .8rem;color:var(--accent);font-family:'Courier New',monospace;font-size:1.05rem;font-weight:700;outline:none;width:140px;text-align:center}
+    .errviz-input:focus{border-color:var(--accent)}
+    .errviz-comparison{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+    @media(max-width:640px){.errviz-comparison{grid-template-columns:1fr}}
+    .errviz-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:.8rem 1rem}
+    .errviz-card.exact{border-left:3px solid var(--green)}
+    .errviz-card.stored{border-left:3px solid var(--red)}
+    .errviz-card-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem}
+    .errviz-card-value{font-family:'Courier New',monospace;font-size:1rem;color:var(--ink);font-weight:700;word-break:break-all;line-height:1.5}
+    .errviz-card.exact .errviz-card-value{color:var(--green)}
+    .errviz-card.stored .errviz-card-value{color:var(--red)}
+    .errviz-error{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);text-align:center}
+    .errviz-error .err-val{color:var(--red);font-weight:700}
+    .errviz-error.zero{color:var(--green)}
+    .errviz-error.zero .err-val{color:var(--green)}
+    .errviz-presets{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center}
+    .errviz-preset{padding:.4rem .85rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.78rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .errviz-preset:hover{border-color:var(--accent);color:var(--accent)}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}.fd-bit{width:22px;height:30px;font-size:.8rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Digital Logic for the Embedded ML Engineer</span>
+  <h1>How Computers Store Fractions</h1>
+  <p class="blog-subtitle">Floating-point is the world's cleverest hack. It cracks open the range of representable numbers by trading away something subtle. Here's the trick, and why it falls apart on tiny chips.</p>
+
+  <h2>A new problem the series hasn't faced</h2>
+
+  <p>For five posts now we've worked exclusively with whole numbers. Integers. We know how to store them, how to read them as signed or unsigned, what happens when they overflow, and how to clamp them when they shouldn't. We've built a real toolkit for integer arithmetic.</p>
+
+  <p>But the world has fractions in it. Heights are 1.78 metres, not 2 metres. Temperatures are 23.5°C. Neural network weights look like <code>0.0314</code> or <code>−0.872</code>. None of those are whole numbers.</p>
+
+  <p>So the question this post answers is: how do you store a fractional number in a register that only knows how to hold bits? It turns out there are two genuinely different answers, and they live in different worlds. One is what your laptop uses for everything. The other is what tiny embedded chips have to use because they can't afford the first one. The next post is about the second answer. This post is about the first one, because you can't appreciate the second one without understanding the first.</p>
+
+  <hr class="sep">
+
+  <h2>The starting point: scientific notation</h2>
+
+  <p>You probably learned scientific notation in school. It's a way to write very large or very small numbers compactly:</p>
+
+  <ul>
+    <li><code>300,000,000</code> becomes <code>3 × 10<sup>8</sup></code></li>
+    <li><code>0.0000001</code> becomes <code>1 × 10<sup>−7</sup></code></li>
+    <li><code>1.78</code> becomes <code>1.78 × 10<sup>0</sup></code></li>
+  </ul>
+
+  <p>The trick is splitting the number into two pieces:</p>
+
+  <ul>
+    <li>A <strong>mantissa</strong> that holds the meaningful digits: <code>3</code>, <code>1</code>, <code>1.78</code></li>
+    <li>An <strong>exponent</strong>: a power of 10 that says where the decimal point goes</li>
+  </ul>
+
+  <p>The decimal point doesn't sit in a fixed location. It can <em>float</em> to any position you want, depending on what the exponent says. That's the whole intuition behind the name. The point floats. It isn't pinned anywhere.</p>
+
+  <p>Computer floating-point uses exactly this idea, but in binary instead of decimal. A floating-point number stored in a register is really two integers packed together: the mantissa and the exponent. The hardware reads both, multiplies them appropriately, and gives you a fractional value.</p>
+
+  <hr class="sep">
+
+  <h2>Scientific notation, but in binary</h2>
+
+  <p>Same trick, base 2 instead of base 10.</p>
+
+  <p>Take the number <code>5.5</code>. To write it in binary scientific notation:</p>
+
+  <p>First, write <code>5.5</code> in plain binary: <code>101.1</code>. Why? Because <code>4 + 1 + 0.5 = 5.5</code>, with bit weights at positions 4, 1, and 1/2. The binary point sits between the integer bits and the fractional bits, just like a decimal point does in base 10.</p>
+
+  <p>Next, shift the binary point so there's exactly one <code>1</code> in front of it. Move the point 2 positions to the left: <code>101.1</code> becomes <code>1.011</code>. To preserve the value, multiply by <code>2<sup>2</sup></code>. So <code>5.5 = 1.011 × 2<sup>2</sup></code>.</p>
+
+  <p>Now we have two pieces, just like the decimal version:</p>
+
+  <ul>
+    <li><strong>Mantissa</strong>: <code>1.011</code></li>
+    <li><strong>Exponent</strong>: <code>2</code></li>
+  </ul>
+
+  <p>Notice that the mantissa always starts with <code>1.</code> in this normalised form (we deliberately shifted the point until it did). That fact will turn out to be useful for a clever encoding trick later.</p>
+
+  <p>Try a smaller number. Take <code>0.1875</code>. In binary that's <code>0.0011</code> (because <code>1/8 + 1/16 = 0.1875</code>). Shifting the binary point so we have <code>1.something</code>: <code>1.1 × 2<sup>−3</sup></code>. The mantissa is <code>1.1</code>, the exponent is <code>−3</code>. The exponent is negative because we're representing a small number, so we need to shift left.</p>
+
+  <div class="callout">Every floating-point number is just a pair: (mantissa, exponent). The mantissa always has the form 1.something. The exponent says how far to shift the binary point.</div>
+
+  <hr class="sep">
+
+  <h2>The IEEE 754 float32 format</h2>
+
+  <p>Now let's see how a 32-bit register actually packs this pair into bits. The format is called IEEE 754 single-precision float, or <code>float32</code>, and it's the standard everywhere. Your laptop, every GPU, every modern CPU, every Python interpreter, all of them use this exact format.</p>
+
+  <p>The 32 bits are divided into three fields:</p>
+
+  <div class="codeblock">[ S ][    E (8 bits)    ][               M (23 bits)               ]
+ 31    30 ........ 23     22 ............................... 0</div>
+
+  <ul>
+    <li><strong>S</strong> (1 bit): sign of the whole number. <code>0</code> means positive, <code>1</code> means negative.</li>
+    <li><strong>E</strong> (8 bits): encodes the exponent.</li>
+    <li><strong>M</strong> (23 bits): encodes the mantissa.</li>
+  </ul>
+
+  <p>Each field has its own little encoding rule. Let me walk through them in order, because the second one (the exponent) does something genuinely clever.</p>
+
+  <h3>The sign bit, by itself</h3>
+
+  <p>The easiest of the three. Bit 31 is just a flag: <code>0</code> for positive, <code>1</code> for negative. The rest of the number is stored as if it were positive, and the sign bit independently says "now flip the sign."</p>
+
+  <p>This is different from two's complement, which we used for signed integers. In two's complement, the sign bit also carries numerical weight (−128 for int8). In IEEE 754 floats, the sign bit is purely a flag. This is the <strong>sign-magnitude</strong> approach we discussed in the two's complement post, the one that lost the war for integer arithmetic. For floats, sign-magnitude actually wins, because the format is already complex enough that an explicit sign bit is a simplification rather than a complication.</p>
+
+  <h3>The mantissa, with the implicit leading 1</h3>
+
+  <p>The mantissa is 23 bits long. But here's a clever shortcut: <em>because</em> normalised binary always has the form <code>1.something</code>, the leading <code>1</code> is always there. So we don't bother storing it. We only store the bits <em>after</em> it.</p>
+
+  <p>For our example <code>5.5 = 1.011 × 2<sup>2</sup></code>, the mantissa is <code>1.011</code>. We store just <code>011</code>, padded to 23 bits with trailing zeros: <code>011 0000 0000 0000 0000 0000</code>.</p>
+
+  <p>When we read the value back, we mentally prepend a <code>1.</code> to whatever's in the mantissa field. So the stored bits <code>011 0000 ...</code> become <code>1.011 0000 ...</code>, which is just <code>1.011</code>.</p>
+
+  <p>This trick gives us 24 effective bits of precision (the implicit 1 plus 23 stored bits) using only 23 bits of storage. Free precision. Worth the small cost of having to remember the rule.</p>
+
+  <h3>The exponent: the bias trick</h3>
+
+  <p>The exponent can be positive or negative, and we need both. Small numbers have negative exponents. Large ones have positive. So how do we store a signed value in 8 bits?</p>
+
+  <p>The obvious answer is "use two's complement, like we did for signed integers." But IEEE 754 doesn't do that. It uses a different scheme called <strong>biased encoding</strong>, and it's worth understanding why.</p>
+
+  <p>Here's the rule. The 8-bit exponent field can hold values from 0 to 255 (256 possible patterns). IEEE 754 says: take the actual exponent, <em>add 127 to it</em>, and store the result. So:</p>
+
+  <ul>
+    <li>Actual exponent <code>0</code> is stored as <code>127</code> = <code>0111 1111</code></li>
+    <li>Actual exponent <code>+1</code> is stored as <code>128</code> = <code>1000 0000</code></li>
+    <li>Actual exponent <code>+127</code> is stored as <code>254</code> = <code>1111 1110</code></li>
+    <li>Actual exponent <code>−1</code> is stored as <code>126</code> = <code>0111 1110</code></li>
+    <li>Actual exponent <code>−126</code> is stored as <code>1</code> = <code>0000 0001</code></li>
+  </ul>
+
+  <p>(The values <code>0</code> and <code>255</code> are reserved for special cases like zero, infinity, and NaN. The usable exponent range is <code>−126</code> to <code>+127</code>.)</p>
+
+  <p>The number 127 is called the <strong>bias</strong>. Add it before storing, subtract it when reading.</p>
+
+  <p>Why bother with this instead of two's complement? Two genuine reasons that mattered when the format was designed in the late 1970s.</p>
+
+  <p><strong>Comparison becomes free.</strong> If exponents were stored in two's complement, a small negative exponent would have all its high bits set, making it look like a huge unsigned number. To compare two floats, you'd need to interpret the exponent carefully. With biased encoding, the exponent field is always a positive number from 0 to 255. You can compare two positive floats just by treating the whole bit pattern as one big unsigned integer. Smaller bit pattern → smaller number. This makes float comparison a single integer compare instruction in hardware.</p>
+
+  <p><strong>The smallest representable number has the smallest exponent field.</strong> The number closest to zero has exponent <code>−126</code>, which encodes as <code>1</code> in the field. The largest number has exponent <code>+127</code>, encoded as <code>254</code>. So the bit pattern of the exponent field naturally orders numbers from smallest magnitude to largest. This was a clever choice that paid off in cheaper hardware comparisons.</p>
+
+  <div class="history-box">
+    <div class="h-label">A small detour: where IEEE 754 came from</div>
+    <p>In the 1970s, floating-point was a mess. Every chip vendor (IBM, DEC, Cray, HP) had their own incompatible format. Code that ran correctly on one machine could give wildly different answers on another. There were genuine bugs in NASA simulations that traced back to this.</p>
+    <p>In 1976, Intel was designing the 8087 floating-point coprocessor for its new 8086 chip. They hired <em>William Kahan</em>, a mathematician at Berkeley, to design the format. Kahan was opinionated and brilliant. He fought for things that seemed weird at the time: gradual underflow (representing very tiny numbers gracefully), explicit infinity, NaN (Not-a-Number), the implicit leading 1, biased encoding, and round-to-nearest as the default rounding mode. Most of these felt like over-engineering to other chip designers.</p>
+    <p>Intel's format became the basis for the <em>IEEE 754</em> standard, ratified in 1985 after years of committee work. Kahan won most of his arguments. The format he designed, with all its quirks, is the one your laptop uses today, 40 years later. Every GPU. Every smartphone. Every cloud TPU. The same 32 bits. The same biased encoding. The same implicit leading 1.</p>
+    <p>Kahan won a Turing Award for this in 1989. Not for inventing floating-point, that goes back further, but for getting the world to agree on one careful design and stop producing bugs.</p>
+  </div>
+
+  <hr class="sep">
+
+  <h2>A worked example: 5.5 stored as a float32</h2>
+
+  <p>Let me put all three fields together for one specific number, walking through every step.</p>
+
+  <p><strong>Step 1.</strong> Write 5.5 in binary scientific notation: <code>5.5 = 1.011 × 2<sup>2</sup></code>.</p>
+
+  <p><strong>Step 2.</strong> Sign bit S = <code>0</code> (positive).</p>
+
+  <p><strong>Step 3.</strong> Exponent E = actual exponent + bias = <code>2 + 127 = 129</code>. In binary: <code>1000 0001</code>.</p>
+
+  <p><strong>Step 4.</strong> Mantissa M = bits after the implicit leading 1, padded to 23 bits: <code>011 0000 0000 0000 0000 0000</code>.</p>
+
+  <p><strong>Step 5.</strong> Concatenate: <code>0 | 1000 0001 | 011 0000 0000 0000 0000 0000</code>.</p>
+
+  <p>In hex (which we read fluently by now): <code>0x40B00000</code>. If you ever look at a float32 in a memory dump, you'll see this exact pattern. You can decode it back by hand: sign 0 (positive), exponent field <code>129 − 127 = 2</code>, mantissa <code>1.011</code>, value <code>1.011 × 2<sup>2</sup> = 101.1<sub>2</sub> = 5.5</code>.</p>
+
+  <p>Below, you can play with this directly. Type any number, watch the bits show up, and click individual bits to flip them.</p>
+
+  <!-- VIZ 1: Float32 decoder -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A float32, all 32 bits, three coloured fields. Click any bit to flip it.</span></div>
+    <div class="viz-body">
+      <div class="fd-wrap">
+        <div class="fd-input-card">
+          <span class="fd-input-label">Type a number:</span>
+          <input type="text" class="fd-input" id="fdInput" value="5.5" autocomplete="off" spellcheck="false">
+          <div class="fd-presets">
+            <button class="fd-preset" data-val="5.5">5.5</button>
+            <button class="fd-preset" data-val="1.0">1.0</button>
+            <button class="fd-preset" data-val="0.5">0.5</button>
+            <button class="fd-preset" data-val="0.1">0.1 (lossy!)</button>
+            <button class="fd-preset" data-val="-3.14">−3.14</button>
+            <button class="fd-preset" data-val="0.0">0.0</button>
+            <button class="fd-preset" data-val="100000">100000</button>
+          </div>
+        </div>
+
+        <div class="fd-bits-row" id="fdBitsRow"></div>
+
+        <div class="fd-fields">
+          <div class="fd-field sign">
+            <div class="fd-field-label">1 bit</div>
+            <div class="fd-field-name">Sign</div>
+            <div class="fd-field-bits" id="fdSignBits">0</div>
+            <div class="fd-field-meaning" id="fdSignMeaning">+ (positive)</div>
+          </div>
+          <div class="fd-field exp">
+            <div class="fd-field-label">8 bits</div>
+            <div class="fd-field-name">Exponent</div>
+            <div class="fd-field-bits" id="fdExpBits">10000001</div>
+            <div class="fd-field-meaning" id="fdExpMeaning">129 − 127 = +2</div>
+          </div>
+          <div class="fd-field mant">
+            <div class="fd-field-label">23 bits</div>
+            <div class="fd-field-name">Mantissa</div>
+            <div class="fd-field-bits" id="fdMantBits">01100000000000000000000</div>
+            <div class="fd-field-meaning" id="fdMantMeaning">1.011 (binary)</div>
+          </div>
+        </div>
+
+        <div class="fd-decoded" id="fdDecoded"></div>
+
+        <div class="fd-result" id="fdResult"></div>
+      </div>
+      <p class="viz-note">The three fields of the bit row are colour-coded: red for the sign, amber for the exponent, blue for the mantissa. Notice that <code>0.1</code> doesn't decode back to exactly <code>0.1</code>. That's the loss baked into the format. We'll see why next.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Why floating-point is lossy</h2>
+
+  <p>Here's a fact that surprises most software engineers when they first encounter it. Most simple-looking decimals can't be represented exactly in binary, no matter how many bits you have.</p>
+
+  <p>Take <code>0.1</code>. In decimal it's clean, just one tenth. To write it in binary, we need to express it as a sum of powers of 1/2: <code>1/2, 1/4, 1/8, 1/16,...</code>. Let's try:</p>
+
+  <ul>
+    <li>Is <code>0.1 ≥ 1/2 = 0.5</code>? No. Bit is 0.</li>
+    <li>Is <code>0.1 ≥ 1/4 = 0.25</code>? No. Bit is 0.</li>
+    <li>Is <code>0.1 ≥ 1/8 = 0.125</code>? No. Bit is 0.</li>
+    <li>Is <code>0.1 ≥ 1/16 = 0.0625</code>? Yes. Bit is 1. Subtract: <code>0.1 − 0.0625 = 0.0375</code>.</li>
+    <li>Is <code>0.0375 ≥ 1/32 = 0.03125</code>? Yes. Bit is 1. Subtract: <code>0.00625</code>.</li>
+    <li>Continue forever, getting <code>0.00011001100110011...</code> repeating.</li>
+  </ul>
+
+  <p>The binary expansion of <code>0.1</code> never terminates. It's a repeating fraction in base 2, just like <code>1/3</code> is a repeating fraction in base 10. We can't store it exactly with any finite number of bits. Float32 has to truncate the mantissa at 23 bits and round, which means the stored value is slightly off from the true value.</p>
+
+  <p>The actual stored float32 for <code>0.1</code> is approximately <code>0.10000000149011612</code>. That tiny error is unavoidable. It's not a bug. It's a consequence of the number system.</p>
+
+  <p>This is why every language that uses IEEE 754 produces the famous result:</p>
+
+  <div class="codeblock"><span class="c-comment">>> 0.1 + 0.2</span>
+<span class="c-out">0.30000000000000004</span>
+
+<span class="c-comment">>> 0.1 + 0.2 == 0.3</span>
+<span class="c-out">False</span></div>
+
+  <p>That extra <code>4</code> at the end isn't a Python quirk. It's IEEE 754 arithmetic, working exactly as designed, on numbers that can't be stored exactly. Try it in JavaScript, C, Go, Rust, Swift. Same answer everywhere.</p>
+
+  <p>The widget below lets you explore this directly. Type any decimal and see exactly how much rounding the float32 representation introduces.</p>
+
+  <!-- VIZ 3: 0.1 problem -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Type a number. See what float32 actually stores.</span></div>
+    <div class="viz-body">
+      <div class="errviz-wrap">
+        <div class="errviz-input-row">
+          <span class="errviz-input-label">Decimal value:</span>
+          <input type="text" class="errviz-input" id="errvizInput" value="0.1" autocomplete="off" spellcheck="false">
+          <div class="errviz-presets">
+            <button class="errviz-preset" data-val="0.1">0.1</button>
+            <button class="errviz-preset" data-val="0.2">0.2</button>
+            <button class="errviz-preset" data-val="0.3">0.3</button>
+            <button class="errviz-preset" data-val="0.5">0.5 (exact)</button>
+            <button class="errviz-preset" data-val="0.25">0.25 (exact)</button>
+            <button class="errviz-preset" data-val="1.1">1.1</button>
+            <button class="errviz-preset" data-val="100.7">100.7</button>
+          </div>
+        </div>
+        <div class="errviz-comparison">
+          <div class="errviz-card exact">
+            <div class="errviz-card-label">What you typed</div>
+            <div class="errviz-card-value" id="errvizExact">0.1</div>
+          </div>
+          <div class="errviz-card stored">
+            <div class="errviz-card-label">What float32 stores (decoded)</div>
+            <div class="errviz-card-value" id="errvizStored">0.100000001490116...</div>
+          </div>
+        </div>
+        <div class="errviz-error" id="errvizError">Rounding error: <span class="err-val">≈ 1.49 × 10⁻⁹</span></div>
+      </div>
+      <p class="viz-note">Some values like <code>0.5</code> and <code>0.25</code> are stored exactly (their denominators are powers of 2). Most aren't. The errors are tiny per number, but in code that runs millions of operations they accumulate. This is the unavoidable cost of using floating-point.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The deeper truth: range vs precision</h2>
+
+  <p>Now we get to the most important idea about floating-point, and it's the one that explains both why it's so powerful and why it has weird trade-offs.</p>
+
+  <p>A 32-bit register can hold exactly 2<sup>32</sup> distinct bit patterns. That's about 4.3 billion patterns. Whatever encoding you use for those 32 bits, you can never represent more than 4.3 billion distinct numbers. That's a hard ceiling enforced by physics.</p>
+
+  <p>Now consider what float32 has to cover. The format ranges from about 10<sup>−38</sup> to 10<sup>38</sup>, which is 76 orders of magnitude. There's no way 4.3 billion patterns can cover 10<sup>76</sup> different values densely. Something has to give.</p>
+
+  <p>What float32 sacrifices is <strong>uniformity of spacing</strong>. The 4.3 billion patterns aren't spread evenly across the number line. They're packed densely near zero and spread thinly far away. Near 1.0, two consecutive float32 values differ by about 10<sup>−7</sup>. Near 1,000,000, they differ by about 0.1. Near 10<sup>30</sup>, they differ by about 10<sup>23</sup>. There are huge gaps between representable values out there.</p>
+
+  <div class="callout">Floating-point trades uniform precision for enormous range. Same number of patterns. Different distribution.</div>
+
+  <p>Picture it like a ruler with 100 marks distributed across some distance. An <strong>integer-style ruler</strong> spaces all 100 marks evenly, covering a small distance with constant precision everywhere. A <strong>float-style ruler</strong> packs half the marks in the first unit (at 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1...) and spreads the rest across millions of units. The float ruler covers an enormous range but with very different precision in different regions.</p>
+
+  <p>The visualisation below makes the consequence concrete. Slide the probe across the magnitude axis. The readout tells you the smallest difference float32 can represent at that scale. Then watch what happens to two distinct numbers when their difference falls below that threshold.</p>
+
+  <!-- VIZ 2: float32 precision explorer -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">As numbers grow, the gap between consecutive floats grows with them.</span></div>
+    <div class="viz-body">
+      <div class="gap-wrap">
+
+        <div class="gap-axis-stage">
+          <svg id="gapAxisSvg" viewBox="0 0 760 130" xmlns="http://www.w3.org/2000/svg" class="gap-axis-svg"></svg>
+        </div>
+
+        <div class="gap-slider-row">
+          <label class="gap-slider-label">probe magnitude:</label>
+          <input type="range" class="gap-slider" id="gapSlider" min="0" max="1000" value="300">
+          <button class="gap-jump" data-pos="120">jump to 1.0</button>
+          <button class="gap-jump" data-pos="380">jump to 1,000</button>
+          <button class="gap-jump" data-pos="610">jump to 1M</button>
+          <button class="gap-jump" data-pos="800">jump to 10⁹</button>
+        </div>
+
+        <div class="gap-readout">
+          <div class="gap-readout-row">
+            <span class="gap-readout-label">at magnitude</span>
+            <span class="gap-readout-val" id="gapMagVal">≈ 1,000</span>
+          </div>
+          <div class="gap-readout-row">
+            <span class="gap-readout-label">smallest distinguishable difference</span>
+            <span class="gap-readout-val accent" id="gapStepVal">≈ 1.2 × 10⁻⁴</span>
+          </div>
+          <div class="gap-readout-explain" id="gapExplain">
+            Any two numbers near 1,000 that differ by less than this round to the same float32.
+          </div>
+        </div>
+
+        <div class="gap-collide-card">
+          <div class="gap-collide-title">Try it: when do two numbers collapse into one?</div>
+          <div class="gap-collide-row">
+            <div class="gap-collide-input-block">
+              <label class="gap-collide-label">number A</label>
+              <div class="gap-collide-display" id="gapAVal">1,000.000000</div>
+            </div>
+            <div class="gap-collide-vs" id="gapStatus">vs</div>
+            <div class="gap-collide-input-block">
+              <label class="gap-collide-label">number B (= A + delta)</label>
+              <div class="gap-collide-display" id="gapBVal">1,000.000100</div>
+            </div>
+          </div>
+          <div class="gap-collide-deltarow">
+            <label class="gap-collide-deltalabel">delta = <span id="gapDeltaVal">10⁻⁴</span></label>
+            <input type="range" class="gap-delta-slider" id="gapDeltaSlider" min="-9" max="3" step="0.05" value="-4">
+          </div>
+          <div class="gap-verdict" id="gapVerdict"></div>
+        </div>
+
+      </div>
+      <p class="viz-note">Near 1.0, float32 distinguishes values about 10⁻⁷ apart. Near a million, only about 0.06 apart. Near 10⁹, only about 64 apart. By the time you reach 10²⁰, two numbers have to differ by more than 10¹³ to be stored differently. This is the precision cost of having such a vast range, and it's what makes float32 a poor fit when you know your numbers live in a small predictable range.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>When float32 is exactly the right choice</h2>
+
+  <p>For all its quirks, float32 is genuinely brilliant for a huge range of work. Anything that involves numbers across many orders of magnitude:</p>
+
+  <ul>
+    <li>Scientific computing. Astrophysics works at planetary scales (10<sup>10</sup> metres) and atomic scales (10<sup>−10</sup> metres) in the same simulation. No fixed-precision format can cover that range.</li>
+    <li>Computer graphics. Lighting calculations span very dim and very bright pixels. Float32 (and increasingly float16) has enough range to handle physically-based rendering naturally.</li>
+    <li>Neural network <em>training</em>. During training, gradients can be very small, weights moderate, activations sometimes large. Float32 gives the algorithms enough headroom to converge.</li>
+    <li>General-purpose programming. When you don't know in advance what magnitudes you'll see, float32 is the safe default.</li>
+  </ul>
+
+  <p>For all of these, the cost (a fancy FPU on the chip) is worth it. Modern laptops, GPUs, and servers have tens of thousands of float arithmetic units. The hardware is fine.</p>
+
+  <hr class="sep">
+
+  <h2>When float32 is the wrong choice</h2>
+
+  <p>The wheels come off when you take this format to a tiny chip.</p>
+
+  <p><strong>Hardware cost.</strong> A floating-point unit (FPU) is a much larger chunk of silicon than an integer ALU. Every floating-point addition involves multiple distinct steps: compare exponents, shift the smaller mantissa to align them, add the mantissas, possibly normalise the result, and round. Five operations, each requiring its own circuitry. An integer add is just one step.</p>
+
+  <p>For tiny chips, this cost is prohibitive. The Cortex-M0 doesn't have an FPU. The M0+ doesn't. The M3 doesn't. The M4 has an <em>optional</em> FPU (chips called "M4F" have it; plain "M4" doesn't). The M7 has one. Larger application processors (Cortex-A) all have FPUs. The cost-benefit depends on the chip's overall die budget.</p>
+
+  <p><strong>Energy cost.</strong> Even when the FPU exists, float operations burn more energy per operation than integer ones. On a Cortex-M4F, a float multiply uses roughly 3–5 times the energy of an integer multiply. On a battery-powered device running inference all day, this adds up.</p>
+
+  <p><strong>Software emulation is brutal.</strong> When the chip lacks an FPU and your code uses floats anyway, the compiler emulates floating-point in software. Each float multiply turns into 30–100 cycles of code that does the manual mantissa-and-exponent dance. The emulation library itself is tens of kilobytes. For a chip with 32 KB of total program memory, this kills you in two ways at once: memory bloat and execution time.</p>
+
+  <p><strong>Determinism issues.</strong> Float arithmetic isn't perfectly associative. <code>(a + b) + c</code> can give a slightly different result from <code>a + (b + c)</code> due to rounding. For most applications this is fine, but in safety-critical embedded systems it can be a real problem.</p>
+
+  <p>So float32 is the wrong choice for embedded ML on small chips. We need fractions, but we can't afford this format. We need something cheaper.</p>
+
+  <hr class="sep">
+
+  <h2>Where this leaves us</h2>
+
+  <p>Five things to take with you.</p>
+
+  <p>Floating-point is binary scientific notation: every number is stored as a (mantissa, exponent) pair, with the binary point free to "float" to wherever the exponent puts it.</p>
+
+  <p>The IEEE 754 float32 format packs sign, biased exponent, and a 23-bit mantissa with implicit leading 1 into 32 bits. The biased exponent makes float comparison cheap. The implicit leading 1 saves precision.</p>
+
+  <p>Most simple-looking decimals (0.1, 0.2, 0.3) can't be stored exactly because their binary expansions never terminate. The error is tiny per operation but real, and it's why <code>0.1 + 0.2 != 0.3</code> in every modern language.</p>
+
+  <p>Float32 trades uniform precision for enormous range. Patterns are dense near zero and sparse far from it. This works beautifully when you don't know in advance what magnitudes you'll see.</p>
+
+  <p>For tiny embedded chips, float32 is too expensive. The FPU is too big, energy is too high, software emulation is too slow. We need a different approach.</p>
+
+  <p>The next post is about that approach. It's called fixed-point, and it gives up float32's flexibility (any range, automatic point-floating) in exchange for being almost free in hardware. For neural networks running on microcontrollers, where the value range is known ahead of time, fixed-point is exactly the right trade. We'll see how it works, how multiplication interacts with the implicit decimal point, and how quantisation in TFLite Micro is just fixed-point with a small additional twist.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Digital Logic for the Embedded ML Engineer</h2>
+    <a class="sidebar-link" href="why-digital-logic.html">
+      <div class="sidebar-link-title">Part 1: Why You're Here</div>
+      <div class="sidebar-link-note">A chip is a calculator with memory and a clock.</div>
+    </a>
+    <a class="sidebar-link" href="reading-hardware.html">
+      <div class="sidebar-link-title">Part 2: Reading the Language of Hardware</div>
+      <div class="sidebar-link-note">Binary and hex.</div>
+    </a>
+    <a class="sidebar-link" href="bits-in-memory.html">
+      <div class="sidebar-link-title">Part 3: Bits in Memory</div>
+      <div class="sidebar-link-note">Endianness and register fields.</div>
+    </a>
+    <a class="sidebar-link" href="twos-complement.html">
+      <div class="sidebar-link-title">Part 4: Two's Complement</div>
+      <div class="sidebar-link-note">Why int8 looks the way it does.</div>
+    </a>
+    <a class="sidebar-link" href="overflow-saturation.html">
+      <div class="sidebar-link-title">Part 5: Overflow and Saturation</div>
+      <div class="sidebar-link-note">The math that almost goes wrong.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="floating-point.html">
+      <div class="sidebar-link-title">Part 6: How Computers Store Fractions</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 7: Fixed-Point and Quantisation</div>
+      <div class="sidebar-link-note">A story in Q-format.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 8: Gates and Multipliers</div>
+      <div class="sidebar-link-note">Why adders are cheaper.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 9: Inside a MAC Unit</div>
+      <div class="sidebar-link-note">Where math becomes silicon.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 10: Memory and SRAM</div>
+      <div class="sidebar-link-note">Why bytes matter.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 11: Datapath and Control</div>
+      <div class="sidebar-link-note">Building a tiny accelerator.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Scientific notation in binary</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The three fields of float32</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why bias the exponent</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why 0.1 isn't exact</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Range vs precision tradeoff</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why MCUs avoid floats</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: Float32 decoder
+// ═══════════════════════════════════════════════════════════════════════════
+const fdInput=document.getElementById('fdInput');
+const fdBitsRow=document.getElementById('fdBitsRow');
+const fdSignBits=document.getElementById('fdSignBits');
+const fdSignMeaning=document.getElementById('fdSignMeaning');
+const fdExpBits=document.getElementById('fdExpBits');
+const fdExpMeaning=document.getElementById('fdExpMeaning');
+const fdMantBits=document.getElementById('fdMantBits');
+const fdMantMeaning=document.getElementById('fdMantMeaning');
+const fdDecoded=document.getElementById('fdDecoded');
+const fdResult=document.getElementById('fdResult');
+
+let fdBits=0;
+
+// Convert a float to its 32-bit IEEE 754 representation as a Uint32
+function floatToBits(f){
+  const buf=new ArrayBuffer(4);
+  const fview=new Float32Array(buf);
+  const iview=new Uint32Array(buf);
+  fview[0]=f;
+  return iview[0];
+}
+// Convert a 32-bit unsigned int (interpreted as IEEE 754) back to a float
+function bitsToFloat(u){
+  const buf=new ArrayBuffer(4);
+  const fview=new Float32Array(buf);
+  const iview=new Uint32Array(buf);
+  iview[0]=u>>>0;
+  return fview[0];
+}
+
+function buildFdBits(){
+  fdBitsRow.innerHTML='';
+  for(let i=31;i>=0;i--){
+    const cell=document.createElement('div');
+    let cls='fd-bit';
+    if(i===31) cls+=' sign';
+    else if(i>=23) cls+=' exp';
+    else cls+=' mant';
+    cell.className=cls;
+    cell.dataset.bit=i;
+    cell.textContent='0';
+    cell.addEventListener('click',()=>{
+      const b=parseInt(cell.dataset.bit);
+      fdBits=(fdBits^(1<<b))>>>0;
+      const newVal=bitsToFloat(fdBits);
+      fdInput.value=Number.isFinite(newVal)?formatFloat(newVal):(isNaN(newVal)?'NaN':(newVal>0?'Infinity':'-Infinity'));
+      renderFd();
+    });
+    fdBitsRow.appendChild(cell);
+  }
+}
+
+function formatFloat(f){
+  if(f===0)return '0';
+  const abs=Math.abs(f);
+  if(abs<1e-4||abs>=1e7) return f.toPrecision(8);
+  // try a reasonable representation
+  const s=f.toPrecision(9);
+  // strip trailing zeros after decimal point
+  if(s.indexOf('.')>=0&&s.indexOf('e')<0){
+    return s.replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');
+  }
+  return s;
+}
+
+function renderFd(){
+  // Render bit cells from current fdBits
+  const cells=fdBitsRow.querySelectorAll('.fd-bit');
+  cells.forEach(c=>{
+    const b=parseInt(c.dataset.bit);
+    const set=((fdBits>>>b)&1)===1;
+    c.classList.toggle('set',set);
+    c.textContent=set?'1':'0';
+  });
+
+  const signBit=(fdBits>>>31)&1;
+  const expBits=(fdBits>>>23)&0xFF;
+  const mantBits=fdBits&0x7FFFFF;
+
+  // Sign field
+  fdSignBits.textContent=signBit;
+  fdSignMeaning.textContent=signBit?'− (negative)':'+ (positive)';
+
+  // Exponent field
+  fdExpBits.textContent=expBits.toString(2).padStart(8,'0');
+  const actualExp=expBits-127;
+  fdExpMeaning.textContent=`${expBits} − 127 = ${actualExp>=0?'+':''}${actualExp}`;
+
+  // Mantissa field
+  fdMantBits.textContent=mantBits.toString(2).padStart(23,'0');
+  // Build "1.xxxx" from mantissa
+  const mantStr=mantBits.toString(2).padStart(23,'0').replace(/0+$/,'');
+  fdMantMeaning.textContent=mantStr.length>0?`1.${mantStr} (binary)`:'1.0 (binary)';
+
+  // Decoded value
+  const v=bitsToFloat(fdBits);
+
+  // Build decoded steps
+  let stepsHTML='';
+  if(expBits===0&&mantBits===0){
+    stepsHTML+=`<div class="step"><span class="label">special:</span> <span class="value accent">${signBit?'−0':'+0'}</span></div>`;
+  }else if(expBits===255){
+    if(mantBits===0){
+      stepsHTML+=`<div class="step"><span class="label">special:</span> <span class="value accent">${signBit?'−Infinity':'+Infinity'}</span></div>`;
+    }else{
+      stepsHTML+=`<div class="step"><span class="label">special:</span> <span class="value accent">NaN (Not a Number)</span></div>`;
+    }
+  }else if(expBits===0){
+    // denormal
+    stepsHTML+=`<div class="step"><span class="label">subnormal:</span> <span class="value">very small number, mantissa with implicit 0.</span></div>`;
+    stepsHTML+=`<div class="step"><span class="label">value:</span> <span class="value accent">${formatFloat(v)}</span></div>`;
+  }else{
+    const mantBin=`1.${mantBits.toString(2).padStart(23,'0')}`;
+    stepsHTML+=`<div class="step"><span class="label">sign:</span> <span class="value">${signBit===0?'+':'−'}</span></div>`;
+    stepsHTML+=`<div class="step"><span class="label">stored exponent:</span> <span class="value">${expBits}</span> <span class="formula">→ subtract bias 127</span> <span class="value accent">= ${actualExp}</span></div>`;
+    stepsHTML+=`<div class="step"><span class="label">mantissa:</span> <span class="value">${mantBin.length>30?mantBin.substr(0,30)+'...':mantBin}</span></div>`;
+    stepsHTML+=`<div class="step"><span class="label">value:</span> <span class="value">${signBit===0?'+':'−'}</span><span class="value">1.${mantBits.toString(2).padStart(23,'0').replace(/0+$/,'')||'0'}</span> <span class="formula">× 2<sup>${actualExp}</sup></span></div>`;
+  }
+  fdDecoded.innerHTML=stepsHTML;
+
+  // Result
+  let resultHTML=`<strong>${formatFloat(v)}</strong>`;
+  // If we can compare to typed value, show error
+  const typed=parseFloat(fdInput.value);
+  if(!isNaN(typed)&&Number.isFinite(typed)&&Number.isFinite(v)){
+    const err=Math.abs(typed-v);
+    const relErr=typed!==0?err/Math.abs(typed):0;
+    if(err>0&&relErr>1e-15){
+      resultHTML+=`<span class="err">stored value differs from typed by ≈ ${err.toExponential(2)}</span>`;
+    }
+  }
+  fdResult.innerHTML=resultHTML;
+}
+
+fdInput.addEventListener('input',()=>{
+  const v=parseFloat(fdInput.value);
+  if(!isNaN(v)){
+    fdBits=floatToBits(v);
+    renderFd();
+  }
+});
+fdInput.addEventListener('blur',()=>{
+  const v=parseFloat(fdInput.value);
+  if(!isNaN(v)){
+    fdInput.value=formatFloat(bitsToFloat(floatToBits(v)));
+  }
+});
+document.querySelectorAll('.fd-preset').forEach(b=>{
+  b.addEventListener('click',()=>{
+    fdInput.value=b.dataset.val;
+    fdBits=floatToBits(parseFloat(b.dataset.val));
+    renderFd();
+  });
+});
+
+buildFdBits();
+fdBits=floatToBits(5.5);
+renderFd();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: float32 gap explorer
+// ═══════════════════════════════════════════════════════════════════════════
+const gapAxisSvg=document.getElementById('gapAxisSvg');
+const gapSlider=document.getElementById('gapSlider');
+const gapMagVal=document.getElementById('gapMagVal');
+const gapStepVal=document.getElementById('gapStepVal');
+const gapExplain=document.getElementById('gapExplain');
+const gapAVal=document.getElementById('gapAVal');
+const gapBVal=document.getElementById('gapBVal');
+const gapDeltaVal=document.getElementById('gapDeltaVal');
+const gapDeltaSlider=document.getElementById('gapDeltaSlider');
+const gapVerdict=document.getElementById('gapVerdict');
+const gapStatus=document.getElementById('gapStatus');
+
+// Probe slider value 0..1000 maps log-linearly onto magnitude 10^-3 to 10^10.
+const GAP_LOG_MIN=-3;   // 10^-3 = 0.001
+const GAP_LOG_MAX=10;   // 10^10 = 10 billion
+
+function probeToMag(p){
+  // p in 0..1000
+  const t=p/1000;
+  const exp=GAP_LOG_MIN + t*(GAP_LOG_MAX-GAP_LOG_MIN);
+  return Math.pow(10,exp);
+}
+function magToProbe(m){
+  const exp=Math.log10(m);
+  const t=(exp-GAP_LOG_MIN)/(GAP_LOG_MAX-GAP_LOG_MIN);
+  return Math.max(0,Math.min(1000,t*1000));
+}
+
+// Compute the "ulp" (unit in last place) of a float32 at a given magnitude.
+// For float32, the gap between consecutive values near magnitude m is about
+// 2^(floor(log2(m)) - 23). This is the smallest distinguishable difference there.
+function float32Ulp(m){
+  if(m===0) return Math.pow(2,-149); // smallest subnormal
+  const absm=Math.abs(m);
+  const exp=Math.floor(Math.log2(absm));
+  return Math.pow(2,exp-23);
+}
+
+// Format a number in a readable way at a given magnitude.
+function formatMag(m){
+  if(m<0.01) return m.toExponential(2);
+  if(m<1) return m.toPrecision(2);
+  if(m<1000) return m.toPrecision(3);
+  if(m<1e6) return Math.round(m).toLocaleString();
+  if(m<1e9) return m.toExponential(2);
+  return m.toExponential(2);
+}
+function formatGap(g){
+  if(g<0.001||g>=10000) return g.toExponential(2);
+  if(g<1) return g.toPrecision(3);
+  return g.toLocaleString(undefined,{maximumFractionDigits:3});
+}
+
+// Build the static axis once (labels, ticks, precision colour bands).
+function buildGapAxis(){
+  const W=760, H=130;
+  const padX=40;
+  const axisY=85;
+  let svg='';
+
+  // Precision-colour bands: green where precision is good (gap < 1e-4),
+  // amber for moderate, red for poor (gap > 1e3).
+  // We draw a row of thin rectangles colour-coded by gap magnitude.
+  const numBands=200;
+  for(let i=0;i<numBands;i++){
+    const t1=i/numBands, t2=(i+1)/numBands;
+    const m1=Math.pow(10,GAP_LOG_MIN+t1*(GAP_LOG_MAX-GAP_LOG_MIN));
+    const gap=float32Ulp(m1);
+    const logGap=Math.log10(gap);
+    // Map logGap to a colour. logGap = -10 → very green. logGap = 0 → amber. logGap = +5 → red.
+    let r,g,b;
+    if(logGap<-4){
+      // green band
+      const k=Math.max(0,(logGap+10)/6);
+      r=20+Math.round(50*k); g=120+Math.round(50*k); b=40;
+    }else if(logGap<1){
+      // amber band
+      const k=(logGap+4)/5;
+      r=80+Math.round(160*k); g=120+Math.round(40*k); b=40;
+    }else{
+      // red band
+      const k=Math.min(1,(logGap-1)/5);
+      r=200+Math.round(40*k); g=80-Math.round(40*k); b=80-Math.round(40*k);
+    }
+    const x=padX+t1*(W-2*padX);
+    const w=(W-2*padX)/numBands+0.5;
+    svg+=`<rect class="precision-bar" x="${x.toFixed(2)}" y="${axisY-22}" width="${w.toFixed(2)}" height="14" fill="rgba(${r},${g},${b},0.55)"/>`;
+  }
+
+  // Axis line
+  svg+=`<line class="axis-line" x1="${padX}" y1="${axisY}" x2="${W-padX}" y2="${axisY}"/>`;
+
+  // Major ticks at each power of 10 from -3 to 10
+  for(let exp=GAP_LOG_MIN;exp<=GAP_LOG_MAX;exp++){
+    const t=(exp-GAP_LOG_MIN)/(GAP_LOG_MAX-GAP_LOG_MIN);
+    const x=padX+t*(W-2*padX);
+    svg+=`<line class="axis-tick-major" x1="${x}" y1="${axisY-4}" x2="${x}" y2="${axisY+8}"/>`;
+    // Label key powers
+    const labelMap={
+      [-3]:'0.001', [0]:'1', [3]:'1k', [6]:'1M', [9]:'1B', [10]:'10B'
+    };
+    if(labelMap[exp]!==undefined){
+      svg+=`<text class="axis-label" x="${x}" y="${axisY+22}">${labelMap[exp]}</text>`;
+    }
+  }
+
+  // Minor ticks at 2,3,5 within each decade
+  for(let exp=GAP_LOG_MIN;exp<GAP_LOG_MAX;exp++){
+    [2,3,5].forEach(m=>{
+      const v=m*Math.pow(10,exp);
+      const t=(Math.log10(v)-GAP_LOG_MIN)/(GAP_LOG_MAX-GAP_LOG_MIN);
+      const x=padX+t*(W-2*padX);
+      svg+=`<line class="axis-tick-minor" x1="${x}" y1="${axisY-2}" x2="${x}" y2="${axisY+5}"/>`;
+    });
+  }
+
+  // Band region labels above the colour bar
+  svg+=`<text class="axis-label-band" x="${padX+(W-2*padX)*0.18}" y="${axisY-30}">precise</text>`;
+  svg+=`<text class="axis-label-band" x="${padX+(W-2*padX)*0.5}" y="${axisY-30}">getting coarse</text>`;
+  svg+=`<text class="axis-label-band" x="${padX+(W-2*padX)*0.85}" y="${axisY-30}">very coarse</text>`;
+
+  // Probe (will be positioned by update fn)
+  svg+=`<g id="gapProbeG">
+    <line id="gapProbeLine" class="probe-line" x1="0" y1="${axisY-32}" x2="0" y2="${axisY+12}"/>
+    <polygon id="gapProbeMarker" class="probe-marker" points="0,${axisY-37} -6,${axisY-46} 6,${axisY-46}"/>
+    <text id="gapProbeLabel" class="probe-label" x="0" y="${axisY-52}">probe</text>
+  </g>`;
+
+  gapAxisSvg.innerHTML=svg;
+}
+
+function moveProbe(p){
+  const W=760, padX=40;
+  const t=p/1000;
+  const x=padX+t*(W-2*padX);
+  const probeLine=document.getElementById('gapProbeLine');
+  const probeMarker=document.getElementById('gapProbeMarker');
+  const probeLabel=document.getElementById('gapProbeLabel');
+  if(probeLine){probeLine.setAttribute('x1',x.toFixed(1));probeLine.setAttribute('x2',x.toFixed(1));}
+  if(probeMarker){
+    // Translate the polygon points
+    const axisY=85;
+    probeMarker.setAttribute('points',`${x},${axisY-37} ${x-6},${axisY-46} ${x+6},${axisY-46}`);
+  }
+  if(probeLabel){probeLabel.setAttribute('x',x.toFixed(1));}
+}
+
+function updateGap(){
+  const p=parseInt(gapSlider.value);
+  const m=probeToMag(p);
+  const gap=float32Ulp(m);
+
+  moveProbe(p);
+
+  // Magnitude label
+  gapMagVal.textContent='≈ '+formatMag(m);
+  gapStepVal.textContent='≈ '+formatGap(gap);
+
+  // Explain line
+  let exp='';
+  if(gap<1e-4){
+    exp=`Floats here are tightly packed. You can distinguish values that differ by only ${formatGap(gap)}. This is the precise end of the spectrum.`;
+  }else if(gap<1){
+    exp=`Precision is starting to coarsen. Two numbers within ${formatGap(gap)} of each other will collapse to the same float32.`;
+  }else if(gap<1000){
+    exp=`Precision is meaningfully coarse. You can't tell two numbers apart unless they differ by more than ${formatGap(gap)}.`;
+  }else{
+    exp=`Precision is very coarse. Numbers in this range round to multiples of about ${formatGap(gap)}, regardless of how close they really are.`;
+  }
+  gapExplain.textContent=exp;
+
+  updateCollide();
+}
+
+function updateCollide(){
+  const p=parseInt(gapSlider.value);
+  const baseMag=probeToMag(p);
+  // Round base magnitude to a representable value
+  const baseF=Math.fround(baseMag);
+  const deltaExp=parseFloat(gapDeltaSlider.value);
+  const delta=Math.pow(10,deltaExp);
+  const a=baseF;
+  const bIdeal=baseF+delta;
+  const bStored=Math.fround(bIdeal);
+  const collided=(a===bStored);
+
+  gapDeltaVal.innerHTML=`10<sup>${deltaExp.toFixed(2)}</sup>`;
+
+  // Display values: show enough precision to distinguish them when not collided
+  let aDisplay, bDisplay;
+  if(baseMag<0.01){
+    aDisplay=a.toExponential(6);
+    bDisplay=bStored.toExponential(6);
+  }else if(baseMag<1){
+    aDisplay=a.toPrecision(8);
+    bDisplay=bStored.toPrecision(8);
+  }else if(baseMag<1e6){
+    // Try to show small differences
+    const decimals=Math.max(0,Math.min(8,4-Math.floor(Math.log10(baseMag))));
+    aDisplay=a.toFixed(decimals);
+    bDisplay=bStored.toFixed(decimals);
+  }else{
+    aDisplay=a.toExponential(6);
+    bDisplay=bStored.toExponential(6);
+  }
+  gapAVal.textContent=aDisplay;
+  gapBVal.textContent=bDisplay;
+
+  // Visual state
+  const aBlock=gapAVal.parentElement;
+  const bBlock=gapBVal.parentElement;
+  aBlock.classList.toggle('collided',collided);
+  bBlock.classList.toggle('collided',collided);
+  gapStatus.textContent=collided?'=':'vs';
+  gapStatus.classList.toggle('collided',collided);
+
+  // Verdict
+  if(collided){
+    gapVerdict.classList.add('collided');
+    gapVerdict.innerHTML=`Both numbers round to the same float32. Their difference (${formatGap(delta)}) is below float32's precision at this magnitude (${formatGap(float32Ulp(baseMag))}).`;
+  }else{
+    gapVerdict.classList.remove('collided');
+    gapVerdict.innerHTML=`Stored as distinct values. Their difference (${formatGap(delta)}) exceeds float32's precision at this magnitude (${formatGap(float32Ulp(baseMag))}).`;
+  }
+}
+
+gapSlider.addEventListener('input',updateGap);
+gapDeltaSlider.addEventListener('input',updateCollide);
+document.querySelectorAll('.gap-jump').forEach(b=>{
+  b.addEventListener('click',()=>{
+    gapSlider.value=b.dataset.pos;
+    updateGap();
+  });
+});
+
+buildGapAxis();
+updateGap();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: 0.1 problem
+// ═══════════════════════════════════════════════════════════════════════════
+const errvizInput=document.getElementById('errvizInput');
+const errvizExact=document.getElementById('errvizExact');
+const errvizStored=document.getElementById('errvizStored');
+const errvizError=document.getElementById('errvizError');
+
+function renderErrviz(){
+  const typed=parseFloat(errvizInput.value);
+  if(isNaN(typed)){
+    errvizExact.textContent='-';
+    errvizStored.textContent='-';
+    errvizError.innerHTML='Please type a valid number.';
+    return;
+  }
+  const stored=Math.fround(typed);
+  errvizExact.textContent=errvizInput.value;
+  // Show ~17 digits to expose the rounding
+  errvizStored.textContent=stored.toPrecision(17).replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');
+  const err=Math.abs(typed-stored);
+  if(err===0||err<1e-15){
+    errvizError.className='errviz-error zero';
+    errvizError.innerHTML='<span class="err-val">No rounding error.</span> This value can be stored exactly.';
+  }else{
+    errvizError.className='errviz-error';
+    errvizError.innerHTML=`Rounding error: <span class="err-val">≈ ${err.toExponential(2)}</span>`;
+  }
+}
+errvizInput.addEventListener('input',renderErrviz);
+document.querySelectorAll('.errviz-preset').forEach(b=>{
+  b.addEventListener('click',()=>{
+    errvizInput.value=b.dataset.val;
+    renderErrviz();
+  });
+});
+renderErrviz();
+</script>
+</body>
+</html>

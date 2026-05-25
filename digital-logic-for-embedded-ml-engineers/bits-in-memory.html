@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bits in Memory | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --purple:#c89cff;--purple-dim:rgba(200,156,255,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* code blocks */
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);margin:1.2rem 0;overflow-x:auto;line-height:1.65}
+    .codeblock .c-comment{color:var(--muted);font-style:italic}
+    .codeblock .c-keyword{color:var(--purple)}
+    .codeblock .c-fn{color:var(--blue)}
+    .codeblock .c-num{color:var(--accent)}
+    .codeblock .c-str{color:var(--green)}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* ── VIZ 1: endianness explorer ────────────────────────────────────────── */
+    .endian-wrap{display:flex;flex-direction:column;gap:1.3rem}
+    .endian-input-row{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+    .endian-value-input{display:flex;align-items:center;gap:.5rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;padding:.5rem .9rem;flex:1;min-width:240px;transition:border-color .2s}
+    .endian-value-input:focus-within{border-color:var(--accent)}
+    .endian-value-input .pfx{font-family:'Courier New',monospace;color:var(--muted);font-size:1.1rem;font-weight:600}
+    .endian-value-input input{background:none;border:none;outline:none;color:var(--accent);font-family:'Courier New',monospace;font-size:1.3rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;width:100%;flex:1}
+    .endian-byteslabel{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:flex;justify-content:space-between;align-items:center;margin-top:.3rem}
+    .endian-bytes{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
+    .endian-byte{background:var(--bg-card);border:1.5px solid var(--border-hover);border-radius:8px;padding:.7rem .5rem;text-align:center;font-family:'Courier New',monospace;display:flex;flex-direction:column;align-items:center;gap:.25rem}
+    .endian-byte .byte-label{font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+    .endian-byte .byte-val{font-size:1.4rem;color:var(--ink);font-weight:700}
+    .endian-byte.msb{border-color:rgba(232,168,76,.4);background:rgba(232,168,76,.05)}
+    .endian-byte.lsb{border-color:rgba(76,168,232,.4);background:rgba(76,168,232,.05)}
+    .endian-byte.msb .byte-val{color:var(--accent)}
+    .endian-byte.lsb .byte-val{color:var(--blue)}
+    .endian-modeswitch{display:flex;gap:.5rem}
+    .endian-mode-btn{padding:.5rem 1rem;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--muted);font-size:.88rem;cursor:pointer;transition:all .2s;font-family:inherit;font-weight:500;flex:1}
+    .endian-mode-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .endian-memory{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem}
+    .endian-memory-row{display:grid;grid-template-columns:auto repeat(4,1fr);gap:.5rem;align-items:center;margin-bottom:.4rem}
+    .endian-memory-row.header{margin-bottom:.7rem}
+    .endian-mem-addrlabel{font-family:'Courier New',monospace;font-size:.78rem;color:var(--muted);font-weight:600;padding-right:.7rem;text-align:right;min-width:110px}
+    .endian-mem-cell{background:var(--bg-card);border:1.5px solid var(--border-hover);border-radius:6px;padding:.55rem .3rem;text-align:center;font-family:'Courier New',monospace;font-size:1rem;font-weight:700;color:var(--ink);transition:all .3s}
+    .endian-mem-cell.little{background:rgba(76,168,232,.1);border-color:rgba(76,168,232,.4);color:var(--blue)}
+    .endian-mem-cell.big{background:rgba(232,168,76,.1);border-color:rgba(232,168,76,.4);color:var(--accent)}
+    .endian-mem-addr{font-family:'Courier New',monospace;font-size:.72rem;color:var(--muted);text-align:center}
+
+    /* ── VIZ 2: dump reader (multi-byte) ─────────────────────────────────── */
+    .dump2-wrap{display:flex;flex-direction:column;gap:1rem}
+    .dump2-grid-wrap{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.2rem}
+    .dump2-row{display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;margin-bottom:.4rem;font-family:'Courier New',monospace}
+    .dump2-row .addr{color:var(--muted);font-size:.82rem;font-weight:600}
+    .dump2-bytes{display:grid;grid-template-columns:repeat(8,1fr);gap:.35rem}
+    .dump2-byte{background:var(--bg-card);border:1.5px solid var(--border-hover);border-radius:5px;padding:.45rem;text-align:center;font-size:.92rem;color:var(--body);font-weight:600;transition:all .15s;cursor:pointer}
+    .dump2-byte:hover{border-color:var(--accent);color:var(--accent)}
+    .dump2-byte.highlight{background:rgba(232,168,76,.12);border-color:var(--accent);color:var(--accent)}
+    .dump2-controls{display:flex;gap:.5rem;flex-wrap:wrap}
+    .dump2-btn{padding:.5rem 1rem;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.85rem;cursor:pointer;font-family:inherit;transition:all .2s}
+    .dump2-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .dump2-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .dump2-readout{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;font-family:'Courier New',monospace;font-size:.95rem;line-height:1.7}
+    .dump2-readout .label{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;font-family:inherit}
+    .dump2-readout .val{color:var(--ink);font-weight:700}
+    .dump2-readout .val.le{color:var(--blue)}
+    .dump2-readout .val.be{color:var(--accent)}
+
+    /* ── VIZ 3: register layout decoder ────────────────────────────────────── */
+    .reg-wrap{display:flex;flex-direction:column;gap:1.2rem}
+    .reg-input-row{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+    .reg-input{display:flex;align-items:center;gap:.5rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;padding:.55rem 1rem;flex:1;min-width:240px}
+    .reg-input:focus-within{border-color:var(--accent)}
+    .reg-input .pfx{font-family:'Courier New',monospace;color:var(--muted);font-size:1.05rem;font-weight:600}
+    .reg-input input{background:none;border:none;outline:none;color:var(--accent);font-family:'Courier New',monospace;font-size:1.2rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;width:100%;flex:1}
+    .reg-bits-row{display:grid;grid-template-columns:repeat(16,1fr);gap:2px}
+    .reg-bit{aspect-ratio:1;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s;min-height:38px;line-height:1;position:relative}
+    .reg-bit.f0{background:rgba(232,168,76,.1);color:var(--accent);border:1px solid rgba(232,168,76,.3)}
+    .reg-bit.f0.set{background:rgba(232,168,76,.4);color:#fff}
+    .reg-bit.f1{background:rgba(76,168,232,.1);color:var(--blue);border:1px solid rgba(76,168,232,.3)}
+    .reg-bit.f1.set{background:rgba(76,168,232,.4);color:#fff}
+    .reg-bit.f2{background:rgba(127,255,107,.1);color:var(--green);border:1px solid rgba(127,255,107,.3)}
+    .reg-bit.f2.set{background:rgba(127,255,107,.4);color:#fff}
+    .reg-bit.f3{background:rgba(200,156,255,.1);color:var(--purple);border:1px solid rgba(200,156,255,.3)}
+    .reg-bit.f3.set{background:rgba(200,156,255,.4);color:#fff}
+    .reg-bit.f4{background:rgba(255,107,107,.1);color:var(--red);border:1px solid rgba(255,107,107,.3)}
+    .reg-bit.f4.set{background:rgba(255,107,107,.4);color:#fff}
+    .reg-bit.fres{background:rgba(125,118,107,.07);color:var(--muted);border:1px solid var(--border)}
+    .reg-positions{display:grid;grid-template-columns:repeat(16,1fr);gap:2px;margin-top:-2px;font-size:.62rem;color:var(--muted);font-family:'Courier New',monospace;text-align:center}
+    .reg-fields{display:flex;flex-direction:column;gap:.5rem;margin-top:.4rem}
+    .reg-field-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:center}
+    .reg-field-card.f0{border-left:3px solid var(--accent)}
+    .reg-field-card.f1{border-left:3px solid var(--blue)}
+    .reg-field-card.f2{border-left:3px solid var(--green)}
+    .reg-field-card.f3{border-left:3px solid var(--purple)}
+    .reg-field-card.f4{border-left:3px solid var(--red)}
+    .reg-field-name{font-family:var(--display);font-size:1.1rem;color:var(--ink);min-width:60px}
+    .reg-field-desc{font-size:.85rem;color:var(--muted);font-style:italic}
+    .reg-field-val{font-family:'Courier New',monospace;font-size:1rem;font-weight:700;color:var(--ink);background:rgba(237,232,224,.05);padding:.25rem .7rem;border-radius:5px;min-width:90px;text-align:center}
+    .reg-presets{display:flex;gap:.4rem;flex-wrap:wrap}
+    .reg-preset-btn{padding:.4rem .85rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.78rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .reg-preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}.endian-bytes{grid-template-columns:repeat(4,1fr)}.endian-byte .byte-val{font-size:1.1rem}.reg-bit{font-size:.7rem;min-height:30px}.reg-positions{font-size:.55rem}.reg-field-card{grid-template-columns:auto auto;grid-template-rows:auto auto;gap:.4rem}.reg-field-desc{grid-column:1/-1}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Digital Logic for the Embedded ML Engineer</span>
+  <h1>Bits in Memory</h1>
+  <p class="blog-subtitle">Why memory dumps look backwards, why one register holds sixteen settings, and the small set of patterns that make every datasheet readable.</p>
+
+  <h2>Why this lesson exists</h2>
+
+  <p>By now you can read a single byte. <code>0x9C</code> doesn't scare you. You see <code>1001 1100</code> and you know which bits are set and which nibble is which.</p>
+
+  <p>The problem is that real hardware almost never deals with one byte at a time. It deals with values that span multiple bytes. A 32-bit weight. A 16-bit ADC reading. A 64-bit timestamp. And it packs many small fields into one register. A single 32-bit GPIO config register on an STM32 holds the mode for sixteen different pins, two bits per pin.</p>
+
+  <p>So now we have two new questions. When a value is bigger than one byte, in what order are those bytes laid out in memory? And when one register holds many small fields, how do we know which bits belong to which field, and how do we read or write them without disturbing the others?</p>
+
+  <p>Both questions have clean answers once you see them, but both have a couple of traps that will absolutely bite you if you don't know they exist. By the end of this post you'll be able to look at a memory dump and a datasheet at the same time, and tell me what the chip is doing.</p>
+
+  <hr class="sep">
+
+  <h2>Memory is just a long row of byte-shaped slots</h2>
+
+  <p>Memory in a chip is an array of bytes, each with its own address. On a Cortex-M, addresses are 32-bit numbers, and each address points to exactly one byte. Address <code>0x20000000</code> holds one byte. Address <code>0x20000001</code> holds the next one. And so on, all the way up.</p>
+
+  <p>This part is fine. The complication is what happens when you want to store something <em>bigger</em> than one byte.</p>
+
+  <p>Suppose you want to store the 32-bit value <code>0x12345678</code> at address <code>0x20000000</code>. That value is four bytes: <code>0x12</code>, <code>0x34</code>, <code>0x56</code>, <code>0x78</code>. Memory has slots at <code>0x20000000</code>, <code>0x20000001</code>, <code>0x20000002</code>, <code>0x20000003</code>. Four slots, four bytes. The question is which byte goes in which slot, and there are two reasonable answers. History picked both. That's the entire reason we have to talk about endianness.</p>
+
+  <hr class="sep">
+
+  <h2>The two answers</h2>
+
+  <p>The question is whether the most significant byte goes at the lowest address, or the least significant byte does.</p>
+
+  <p><strong>Big-endian</strong> puts the most significant byte first. So <code>0x12345678</code> stored starting at <code>0x20000000</code> looks like <code>12 34 56 78</code> in memory order. This matches how you read it left to right on paper. The "biggest" part of the number comes first. It's the natural-looking choice.</p>
+
+  <p><strong>Little-endian</strong> puts the least significant byte first. Same value, same starting address, looks like <code>78 56 34 12</code> in memory. The "smallest" part comes first. This looks backwards if you're reading bytes left to right, but it has some quietly clever properties at the hardware level.</p>
+
+  <h3>A small detour: where the name actually comes from</h3>
+
+  <p>The names sound like they were invented by someone trying to be deliberately confusing, but there's a reason behind them, and it's surprisingly funny.</p>
+
+  <p>The terms come from Jonathan Swift's <em>Gulliver's Travels</em>, written in 1726. In the book, the tiny kingdom of Lilliput is in the middle of a long, bitter civil war. The two sides are the <strong>Big-Endians</strong> and the <strong>Little-Endians</strong>. They are not arguing about politics, religion, or land. They are arguing about which end of a boiled egg you should crack open first.</p>
+
+  <p>The Big-Endians say you crack the egg at the big end, the way nature intended. The Little-Endians, following an edict from a previous emperor (whose father had once cut his finger cracking the big end), insist you must crack the small end. This disagreement has, by the time Gulliver shows up, caused multiple wars, the deaths of "many thousands", and the loss of an entire fleet of warships. Swift was satirising the religious wars of his time. The point was that people fight bitterly over distinctions that don't really matter.</p>
+
+  <p>In 1980, a computer scientist named Danny Cohen wrote a famous paper called <em>"On Holy Wars and a Plea for Peace"</em>, comparing the byte-order debate in computing to exactly this. He proposed the names "big-endian" and "little-endian" as a half-joke, because the engineering community was getting religious about it. The names stuck. Forty-five years later we're still using them, mostly because nobody has come up with anything better.</p>
+
+  <p>So when you say a chip is little-endian, you are quite literally calling it an egg-cracker from the small-end faction of an imaginary civil war. The history of computing is full of jokes that became permanent.</p>
+
+  <div class="callout">Little-endian: low byte at low address. Big-endian: high byte at low address. That's the whole distinction.</div>
+
+  <p>The widget below lets you type in any 32-bit value and watch it laid out in memory under both conventions. Notice how the bytes themselves are identical. The only difference is the order in which they sit.</p>
+
+  <!-- VIZ 1: endianness explorer -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">One value, two ways to lay it out.</span></div>
+    <div class="viz-body">
+      <div class="endian-wrap">
+        <div class="endian-input-row">
+          <div class="endian-value-input">
+            <span class="pfx">0x</span>
+            <input type="text" id="endianHex" maxlength="8" value="12345678" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="endian-byteslabel">
+          <span>Bytes of the value, MSB → LSB</span>
+        </div>
+        <div class="endian-bytes" id="endianBytesRow"></div>
+
+        <div class="endian-byteslabel" style="margin-top:.7rem">
+          <span>Memory layout</span>
+        </div>
+        <div class="endian-memory">
+          <div class="endian-memory-row">
+            <div class="endian-mem-addrlabel">address →</div>
+            <div class="endian-mem-addr">0x20000000</div>
+            <div class="endian-mem-addr">0x20000001</div>
+            <div class="endian-mem-addr">0x20000002</div>
+            <div class="endian-mem-addr">0x20000003</div>
+          </div>
+          <div class="endian-memory-row">
+            <div class="endian-mem-addrlabel" style="color:var(--blue)">little-endian</div>
+            <div class="endian-mem-cell little" id="le0"></div>
+            <div class="endian-mem-cell little" id="le1"></div>
+            <div class="endian-mem-cell little" id="le2"></div>
+            <div class="endian-mem-cell little" id="le3"></div>
+          </div>
+          <div class="endian-memory-row">
+            <div class="endian-mem-addrlabel" style="color:var(--accent)">big-endian</div>
+            <div class="endian-mem-cell big" id="be0"></div>
+            <div class="endian-mem-cell big" id="be1"></div>
+            <div class="endian-mem-cell big" id="be2"></div>
+            <div class="endian-mem-cell big" id="be3"></div>
+          </div>
+        </div>
+
+        <div class="endian-modeswitch" style="margin-top:.5rem">
+          <button class="reg-preset-btn" data-endian-preset="12345678">0x12345678</button>
+          <button class="reg-preset-btn" data-endian-preset="DEADBEEF">0xDEADBEEF</button>
+          <button class="reg-preset-btn" data-endian-preset="CAFEBABE">0xCAFEBABE</button>
+          <button class="reg-preset-btn" data-endian-preset="0000FFFF">0x0000FFFF</button>
+          <button class="reg-preset-btn" data-endian-preset="00000001">0x00000001</button>
+        </div>
+      </div>
+      <p class="viz-note">The same four bytes, two different orders. Notice that <code>0x00000001</code> stored as little-endian is <code>01 00 00 00</code>. The "1" lives at the lowest address. As big-endian it's <code>00 00 00 01</code>. The "1" lives at the highest address. When you see a memory dump, what you're really seeing is one of these two orderings, and you have to know which.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Why both exist</h2>
+
+  <p>The big-endian argument is short. It matches how humans write numbers. When you write 1234 you write the thousands first, then hundreds, tens, ones. Most significant first. Big-endian is just the on-paper convention applied to bytes.</p>
+
+  <p>The little-endian argument is more interesting. Imagine you've stored a 32-bit value at some address, and now you want to read just the low byte of it as an 8-bit value. With little-endian, the low byte is already at the starting address. Read one byte from that address and you're done. With big-endian, the low byte is three slots further along, so you have to do address arithmetic. The same is true if you ever want to "shrink" a value from 32-bit to 16-bit. Little-endian makes those casts essentially free.</p>
+
+  <p>Little-endian also makes incrementing a multi-byte counter slightly cleaner in hardware, because the carry propagates "forward" through memory, in the natural direction of an iterator. Neither argument is decisive on its own. The world has just settled on different defaults in different places.</p>
+
+  <hr class="sep">
+
+  <h2>Who uses what</h2>
+
+  <p>Practically speaking, for embedded ML, almost everything you'll touch is little-endian.</p>
+
+  <ul>
+    <li>ARM Cortex-M (M0, M3, M4, M7, M33). Little-endian by default. Technically configurable, but you'll never see it any other way in the wild.</li>
+    <li>ARM Cortex-A, the application processors in phones and Raspberry Pis. Little-endian.</li>
+    <li>ESP32, both the Xtensa and the newer RISC-V variants. Little-endian.</li>
+    <li>x86 and x86-64, the laptop you're reading this on. Little-endian.</li>
+    <li>RISC-V. Little-endian by default.</li>
+    <li>Most modern GPUs and ML accelerators. Little-endian.</li>
+  </ul>
+
+  <p>Big-endian survives in a few places. Network protocols are explicitly big-endian (the term for that is "network byte order"). Some legacy MIPS and PowerPC systems. A few file formats here and there.</p>
+
+  <p>So you'll be living in a little-endian world. But you should recognise big-endian when you see it, because it shows up the moment you start parsing network packets or certain file formats, and you don't want to be confused.</p>
+
+  <hr class="sep">
+
+  <h2>The bug this causes, and how to spot it</h2>
+
+  <p>The classic embedded ML version of this bug is moving a model between systems. Train on a laptop. Save weights as raw bytes to a binary file. Load on the target chip. If both ends are little-endian, no problem. If one is big-endian, every multi-byte weight gets silently scrambled. The bytes arrive correctly. Their order is wrong. Inference produces nonsense and there's no error message anywhere.</p>
+
+  <p>You'd just byte-swap on load and the problem disappears, but only if you knew to look for it.</p>
+
+  <p>The other place endianness shows up is when you read memory dumps. A dump shows you bytes in <em>address order</em>. The <em>value</em> they encode is in some other order, depending on endianness. So when you see this on a little-endian chip:</p>
+
+  <p><code>0x20000000:&nbsp;&nbsp;78 56 34 12</code></p>
+
+  <p>Your gut wants to read this as <code>0x78563412</code>. But on a little-endian machine, those four bytes encode the value <code>0x12345678</code>. The bytes appear in address order; the value is byte-swapped relative to that. You'll do this mental reversal a hundred times in your career.</p>
+
+  <div class="callout">Little-endian dumps look backwards. The bytes you see are in address order; the value is byte-swapped from what you read.</div>
+
+  <p>The widget below lets you practise. A small chunk of memory is shown. Click any 4-byte group to see what 32-bit value those bytes actually represent under each ordering. The value you'd "naturally" read isn't the value the chip sees.</p>
+
+  <!-- VIZ 2: dump reader -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A dump, two ways to read it.</span></div>
+    <div class="viz-body">
+      <div class="dump2-wrap">
+        <div class="dump2-grid-wrap">
+          <div class="dump2-row">
+            <span class="addr">0x20000040:</span>
+            <div class="dump2-bytes" id="dumpBytes0"></div>
+          </div>
+          <div class="dump2-row">
+            <span class="addr">0x20000048:</span>
+            <div class="dump2-bytes" id="dumpBytes1"></div>
+          </div>
+        </div>
+        <div class="dump2-controls">
+          <span style="font-size:.85rem;color:var(--muted);align-self:center">Pick a 4-byte word:</span>
+          <button class="dump2-btn active" data-word="0">word @ 0x40</button>
+          <button class="dump2-btn" data-word="1">word @ 0x44</button>
+          <button class="dump2-btn" data-word="2">word @ 0x48</button>
+          <button class="dump2-btn" data-word="3">word @ 0x4C</button>
+        </div>
+        <div class="dump2-readout">
+          <div><span class="label">bytes in memory (address order):</span> <span class="val" id="dumpRawBytes">78 56 34 12</span></div>
+          <div><span class="label">read as little-endian (32-bit):</span> <span class="val le" id="dumpLE">0x12345678</span></div>
+          <div><span class="label">read as big-endian (32-bit):</span> <span class="val be" id="dumpBE">0x78563412</span></div>
+        </div>
+      </div>
+      <p class="viz-note">If you're on a Cortex-M (little-endian), the value at <code>0x40</code> is the blue one. If you came from a network packet, the value is the orange one. Same bytes. Two completely different numbers. Knowing which interpretation applies is the whole game.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The thing that makes int8 quietly wonderful</h2>
+
+  <p>There's a small but practically important consequence of all this. Endianness only matters for values that span more than one byte. The moment your storage unit is exactly one byte, there is no ordering question to get wrong.</p>
+
+  <p>This has a delightful side-effect for embedded ML. <strong>An int8 quantised model is endianness-immune.</strong> Each weight is one byte. There's no "low byte" and "high byte". If you write the bytes correctly on one machine, they read correctly on any other machine, regardless of endianness. You can ship a quantised <code>.tflite</code> file across architectures without ever thinking about byte order.</p>
+
+  <p>If you stored those same weights as float32, you'd have four bytes per weight, and you'd have to be careful. Int8 quantisation makes the problem disappear. This isn't the main reason int8 wins on embedded targets, but it's a real engineering virtue worth knowing about.</p>
+
+  <hr class="sep">
+
+  <h2>The other half: many fields in one register</h2>
+
+  <p>Endianness is about how multi-byte values are laid out in memory. Register layouts are about how multiple settings are packed into one register. Both are about "how do bits get arranged?", just at different scales. Endianness operates at the byte level. Register layouts operate at the bit level.</p>
+
+  <p>This second one is where reading datasheets becomes a real skill, and it's the skill you'll use literally every time you configure a peripheral or talk to an accelerator.</p>
+
+  <h3>What a register actually is</h3>
+
+  <p>On a Cortex-M, a register is a fixed-size memory location at a known address. They're typically 32 bits wide. Each peripheral on the chip — a GPIO controller, a UART, a timer, an ADC, a DMA channel, an accelerator — has a small set of registers that you read and write to control it.</p>
+
+  <p>The trick is that a register isn't usually used as one big 32-bit number. Its bits are divided into <em>fields</em>, each controlling a specific aspect of the peripheral.</p>
+
+  <p>Here's a real example, lightly cleaned up. The STM32F4's <code>GPIOA_MODER</code> register controls the mode of the 16 pins on GPIO port A. Each pin gets two bits to specify its mode: input, output, alternate function, or analog. Sixteen pins times two bits is exactly thirty-two bits. The whole register is sliced into sixteen tiny 2-bit fields, one per pin.</p>
+
+  <p>This is how almost every hardware peripheral is configured. One register, many fields, each one a tiny knob you can turn. Reading and writing those knobs without disturbing the others is the core skill.</p>
+
+  <h3>How datasheets describe the layout</h3>
+
+  <p>You'll see register layouts in three common forms. They all mean the same thing.</p>
+
+  <p>The first form is a bit table. It looks like this.</p>
+
+  <div class="codeblock">| Bits  | Name | Description                |
+| 31:16 | RES  | Reserved (write 0)         |
+| 15:8  | DIV  | 8-bit clock divider        |
+| 7:5   | MODE | Operating mode (3 bits)    |
+| 4     | IE   | Interrupt enable           |
+| 3:0   | CH   | Channel select (4 bits)    |</div>
+
+  <p>The notation <code>[high:low]</code> means "a range of bits from <code>high</code> down to <code>low</code>, inclusive." So <code>15:8</code> means bits 15, 14, 13, 12, 11, 10, 9, 8. Eight bits in total. The low bit and the high bit are both part of the field.</p>
+
+  <p>The second form is a visual diagram, where each field is a box and the box widths are proportional to the number of bits. Same information, just drawn instead of tabulated.</p>
+
+  <p>The third form is a list of offsets, "<code>MODE: bits 4-6, 3 bits wide</code>", and so on. Same information again. You'll see all three. They're equivalent.</p>
+
+  <p>The widget below decodes the made-up CTRL register from above. Type any 32-bit hex value, see how it gets sliced into fields. Each field is colour-coded so you can see which bits belong to which knob.</p>
+
+  <!-- VIZ 3: register layout decoder -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Type a register value. Watch it split into fields.</span></div>
+    <div class="viz-body">
+      <div class="reg-wrap">
+        <div class="reg-input-row">
+          <div class="reg-input">
+            <span class="pfx">CTRL = 0x</span>
+            <input type="text" id="regHex" maxlength="8" value="00003A52" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr;gap:.3rem">
+          <div class="reg-bits-row" id="regBitsHi"></div>
+          <div class="reg-positions" id="regPositionsHi"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr;gap:.3rem">
+          <div class="reg-bits-row" id="regBitsLo"></div>
+          <div class="reg-positions" id="regPositionsLo"></div>
+        </div>
+
+        <div class="reg-fields" id="regFields"></div>
+
+        <div class="reg-presets">
+          <button class="reg-preset-btn" data-reg-preset="00003A52">0x00003A52 (the quiz value)</button>
+          <button class="reg-preset-btn" data-reg-preset="00000000">all zero</button>
+          <button class="reg-preset-btn" data-reg-preset="0000FFFF">all fields max</button>
+          <button class="reg-preset-btn" data-reg-preset="00001000">just IE set</button>
+        </div>
+      </div>
+      <p class="viz-note">Five fields packed into one 32-bit register. The top half is reserved (greyed out, write 0). Each remaining field has its own colour. Type any value or click a preset and you'll see the slicing instantly. Real datasheets describe their registers exactly like this, sometimes with twenty fields in one word.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Reading and writing fields in C</h2>
+
+  <p>The two operations you do on a register all the time are extracting a field and inserting one. Both are mechanical, and both are built from a tiny vocabulary of bitwise operators.</p>
+
+  <h3>Extracting a field</h3>
+
+  <p>Shift the field down to the bottom, then mask to keep only its bits. To grab the 4-bit CH field at bits 0-3:</p>
+
+  <div class="codeblock"><span class="c-keyword">uint32_t</span> ch = ctrl &amp; <span class="c-num">0xF</span>;  <span class="c-comment">// already at the bottom, just mask</span></div>
+
+  <p>The mask <code>0xF</code> is <code>0000 1111</code>, which keeps the bottom four bits and clears everything else. No shift needed because CH is already at position 0.</p>
+
+  <p>To grab the 3-bit MODE field at bits 5-7:</p>
+
+  <div class="codeblock"><span class="c-keyword">uint32_t</span> mode = (ctrl &gt;&gt; <span class="c-num">5</span>) &amp; <span class="c-num">0x7</span>;  <span class="c-comment">// shift down, then mask</span></div>
+
+  <p>Shift right by 5 to move the field's lowest bit to position 0. Then mask with <code>0x7</code> (which is <code>0000 0111</code>) to keep only those three bits.</p>
+
+  <p>The general pattern is <code>(reg &gt;&gt; field_low_bit) &amp; ((1 &lt;&lt; field_width) - 1)</code>. Once your eye sees that shape it's a free read.</p>
+
+  <h3>Inserting a field — and the trap</h3>
+
+  <p>This is where most learners write a bug the first time, and it's worth being explicit about it.</p>
+
+  <p>The instinct is to take the new value, shift it into position, and OR it into the register. Like this:</p>
+
+  <div class="codeblock"><span class="c-comment">// WRONG. This is the bug.</span>
+ctrl |= (new_mode &lt;&lt; <span class="c-num">5</span>);</div>
+
+  <p>The problem is that OR can only flip bits from 0 to 1. It can't flip them back. So if the MODE field already had some bits set, those bits stay set, and you end up ORing the new value <em>on top of</em> the old one. The result is whatever bits were in either, not the new value.</p>
+
+  <p>To change a field reliably, you have to clear it first, then OR in the new value. The pattern is <strong>clear, shift, OR.</strong></p>
+
+  <div class="codeblock">ctrl &amp;= ~(<span class="c-num">0x7</span> &lt;&lt; <span class="c-num">5</span>);          <span class="c-comment">// 1. clear bits 5-7</span>
+ctrl |= (new_mode &amp; <span class="c-num">0x7</span>) &lt;&lt; <span class="c-num">5</span>;   <span class="c-comment">// 2. insert new value into bits 5-7</span></div>
+
+  <p>The first line builds the mask <code>0x7 &lt;&lt; 5</code>, which is <code>0b1110_0000</code>. Then it inverts it, giving <code>...1111_1111_0001_1111</code>. Then it ANDs that with <code>ctrl</code>, which clears just those three bits and leaves everything else alone. The second line takes the new value (masked to three bits for safety, in case the caller passed something bigger), shifts it into place, and ORs it in.</p>
+
+  <p>You'll see this pattern in every embedded driver you ever read. Sometimes it's compressed into a single line, like <code>ctrl = (ctrl &amp; ~(0x7 &lt;&lt; 5)) | ((new_mode &amp; 0x7) &lt;&lt; 5)</code>. Same idea. Same three steps.</p>
+
+  <div class="callout">Clear, then OR. OR alone can only set bits. To <em>change</em> a field, you have to clear it first.</div>
+
+  <hr class="sep">
+
+  <h2>Why this matters for embedded ML specifically</h2>
+
+  <p>Two reasons this isn't an aside.</p>
+
+  <p>First, you'll use peripherals constantly. Configuring DMA to move tensors from one memory region to another. Setting up a timer to trigger inference at a fixed rate. Reading from an ADC to feed sensor data into your model. Configuring SPI or I²C to talk to an external sensor or accelerator. All of this is register-level work, and all of it lives in datasheets that look exactly like the CTRL example above.</p>
+
+  <p>Second, the moment you integrate a neural network IP block — a Coral Edge TPU, an Ethos-U55, a Hexagon DSP, a custom NPU — its datasheet describes how to drive it through registers. Layer dimensions, weight memory addresses, quantisation parameters, output destinations, start/stop control. All of it is register fields. If you can't read those layouts, you can't drive the accelerator. You'll be stuck calling vendor libraries and hoping they do what you think they do.</p>
+
+  <p>This isn't optional for the kind of role you're aiming at. It's table stakes.</p>
+
+  <hr class="sep">
+
+  <h2>One last thing that confuses people</h2>
+
+  <p>Endianness and register bit numbering operate at different levels, and it's worth saying that explicitly.</p>
+
+  <p>When a datasheet says "bit 31 is the most significant bit and bit 0 is the least significant", that's about <em>bits inside a register's value</em>, not about bytes in memory. Inside a 32-bit register, bit 31 is always the MSB. That's universal. Endianness only changes the order in which the four bytes of that register's value appear when you treat memory as raw bytes.</p>
+
+  <p>So when you write <code>(reg &gt;&gt; 0) &amp; 1</code> in C, you get the LSB of the register's value, regardless of endianness. The C compiler handles the byte ordering for you. You only have to think about endianness when you treat memory as a sequence of raw bytes — like reading from a file, doing DMA, or interpreting a network packet — not when you're treating it as typed values.</p>
+
+  <hr class="sep">
+
+  <h2>Where this lands</h2>
+
+  <p>Three takeaways.</p>
+
+  <p>Endianness is the byte-order convention for multi-byte values in memory. Little-endian puts the low byte at the low address. Big-endian puts the high byte at the low address. Almost everything you'll touch in embedded ML is little-endian, but big-endian shows up in network protocols and some file formats. Memory dumps on little-endian chips look "backwards" relative to the value's normal hex notation, and you have to mentally reverse them.</p>
+
+  <p>Int8 quantised models are endianness-immune, because each storage unit is exactly one byte. This is one of the quiet practical wins of int8 for embedded inference.</p>
+
+  <p>Register layouts pack many fields into one word. Each field has a position and a width. To read a field, shift down then mask. To write a field, clear-then-OR. OR alone cannot change a field that already has bits set. This pattern is the backbone of every embedded driver you'll ever look at.</p>
+
+  <p>Next post is where we go from "the bits are arranged like this" to "the bits <em>mean</em> something." We start with two's complement and the asymmetric range of int8, and finally close the loop on what those quantised weights you've been staring at actually represent as numbers.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Digital Logic for the Embedded ML Engineer</h2>
+    <a class="sidebar-link" href="why-digital-logic.html">
+      <div class="sidebar-link-title">Part 1: Why You're Here</div>
+      <div class="sidebar-link-note">A chip is a calculator with memory and a clock.</div>
+    </a>
+    <a class="sidebar-link" href="reading-hardware.html">
+      <div class="sidebar-link-title">Part 2: Reading the Language of Hardware</div>
+      <div class="sidebar-link-note">Binary and hex.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="bits-in-memory.html">
+      <div class="sidebar-link-title">Part 3: Bits in Memory</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 4: Two's Complement</div>
+      <div class="sidebar-link-note">Why int8 looks the way it does.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 5: Overflow and Saturation</div>
+      <div class="sidebar-link-note">The math that almost goes wrong.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 6: Fixed-Point and Quantisation</div>
+      <div class="sidebar-link-note">A story in Q-format.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 7: Gates and Multipliers</div>
+      <div class="sidebar-link-note">Why adders are cheaper.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 8: Inside a MAC Unit</div>
+      <div class="sidebar-link-note">Where math becomes silicon.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 9: Memory and SRAM</div>
+      <div class="sidebar-link-note">Why bytes matter.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 10: Datapath and Control</div>
+      <div class="sidebar-link-note">Building a tiny accelerator.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Memory is bytes with addresses</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Two ways to lay out a multi-byte value</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why little-endian dumps look backwards</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Int8 is endianness-immune</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Register fields and the clear-then-OR pattern</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: endianness explorer
+// ═══════════════════════════════════════════════════════════════════════════
+const endianHex=document.getElementById('endianHex');
+const endianBytesRow=document.getElementById('endianBytesRow');
+
+function pad8(s){return s.padStart(8,'0').toUpperCase();}
+function getBytesFromHex(){
+  let v=endianHex.value.toUpperCase().replace(/[^0-9A-F]/g,'').padStart(8,'0').slice(-8);
+  const bytes=[];
+  for(let i=0;i<8;i+=2)bytes.push(v.slice(i,i+2));
+  return bytes; // MSB to LSB
+}
+function renderEndian(){
+  const bytes=getBytesFromHex();
+  // top row: bytes MSB->LSB
+  endianBytesRow.innerHTML=bytes.map((b,i)=>{
+    const cls=i===0?'msb':(i===3?'lsb':'');
+    const lbl=i===0?'MSB':(i===3?'LSB':'');
+    return `<div class="endian-byte ${cls}">
+      <span class="byte-label">${lbl||'byte '+i}</span>
+      <span class="byte-val">${b}</span>
+    </div>`;
+  }).join('');
+  // little-endian: LSB at low address, so reverse the MSB->LSB list
+  const le=[...bytes].reverse();
+  // big-endian: MSB at low address
+  const be=[...bytes];
+  for(let i=0;i<4;i++){
+    document.getElementById('le'+i).textContent=le[i];
+    document.getElementById('be'+i).textContent=be[i];
+  }
+}
+endianHex.addEventListener('input',()=>{
+  let v=endianHex.value.toUpperCase().replace(/[^0-9A-F]/g,'').slice(0,8);
+  endianHex.value=v;
+  renderEndian();
+});
+endianHex.addEventListener('blur',()=>{
+  endianHex.value=pad8(endianHex.value);
+  renderEndian();
+});
+document.querySelectorAll('[data-endian-preset]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    endianHex.value=b.dataset.endianPreset;
+    renderEndian();
+  });
+});
+renderEndian();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: dump reader
+// ═══════════════════════════════════════════════════════════════════════════
+const DUMP_RAW=['78','56','34','12','EF','BE','AD','DE','BE','BA','FE','CA','EF','CD','AB','89'];
+const dumpBytes0=document.getElementById('dumpBytes0');
+const dumpBytes1=document.getElementById('dumpBytes1');
+let selectedWord=0;
+
+function renderDumpGrid(){
+  const make=(slice,offset)=>slice.map((b,i)=>{
+    const wordIdx=Math.floor((offset+i)/4);
+    const inSelected=wordIdx===selectedWord;
+    return `<div class="dump2-byte ${inSelected?'highlight':''}" data-i="${offset+i}">${b}</div>`;
+  }).join('');
+  dumpBytes0.innerHTML=make(DUMP_RAW.slice(0,8),0);
+  dumpBytes1.innerHTML=make(DUMP_RAW.slice(8,16),8);
+  // click any byte selects its word
+  document.querySelectorAll('.dump2-byte').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const idx=parseInt(el.dataset.i);
+      selectedWord=Math.floor(idx/4);
+      document.querySelectorAll('.dump2-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.word)===selectedWord));
+      renderDumpGrid();
+      renderDumpReadout();
+    });
+  });
+}
+function renderDumpReadout(){
+  const start=selectedWord*4;
+  const slice=DUMP_RAW.slice(start,start+4);
+  document.getElementById('dumpRawBytes').textContent=slice.join(' ');
+  // little-endian: bytes are reversed to form value (MSB at end)
+  document.getElementById('dumpLE').textContent='0x'+[...slice].reverse().join('');
+  // big-endian: bytes in given order form value
+  document.getElementById('dumpBE').textContent='0x'+slice.join('');
+}
+document.querySelectorAll('.dump2-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.dump2-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    selectedWord=parseInt(b.dataset.word);
+    renderDumpGrid();
+    renderDumpReadout();
+  });
+});
+renderDumpGrid();
+renderDumpReadout();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: register layout decoder
+// ═══════════════════════════════════════════════════════════════════════════
+// Field map matches the article's CTRL register
+// bits 31:16 = RES, 15:8 = DIV, 7:5 = MODE, 4 = IE, 3:0 = CH
+const FIELDS=[
+  {name:'DIV',  desc:'8-bit clock divider',   low:8,  width:8, fclass:'f0'},
+  {name:'MODE', desc:'Operating mode',        low:5,  width:3, fclass:'f1'},
+  {name:'IE',   desc:'Interrupt enable',      low:4,  width:1, fclass:'f2'},
+  {name:'CH',   desc:'Channel select',        low:0,  width:4, fclass:'f3'},
+];
+function bitField(b){
+  if(b>=16) return 'fres';
+  if(b>=8) return 'f0';
+  if(b>=5) return 'f1';
+  if(b===4) return 'f2';
+  return 'f3';
+}
+const regBitsHi=document.getElementById('regBitsHi');
+const regBitsLo=document.getElementById('regBitsLo');
+const regPositionsHi=document.getElementById('regPositionsHi');
+const regPositionsLo=document.getElementById('regPositionsLo');
+const regFields=document.getElementById('regFields');
+const regHex=document.getElementById('regHex');
+
+function buildRegBitCells(){
+  // Top row: bits 31..16
+  let h='';
+  let p='';
+  for(let i=31;i>=16;i--){
+    h+=`<div class="reg-bit fres" data-bit="${i}">0</div>`;
+    p+=`<span>${i}</span>`;
+  }
+  regBitsHi.innerHTML=h;
+  regPositionsHi.innerHTML=p;
+  // Bottom row: bits 15..0
+  h='';p='';
+  for(let i=15;i>=0;i--){
+    h+=`<div class="reg-bit ${bitField(i)}" data-bit="${i}">0</div>`;
+    p+=`<span>${i}</span>`;
+  }
+  regBitsLo.innerHTML=h;
+  regPositionsLo.innerHTML=p;
+  // wire clicks
+  document.querySelectorAll('.reg-bit').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const b=parseInt(el.dataset.bit);
+      const cur=parseInt(regHex.value,16);
+      const next=(cur^(1<<b))>>>0;
+      regHex.value=next.toString(16).toUpperCase().padStart(8,'0');
+      renderReg();
+    });
+  });
+}
+
+function renderReg(){
+  let v=parseInt(regHex.value,16);
+  if(isNaN(v))v=0;
+  v=v>>>0;
+  // update bit cells
+  document.querySelectorAll('.reg-bit').forEach(el=>{
+    const b=parseInt(el.dataset.bit);
+    const set=((v>>>b)&1)===1;
+    el.classList.toggle('set',set);
+    el.textContent=set?'1':'0';
+  });
+  // field cards
+  regFields.innerHTML=FIELDS.map(f=>{
+    const mask=((1<<f.width)-1)>>>0;
+    const val=(v>>>f.low)&mask;
+    const binStr=val.toString(2).padStart(f.width,'0');
+    return `<div class="reg-field-card ${f.fclass}">
+      <div class="reg-field-name">${f.name}</div>
+      <div class="reg-field-desc">${f.desc} <span style="opacity:.5">— bits ${f.low+f.width-1}:${f.low}</span></div>
+      <div class="reg-field-val">${val} <span style="opacity:.5;font-size:.85em">(0b${binStr})</span></div>
+    </div>`;
+  }).join('');
+}
+
+regHex.addEventListener('input',()=>{
+  let v=regHex.value.toUpperCase().replace(/[^0-9A-F]/g,'').slice(0,8);
+  regHex.value=v;
+  renderReg();
+});
+regHex.addEventListener('blur',()=>{
+  regHex.value=regHex.value.padStart(8,'0').toUpperCase();
+  renderReg();
+});
+document.querySelectorAll('[data-reg-preset]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    regHex.value=b.dataset.regPreset;
+    renderReg();
+  });
+});
+buildRegBitCells();
+renderReg();
+</script>
+</body>
+</html>

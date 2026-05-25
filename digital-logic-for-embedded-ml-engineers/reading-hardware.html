@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Reading the Language of Hardware | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* hex table */
+    .hex-table{width:100%;border-collapse:separate;border-spacing:3px;margin:1.4rem 0;font-variant-numeric:tabular-nums}
+    .hex-table th,.hex-table td{padding:.5rem .75rem;text-align:center;font-size:.92rem;border-radius:6px}
+    .hex-table th{font-family:var(--display);color:var(--muted);font-weight:400;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em}
+    .hex-table td:nth-child(1){background:rgba(232,168,76,.12);color:var(--accent);font-family:'Courier New',monospace;font-weight:700}
+    .hex-table td:nth-child(2){background:rgba(237,232,224,.04);color:var(--ink);font-family:'Courier New',monospace}
+    .hex-table td:nth-child(3){background:rgba(237,232,224,.03);color:var(--body);font-family:'Courier New',monospace}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* ── VIZ 1: hex/binary translator ──────────────────────────────────────── */
+    .translator-wrap{display:flex;flex-direction:column;gap:1.2rem}
+    .translator-row{display:flex;flex-direction:column;gap:.5rem}
+    .translator-label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:flex;justify-content:space-between;align-items:center}
+    .translator-hex-input{display:flex;align-items:center;gap:.6rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.6rem 1rem;transition:border-color .2s}
+    .translator-hex-input:focus-within{border-color:var(--accent)}
+    .translator-hex-prefix{font-family:'Courier New',monospace;font-size:1.4rem;color:var(--muted);font-weight:600}
+    .translator-hex-field{flex:1;background:none;border:none;outline:none;color:var(--accent);font-family:'Courier New',monospace;font-size:1.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;width:100%}
+    .translator-bits-row{display:grid;grid-template-columns:repeat(8,1fr);gap:.4rem}
+    .bit-cell{aspect-ratio:1;border-radius:8px;background:var(--bg-card);border:2px solid var(--border-hover);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;position:relative;user-select:none;min-height:60px}
+    .bit-cell:hover{border-color:var(--accent);transform:translateY(-1px)}
+    .bit-cell.set{background:var(--accent-dim);border-color:var(--accent)}
+    .bit-cell.set .bit-value{color:var(--accent)}
+    .bit-cell .bit-position{font-family:'Courier New',monospace;font-size:.7rem;color:var(--muted);margin-bottom:.2rem;font-weight:600}
+    .bit-cell .bit-value{font-family:'Courier New',monospace;font-size:1.3rem;color:var(--body);font-weight:700;transition:color .15s}
+    .bit-cell .bit-weight{font-family:'Courier New',monospace;font-size:.62rem;color:rgba(125,118,107,.7);margin-top:.15rem}
+    .bit-group-label{display:grid;grid-template-columns:repeat(2,1fr);gap:.4rem;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;text-align:center}
+    .bit-group-label > span{padding:.3rem;border-radius:4px}
+    .bit-group-label > span:nth-child(1){background:rgba(232,168,76,.05);color:var(--accent)}
+    .bit-group-label > span:nth-child(2){background:rgba(76,168,232,.05);color:var(--blue)}
+    .translator-bits-row .bit-cell:nth-child(-n+4){border-top:2px solid rgba(232,168,76,.3)}
+    .translator-bits-row .bit-cell:nth-child(n+5){border-top:2px solid rgba(76,168,232,.3)}
+    .translator-readout{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem}
+    @media(max-width:640px){.translator-readout{grid-template-columns:1fr}}
+    .readout-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:.7rem .9rem}
+    .readout-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem}
+    .readout-value{font-family:'Courier New',monospace;font-size:1.05rem;color:var(--ink);font-weight:600;word-break:break-all}
+    .preset-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}
+    .preset-btn{padding:.35rem .8rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.78rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+    /* ── VIZ 2: dump reader ────────────────────────────────────────────────── */
+    .dump-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+    @media(max-width:840px){.dump-wrap{grid-template-columns:1fr}}
+    .dump-grid-wrap{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.2rem;overflow:hidden}
+    .dump-address{font-family:'Courier New',monospace;font-size:.78rem;color:var(--muted);margin-bottom:.6rem;letter-spacing:.05em}
+    .dump-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:.4rem}
+    .dump-byte{aspect-ratio:1;border-radius:6px;background:var(--bg-card);border:1.5px solid var(--border-hover);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;font-family:'Courier New',monospace;font-size:.95rem;color:var(--body);font-weight:600;min-height:42px}
+    .dump-byte:hover{border-color:var(--accent);color:var(--accent);transform:scale(1.05)}
+    .dump-byte.selected{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .dump-byte.notable{background:rgba(127,255,107,.06);border-color:rgba(127,255,107,.25);color:var(--green)}
+    .dump-byte.notable.selected{background:rgba(127,255,107,.15);border-color:var(--green)}
+    .dump-detail{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.2rem;display:flex;flex-direction:column;gap:.7rem;min-height:280px}
+    .detail-byte-label{font-family:var(--display);font-size:1.6rem;color:var(--ink)}
+    .detail-byte-label .hex-val{color:var(--accent);font-family:'Courier New',monospace;font-size:1.5rem;font-weight:700}
+    .detail-binary{font-family:'Courier New',monospace;font-size:1.05rem;color:var(--body);letter-spacing:.1em;background:rgba(237,232,224,.03);padding:.6rem .9rem;border-radius:6px;border:1px solid var(--border)}
+    .detail-binary .hi{color:var(--accent)}
+    .detail-binary .lo{color:var(--blue)}
+    .detail-bits{font-size:.88rem;color:var(--body)}
+    .detail-bits strong{color:var(--accent)}
+    .detail-annotation{font-size:.92rem;color:var(--ink);background:var(--accent-dim);border-left:3px solid var(--accent);padding:.7rem .9rem;border-radius:0 6px 6px 0;line-height:1.55}
+    .dump-help{font-size:.78rem;color:var(--muted);font-style:italic;text-align:center;margin-top:.5rem;padding:.5rem}
+
+    /* ── VIZ 3: bit-numbering ruler ────────────────────────────────────────── */
+    .ruler-wrap{padding:1rem .5rem}
+    .ruler-row{display:grid;grid-template-columns:repeat(8,1fr);gap:.4rem;margin-bottom:.6rem}
+    .ruler-cell{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;min-height:54px;position:relative}
+    .ruler-cell.position{background:rgba(125,118,107,.1);border:1px solid var(--border-hover);font-size:.8rem;color:var(--muted);font-weight:600}
+    .ruler-cell.bit{background:var(--bg-card);border:1.5px solid var(--border);font-size:1.3rem;color:var(--ink);font-weight:700}
+    .ruler-cell.bit.set{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .ruler-grouping{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.4rem}
+    .ruler-group-cell{padding:.45rem;border-radius:6px;text-align:center;font-size:.78rem;font-family:var(--display);font-style:italic;font-weight:400;line-height:1.3}
+    .ruler-group-cell.high{background:rgba(232,168,76,.08);color:var(--accent);border:1px solid rgba(232,168,76,.25)}
+    .ruler-group-cell.low{background:rgba(76,168,232,.08);color:var(--blue);border:1px solid rgba(76,168,232,.25)}
+    .ruler-arrows{display:grid;grid-template-columns:repeat(8,1fr);gap:.4rem;margin-top:.6rem;font-size:.7rem;text-align:center;color:var(--muted)}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}.bit-cell{min-height:50px}.bit-cell .bit-value{font-size:1.1rem}.bit-cell .bit-weight{display:none}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Digital Logic for the Embedded ML Engineer</span>
+  <h1>Reading the Language of Hardware</h1>
+  <p class="blog-subtitle">Binary, hex, and the moment when a wall of numbers stops being noise and starts telling you a story.</p>
+
+  <h2>A scene at a debugger</h2>
+
+  <p>You're trying to figure out why your quantised model is producing garbage on a tiny chip. You attach a debugger, dump the memory where the weights are supposed to live, and you see this.</p>
+
+  <p><code>0x08010000:&nbsp;&nbsp;7F 81 00 FF C3 3C 80 7F&nbsp;&nbsp;40 C0 01 FE 5A A5 33 CC</code></p>
+
+  <p>To one engineer, this is sixteen pairs of letters and numbers. Noise. They might open a calculator, type in each pair, slowly translate, and by the time they're done they've forgotten what they were even looking for.</p>
+
+  <p>To another engineer, this same dump is information. They glance at it and think: that <code>7F</code> at the start is the largest int8, the <code>80</code> in the middle is the smallest int8, the <code>00</code> is zero, the <code>FF</code> is going to turn out to be a small negative number when we get there, and <code>40</code> next to <code>C0</code> looks suspiciously like a near-mirror pair. Ten seconds. They've already learned that the model's weights are using the full int8 range, that the quantisation looks healthy, and that the bug is probably somewhere else.</p>
+
+  <p>Same dump. Two completely different reads. The second engineer has fluency in the language of hardware. That language is binary, but nobody actually reads binary with their eyes. We read its compressed form, hex.</p>
+
+  <div class="callout">Fluency in hex is what turns hardware noise into hardware information.</div>
+
+  <p>This post is about how that fluency works, and why it's built on one elegant little fact about the number 16.</p>
+
+  <hr class="sep">
+
+  <h2>Why binary at all</h2>
+
+  <p>Before we touch hex, it's worth grounding binary in physical reality. Every digital chip is built from transistors, and a transistor is essentially a tiny electronic switch. Either it lets current through or it doesn't. There's no halfway. So every piece of information stored on a chip lives, ultimately, as the on-or-off state of some switch.</p>
+
+  <p>People have tried building hardware with three or even ten distinguishable voltage levels. It was a disaster every time. Manufacturing variation kills you. A bit of noise on a wire turns a 7 into an 8. With only two states, you can leave a huge gap between "low voltage" and "high voltage", and you can drop a fairly noisy signal into a digital circuit and it still gets read correctly. The only question being asked is "high or low?", and that's a question even messy electronics can answer reliably.</p>
+
+  <p>So binary won not because it's mathematically pretty but because it's robust. Two states is the most reliable way to push information through unreliable physical hardware. The whole digital world rests on this one engineering compromise.</p>
+
+  <p>A bit is one switch. A byte is eight switches arranged in a row. A 32-bit register on a Cortex-M chip is thirty-two switches you can read and write together. When you write <code>01011010</code> on paper, you're describing the state of eight tiny physical things on a piece of silicon. That's the foundation we'll keep coming back to.</p>
+
+  <hr class="sep">
+
+  <h2>Why we don't read binary directly</h2>
+
+  <p>Try this:</p>
+
+  <p><code>01001000 01100101 01101100 01101100 01101111</code></p>
+
+  <p>That's "Hello" in ASCII. It's correct. It's exactly what a chip stores when you give it that string. And it's nearly unreadable.</p>
+
+  <p>Three problems. It's long, and even short values fill up your line. You can't count bits at a glance, so figuring out which bit is "the fifth one from the right" turns into a chore. And long runs of 0s and 1s blur into each other, so two bytes side by side end up looking like one big featureless stripe.</p>
+
+  <p>We need something more compact. Something easier to read. But it shouldn't lose any information, because eventually we will want to look at individual bits, and we need to be able to. The notation has to compress without flattening.</p>
+
+  <p>That something is hex.</p>
+
+  <hr class="sep">
+
+  <h2>The trick that makes hex work</h2>
+
+  <p>The whole reason hex exists is one small fact that I want you to commit to memory:</p>
+
+  <div class="callout">16 = 2<sup>4</sup></div>
+
+  <p>Sixteen is two to the fourth. Which means each digit in base 16 corresponds to exactly four binary digits. Always. No fractional digits. No awkward boundaries. One hex digit packs exactly four bits.</p>
+
+  <p>This sounds dry written down. It's actually the elegant move that makes the whole notation work. Computers think in bytes (8 bits) and words (16, 32, 64 bits), and all of these are multiples of 4. Hex divides them cleanly. A byte is exactly two hex digits. A 16-bit halfword is exactly four hex digits. A 32-bit word is exactly eight hex digits. The byte boundaries are visible at a glance because they fall right in the spacing between hex digits.</p>
+
+  <p>Compare that to decimal. Decimal is base 10, and 10 is not a power of 2, so a byte (range 0 to 255) ends up taking "1 to 3 decimal digits". Look at the number 1234567 and try to tell me where the byte boundaries are. You can't, because there aren't any in decimal. In hex you'd write it as <code>0x12 D6 87</code> and the boundaries are right there in the spaces.</p>
+
+  <p>Other power-of-two bases were tried. Octal (base 8) gives you 2.67 hex digits per byte, which is awful. Base 32 gives you 1.6 digits per byte, also awful. Base 256 would give one digit per byte but you'd need 256 distinct symbols, which would be unreadable. Sixteen sits in the sweet spot: small enough to write with familiar symbols, big enough to compress meaningfully, divides byte widths cleanly. That's the whole story of why we use it.</p>
+
+  <hr class="sep">
+
+  <h2>The alphabet</h2>
+
+  <p>Base 16 needs sixteen distinct symbols. We've only got ten digits, 0 through 9, so the convention picked the first six letters of the alphabet for the rest. There's no deeper reason. Someone had to pick something. Letters won.</p>
+
+  <table class="hex-table">
+    <thead>
+      <tr><th>Hex</th><th>Binary</th><th>Decimal</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>0</td><td>0000</td><td>0</td></tr>
+      <tr><td>1</td><td>0001</td><td>1</td></tr>
+      <tr><td>2</td><td>0010</td><td>2</td></tr>
+      <tr><td>3</td><td>0011</td><td>3</td></tr>
+      <tr><td>4</td><td>0100</td><td>4</td></tr>
+      <tr><td>5</td><td>0101</td><td>5</td></tr>
+      <tr><td>6</td><td>0110</td><td>6</td></tr>
+      <tr><td>7</td><td>0111</td><td>7</td></tr>
+      <tr><td>8</td><td>1000</td><td>8</td></tr>
+      <tr><td>9</td><td>1001</td><td>9</td></tr>
+      <tr><td>A</td><td>1010</td><td>10</td></tr>
+      <tr><td>B</td><td>1011</td><td>11</td></tr>
+      <tr><td>C</td><td>1100</td><td>12</td></tr>
+      <tr><td>D</td><td>1101</td><td>13</td></tr>
+      <tr><td>E</td><td>1110</td><td>14</td></tr>
+      <tr><td>F</td><td>1111</td><td>15</td></tr>
+    </tbody>
+  </table>
+
+  <p>This table is the alphabet of hardware. The trick to using it isn't memorising it like a multiplication table. The trick is doing enough conversions that <code>B</code> stops being "11, which in binary is 1011" and starts being just <code>1011</code>. Like reading "cat" without spelling it out. You get there by playing with it, not by drilling.</p>
+
+  <p>Here's something you can play with right now. Click the bits to flip them, or type a hex byte and watch the bits change. Notice how each hex digit only ever moves four bits at a time.</p>
+
+  <!-- VIZ 1: Hex / binary translator -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Click bits. Type hex. Build the muscle.</span></div>
+    <div class="viz-body">
+      <div class="translator-wrap">
+
+        <div class="translator-row">
+          <div class="translator-label">
+            <span>Hex byte</span>
+            <span style="color:var(--muted);text-transform:none;letter-spacing:0;font-style:italic">Type two hex digits, or click bits below</span>
+          </div>
+          <div class="translator-hex-input">
+            <span class="translator-hex-prefix">0x</span>
+            <input type="text" class="translator-hex-field" id="hexField" maxlength="2" value="9C" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="translator-row">
+          <div class="bit-group-label">
+            <span>High nibble</span>
+            <span>Low nibble</span>
+          </div>
+          <div class="translator-bits-row" id="bitsRow"></div>
+        </div>
+
+        <div class="translator-readout">
+          <div class="readout-card">
+            <div class="readout-label">Binary</div>
+            <div class="readout-value" id="readBinary">10011100</div>
+          </div>
+          <div class="readout-card">
+            <div class="readout-label">As unsigned</div>
+            <div class="readout-value" id="readUnsigned">156</div>
+          </div>
+          <div class="readout-card">
+            <div class="readout-label">Bits set</div>
+            <div class="readout-value" id="readBits">2, 3, 4, 7</div>
+          </div>
+        </div>
+
+        <div class="preset-row">
+          <button class="preset-btn" data-hex="00">0x00</button>
+          <button class="preset-btn" data-hex="FF">0xFF (all ones)</button>
+          <button class="preset-btn" data-hex="80">0x80 (top bit only)</button>
+          <button class="preset-btn" data-hex="7F">0x7F</button>
+          <button class="preset-btn" data-hex="A5">0xA5</button>
+          <button class="preset-btn" data-hex="C3">0xC3</button>
+          <button class="preset-btn" data-hex="9C">0x9C</button>
+        </div>
+      </div>
+      <p class="viz-note">Notice how the high nibble (orange) and the low nibble (blue) each control exactly one hex digit. Flip any bit in the high nibble and only the first hex digit changes. Flip any bit in the low nibble and only the second changes. That's <code>16 = 2<sup>4</sup></code> made visible.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Conversion in both directions</h2>
+
+  <p>Once you've got the table, the conversions are mechanical. Both directions are pure substitution, not arithmetic. If you find yourself multiplying or adding anything, you've taken a wrong turn.</p>
+
+  <h3>Hex to binary</h3>
+
+  <p>Take each hex digit independently and replace it with its 4-bit pattern. That's the whole procedure.</p>
+
+  <p><code>0xC3</code> → <code>C</code> is <code>1100</code>, <code>3</code> is <code>0011</code> → <code>1100 0011</code>.</p>
+
+  <p><code>0x5A3F</code> → <code>5</code> is <code>0101</code>, <code>A</code> is <code>1010</code>, <code>3</code> is <code>0011</code>, <code>F</code> is <code>1111</code> → <code>0101 1010 0011 1111</code>.</p>
+
+  <p>I always put spaces between the 4-bit groups when writing binary by hand. The spaces are visual punctuation. They show you the byte boundaries, and they keep your eyes from drifting.</p>
+
+  <h3>Binary to hex</h3>
+
+  <p>Group the binary digits into chunks of four, starting from the right, and convert each group.</p>
+
+  <p><code>11010110</code> → group from the right as <code>1101 0110</code> → <code>1101</code> is <code>D</code>, <code>0110</code> is <code>6</code> → <code>0xD6</code>.</p>
+
+  <p>The "from the right" part actually matters. If your binary string isn't a multiple of four bits, the leftover bits go on the left and get padded with zeros. Take a 9-bit number like <code>110110110</code>. Group from the right: <code>1 1011 0110</code>. Pad the leftmost group with zeros to make it four bits: <code>0001 1011 0110</code>. Convert: <code>0x1B6</code>. If you'd grouped from the left instead, you'd have multiplied your value by some power of two and gotten a completely wrong answer.</p>
+
+  <hr class="sep">
+
+  <h2>The nibble</h2>
+
+  <p>Half a byte. Four bits. One hex digit's worth. The reason this little word exists is because of hex itself: a nibble is the natural unit when you're reading hardware.</p>
+
+  <p>Visualise a byte as two nibbles side by side. The high nibble lives in bits 7 through 4. The low nibble lives in bits 3 through 0. Each one shows up as one hex digit when you write the byte out.</p>
+
+  <!-- VIZ 3: bit numbering ruler -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Bit positions, with nibble grouping.</span></div>
+    <div class="viz-body">
+      <div class="ruler-wrap">
+        <div class="ruler-row">
+          <div class="ruler-cell position">bit 7</div>
+          <div class="ruler-cell position">bit 6</div>
+          <div class="ruler-cell position">bit 5</div>
+          <div class="ruler-cell position">bit 4</div>
+          <div class="ruler-cell position">bit 3</div>
+          <div class="ruler-cell position">bit 2</div>
+          <div class="ruler-cell position">bit 1</div>
+          <div class="ruler-cell position">bit 0</div>
+        </div>
+        <div class="ruler-row">
+          <div class="ruler-cell bit set">1</div>
+          <div class="ruler-cell bit">0</div>
+          <div class="ruler-cell bit">0</div>
+          <div class="ruler-cell bit set">1</div>
+          <div class="ruler-cell bit set">1</div>
+          <div class="ruler-cell bit set">1</div>
+          <div class="ruler-cell bit">0</div>
+          <div class="ruler-cell bit">0</div>
+        </div>
+        <div class="ruler-grouping">
+          <div class="ruler-group-cell high">High nibble = 1001 = 9</div>
+          <div class="ruler-group-cell low">Low nibble = 1100 = C</div>
+        </div>
+        <div class="ruler-arrows">
+          <span></span><span></span><span></span><span style="color:var(--accent)">most significant</span>
+          <span></span><span></span><span></span><span style="color:var(--accent)">least significant</span>
+        </div>
+      </div>
+      <p class="viz-note">The byte shown above is <code>10011100</code>, which is <code>0x9C</code>. Bit 0 is on the right. Bit 7 is on the left. This is the convention everywhere in modern hardware. The high nibble holds the upper four bits and shows up as the first hex digit. The low nibble holds the lower four and shows up as the second.</p>
+    </div>
+  </div>
+
+  <p>This matters because every microcontroller datasheet you'll ever read describes registers in nibble-aligned fields. Once you can mentally split a byte into its high and low nibble, datasheets stop looking like hieroglyphics and start looking like structured information.</p>
+
+  <hr class="sep">
+
+  <h2>Reading a real byte, slowly</h2>
+
+  <p>Let me walk through one example end to end so you see the mental motion.</p>
+
+  <p>Suppose I tell you a quantised neural network weight is stored as the byte <code>0x9C</code>. You want to know what it's doing.</p>
+
+  <p>First, hex to binary. <code>9</code> is <code>1001</code>, <code>C</code> is <code>1100</code>. So <code>0x9C</code> is <code>10011100</code>.</p>
+
+  <p>Now you can read what each bit is doing. Bit 7 is set. Bit 6 is clear. Bit 5 is clear. Bit 4 is set. Bit 3 is set. Bit 2 is set. Bit 1 is clear. Bit 0 is clear.</p>
+
+  <p>In the next post, we'll learn how to interpret this as a signed number, and the answer is going to come out to <code>-100</code>. For now, just notice what you did. You went from <code>0x9C</code> to a fully transparent view of every bit, without ever opening a calculator. That's fluency. That's the whole point of this lesson.</p>
+
+  <hr class="sep">
+
+  <h2>The diagnostic mindset</h2>
+
+  <p>Here's why this is worth practising. Once you can read hex bytes at a glance, hardware artifacts become readable. Memory dumps, register descriptions, oscilloscope decoders, debugger output, weight buffers. They all speak this same language, and they all become legible.</p>
+
+  <p>Below is a memory dump from somewhere in a quantised model's weight buffer. Click any byte to see what it is, what bits are set, and why a trained eye might find it interesting. The greener bytes are the ones with diagnostic value. Try them first.</p>
+
+  <!-- VIZ 2: Diagnostic dump reader -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A real-looking dump. Click bytes to read them.</span></div>
+    <div class="viz-body">
+      <div class="dump-wrap">
+        <div class="dump-grid-wrap">
+          <div class="dump-address">0x08010000</div>
+          <div class="dump-grid" id="dumpGrid"></div>
+          <div class="dump-help">Click any byte. Notable ones are highlighted in green.</div>
+        </div>
+        <div class="dump-detail" id="dumpDetail">
+          <div style="color:var(--muted);font-style:italic;text-align:center;padding:2rem 0;line-height:1.6">
+            Pick a byte from the grid on the left.<br>The greener ones are the ones a trained eye would notice first.
+          </div>
+        </div>
+      </div>
+      <p class="viz-note">A trained reader doesn't decode this byte by byte. They scan it. <code>7F</code> and <code>80</code> jump out as the int8 boundaries. <code>FF</code> and <code>00</code> jump out as the all-ones and all-zeros patterns. <code>40</code> next to <code>C0</code> looks like a near-mirror pair. The dump tells a story: this layer's weights span the full int8 range, with rough symmetry around zero. The quantisation is healthy. Whatever bug you're chasing, it's somewhere else.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Three traps</h2>
+
+  <p>Three things will bite you if you don't see them coming. They're all small, and they're all common.</p>
+
+  <p><strong>The prefix matters.</strong> In C code, hex literals start with <code>0x</code>. So <code>0xFF</code> is 255. But what about <code>0FF</code> without the <code>x</code>? That's a syntax error. And what about <code>017</code>? In C, a number that starts with just <code>0</code> is octal, not hex. So <code>017</code> in C is octal seventeen, which is decimal 15. Real bug source. Always use the <code>0x</code> prefix for hex literals in your code. In datasheets, you'll see hex written as <code>0xFF</code>, <code>FFh</code>, or sometimes just <code>FF</code> with the base implied by context. Always check.</p>
+
+  <p><strong>Bit numbering starts at 0.</strong> The rightmost bit of a byte is bit 0. The leftmost is bit 7. So when code says <code>(value >> 3) & 1</code>, it extracts bit 3, which is the fourth bit from the right. When a datasheet says "bit 7 of GPIOA_MODER", it means the eighth bit from the right. This is the convention everywhere in ARM, ESP32, x86, RISC-V. Burning this in early saves you a year of off-by-one bugs later.</p>
+
+  <p><strong>The same byte means different things in different contexts.</strong> The byte <code>0x80</code>, which is <code>10000000</code>, can mean three different things. As an unsigned 8-bit number it's 128. As a signed 8-bit number it's -128. As a flag pattern it's "bit 7 set, all others clear". Three different interpretations of the same eight switches. Which one is right depends entirely on how the variable is typed in your code or defined in the datasheet. The hardware just stores bits. The meaning lives in your head and your code. This is exactly why <code>int8_t</code> and <code>uint8_t</code> exist as separate types in C: they make the interpretation explicit. In embedded code, never use plain <code>int</code> or <code>char</code> for hardware-facing work. The signedness of <code>char</code> is implementation-defined, which is a polite way of saying "different compilers will silently disagree about what your code means". Always be explicit.</p>
+
+  <hr class="sep">
+
+  <h2>Where this lands</h2>
+
+  <p>Five things to take away from this lesson.</p>
+
+  <p>Binary is the language of hardware because two-state circuits are the most reliable way to store information physically. A bit is one transistor's state.</p>
+
+  <p>Hex exists because <code>16 = 2<sup>4</sup></code>, which means every hex digit corresponds to exactly four bits, and every byte to exactly two hex digits. It's a compression of binary that preserves bit-level visibility.</p>
+
+  <p>Conversions between hex and binary are pure substitution, not arithmetic. Each hex digit maps to a 4-bit pattern, both directions.</p>
+
+  <p>A nibble is four bits, one hex digit. Datasheets are written in nibble-aligned fields. This is the natural unit of hardware.</p>
+
+  <p>Fluency is diagnostic. A trained eye scans a hex dump and extracts information about ranges, symmetry, and patterns. An untrained eye sees noise. The whole point of this lesson is to start that training.</p>
+
+  <p>Next post is where it gets sharper. We'll look at how bytes are actually arranged in memory, what endianness is, how to read register field diagrams from a real microcontroller's datasheet, and why the layout of bits in a 32-bit register is the difference between a working peripheral and an inscrutable mystery.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Digital Logic for the Embedded ML Engineer</h2>
+    <a class="sidebar-link" href="why-digital-logic.html">
+      <div class="sidebar-link-title">Part 1: Why You're Here</div>
+      <div class="sidebar-link-note">A chip is a calculator with memory and a clock.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="reading-hardware.html">
+      <div class="sidebar-link-title">Part 2: Reading the Language of Hardware</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 3: Bits in Memory</div>
+      <div class="sidebar-link-note">Endianness and register fields.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 4: Two's Complement</div>
+      <div class="sidebar-link-note">Why int8 looks the way it does.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 5: Overflow and Saturation</div>
+      <div class="sidebar-link-note">The math that almost goes wrong.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 6: Fixed-Point and Quantisation</div>
+      <div class="sidebar-link-note">A story in Q-format.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 7: Gates and Multipliers</div>
+      <div class="sidebar-link-note">Why adders are cheaper.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 8: Inside a MAC Unit</div>
+      <div class="sidebar-link-note">Where math becomes silicon.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 9: Memory and SRAM</div>
+      <div class="sidebar-link-note">Why bytes matter.</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Part 10: Datapath and Control</div>
+      <div class="sidebar-link-note">Building a tiny accelerator.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Binary is robust, not pretty</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">16 = 2<sup>4</sup>, the elegant move</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The nibble as natural unit</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Bit 0 is on the right</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Reading a dump diagnostically</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: hex / binary translator
+// ═══════════════════════════════════════════════════════════════════════════
+const hexField=document.getElementById('hexField');
+const bitsRow=document.getElementById('bitsRow');
+const readBinary=document.getElementById('readBinary');
+const readUnsigned=document.getElementById('readUnsigned');
+const readBits=document.getElementById('readBits');
+
+let currentByte=0x9C;
+
+function buildBitCells(){
+  bitsRow.innerHTML='';
+  // bits 7..0 from left to right
+  for(let i=7;i>=0;i--){
+    const cell=document.createElement('div');
+    cell.className='bit-cell';
+    cell.dataset.position=i;
+    cell.innerHTML=`
+      <span class="bit-position">bit ${i}</span>
+      <span class="bit-value">0</span>
+      <span class="bit-weight">${1<<i}</span>
+    `;
+    cell.addEventListener('click',()=>{
+      const pos=parseInt(cell.dataset.position);
+      currentByte^=(1<<pos);
+      currentByte&=0xFF;
+      renderTranslator();
+    });
+    bitsRow.appendChild(cell);
+  }
+}
+
+function renderTranslator(){
+  // update hex field (without losing focus)
+  const hexStr=currentByte.toString(16).toUpperCase().padStart(2,'0');
+  if(document.activeElement!==hexField){
+    hexField.value=hexStr;
+  }
+  // update bits
+  const cells=bitsRow.querySelectorAll('.bit-cell');
+  cells.forEach(cell=>{
+    const pos=parseInt(cell.dataset.position);
+    const isSet=((currentByte>>pos)&1)===1;
+    cell.classList.toggle('set',isSet);
+    cell.querySelector('.bit-value').textContent=isSet?'1':'0';
+  });
+  // readouts
+  const binStr=currentByte.toString(2).padStart(8,'0');
+  readBinary.textContent=binStr.slice(0,4)+' '+binStr.slice(4);
+  readUnsigned.textContent=currentByte;
+  // bits set
+  const set=[];
+  for(let i=0;i<8;i++)if((currentByte>>i)&1)set.push(i);
+  readBits.textContent=set.length===0?'(none)':set.join(', ');
+}
+
+hexField.addEventListener('input',()=>{
+  let val=hexField.value.toUpperCase().replace(/[^0-9A-F]/g,'');
+  if(val.length>2)val=val.slice(0,2);
+  hexField.value=val;
+  if(val.length>0){
+    currentByte=parseInt(val,16)&0xFF;
+    renderTranslator();
+  }
+});
+hexField.addEventListener('blur',()=>{
+  if(hexField.value.length<2){
+    hexField.value=currentByte.toString(16).toUpperCase().padStart(2,'0');
+  }
+});
+
+document.querySelectorAll('.preset-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    currentByte=parseInt(b.dataset.hex,16);
+    renderTranslator();
+  });
+});
+
+buildBitCells();
+renderTranslator();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: dump reader
+// ═══════════════════════════════════════════════════════════════════════════
+const DUMP_BYTES=[
+  {hex:'7F',notable:true, note:'<strong>Maximum int8 value (+127).</strong> The largest positive number you can fit in a signed byte. Seeing this means at least one weight in this layer is using the full positive range.'},
+  {hex:'81',notable:false,note:'Top bit is set (this will be a small negative number when we cover signed numbers next post). Just below the all-set value of FF.'},
+  {hex:'00',notable:true, note:'<strong>Zero.</strong> All bits clear. Common for padding, unused weights, or genuinely-zero values.'},
+  {hex:'FF',notable:true, note:'<strong>All ones (-1 as int8, 255 as uint8).</strong> Every bit set. Often a flag pattern or a small negative weight under signed interpretation.'},
+  {hex:'C3',notable:true, note:'High nibble C (1100), low nibble 3 (0011). Top bit set means a negative int8. Mirror-ish to the 3C two slots over.'},
+  {hex:'3C',notable:true, note:'High nibble 3 (0011), low nibble C (1100). Top bit clear means a positive int8. Roughly the negative of C3 next to it. Hint of symmetry in the weights.'},
+  {hex:'80',notable:true, note:'<strong>Minimum int8 value (-128).</strong> Only the top bit is set. The mirror of 7F. Together they bracket the full int8 range.'},
+  {hex:'7F',notable:false,note:'Maximum int8 (+127) again. This is a fingerprint of saturation: when an accumulator clamped to int8 range, it ended up here.'},
+  {hex:'40',notable:true, note:'Just bit 6 set, 0100 0000. Looks like a deliberate halfway value (+64 in int8). Mirror with C0 next to it.'},
+  {hex:'C0',notable:true, note:'Bits 7 and 6 set, 1100 0000. Top bit set means negative int8 (it will turn out to be -64). Mirror of 40.'},
+  {hex:'01',notable:false,note:'Just bit 0 set. Smallest positive non-zero.'},
+  {hex:'FE',notable:false,note:'All bits set except bit 0. As int8 this is -2.'},
+  {hex:'5A',notable:false,note:'Mixed pattern, 0101 1010. No special structure. A real-looking weight.'},
+  {hex:'A5',notable:false,note:'0xA5 is 1010 0101. The bit-flip of 0x5A right before it. Not coincidence in test patterns; coincidence in weights.'},
+  {hex:'33',notable:false,note:'0011 0011. A repeating 4-bit pattern. Sometimes shows up in pre-initialised buffers.'},
+  {hex:'CC',notable:false,note:'1100 1100. The complement of 33 right before it. In some compilers, 0xCC is the default value for uninitialised stack memory in debug builds.'}
+];
+
+const dumpGrid=document.getElementById('dumpGrid');
+const dumpDetail=document.getElementById('dumpDetail');
+let selectedIdx=null;
+
+DUMP_BYTES.forEach((b,i)=>{
+  const div=document.createElement('div');
+  div.className='dump-byte'+(b.notable?' notable':'');
+  div.textContent=b.hex;
+  div.dataset.idx=i;
+  div.addEventListener('click',()=>selectDumpByte(i));
+  dumpGrid.appendChild(div);
+});
+
+function selectDumpByte(i){
+  if(selectedIdx!==null){
+    const prev=dumpGrid.querySelector(`.dump-byte[data-idx="${selectedIdx}"]`);
+    if(prev)prev.classList.remove('selected');
+  }
+  selectedIdx=i;
+  const cur=dumpGrid.querySelector(`.dump-byte[data-idx="${i}"]`);
+  cur.classList.add('selected');
+
+  const b=DUMP_BYTES[i];
+  const v=parseInt(b.hex,16);
+  const binStr=v.toString(2).padStart(8,'0');
+  const set=[];
+  for(let k=0;k<8;k++)if((v>>k)&1)set.push(k);
+  const setText=set.length===0?'(none)':set.reverse().join(', ');
+
+  dumpDetail.innerHTML=`
+    <div class="detail-byte-label">
+      Byte at offset ${i.toString().padStart(2,'0')} = <span class="hex-val">0x${b.hex}</span>
+    </div>
+    <div class="detail-binary">
+      <span class="hi">${binStr.slice(0,4)}</span> <span class="lo">${binStr.slice(4)}</span>
+    </div>
+    <div class="detail-bits">
+      Unsigned value: <strong>${v}</strong><br>
+      High nibble: <strong>${b.hex[0]}</strong> &nbsp; Low nibble: <strong>${b.hex[1]}</strong><br>
+      Bits set: <strong>${setText}</strong>
+    </div>
+    <div class="detail-annotation">${b.note}</div>
+  `;
+}
+</script>
+</body>
+</html>

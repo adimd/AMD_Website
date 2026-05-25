@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Why One Number Per Word Isn't Enough | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* episode intro card - sits early in the post */
+    .episode-card{margin:1.4rem 0 2.2rem;padding:1.3rem 1.6rem;background:rgba(76,168,232,.05);border:1px solid rgba(76,168,232,.18);border-radius:var(--radius)}
+    .episode-card-label{font-family:var(--hand);color:var(--blue);font-size:1.1rem;margin-bottom:.3rem}
+    .episode-card-title{font-family:var(--display);font-size:1.35rem;color:var(--ink);margin-bottom:.5rem}
+    .episode-card-body{font-size:1rem;color:var(--body);line-height:1.7}
+    .episode-card-parts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.8rem}
+    .episode-card-part{padding:.25rem .7rem;border-radius:999px;background:rgba(76,168,232,.1);font-size:.78rem;color:var(--blue);font-family:'Courier New',monospace}
+    .episode-card-part.now{background:var(--blue);color:#1a1917;font-weight:700}
+
+    /* small inline cost note - the embedded asides */
+    .cost-note{margin:1.5rem 0;padding:.95rem 1.1rem;background:rgba(76,168,232,.05);border-left:2px solid var(--blue);border-radius:0 8px 8px 0;font-size:.96rem;color:var(--body);line-height:1.7}
+    .cost-note .cost-label{font-family:var(--hand);font-size:1.05rem;color:var(--blue);display:block;margin-bottom:.15rem}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .series-context{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem;padding:.3rem 0;border-bottom:1px solid var(--border)}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* viz 1 - number line: pure SVG, no canvas, no resize headaches */
+    .nl-pair-buttons{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+    .nl-pair-btn{padding:.45rem .9rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.85rem;cursor:pointer;font-family:inherit;transition:all .2s}
+    .nl-pair-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .nl-pair-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:600}
+    .nl-svg-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem}
+    .nl-svg{width:100%;height:auto;display:block;max-width:100%}
+    .nl-readout{margin-top:1rem;padding:.85rem 1rem;background:rgba(255,107,107,.05);border:1px solid rgba(255,107,107,.2);border-radius:8px;font-size:.95rem;line-height:1.6}
+    .nl-readout-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem;font-family:'Courier New',monospace;color:var(--ink)}
+    .nl-readout-verdict{margin-top:.4rem;font-style:italic;color:var(--red);font-family:inherit;font-size:.92rem}
+
+    /* viz 2 - one-hot: simple grid layout, no canvas at all */
+    .oh-vocab{display:flex;flex-wrap:wrap;gap:.45rem;margin-bottom:1.2rem}
+    .oh-chip{padding:.45rem .95rem;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.9rem;cursor:pointer;font-family:inherit;transition:all .2s;font-weight:500}
+    .oh-chip:hover{border-color:var(--accent);color:var(--accent)}
+    .oh-chip.sel-a{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .oh-chip.sel-b{background:rgba(76,168,232,.15);border-color:var(--blue);color:var(--blue)}
+    .oh-vectors{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+    @media(max-width:720px){.oh-vectors{grid-template-columns:1fr}}
+    .oh-vector{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem}
+    .oh-vector-head{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem}
+    .oh-vector-head .vw-name{color:var(--accent);font-weight:700;font-size:.92rem;text-transform:none;letter-spacing:0;font-family:'Courier New',monospace}
+    .oh-vector.b .oh-vector-head .vw-name{color:var(--blue)}
+    .oh-cells{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
+    .oh-cell{height:30px;border-radius:3px;background:rgba(237,232,224,.05);display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:.78rem;color:var(--muted);transition:all .25s}
+    .oh-cell.lit-a{background:var(--accent);color:#1a1917;font-weight:700}
+    .oh-cell.lit-b{background:var(--blue);color:#1a1917;font-weight:700}
+    .oh-distance-card{padding:1rem 1.2rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-family:'Courier New',monospace;font-size:.95rem}
+    .oh-distance-row{display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px dashed rgba(237,232,224,.06)}
+    .oh-distance-row:last-child{border-bottom:none}
+    .oh-distance-row .pair{color:var(--body)}
+    .oh-distance-row .val{color:var(--accent);font-weight:700}
+
+    /* viz 3 - dimensions: pure SVG, three static layouts */
+    .dim-tabs{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+    .dim-tab{padding:.5rem 1.1rem;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);cursor:pointer;font-family:inherit;font-size:.92rem;transition:all .2s}
+    .dim-tab.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:600}
+    .dim-svg-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem;display:flex;justify-content:center;align-items:center;min-height:380px}
+    .dim-svg{width:100%;height:auto;max-width:100%;display:block}
+    .dim-summary{margin-top:1rem;padding:.85rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:.95rem;line-height:1.6;color:var(--body)}
+    .dim-summary strong{color:var(--ink)}
+
+    /* quiz */
+    .quiz-block{margin:3rem 0 1rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);padding:1.6rem 1.8rem}
+    .quiz-block h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:0 0 .3rem!important}
+    .quiz-intro{font-size:.95rem;color:var(--muted);margin-bottom:1.5rem;font-style:italic}
+    .quiz-q{margin:1.5rem 0;padding-bottom:1.5rem;border-bottom:1px dashed var(--border-hover)}
+    .quiz-q:last-child{border-bottom:none;padding-bottom:.5rem}
+    .quiz-q-text{font-size:1.05rem;color:var(--ink);margin-bottom:.7rem;font-weight:500}
+    .quiz-q-num{display:inline-block;color:var(--accent);font-weight:600;margin-right:.5rem;font-family:var(--display);font-size:1.1rem}
+    .quiz-toggle{background:none;border:1px solid var(--border-hover);color:var(--muted);padding:.4rem .9rem;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.85rem;transition:all .2s}
+    .quiz-toggle:hover{border-color:var(--accent);color:var(--accent)}
+    .quiz-answer{margin-top:.9rem;padding:.9rem 1.1rem;background:rgba(127,255,107,.05);border:1px solid rgba(127,255,107,.2);border-radius:8px;font-size:.95rem;line-height:1.7;color:var(--body);display:none}
+    .quiz-answer.shown{display:block}
+    .quiz-answer strong{color:var(--green)}
+
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Linear Algebra for LLMs</span>
+  <h1>Why One Number Per Word Isn't Enough</h1>
+  <p class="blog-subtitle">Trying to figure out, from scratch, why a language model represents a single word with hundreds of numbers.</p>
+
+  <p>Okay, so I want to talk about something that confused me for a long time.</p>
+
+  <p>If you load up a language model like GPT-2 and pull out its internal representation of the word "king", what you get back is 768 numbers. A list of floats. Not a definition. Not a category. Just numbers.</p>
+
+  <p>768 of them.</p>
+
+  <p>That always felt like a lot to me. Why 768? Why not 10? Why not a million? And what could those individual numbers possibly mean?</p>
+
+  <div class="episode-card">
+    <div class="episode-card-label">where this is going</div>
+    <div class="episode-card-title">Episode 1: What Is a Vector, Really?</div>
+    <div class="episode-card-body">
+      I want to spend the next few posts working this out. This is Part 1 of a five-part conversation about what those 768 numbers actually are. We'll figure out why we need that many, how the geometry of them encodes meaning, where this all breaks down, and what it costs to actually run on real hardware.
+      <div class="episode-card-parts">
+        <span class="episode-card-part now">P1 · why one number isn't enough</span>
+        <span class="episode-card-part">P2 · how numbers encode meaning</span>
+        <span class="episode-card-part">P3 · when geometry breaks</span>
+        <span class="episode-card-part">P4 · why 768</span>
+        <span class="episode-card-part">P5 · vectors on silicon</span>
+      </div>
+    </div>
+  </div>
+
+  <p>None of that makes sense yet. So we're going to start by trying simpler things and watching them fail. Where they fail will tell us what we actually need.</p>
+
+  <hr class="sep">
+
+  <h2>Try the dumbest thing first</h2>
+
+  <p>What's the simplest possible way to represent a word as a number? Just give every word a number. Open a dictionary, count from one to whatever. "Aardvark" is 1. "Apple" is somewhere around 4,000. "King" lands near 47,000. "Queen" further along, maybe 71,000. One word, one integer, done.</p>
+
+  <p>This sounds fine for about ten seconds. Then you try to use it.</p>
+
+  <!-- VIZ 1: number line lies -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Pick a pair. See what the number line decides about them.</span></div>
+    <div class="viz-body">
+
+      <div class="nl-pair-buttons" id="nlPairs">
+        <button class="nl-pair-btn active" data-pair="king,queen">king · queen</button>
+        <button class="nl-pair-btn" data-pair="king,kingdom">king · kingdom</button>
+        <button class="nl-pair-btn" data-pair="cat,dog">cat · dog</button>
+        <button class="nl-pair-btn" data-pair="happy,sad">happy · sad</button>
+        <button class="nl-pair-btn" data-pair="run,running">run · running</button>
+      </div>
+
+      <div class="nl-svg-wrap">
+        <svg class="nl-svg" id="nlSvg" viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+
+      <div class="nl-readout" id="nlReadout"></div>
+
+      <p class="viz-note">Try "king · kingdom" first, then "king · queen". The line says king is closer to kingdom than to queen. That gap is alphabetical, not semantic. Two words that share their first three letters always end up next to each other, whether their meanings have anything to do with each other or not.</p>
+    </div>
+  </div>
+
+  <h3>The line is making things up</h3>
+
+  <p>Here's what's actually going wrong. A number line isn't a neutral container. It has structure. Distance on a line means something. Order means something. Subtraction means something. That's what a number line <em>is</em>.</p>
+
+  <p>So when we put "king" at position 47,193 and "kingdom" at 47,194, the line is implicitly saying: these two are almost the same thing. It's saying that whether we want it to or not. The geometry comes for free with the line, and we don't get to opt out.</p>
+
+  <p>And the geometry it gives us is wrong. It reflects whatever we sorted by, which in this case is the alphabet. If we sorted by frequency instead, common words would become neighbours regardless of meaning. There's no sort order that maps onto semantics, because semantics doesn't fit on a one-dimensional line in the first place.</p>
+
+  <p>So our problem isn't that the numbers are arbitrary. It's that they're confidently wrong. The encoding has opinions it can't back up.</p>
+
+  <div class="callout">A number line forces a geometry. If your data doesn't fit that geometry, the line lies.</div>
+
+  <hr class="sep">
+
+  <h2>Okay, what if we refuse to claim anything?</h2>
+
+  <p>If the problem is that the line invents relationships, the natural fix is to use an encoding that refuses to invent them. Don't put words in any order. Don't claim any word is closer to any other word. Just keep them all separate.</p>
+
+  <p>This has a name. It's called <strong>one-hot encoding</strong>. Instead of giving "king" the number 47,193, we give it a vector with one slot for every word in the vocabulary. Slot 47,193 gets set to 1. Every other slot stays at 0. "Queen" gets a different vector with slot 71,204 set to 1, zeros everywhere else. Each word lights up its own slot and stays out of everyone else's way.</p>
+
+  <p>It's the honest version. No hidden claims about which words are similar. Pick any two words, see what the encoding says about them.</p>
+
+  <!-- VIZ 2: one-hot is silent -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Tap any two words. Watch every distance come out the same.</span></div>
+    <div class="viz-body">
+
+      <div class="oh-vocab" id="ohVocab"></div>
+
+      <div class="oh-vectors">
+        <div class="oh-vector a">
+          <div class="oh-vector-head">First word: <span class="vw-name" id="ohNameA">king</span></div>
+          <div class="oh-cells" id="ohCellsA"></div>
+        </div>
+        <div class="oh-vector b">
+          <div class="oh-vector-head">Second word: <span class="vw-name" id="ohNameB">queen</span></div>
+          <div class="oh-cells" id="ohCellsB"></div>
+        </div>
+      </div>
+
+      <div class="oh-distance-card">
+        <div class="oh-distance-row"><span class="pair">king · queen</span><span class="val">√2 ≈ 1.414</span></div>
+        <div class="oh-distance-row"><span class="pair">king · pizza</span><span class="val">√2 ≈ 1.414</span></div>
+        <div class="oh-distance-row"><span class="pair">king · marathon</span><span class="val">√2 ≈ 1.414</span></div>
+        <div class="oh-distance-row"><span class="pair">cat · dog</span><span class="val">√2 ≈ 1.414</span></div>
+        <div class="oh-distance-row"><span class="pair">happy · sad</span><span class="val">√2 ≈ 1.414</span></div>
+        <div class="oh-distance-row"><span class="pair">pizza · marathon</span><span class="val">√2 ≈ 1.414</span></div>
+      </div>
+
+      <p class="viz-note">Every pair of distinct words is at the same distance. king is exactly as far from queen as it is from pizza or marathon. The encoding has nothing to say about which words are related.</p>
+    </div>
+  </div>
+
+  <h3>One-hot is honest. It also says nothing.</h3>
+
+  <p>This is the opposite failure. The number line was loud and wrong. One-hot is quiet and useless. Compute the distance between any two distinct one-hot vectors and you always get √2. King is at distance √2 from queen. Also from pizza. Also from carburetor. There's no notion of similarity at all.</p>
+
+  <p>We went from a representation that confidently makes up relationships to one that refuses to acknowledge any. Both are broken. And there's a side problem worth flagging.</p>
+
+  <div class="cost-note">
+    <span class="cost-label">cost-check</span>
+    To represent a 50,000-word vocabulary with one-hot, every word becomes a vector of 50,000 numbers, of which 49,999 are zero. We just blew up our memory by a factor of 50,000 and the new representation tells us less than the old one did. From a deployment angle this is the worst of both worlds. Huge memory footprint, no useful structure.
+  </div>
+
+  <p>So we've tried both extremes. The number line says too much that's wrong. One-hot says nothing at all. What now?</p>
+
+  <hr class="sep">
+
+  <h2>What if we use more than one number?</h2>
+
+  <p>Both failures share something. They're stuck with one axis of variation. The number line has order along one direction. One-hot has 50,000 slots but the slots themselves don't relate to each other. In both cases we've squashed the data into a structure that can't express what we need.</p>
+
+  <p>So what if we used more than one number per word? Two numbers. Coordinates on a plane. Now "king" can sit at position (3.2, 1.7) and "queen" at (3.5, 1.8) right next to it. "Carburetor" goes way over at (-4.1, -3.0). Two numbers gives us two axes to play with, and that's qualitatively different from one.</p>
+
+  <p>That helps. Just not enough. Let's see why.</p>
+
+  <!-- VIZ 3: dimensions create room -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Switch between 1, 2, and 3 dimensions. Watch the squeeze.</span></div>
+    <div class="viz-body">
+
+      <div class="dim-tabs">
+        <button class="dim-tab" data-dim="1">1D · a line</button>
+        <button class="dim-tab active" data-dim="2">2D · a plane</button>
+        <button class="dim-tab" data-dim="3">3D · a volume</button>
+      </div>
+
+      <div class="dim-svg-wrap">
+        <div id="dimSvgHost" style="width:100%"></div>
+      </div>
+
+      <div class="dim-summary" id="dimSummary"></div>
+
+      <p class="viz-note">In 1D, every word fights for the same line. In 2D, you can group "king" with "queen" but try placing "running" near both "marathon" and "campaign" while keeping those two apart. The plane runs out of room. Add a third axis and the squeeze loosens. Every dimension you add is another direction meaning can spread out in.</p>
+    </div>
+  </div>
+
+  <h3>Two dimensions still aren't enough</h3>
+
+  <p>The plane breaks for a specific reason and it's worth pinning down. Take a word like "running". It's related to a lot of other words. "Run" obviously, but also "marathon", "exercise", "fast", "campaign" (as in running for office), "managing" (running a company), "flowing" (water running). All of those should sit near "running" in some sense. But they shouldn't all sit near each other. "Marathon" and "campaign" share almost nothing except their relationship to "running".</p>
+
+  <p>On a plane, you can't pull this off. Wherever you put "running", you have two choices. Put both "marathon" and "campaign" near it, in which case they end up near each other (which is wrong). Or put one of them far from "running" (also wrong). The plane doesn't have enough independent directions to encode all the different ways "running" relates to other words.</p>
+
+  <p>Three dimensions help. You can separate "marathon" and "campaign" along the new axis while still keeping both near "running". Push further into a real vocabulary though, and you hit the same wall again. There are more independent kinds of similarity than three axes can hold. Tense. Formality. Domain. Sentiment. Word class. Style. Each one wants its own direction to live in.</p>
+
+  <p>Every dimension we add is a new direction meaning can spread out in. Eventually we reach a number where the vocabulary has enough room. For modern language models, that number is in the hundreds to thousands. GPT-2 small uses 768. LLaMA-7B uses 4,096. GPT-3 uses 12,288. Bigger models use more dimensions because they're trying to capture more independent kinds of similarity at once.</p>
+
+  <div class="callout">Each new dimension is another direction meaning can live in.</div>
+
+  <hr class="sep">
+
+  <h2>So what is a vector, really?</h2>
+
+  <p>Here's where the word "vector" starts to earn its keep. Up to this point we've been saying "many numbers per word" without giving the thing a name. A vector is just that. A list of numbers we treat as a single coordinated object. A point in some many-dimensional space.</p>
+
+  <p>The shift from "list of 768 numbers" to "point in 768-dimensional space" is small but it changes everything we can do. As long as we treat <code>[0.04, -0.18, 0.23, ...]</code> as 768 separate values, we can only do separate-value things to them. Once we treat them as a single position, a whole new set of operations opens up. We can ask about distance. About direction. About what's between two positions. About what arithmetic on positions might mean.</p>
+
+  <p>This is what's happening inside an LLM. Every word gets mapped to a vector. The vectors live in a shared space. Geometric relationships between vectors carry semantic meaning. Similar words sit near each other, related words point in related directions. The model spends most of its compute manipulating these vectors. The intelligence of the model, such as it is, lives in the geometry of where every word sits relative to every other word.</p>
+
+  <p>We haven't shown <em>how</em> that geometry actually gets built, or <em>why</em> it works. That's Part 2. But we've earned the demand. Words need many numbers because:</p>
+
+  <ul>
+    <li>One number on a line lies about which words are related</li>
+    <li>One-hot encoding has no concept of relatedness at all</li>
+    <li>Two or three dimensions don't have enough room for language</li>
+    <li>Many dimensions give us room without the lying</li>
+  </ul>
+
+  <p>The 768 numbers for "king" stop feeling like a lot once you see what the alternatives cost.</p>
+
+  <hr class="sep">
+
+  <h2>One last thought before we wrap</h2>
+
+  <p>We've talked about vectors as abstract mathematical objects throughout this. But every one of those numbers eventually has to live somewhere physical, and that's where things get interesting from an engineering angle.</p>
+
+  <div class="cost-note">
+    <span class="cost-label">cost-check</span>
+    A 768-dimensional FP32 vector is 3,072 bytes. GPT-2's full embedding table (50,257 words times 768 dimensions times 4 bytes) is around 154 MB. That's just the lookup table, before any transformer layers exist. Doubling the dimension doubles the memory of every embedding, doubles the bandwidth needed to load them, and (because most operations on vectors are matrix multiplications) more than doubles the compute. We come back to this in Part 5, where we look at what a vector actually <em>is</em> on real silicon.
+  </div>
+
+  <p>For now, just notice that "many dimensions" isn't a free choice. It's a tradeoff between representational quality and what you can actually run. Almost every choice in this series is going to have one of those tradeoffs lurking underneath it.</p>
+
+  <hr class="sep">
+
+  <!-- Quiz -->
+  <div class="quiz-block">
+    <h2>Quick check</h2>
+    <p class="quiz-intro">Three short questions. Answer in your head, then click to check.</p>
+
+    <div class="quiz-q">
+      <div class="quiz-q-text"><span class="quiz-q-num">1.</span> What's actually wrong with putting words on a number line?</div>
+      <button class="quiz-toggle" data-target="ans1">Show answer</button>
+      <div class="quiz-answer" id="ans1">
+        <strong>The line forces a geometry the data doesn't have.</strong> Distance and order on a line carry meaning by construction. So when we put "king" at 47,193 and "kingdom" at 47,194, the line is implicitly claiming these two words are nearly identical. That claim comes from the alphabet, not from the words themselves. The encoding has opinions about meaning, and those opinions are based on spelling.
+      </div>
+    </div>
+
+    <div class="quiz-q">
+      <div class="quiz-q-text"><span class="quiz-q-num">2.</span> One-hot doesn't lie. So what's wrong with it?</div>
+      <button class="quiz-toggle" data-target="ans2">Show answer</button>
+      <div class="quiz-answer" id="ans2">
+        <strong>It doesn't say anything either.</strong> Every pair of distinct one-hot vectors sits at distance √2. King is exactly as far from queen as it is from carburetor. There's no concept of similarity at all. We went from saying too much that was wrong to saying nothing at all, and we paid for the privilege. Every word now needs a vector with thousands of slots, almost all zeros.
+      </div>
+    </div>
+
+    <div class="quiz-q">
+      <div class="quiz-q-text"><span class="quiz-q-num">3.</span> Why isn't a 2D plane enough room for words?</div>
+      <button class="quiz-toggle" data-target="ans3">Show answer</button>
+      <div class="quiz-answer" id="ans3">
+        <strong>Language has more independent kinds of similarity than two axes can hold.</strong> Try placing "running" near both "marathon" and "campaign" while keeping those two apart. You can't, because in a plane every position forces a tradeoff. Tense, formality, domain, sentiment, word class. Each is its own kind of relationship and wants its own direction. Two axes can encode two of these at most. That's why real models use hundreds or thousands of dimensions.
+      </div>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>What's coming next</h2>
+
+  <p>We've answered the first piece of the puzzle. Words need many numbers because the simpler encodings either lie or stay silent, and a few dimensions can't capture how language actually works. Vectors aren't excessive. They're the smallest honest answer.</p>
+
+  <p>What we haven't shown is how the geometry actually encodes meaning. We keep saying "similar words should sit close together" without saying what "close" means when you have 768 numbers, or how that arrangement gets built in the first place. That's where Part 2 picks up. We have many numbers per word. Now we figure out how those numbers do real work.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <div class="series-context">Linear Algebra for LLMs</div>
+    <h2 class="sidebar-title">Episode 1: What Is a Vector, Really?</h2>
+    <a class="sidebar-link active-topic" href="why-one-number-isnt-enough.html">
+      <div class="sidebar-link-title">Part 1: Why One Number Isn't Enough</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="how-numbers-encode-meaning.html">
+      <div class="sidebar-link-title">Part 2: How Numbers Encode Meaning</div>
+      <div class="sidebar-link-note">Distance, direction, arithmetic.</div>
+    </a>
+    <a class="sidebar-link" href="when-the-geometry-breaks.html">
+      <div class="sidebar-link-title">Part 3: When Geometry Breaks Down</div>
+      <div class="sidebar-link-note">An honest mental model.</div>
+    </a>
+    <a class="sidebar-link" href="why-768-dimensions.html">
+      <div class="sidebar-link-title">Part 4: Why 768 Dimensions</div>
+      <div class="sidebar-link-note">Capacity vs cost.</div>
+    </a>
+    <a class="sidebar-link" href="vector-on-real-silicon.html">
+      <div class="sidebar-link-title">Part 5: A Vector on Real Silicon</div>
+      <div class="sidebar-link-note">Memory, SIMD, precision.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas in this part</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Number lines lie about word relationships</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">One-hot is honest but useless</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Few dimensions force compromises</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Many dimensions = many directions for meaning</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Every dimension has a memory cost</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// quiz toggles
+document.querySelectorAll('.quiz-toggle').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const t=document.getElementById(b.dataset.target);
+    t.classList.toggle('shown');
+    b.textContent=t.classList.contains('shown')?'Hide answer':'Show answer';
+  });
+});
+
+// =========================================================================
+// VIZ 1 — number line lies (pure SVG, no canvas)
+// =========================================================================
+function wordRank(w){
+  const s=w.toLowerCase().replace(/[^a-z]/g,'');
+  if(!s)return 0;
+  let r=0;
+  for(let i=0;i<Math.min(s.length,5);i++){r=r*26+(s.charCodeAt(i)-97);}
+  return Math.round((r/Math.pow(26,5))*80000);
+}
+
+function nlRender(wordA, wordB){
+  const ra=wordRank(wordA), rb=wordRank(wordB);
+  const W=900, H=220;
+  const pad=70, yLine=140;
+  const innerW=W-2*pad;
+  const xA=pad+(ra/80000)*innerW;
+  const xB=pad+(rb/80000)*innerW;
+  const dist=Math.abs(ra-rb);
+
+  // axis ticks 0, 20k, 40k, 60k, 80k
+  let ticks='';
+  for(let v=0;v<=80000;v+=20000){
+    const x=pad+(v/80000)*innerW;
+    ticks+=`<line x1="${x}" y1="${yLine-4}" x2="${x}" y2="${yLine+4}" stroke="rgba(237,232,224,0.18)" stroke-width="1"/>`;
+    ticks+=`<text x="${x}" y="${yLine+22}" fill="rgba(125,118,107,0.7)" font-family="Courier New,monospace" font-size="11" text-anchor="middle">${v.toLocaleString()}</text>`;
+  }
+
+  const svg=`
+    <line x1="${pad}" y1="${yLine}" x2="${W-pad}" y2="${yLine}" stroke="rgba(237,232,224,0.3)" stroke-width="2"/>
+    <polygon points="${W-pad},${yLine} ${W-pad-10},${yLine-5} ${W-pad-10},${yLine+5}" fill="rgba(237,232,224,0.3)"/>
+    <polygon points="${pad},${yLine} ${pad+10},${yLine-5} ${pad+10},${yLine+5}" fill="rgba(237,232,224,0.3)"/>
+    ${ticks}
+    <text x="${pad}" y="${yLine+45}" fill="rgba(125,118,107,0.7)" font-family="Source Sans 3,sans-serif" font-size="12">alphabetical position →</text>
+
+    <!-- distance bracket -->
+    <path d="M ${xA} ${yLine-12} L ${xA} ${yLine-55} L ${xB} ${yLine-55} L ${xB} ${yLine-12}" stroke="rgba(255,107,107,0.55)" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+    <text x="${(xA+xB)/2}" y="${yLine-62}" fill="#ff6b6b" font-family="Courier New,monospace" font-size="13" font-weight="700" text-anchor="middle">distance: ${dist.toLocaleString()}</text>
+
+    <!-- word A -->
+    <circle cx="${xA}" cy="${yLine}" r="8" fill="#e8a84c"/>
+    <text x="${xA}" y="${yLine-22}" fill="#ede8e0" font-family="Source Sans 3,sans-serif" font-size="14" font-weight="700" text-anchor="middle">${wordA}</text>
+    <text x="${xA}" y="${yLine-95}" fill="#e8a84c" font-family="Courier New,monospace" font-size="11" text-anchor="middle">id ${ra.toLocaleString()}</text>
+
+    <!-- word B -->
+    <circle cx="${xB}" cy="${yLine}" r="8" fill="#4ca8e8"/>
+    <text x="${xB}" y="${yLine-22}" fill="#ede8e0" font-family="Source Sans 3,sans-serif" font-size="14" font-weight="700" text-anchor="middle">${wordB}</text>
+    <text x="${xB}" y="${yLine-95}" fill="#4ca8e8" font-family="Courier New,monospace" font-size="11" text-anchor="middle">id ${rb.toLocaleString()}</text>
+  `;
+  document.getElementById('nlSvg').innerHTML=svg;
+
+  // verdict
+  let verdict;
+  if(dist<3000){
+    verdict='These two ended up close on the line. That is alphabetical luck. The encoding has no idea whether the words are actually related.';
+  }else if(dist>20000){
+    verdict='The line places these far apart. That distance reflects spelling, not meaning. The alphabet decided this.';
+  }else{
+    verdict='Whatever the line is saying about these two, it is saying it based on spelling. Meaning never entered the picture.';
+  }
+  document.getElementById('nlReadout').innerHTML=`
+    <div class="nl-readout-row">
+      <span>"${wordA}" → id ${ra.toLocaleString()} &nbsp;·&nbsp; "${wordB}" → id ${rb.toLocaleString()}</span>
+      <span style="color:#e8a84c;font-weight:600">|distance| = ${dist.toLocaleString()}</span>
+    </div>
+    <div class="nl-readout-verdict">${verdict}</div>
+  `;
+}
+
+document.querySelectorAll('.nl-pair-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.nl-pair-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const [a,bw]=b.dataset.pair.split(',');
+    nlRender(a,bw);
+  });
+});
+nlRender('king','queen');
+
+// =========================================================================
+// VIZ 2 — one-hot is silent
+// =========================================================================
+const ohWords=['king','queen','dog','cat','pizza','marathon','happy','sad'];
+let ohSelA='king', ohSelB='queen';
+
+function ohRender(){
+  const vocab=document.getElementById('ohVocab');
+  vocab.innerHTML=ohWords.map(w=>{
+    let cls='oh-chip';
+    if(w===ohSelA)cls+=' sel-a';
+    else if(w===ohSelB)cls+=' sel-b';
+    return `<button class="${cls}" data-w="${w}">${w}</button>`;
+  }).join('');
+  vocab.querySelectorAll('.oh-chip').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const w=b.dataset.w;
+      if(w===ohSelA){ohSelA=null;}
+      else if(w===ohSelB){ohSelB=null;}
+      else if(!ohSelA){ohSelA=w;}
+      else if(!ohSelB){ohSelB=w;}
+      else {ohSelA=ohSelB; ohSelB=w;}
+      ohRender();
+    });
+  });
+
+  function cells(word, slot){
+    return ohWords.map(w=>{
+      const lit=w===word;
+      const cls=lit?(slot==='a'?'oh-cell lit-a':'oh-cell lit-b'):'oh-cell';
+      const val=lit?'1':'0';
+      return `<div class="${cls}">${val}</div>`;
+    }).join('');
+  }
+
+  document.getElementById('ohNameA').textContent=ohSelA||'—';
+  document.getElementById('ohNameB').textContent=ohSelB||'—';
+  document.getElementById('ohCellsA').innerHTML=ohSelA?cells(ohSelA,'a'):ohWords.map(()=>'<div class="oh-cell">0</div>').join('');
+  document.getElementById('ohCellsB').innerHTML=ohSelB?cells(ohSelB,'b'):ohWords.map(()=>'<div class="oh-cell">0</div>').join('');
+}
+ohRender();
+
+// =========================================================================
+// VIZ 3 — dimensions create room (pure SVG, three static layouts)
+// =========================================================================
+const dimSummaries={
+  1:'<strong>1D · a line.</strong> Every word fights for the same axis. Putting "king" near "queen" forces them away from "marathon". Putting "running" anywhere drags every related word with it. Severe compromises everywhere.',
+  2:'<strong>2D · a plane.</strong> More room. We can group "king" with "queen" on one side, and "happy" with "sad" on another. But notice the red lines. "Running" can sit near "marathon" or near "campaign", not both, because they\'d crowd each other. Still forces tradeoffs.',
+  3:'<strong>3D · a volume.</strong> The third axis pulls "marathon" and "campaign" apart in a new direction, so "running" can finally sit near both. The squeeze loosens. Real language has many more kinds of similarity than three, but the principle is the same. More dimensions, more room.'
+};
+
+function dim1Svg(){
+  const W=800,H=300;
+  const pad=60, yLine=H/2;
+  const words=[
+    {n:'king',x:0.30,c:'#e8a84c'},
+    {n:'queen',x:0.34,c:'#e8a84c'},
+    {n:'man',x:0.26,c:'#e8a84c'},
+    {n:'woman',x:0.38,c:'#e8a84c'},
+    {n:'happy',x:0.55,c:'#4ca8e8'},
+    {n:'sad',x:0.60,c:'#4ca8e8'},
+    {n:'marathon',x:0.72,c:'#7fff6b'},
+    {n:'campaign',x:0.78,c:'#7fff6b'},
+    {n:'running',x:0.82,c:'#7fff6b'}
+  ];
+  let pts='';
+  words.forEach((w,i)=>{
+    const x=pad+w.x*(W-2*pad);
+    const above=i%2===0;
+    pts+=`<circle cx="${x}" cy="${yLine}" r="5" fill="${w.c}"/>`;
+    pts+=`<text x="${x}" y="${above?yLine-12:yLine+24}" fill="#ede8e0" font-family="Source Sans 3,sans-serif" font-size="12" font-weight="600" text-anchor="middle">${w.n}</text>`;
+  });
+  return `<svg class="dim-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <line x1="${pad}" y1="${yLine}" x2="${W-pad}" y2="${yLine}" stroke="rgba(237,232,224,0.3)" stroke-width="2"/>
+    <polygon points="${W-pad},${yLine} ${W-pad-10},${yLine-5} ${W-pad-10},${yLine+5}" fill="rgba(237,232,224,0.3)"/>
+    <text x="${pad}" y="${yLine+50}" fill="rgba(125,118,107,0.7)" font-family="Source Sans 3,sans-serif" font-size="13">only one direction</text>
+    ${pts}
+  </svg>`;
+}
+
+function dim2Svg(){
+  const W=800,H=400;
+  const pad=60;
+  const words=[
+    {n:'king',x:0.30,y:0.72,c:'#e8a84c'},
+    {n:'queen',x:0.36,y:0.78,c:'#e8a84c'},
+    {n:'man',x:0.26,y:0.62,c:'#e8a84c'},
+    {n:'woman',x:0.32,y:0.66,c:'#e8a84c'},
+    {n:'happy',x:0.78,y:0.30,c:'#4ca8e8'},
+    {n:'sad',x:0.82,y:0.42,c:'#4ca8e8'},
+    {n:'marathon',x:0.55,y:0.85,c:'#7fff6b'},
+    {n:'campaign',x:0.70,y:0.20,c:'#7fff6b'},
+    {n:'running',x:0.50,y:0.50,c:'#7fff6b'}
+  ];
+  function px(w){return pad+w.x*(W-2*pad);}
+  function py(w){return pad+(1-w.y)*(H-2*pad);}
+  let pts='';
+  words.forEach(w=>{
+    pts+=`<circle cx="${px(w)}" cy="${py(w)}" r="6" fill="${w.c}"/>`;
+    pts+=`<text x="${px(w)}" y="${py(w)-12}" fill="#ede8e0" font-family="Source Sans 3,sans-serif" font-size="12" font-weight="600" text-anchor="middle">${w.n}</text>`;
+  });
+  // running -> marathon and running -> campaign red dashed
+  const r=words.find(w=>w.n==='running'),m=words.find(w=>w.n==='marathon'),c=words.find(w=>w.n==='campaign');
+  const rL=`<line x1="${px(r)}" y1="${py(r)}" x2="${px(m)}" y2="${py(m)}" stroke="rgba(255,107,107,0.5)" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <line x1="${px(r)}" y1="${py(r)}" x2="${px(c)}" y2="${py(c)}" stroke="rgba(255,107,107,0.5)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  return `<svg class="dim-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="rgba(237,232,224,0.2)" stroke-width="1.5"/>
+    <line x1="${pad}" y1="${H-pad}" x2="${pad}" y2="${pad}" stroke="rgba(237,232,224,0.2)" stroke-width="1.5"/>
+    <polygon points="${W-pad},${H-pad} ${W-pad-10},${H-pad-5} ${W-pad-10},${H-pad+5}" fill="rgba(237,232,224,0.3)"/>
+    <polygon points="${pad},${pad} ${pad-5},${pad+10} ${pad+5},${pad+10}" fill="rgba(237,232,224,0.3)"/>
+    <text x="${W-pad-50}" y="${H-pad+22}" fill="rgba(125,118,107,0.7)" font-family="Source Sans 3,sans-serif" font-size="12">axis 1</text>
+    <text x="${pad-22}" y="${pad+30}" fill="rgba(125,118,107,0.7)" font-family="Source Sans 3,sans-serif" font-size="12" transform="rotate(-90 ${pad-22} ${pad+30})">axis 2</text>
+    ${rL}
+    ${pts}
+    <text x="${px(r)+12}" y="${py(r)+22}" fill="rgba(255,107,107,0.85)" font-family="Source Sans 3,sans-serif" font-size="11" font-style="italic">"running" can't sit near both</text>
+    <text x="${px(r)+12}" y="${py(r)+38}" fill="rgba(255,107,107,0.85)" font-family="Source Sans 3,sans-serif" font-size="11" font-style="italic">marathon AND campaign here.</text>
+  </svg>`;
+}
+
+function dim3Svg(){
+  const W=800,H=420;
+  const cx=W/2, cy=H/2+20;
+  const sc=160;
+  // simple iso projection
+  function P(x,y,z){
+    const ax=Math.PI/6,ay=Math.PI/8;
+    const px=cx+(x-0.5)*sc*Math.cos(ax)*1.2-(z-0.5)*sc*Math.cos(ay)*0.7;
+    const py=cy+(0.5-y)*sc*1.0+(z-0.5)*sc*Math.sin(ay)*0.7+(x-0.5)*sc*Math.sin(ax)*0.4;
+    return [px,py];
+  }
+  // axes
+  const o=P(0,0,0),ax1=P(1,0,0),ax2=P(0,1,0),ax3=P(0,0,1);
+  const axes=`
+    <line x1="${o[0]}" y1="${o[1]}" x2="${ax1[0]}" y2="${ax1[1]}" stroke="rgba(237,232,224,0.2)" stroke-width="1.5"/>
+    <line x1="${o[0]}" y1="${o[1]}" x2="${ax2[0]}" y2="${ax2[1]}" stroke="rgba(237,232,224,0.2)" stroke-width="1.5"/>
+    <line x1="${o[0]}" y1="${o[1]}" x2="${ax3[0]}" y2="${ax3[1]}" stroke="rgba(237,232,224,0.2)" stroke-width="1.5"/>
+    <text x="${ax1[0]+8}" y="${ax1[1]}" fill="rgba(125,118,107,0.7)" font-family="Source Sans 3,sans-serif" font-size="12">axis 1</text>
+    <text x="${ax2[0]+5}" y="${ax2[1]-5}" fill="rgba(125,118,107,0.7)" font-family="Source Sans 3,sans-serif" font-size="12">axis 2</text>
+    <text x="${ax3[0]-40}" y="${ax3[1]+5}" fill="rgba(125,118,107,0.7)" font-family="Source Sans 3,sans-serif" font-size="12">axis 3</text>
+  `;
+  const words=[
+    {n:'king',p:[0.35,0.72,0.55],c:'#e8a84c'},
+    {n:'queen',p:[0.40,0.78,0.50],c:'#e8a84c'},
+    {n:'man',p:[0.32,0.62,0.45],c:'#e8a84c'},
+    {n:'woman',p:[0.37,0.66,0.40],c:'#e8a84c'},
+    {n:'happy',p:[0.78,0.30,0.30],c:'#4ca8e8'},
+    {n:'sad',p:[0.82,0.42,0.28],c:'#4ca8e8'},
+    {n:'marathon',p:[0.62,0.85,0.78],c:'#7fff6b'},
+    {n:'campaign',p:[0.20,0.20,0.78],c:'#7fff6b'},
+    {n:'running',p:[0.50,0.50,0.78],c:'#7fff6b'}
+  ];
+  let pts='';
+  words.forEach(w=>{
+    const [x,y]=P(...w.p);
+    pts+=`<circle cx="${x}" cy="${y}" r="6" fill="${w.c}"/>`;
+    pts+=`<text x="${x}" y="${y-12}" fill="#ede8e0" font-family="Source Sans 3,sans-serif" font-size="12" font-weight="600" text-anchor="middle">${w.n}</text>`;
+  });
+  const r=P(...words.find(w=>w.n==='running').p);
+  const m=P(...words.find(w=>w.n==='marathon').p);
+  const c=P(...words.find(w=>w.n==='campaign').p);
+  const lines=`<line x1="${r[0]}" y1="${r[1]}" x2="${m[0]}" y2="${m[1]}" stroke="rgba(127,255,107,0.55)" stroke-width="1.5" stroke-dasharray="5 4"/>
+              <line x1="${r[0]}" y1="${r[1]}" x2="${c[0]}" y2="${c[1]}" stroke="rgba(127,255,107,0.55)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  return `<svg class="dim-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    ${axes}
+    ${lines}
+    ${pts}
+    <text x="${r[0]+12}" y="${r[1]+22}" fill="rgba(127,255,107,0.85)" font-family="Source Sans 3,sans-serif" font-size="11" font-style="italic">Now running sits near both,</text>
+    <text x="${r[0]+12}" y="${r[1]+38}" fill="rgba(127,255,107,0.85)" font-family="Source Sans 3,sans-serif" font-size="11" font-style="italic">separated on the new axis.</text>
+  </svg>`;
+}
+
+function dimRender(d){
+  const host=document.getElementById('dimSvgHost');
+  if(d===1)host.innerHTML=dim1Svg();
+  else if(d===2)host.innerHTML=dim2Svg();
+  else host.innerHTML=dim3Svg();
+  document.getElementById('dimSummary').innerHTML=dimSummaries[d];
+}
+document.querySelectorAll('.dim-tab').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.dim-tab').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    dimRender(parseInt(b.dataset.dim));
+  });
+});
+dimRender(2);
+</script>
+</body>
+</html>

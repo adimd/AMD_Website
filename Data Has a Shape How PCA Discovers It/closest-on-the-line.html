@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Closest on the Line | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .ponder{margin:2rem 0;padding:1.5rem 1.8rem;border-left:3px solid var(--blue);background:var(--blue-dim);border-radius:0 var(--radius) var(--radius) 0;color:var(--ink);line-height:1.6}
+    .ponder .ponder-tag{display:inline-block;font-family:var(--hand);font-size:1.15rem;color:var(--blue);margin-bottom:.4rem}
+    .ponder p{font-size:1.08rem;margin-bottom:.5rem;color:var(--ink)}
+    .ponder p:last-child{margin-bottom:0}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+    .viz-figure{display:flex;justify-content:center}
+    .viz-figure svg{max-width:100%;height:auto}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    /* ── VIZ: error-metric comparison (3 mini-canvases) ───────────────────── */
+    .metric-wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+    @media(max-width:720px){.metric-wrap{grid-template-columns:1fr}}
+    .metric-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.9rem;display:flex;flex-direction:column;gap:.55rem}
+    .metric-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+    .metric-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);line-height:1.3}
+    .metric-canvas{width:100%;height:auto;background:#14130f;border-radius:6px;display:block}
+    .metric-formula{font-size:.78rem;font-family:'Courier New',monospace;color:var(--body);text-align:center;padding-top:.2rem;border-top:1px dashed var(--border)}
+
+    /* ── VIZ: slide c, watch error and angle ─────────────────────────────── */
+    .slider-wrap{display:grid;grid-template-columns:1.4fr 1fr;gap:1.4rem;align-items:start}
+    @media(max-width:840px){.slider-wrap{grid-template-columns:1fr}}
+    .slider-canvas{width:100%;height:auto;background:#14130f;border-radius:10px;border:1px solid var(--border);display:block;cursor:grab;touch-action:none}
+    .slider-canvas:active{cursor:grabbing}
+    .slider-side{display:flex;flex-direction:column;gap:1rem}
+    .live-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem}
+    .live-row{display:flex;justify-content:space-between;align-items:baseline;padding:.45rem 0;border-bottom:1px dashed var(--border)}
+    .live-row:last-child{border-bottom:none}
+    .live-label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .live-val{font-family:'Courier New',monospace;color:var(--ink);font-size:1rem}
+    .live-val.accent{color:var(--accent)}
+    .live-val.danger{color:var(--red)}
+    .live-val.good{color:var(--green);font-weight:600}
+    .err-meter-track{height:8px;background:rgba(237,232,224,.06);border-radius:4px;overflow:hidden;margin-top:.5rem}
+    .err-meter-fill{height:100%;background:linear-gradient(90deg,var(--green),#e8a84c,var(--red));border-radius:4px;transition:width .15s ease-out}
+    .c-control{display:flex;flex-direction:column;gap:.4rem}
+    .c-slider-row{display:flex;align-items:center;gap:.7rem}
+    .c-slider{flex:1;accent-color:var(--accent)}
+    .c-readout{font-family:'Courier New',monospace;color:var(--accent);font-size:.95rem;min-width:60px;text-align:right}
+    .slider-controls{display:flex;gap:.5rem;flex-wrap:wrap}
+    .slider-btn{padding:.45rem .9rem;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:inherit}
+    .slider-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .slider-btn.primary{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .perp-banner{display:none;padding:.5rem .85rem;border-radius:8px;background:rgba(127,255,107,.12);border:1px solid rgba(127,255,107,.35);color:var(--green);font-size:.85rem;font-weight:500;text-align:center}
+    .perp-banner.show{display:block;animation:rise .35s both}
+
+    /* ── VIZ: error vs c parabola ───────────────────────────────────────── */
+    .parabola-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1.3rem;align-items:start}
+    @media(max-width:720px){.parabola-wrap{grid-template-columns:1fr}}
+    .parabola-canvas{width:100%;height:auto;background:#14130f;border-radius:10px;border:1px solid var(--border);display:block;cursor:grab;touch-action:none}
+    .parabola-canvas:active{cursor:grabbing}
+    .parabola-side{font-size:.95rem;color:var(--body);line-height:1.7}
+    .parabola-side strong{color:var(--ink)}
+
+    /* ── VIZ: pythagoras ────────────────────────────────────────────────── */
+    .pyth-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1.3rem;align-items:center}
+    @media(max-width:720px){.pyth-wrap{grid-template-columns:1fr}}
+    .pyth-canvas{width:100%;height:auto;background:#14130f;border-radius:10px;border:1px solid var(--border);display:block}
+    .pyth-text{font-size:1rem;color:var(--body);line-height:1.7}
+    .pyth-text strong{color:var(--ink)}
+    .pyth-text .leg{color:var(--green);font-weight:600}
+    .pyth-text .hyp{color:var(--red);font-weight:600}
+    .pyth-controls{display:flex;align-items:center;gap:.7rem;margin-top:.7rem;flex-wrap:wrap}
+    .pyth-controls label{font-size:.82rem;color:var(--muted)}
+    .pyth-slider{flex:1;accent-color:var(--accent);max-width:200px}
+    .pyth-readout{font-family:'Courier New',monospace;color:var(--accent);font-size:.9rem;min-width:55px;text-align:right}
+
+    /* ── derivation block ────────────────────────────────────────────────── */
+    .derivation{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.4rem 1.7rem;margin:1.5rem 0;font-size:1.05rem}
+    .derivation .step{margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px dashed var(--border)}
+    .derivation .step:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+    .derivation .step-label{font-family:var(--hand);font-size:1.05rem;color:var(--accent);margin-bottom:.4rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Data Has a Shape: How PCA Discovers It</span>
+  <h1>Closest on the Line</h1>
+  <p class="blog-subtitle">A point that won't sit on the line. A line that won't bend to meet it. Somewhere between them lives the answer to the first real question PCA has to settle.</p>
+
+  <h2>Where we left off</h2>
+
+  <p>Last time, four points sat exactly on the line \(y = 2x\). Each one needed only a single number to describe it. The compression was perfect, and we got it for free because the data lined up nicely.</p>
+
+  <p>Here's where the story gets harder.</p>
+
+  <!-- VIZ: opening figure -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Four obedient points. One troublemaker.</span></div>
+    <div class="viz-body">
+      <canvas id="openCanvas" class="slider-canvas" width="540" height="400" style="cursor:default"></canvas>
+      <p class="viz-note">Same line as Part 1. Four orange points sit on it. The fifth point, in blue, doesn't. Notice it's hovering above the line, not to the side.</p>
+    </div>
+  </div>
+
+  <p>The four orange points are exactly where they were. Each one still has a clean position along the line. The blue point at \((1, 3)\) is the problem. The line \(y = 2x\) doesn't pass through it. There's no scalar \(c\) that makes \(c \cdot w\) land on \((1, 3)\), no matter how we stretch or shrink \(w\).</p>
+
+  <p>So the trick from Part 1 has stopped working. What now?</p>
+
+  <hr class="sep">
+
+  <h2>The shape of a compromise</h2>
+
+  <p>Here's the move. We can't put the blue point on the line, but we can pick some position on the line and call it our "best guess" for where the point would go if it had to live on the line. That guess will be wrong by some amount. We write that wrong-ness down explicitly:</p>
+
+  <p>\[x = c \cdot w + \text{error}.\]</p>
+
+  <p>The first piece, \(c \cdot w\), is something on the line — that's the part we'd actually store. The second piece is the gap between the line and the real point. Add the two back together and you recover \(x\) exactly. We haven't lost anything yet. We've just made the bookkeeping honest.</p>
+
+  <div class="callout">A point off the line is "something on the line, plus a leftover." The job now is to make the leftover small.</div>
+
+  <p>But what does "small" actually mean here? It's not as obvious a question as it sounds.</p>
+
+  <hr class="sep">
+
+  <h2>What does "small" even mean?</h2>
+
+  <div class="ponder">
+    <span class="ponder-tag">stop and ponder</span>
+    <p>Look at the picture above. If someone asked you to summarise the blue point using a single spot on the line — where would your finger go?</p>
+    <p>Don't go for the official answer yet. The gut answer. What feels like the right spot to land on?</p>
+  </div>
+
+  <p>Take a second with that. Different people pick different spots, and they're all defensible.</p>
+
+  <p>Some people drop straight down. They look at the blue point at \((1, 3)\), and pick the spot on the line that has the same \(x\)-coordinate. That'd be \((1, 2)\), since the line says \(y = 2x\). The "error" is then how far above the line you started: one unit, straight down.</p>
+
+  <p>Other people slide horizontally. They keep the \(y\)-coordinate fixed at 3, and pick the \(x\) on the line where \(y = 3\). That'd be \((1.5, 3)\). The error is half a unit, sideways.</p>
+
+  <p>And some people just go for the closest spot on the line, period. As the crow flies. Not vertical, not horizontal, but the perpendicular drop.</p>
+
+  <p>Three different choices. Three different errors. Three different geometries. Look at them next to each other.</p>
+
+  <!-- VIZ: three error metrics -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Three honest ways to measure "off the line."</span></div>
+    <div class="viz-body">
+      <div class="metric-wrap">
+        <div class="metric-card">
+          <span class="metric-label">option A</span>
+          <div class="metric-title">Vertical gap</div>
+          <canvas class="metric-canvas" id="metricCanvasA" width="220" height="180"></canvas>
+          <div class="metric-formula">\(|y - 2x|\)</div>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">option B</span>
+          <div class="metric-title">Horizontal gap</div>
+          <canvas class="metric-canvas" id="metricCanvasB" width="220" height="180"></canvas>
+          <div class="metric-formula">\(|x - y/2|\)</div>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">option C</span>
+          <div class="metric-title">Straight-line distance</div>
+          <canvas class="metric-canvas" id="metricCanvasC" width="220" height="180"></canvas>
+          <div class="metric-formula">\(\|x - cw\|\)</div>
+        </div>
+      </div>
+      <p class="viz-note">Same point, same line, three different yardsticks. Each green segment is what that option would call "the error." None of them is wrong. They just disagree about what we're trying to minimise.</p>
+    </div>
+  </div>
+
+  <p>Once we pick a definition of error, that definition decides everything else. Different errors lead to different optimal positions, different formulas, eventually different algorithms. We're at a fork. We have to commit to one.</p>
+
+  <p>The choice we're going to make is option C, the perpendicular distance. And we'll square it. So our error is the squared length of the leftover vector \(x - cw\), and what we want small is</p>
+
+  <p>\[\|x - c w\|^2.\]</p>
+
+  <p>Three things to say about this choice, none of them coincidences.</p>
+
+  <p>It doesn't play favourites with directions. The vertical gap and horizontal gap both privilege the coordinate axes — fine in 2D, awkward when you get to fifty dimensions and there's no natural "up." The perpendicular distance treats every direction the same.</p>
+
+  <p>It plays nicely with algebra. Squaring kills the absolute value. The squared length \((x_1 - cw_1)^2 + (x_2 - cw_2)^2\) is just a sum of squares, and that's the kind of thing calculus is built for.</p>
+
+  <p>And the deeper reason, which won't pay off until later in the series: squaring punishes big errors much more than small ones. A point twice as far away contributes four times as much. This will turn out to align with what we mean by "spread" in a dataset, and it's why the algorithm we eventually build sees structure the way we want it to. Take it on credit for now.</p>
+
+  <div class="callout">From here on, "error" means \(\|x - cw\|^2\). We're committing.</div>
+
+  <hr class="sep">
+
+  <h2>The actual problem we're solving</h2>
+
+  <p>Here's where we stand. A point \(x\) is given. A direction \(w\) is fixed. The only knob we get to turn is \(c\), the position along the line. We want to pick \(c\) so the squared error is as small as it can get.</p>
+
+  <p>In symbols:</p>
+
+  <p>\[\min_{c} \;\|x - c w\|^2.\]</p>
+
+  <p>One scalar to optimise, one quantity to minimise. As clean as optimisation problems get. The only reason it's not yet a one-line formula is that we haven't done the work.</p>
+
+  <p>And we're going to do that work twice. Once geometrically, by playing with a slider until the answer becomes obvious. Once algebraically, by writing the squared error as a function of \(c\) and finding its minimum the way calculus tells us to. Both paths land on the same place, which is satisfying. Geometric first.</p>
+
+  <hr class="sep">
+
+  <h2>Slide it. Watch what happens.</h2>
+
+  <p>Below is the same picture, with one new control. The slider lets you set \(c\). The green dot is the proposed reconstruction \(c \cdot w\) — it slides along the line as you move the slider. The red dotted arrow is the error, going from the green dot back up to the blue point.</p>
+
+  <p>Don't read further yet. Move the slider all the way left, all the way right, and back. Watch how the red arrow changes shape and length.</p>
+
+  <!-- VIZ: slide c -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Slide c. Watch the error.</span></div>
+    <div class="viz-body">
+      <div class="slider-wrap">
+        <canvas id="slideCanvas" class="slider-canvas" width="540" height="440"></canvas>
+        <div class="slider-side">
+          <div class="c-control">
+            <span class="live-label">Position c along the line</span>
+            <div class="c-slider-row">
+              <input type="range" id="cSlider" class="c-slider" min="-3" max="6" step="0.01" value="0">
+              <span class="c-readout" id="cReadout">0.00</span>
+            </div>
+          </div>
+          <div class="live-card">
+            <div class="live-row">
+              <span class="live-label">Reconstruction \(cw\)</span>
+              <span class="live-val accent" id="cwVal">(0.00, 0.00)</span>
+            </div>
+            <div class="live-row">
+              <span class="live-label">Error length</span>
+              <span class="live-val danger" id="errVal">3.16</span>
+            </div>
+            <div class="live-row">
+              <span class="live-label">Angle (error vs line)</span>
+              <span class="live-val" id="angVal">71.6°</span>
+            </div>
+            <div class="err-meter-track"><div class="err-meter-fill" id="errBar" style="width:60%"></div></div>
+          </div>
+          <div class="perp-banner" id="perpBanner">90 degrees. Error is at its minimum.</div>
+          <div class="slider-controls">
+            <button class="slider-btn primary" id="snapBtn">Snap to perpendicular</button>
+            <button class="slider-btn" id="resetSlider">Reset</button>
+          </div>
+        </div>
+      </div>
+      <p class="viz-note">As you slide \(c\), three things change at once: the position of the green dot on the line, the length of the red error arrow, and the angle the error makes with the line. Two of those numbers are noisy and one of them tells the whole story.</p>
+    </div>
+  </div>
+
+  <div class="ponder">
+    <span class="ponder-tag">stop and ponder</span>
+    <p>You probably noticed it already. Slide it back and forth. There's one spot where the picture just... settles. Where the red arrow looks at peace with the line.</p>
+    <p>What's that spot doing differently from all the others?</p>
+  </div>
+
+  <p>Look at the angle readout while you slide. When the error is shortest, the angle is exactly ninety degrees. The red arrow is perpendicular to the orange line.</p>
+
+  <p>This isn't a coincidence of this point or this line. Try the snap button from a few different starting positions. Same result every time. The error hits its minimum precisely when the error is at right angles to the line.</p>
+
+  <hr class="sep">
+
+  <h2>Why the perpendicular wins</h2>
+
+  <p>The slider showed us the pattern. Now let's understand why it has to be true. The argument is short, and it uses Pythagoras in a way that I've always found pretty.</p>
+
+  <p>Suppose you've landed exactly at the perpendicular foot — the spot where the error makes a right angle with the line. Someone challenges you: "Bet I can do better. Slide a tiny bit and your error will get shorter."</p>
+
+  <p>Are they right? Slide by a small amount \(\delta\) along the line. The new error connects this new green dot back to the blue point. How long is it?</p>
+
+  <!-- VIZ: pythagoras -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Sliding away from the perpendicular always makes things worse.</span></div>
+    <div class="viz-body">
+      <div class="pyth-wrap">
+        <canvas id="pythCanvas" class="pyth-canvas" width="380" height="320"></canvas>
+        <div>
+          <p class="pyth-text">The blue point is fixed. The orange line is fixed. The green dot starts at the perpendicular foot — the unique spot where the dotted green error meets the line at a right angle.</p>
+          <p class="pyth-text">Slide the dot. The new error in red is the <span class="hyp">hypotenuse</span> of a right triangle whose legs are the original <span class="leg">perpendicular</span> and the slide. Pythagoras: the hypotenuse is always longer than either leg.</p>
+          <div class="pyth-controls">
+            <label>slide amount δ:</label>
+            <input type="range" id="pythSlider" class="pyth-slider" min="-1.2" max="1.2" step="0.02" value="0">
+            <span class="pyth-readout" id="pythVal">0.00</span>
+          </div>
+        </div>
+      </div>
+      <p class="viz-note">Slide left. Slide right. Either way the new red error grows. The perpendicular position is not just a local minimum, it's the only minimum. There is no shorter alternative.</p>
+    </div>
+  </div>
+
+  <p>That's the argument. If you're standing at the perpendicular foot, the original error is one leg of a right triangle, the slide is the other leg, and the new error is the hypotenuse. Hypotenuses are always longer than legs. So you can't do better.</p>
+
+  <p>And what if you weren't standing at the perpendicular foot to begin with? Then your error has some component pointing along the line. Slide in the right direction by the right amount and that component cancels. The error gets shorter. So any non-perpendicular position can be improved.</p>
+
+  <p>Putting both halves together: the perpendicular position is the unique minimum. Anywhere else is improvable. Right at the foot, you're stuck. There's nothing left to gain.</p>
+
+  <div class="callout">The error is shortest exactly when the error is perpendicular to the line. Always.</div>
+
+  <hr class="sep">
+
+  <h2>Same answer from algebra</h2>
+
+  <p>The slider gave us the answer. Pythagoras explained why. The calculus gives us a clean formula and, more importantly, generalises to any number of dimensions instead of just two.</p>
+
+  <p>Start with what we want to minimise:</p>
+
+  <p>\[f(c) = \|x - c w\|^2 = (x - c w)^\top (x - c w).\]</p>
+
+  <p>That \((x-cw)^\top(x-cw)\) is just the squared length, written as a dot product with itself. Expand it using the identity</p>
+
+  <p>\[(a - b)^\top (a - b) = a^\top a - 2 a^\top b + b^\top b,\]</p>
+
+  <p>with \(a = x\) and \(b = c w\):</p>
+
+  <p>\[f(c) = x^\top x - 2 c \, (x^\top w) + c^2 \, (w^\top w).\]</p>
+
+  <p>Stare at this for a second. As a function of \(c\), it's a parabola. The first term is constant, the second is linear in \(c\), the third is quadratic in \(c\) with positive coefficient \(w^\top w = \|w\|^2\). A parabola opening upwards has exactly one minimum, sitting at the bottom.</p>
+
+  <!-- VIZ: parabola -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Squared error, as a function of c.</span></div>
+    <div class="viz-body">
+      <div class="parabola-wrap">
+        <canvas id="parabolaCanvas" class="parabola-canvas" width="420" height="320"></canvas>
+        <div class="parabola-side">
+          <p>Plot \(f(c)\) for our blue point. Horizontal axis is \(c\). Vertical axis is the squared error. The whole thing is a parabola, opening upwards because \(\|w\|^2\) is positive.</p>
+          <p>Hover over the curve to see the squared error at any \(c\). The minimum sits at the bottom of the bowl. That \(c\) — the one where the bowl is deepest — is exactly the perpendicular foot we found with the slider.</p>
+          <p>The geometry and the algebra are looking at the same picture from two angles.</p>
+        </div>
+      </div>
+      <p class="viz-note">Bottom of the bowl = shortest error = perpendicular foot. Three names for the same point.</p>
+    </div>
+  </div>
+
+  <p>To find the bottom of the bowl, take the derivative and set it to zero.</p>
+
+  <div class="derivation">
+    <div class="step">
+      <div class="step-label">step one</div>
+      <p>Differentiate \(f(c)\) with respect to \(c\). The constant term contributes nothing, the linear term contributes \(-2(x^\top w)\), and the quadratic term contributes \(2c \, (w^\top w)\).</p>
+      <p>\[f'(c) = -2 (x^\top w) + 2 c \, (w^\top w).\]</p>
+    </div>
+    <div class="step">
+      <div class="step-label">step two</div>
+      <p>Set the derivative to zero. At the bottom of a parabola, the slope is flat.</p>
+      <p>\[-2 (x^\top w) + 2 c \, (w^\top w) = 0.\]</p>
+    </div>
+    <div class="step">
+      <div class="step-label">step three</div>
+      <p>Solve for \(c\). The factor of two cancels. Move the \(c\) term to the other side and divide.</p>
+      <p>\[c = \frac{x^\top w}{w^\top w} = \frac{x^\top w}{\|w\|^2}.\]</p>
+    </div>
+  </div>
+
+  <p>That's the formula. Given any point \(x\) and any direction \(w\), the position along \(w\) that minimises squared error is \(x^\top w\) divided by \(\|w\|^2\).</p>
+
+  <p>One small simplification at no cost. Throughout the rest of this series we'll always work with <em>unit</em> directions, meaning \(\|w\| = 1\). It costs nothing — any direction can be scaled to unit length without changing the line it points along. With \(\|w\|^2 = 1\), the formula collapses to:</p>
+
+  <div class="callout">\(c = x^\top w\)</div>
+
+  <p>The optimal position of \(x\) along the unit direction \(w\) is just their dot product. One inner product. No iteration, no search, no slider.</p>
+
+  <hr class="sep">
+
+  <h2>Two paths, one answer</h2>
+
+  <p>Notice something. The calculus we just did never said the word "perpendicular." But we already know from the slider and from Pythagoras that the optimum has to be perpendicular. So both paths should be telling the same story. Let's check.</p>
+
+  <p>The perpendicular condition says the error is at right angles to \(w\). Two vectors are at right angles when their dot product is zero. The error vector is \(x - cw\), so:</p>
+
+  <p>\[(x - c w)^\top w = 0.\]</p>
+
+  <p>Distribute: \(x^\top w - c \, (w^\top w) = 0\). Solve for \(c\):</p>
+
+  <p>\[c = \frac{x^\top w}{w^\top w}.\]</p>
+
+  <p>Same formula. Geometry and algebra agree, exactly. Two routes, identical destination — the kind of small beautiful agreement that makes the math feel like it knows what it's doing.</p>
+
+  <hr class="sep">
+
+  <h2>Orthogonal projection</h2>
+
+  <p>The operation we just defined has a name. Taking a point \(x\), finding the position along \(w\) that minimises squared error, and using \(c \cdot w\) as the reconstruction, is called the <strong>orthogonal projection of \(x\) onto \(w\)</strong>. The number \(c = x^\top w\) is the <em>scalar projection</em>. The vector \(c \cdot w\) is the <em>vector projection</em>.</p>
+
+  <p>"Orthogonal" just means perpendicular, and we earned it twice — once with Pythagoras, once with calculus. "Projection" is the older, more visual word: imagine light shining straight onto the line, casting the point's shadow exactly at \(c \cdot w\).</p>
+
+  <p>Three things worth carrying forward.</p>
+
+  <p>This is provably the smallest the error can be. We didn't pick a reasonable summary. We picked the best one.</p>
+
+  <p>It generalises immediately. Nothing in the derivation cared about being in 2D. Plug in vectors with fifty entries, or fifty thousand, and \(c = x^\top w\) still gives the optimal scalar projection. Perpendicular still means dot product is zero, no matter how many coordinates you have.</p>
+
+  <p>This is the seed of everything else. From here on, every time we want to compress a point onto a direction, this is the operation. PCA is, in a real sense, a long story about which directions are worth projecting onto. The projection itself is settled.</p>
+
+  <hr class="sep">
+
+  <h2>What we did, in one breath</h2>
+
+  <p>We had a point that didn't sit on a line. We needed to summarise it using only the line, which meant accepting some error. After looking at three honest ways to measure that error, we picked perpendicular distance and squared it.</p>
+
+  <p>Then we attacked the resulting problem twice. The slider showed us the answer is the perpendicular foot. Pythagoras showed us why. And the calculus, expanding and differentiating, gave us the formula \(c = x^\top w\) for unit \(w\).</p>
+
+  <p>The operation has a name — orthogonal projection — and it'll be the building block for everything that follows.</p>
+
+  <hr class="sep">
+
+  <h2>Where this is going</h2>
+
+  <p>So far, one point at a time. Real datasets have many points, and each one will have its own best \(c\). Next post leaves the single-point world behind and looks at a whole dataset at once. The question shifts from "what's the best position for this point" to "what's the best <em>line</em> to project everyone onto." That's where the algebra starts looking genuinely different.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Data Has a Shape: How PCA Discovers It</h2>
+    <a class="sidebar-link" href="data-has-a-shape.html">
+      <div class="sidebar-link-title">Part 1: Data Has a Shape</div>
+      <div class="sidebar-link-note">Storage as the lens.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="closest-on-the-line.html">
+      <div class="sidebar-link-title">Part 2: Closest on the Line</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="from-one-point-to-many.html">
+      <div class="sidebar-link-title">Part 3: From One Point to Many</div>
+      <div class="sidebar-link-note">A whole dataset, not just a single point.</div>
+    </a>
+    <a class="sidebar-link" href="spread-as-a-matrix.html">
+      <div class="sidebar-link-title">Part 4: Spread, Written as a Matrix</div>
+      <div class="sidebar-link-note">Variance, covariance, mean centering.</div>
+    </a>
+    <a class="sidebar-link" href="eigenvalue-surprise.html">
+      <div class="sidebar-link-title">Part 5: The Eigenvalue Surprise</div>
+      <div class="sidebar-link-note">An optimisation that solves itself.</div>
+    </a>
+    <a class="sidebar-link" href="more-than-one-direction.html">
+      <div class="sidebar-link-title">Part 6: More Than One Direction</div>
+      <div class="sidebar-link-note">Stacking components, staying orthogonal.</div>
+    </a>
+    <a class="sidebar-link" href="when-d-beats-n.html">
+      <div class="sidebar-link-title">Part 7: When Dimensions Outnumber Points</div>
+      <div class="sidebar-link-note">The dual trick.</div>
+    </a>
+    <a class="sidebar-link" href="bending-the-space.html">
+      <div class="sidebar-link-title">Part 8: Bending the Space</div>
+      <div class="sidebar-link-note">Kernels, and the circle that's secretly a line.</div>
+    </a>
+    <a class="sidebar-link" href="what-pca-isnt.html">
+      <div class="sidebar-link-title">Part 9: What PCA Is and Isn't</div>
+      <div class="sidebar-link-note">Variance, information, interpretability.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">x = cw + error</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Choose squared straight-line distance</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Geometry: perpendicular is shortest</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Calculus: derivative of a parabola</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">c = xᵀw is the orthogonal projection</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ: opener — four points on y=2x and one off it. Drawn from real coords.
+// ═══════════════════════════════════════════════════════════════════════════
+const openCanvas = document.getElementById('openCanvas');
+const octx = openCanvas.getContext('2d');
+
+function drawOpener(){
+  const dpr = window.devicePixelRatio || 1;
+  const W = openCanvas.clientWidth || 540, H = 400;
+  openCanvas.width = W*dpr; openCanvas.height = H*dpr;
+  openCanvas.style.height = H+'px';
+  octx.setTransform(dpr,0,0,dpr,0,0);
+  octx.fillStyle = '#14130f'; octx.fillRect(0,0,W,H);
+
+  // origin in the middle, scale chosen so points like (-3,-6) and (2,4) all fit
+  const cx = W/2, cy = H/2;
+  // y range needs to cover -6 to 4, x range -3 to 2 — so y is binding
+  const scale = Math.min(W/12, H/16);
+
+  // grid
+  octx.strokeStyle = 'rgba(237,232,224,0.05)';
+  octx.lineWidth = 1;
+  for(let i=-12;i<=12;i++){
+    octx.beginPath(); octx.moveTo(cx+i*scale,0); octx.lineTo(cx+i*scale,H); octx.stroke();
+    octx.beginPath(); octx.moveTo(0,cy+i*scale); octx.lineTo(W,cy+i*scale); octx.stroke();
+  }
+  // axes
+  octx.strokeStyle = 'rgba(237,232,224,0.2)';
+  octx.lineWidth = 1.2;
+  octx.beginPath(); octx.moveTo(0,cy); octx.lineTo(W,cy); octx.stroke();
+  octx.beginPath(); octx.moveTo(cx,0); octx.lineTo(cx,H); octx.stroke();
+  octx.fillStyle = 'rgba(237,232,224,0.45)';
+  octx.font = 'italic 13px "Source Sans 3",sans-serif';
+  octx.fillText('x', W-14, cy-6);
+  octx.fillText('y', cx+8, 14);
+
+  // line y = 2x — direction (1,2)/sqrt(5), drawn through origin
+  const wxn = 1/Math.sqrt(5), wyn = 2/Math.sqrt(5);
+  const lineLen = Math.max(W,H)*1.5;
+  octx.strokeStyle = 'rgba(232,168,76,0.8)';
+  octx.lineWidth = 2;
+  octx.beginPath();
+  octx.moveTo(cx - lineLen*wxn, cy + lineLen*wyn);
+  octx.lineTo(cx + lineLen*wxn, cy - lineLen*wyn);
+  octx.stroke();
+  // line label, placed up-right along the line
+  octx.fillStyle = 'rgba(232,168,76,0.95)';
+  octx.font = 'italic 14px "Source Sans 3",sans-serif';
+  // pick a screen offset that's clearly along the line in the upper right area
+  const labelDist = scale*2.2;
+  octx.fillText('y = 2x', cx + labelDist*wxn + 12, cy - labelDist*wyn);
+
+  // four obedient points on the line
+  const pts = [
+    {x:-3, y:-6, name:'x₁'},
+    {x:-1, y:-2, name:'x₂'},
+    {x:0.5, y:1, name:'x₃'},
+    {x:2, y:4, name:'x₄'}
+  ];
+  pts.forEach(p => {
+    const px = cx + p.x*scale;
+    const py = cy - p.y*scale;
+    octx.fillStyle = '#e8a84c';
+    octx.strokeStyle = '#fff';
+    octx.lineWidth = 1.5;
+    octx.beginPath();
+    octx.arc(px, py, 6, 0, Math.PI*2);
+    octx.fill();
+    octx.stroke();
+    octx.fillStyle = 'rgba(232,168,76,0.9)';
+    octx.font = '600 11px "Courier New",monospace';
+    octx.fillText(p.name, px + 10, py - 8);
+  });
+
+  // off-line point at (1, 3)
+  const off = {x:1, y:3};
+  const opx = cx + off.x*scale;
+  const opy = cy - off.y*scale;
+  octx.fillStyle = '#7fb4ff';
+  octx.strokeStyle = '#fff';
+  octx.lineWidth = 1.8;
+  octx.beginPath();
+  octx.arc(opx, opy, 8, 0, Math.PI*2);
+  octx.fill();
+  octx.stroke();
+  octx.fillStyle = '#fff';
+  octx.font = '600 13px "Courier New",monospace';
+  octx.fillText('x = (1, 3)', opx + 13, opy - 9);
+
+  // origin
+  octx.fillStyle = '#ede8e0';
+  octx.beginPath(); octx.arc(cx, cy, 3, 0, Math.PI*2); octx.fill();
+}
+
+drawOpener();
+window.addEventListener('resize', drawOpener);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ: three error metrics — small static-style canvases
+// ═══════════════════════════════════════════════════════════════════════════
+function drawMetricMini(canvasId, mode){
+  const c = document.getElementById(canvasId);
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.clientWidth || 220, H = 180;
+  c.width = W*dpr; c.height = H*dpr; c.style.height = H+'px';
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle = '#14130f'; ctx.fillRect(0,0,W,H);
+
+  // axes
+  const cx = W*0.5, cy = H*0.6;
+  const scale = Math.min(W,H)*0.16;
+  ctx.strokeStyle = 'rgba(237,232,224,0.10)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,H); ctx.stroke();
+
+  // line y = 2x
+  const wX = 1/Math.sqrt(5), wY = 2/Math.sqrt(5);
+  const lineLen = Math.max(W,H);
+  ctx.strokeStyle = 'rgba(232,168,76,0.7)';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(cx - lineLen*wX, cy + lineLen*wY);
+  ctx.lineTo(cx + lineLen*wX, cy - lineLen*wY);
+  ctx.stroke();
+
+  // the blue point at (1,3)
+  const px = cx + 1*scale;
+  const py = cy - 3*scale;
+
+  // determine target on line and the error segment
+  let tx, ty;
+  if(mode === 'A'){
+    // vertical gap: drop straight down from point to line. line is y = 2x, so target has same x.
+    tx = cx + 1*scale;
+    ty = cy - 2*scale; // (1, 2) on line
+  } else if(mode === 'B'){
+    // horizontal gap: line says x = y/2, so for y=3, target x = 1.5
+    tx = cx + 1.5*scale;
+    ty = cy - 3*scale; // (1.5, 3) on line
+  } else {
+    // perpendicular: c = (x . w) = (1*1 + 3*2)/sqrt(5) = 7/sqrt(5); proj = c*w = (7/5, 14/5) = (1.4, 2.8)
+    tx = cx + 1.4*scale;
+    ty = cy - 2.8*scale;
+  }
+
+  // error segment
+  ctx.strokeStyle = '#7fff6b';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(tx, ty);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // small marker at target
+  ctx.fillStyle = '#7fff6b';
+  ctx.beginPath();
+  ctx.arc(tx, ty, 3.5, 0, Math.PI*2);
+  ctx.fill();
+
+  // for option C, draw a small right-angle marker
+  if(mode === 'C'){
+    const ux = wX, uy = -wY;
+    const dx = (px - tx), dy = (py - ty);
+    const dl = Math.sqrt(dx*dx + dy*dy) || 1;
+    const px2 = dx/dl, py2 = dy/dl;
+    const ms = 9;
+    ctx.strokeStyle = 'rgba(127,255,107,0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(tx + ux*ms, ty + uy*ms);
+    ctx.lineTo(tx + ux*ms + px2*ms, ty + uy*ms + py2*ms);
+    ctx.lineTo(tx + px2*ms, ty + py2*ms);
+    ctx.stroke();
+  }
+
+  // blue point
+  ctx.fillStyle = '#7fb4ff';
+  ctx.beginPath();
+  ctx.arc(px, py, 5.5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+
+  // origin
+  ctx.fillStyle = '#ede8e0';
+  ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI*2); ctx.fill();
+}
+
+function drawAllMetrics(){
+  drawMetricMini('metricCanvasA', 'A');
+  drawMetricMini('metricCanvasB', 'B');
+  drawMetricMini('metricCanvasC', 'C');
+}
+drawAllMetrics();
+window.addEventListener('resize', drawAllMetrics);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ: slide c, watch error & angle live
+// ═══════════════════════════════════════════════════════════════════════════
+const slCanvas = document.getElementById('slideCanvas');
+const slctx = slCanvas.getContext('2d');
+
+const wX = 1/Math.sqrt(5), wY = 2/Math.sqrt(5);
+
+const onLinePoints = [
+  {x:-3, y:-6},
+  {x:-1, y:-2},
+  {x:0.5, y:1},
+  {x:2,  y:4}
+];
+const offLinePoint = {x:1, y:3};
+const cOptimal = offLinePoint.x*wX + offLinePoint.y*wY;
+
+let cVal = 0;
+const slider = document.getElementById('cSlider');
+const cReadout = document.getElementById('cReadout');
+
+function drawSlide(){
+  const dpr = window.devicePixelRatio || 1;
+  const W = slCanvas.clientWidth || 540, H = 440;
+  slCanvas.width = W*dpr; slCanvas.height = H*dpr;
+  slCanvas.style.height = H+'px';
+  slctx.setTransform(dpr,0,0,dpr,0,0);
+  slctx.fillStyle = '#14130f'; slctx.fillRect(0,0,W,H);
+
+  const cx = W/2, cy = H/2 + 30;
+  const scale = Math.min(W,H)*0.07;
+
+  slctx.strokeStyle = 'rgba(237,232,224,0.04)';
+  slctx.lineWidth = 1;
+  for(let i=-10;i<=10;i++){
+    slctx.beginPath(); slctx.moveTo(cx+i*scale,0); slctx.lineTo(cx+i*scale,H); slctx.stroke();
+    slctx.beginPath(); slctx.moveTo(0,cy+i*scale); slctx.lineTo(W,cy+i*scale); slctx.stroke();
+  }
+  slctx.strokeStyle = 'rgba(237,232,224,0.18)';
+  slctx.lineWidth = 1.2;
+  slctx.beginPath(); slctx.moveTo(0,cy); slctx.lineTo(W,cy); slctx.stroke();
+  slctx.beginPath(); slctx.moveTo(cx,0); slctx.lineTo(cx,H); slctx.stroke();
+  slctx.fillStyle = 'rgba(237,232,224,0.4)';
+  slctx.font = 'italic 12px "Source Sans 3",sans-serif';
+  slctx.fillText('x', W-14, cy-6);
+  slctx.fillText('y', cx+8, 14);
+
+  const lineLen = Math.max(W,H)*1.5;
+  slctx.strokeStyle = 'rgba(232,168,76,0.85)';
+  slctx.lineWidth = 2.4;
+  slctx.beginPath();
+  slctx.moveTo(cx - lineLen*wX, cy + lineLen*wY);
+  slctx.lineTo(cx + lineLen*wX, cy - lineLen*wY);
+  slctx.stroke();
+
+  const arrowLen = 55;
+  slctx.strokeStyle = 'rgba(232,168,76,0.95)';
+  slctx.fillStyle = 'rgba(232,168,76,0.95)';
+  slctx.lineWidth = 2.5;
+  slctx.beginPath();
+  slctx.moveTo(cx, cy);
+  slctx.lineTo(cx + arrowLen*wX, cy - arrowLen*wY);
+  slctx.stroke();
+  const ang = Math.atan2(-wY, wX);
+  const aax = cx + arrowLen*wX, aay = cy - arrowLen*wY;
+  slctx.beginPath();
+  slctx.moveTo(aax, aay);
+  slctx.lineTo(aax - 9*Math.cos(ang - Math.PI/6), aay - 9*Math.sin(ang - Math.PI/6));
+  slctx.lineTo(aax - 9*Math.cos(ang + Math.PI/6), aay - 9*Math.sin(ang + Math.PI/6));
+  slctx.closePath(); slctx.fill();
+  slctx.fillStyle = 'rgba(232,168,76,0.95)';
+  slctx.font = 'italic 600 13px "Source Sans 3",sans-serif';
+  slctx.fillText('w', aax + 8, aay - 6);
+
+  onLinePoints.forEach(p => {
+    const px = cx + p.x*scale;
+    const py = cy - p.y*scale;
+    slctx.strokeStyle = 'rgba(232,168,76,0.85)';
+    slctx.lineWidth = 3;
+    const perpX = -wY, perpY = wX;
+    const tickLen = 6;
+    slctx.beginPath();
+    slctx.moveTo(px - tickLen*perpX, py + tickLen*perpY);
+    slctx.lineTo(px + tickLen*perpX, py - tickLen*perpY);
+    slctx.stroke();
+  });
+
+  const opx = cx + offLinePoint.x*scale;
+  const opy = cy - offLinePoint.y*scale;
+  const reconX = cVal*wX, reconY = cVal*wY;
+  const rpx = cx + reconX*scale;
+  const rpy = cy - reconY*scale;
+
+  slctx.strokeStyle = 'rgba(255,107,107,0.9)';
+  slctx.setLineDash([5,4]);
+  slctx.lineWidth = 2;
+  slctx.beginPath();
+  slctx.moveTo(opx, opy);
+  slctx.lineTo(rpx, rpy);
+  slctx.stroke();
+  slctx.setLineDash([]);
+
+  const errX = offLinePoint.x - reconX, errY = offLinePoint.y - reconY;
+  const errLen = Math.sqrt(errX*errX + errY*errY);
+  let cosA = (errX*wX + errY*wY) / (errLen || 1);
+  cosA = Math.max(-1, Math.min(1, cosA));
+  const angDeg = Math.acos(Math.abs(cosA)) * 180/Math.PI;
+  const isPerp = Math.abs(angDeg - 90) < 1.5;
+
+  if(isPerp){
+    const markSize = 12;
+    const ux = wX, uy = -wY;
+    const dx = opx - rpx, dy = opy - rpy;
+    const dl = Math.sqrt(dx*dx + dy*dy) || 1;
+    const px2 = dx/dl, py2 = dy/dl;
+    slctx.strokeStyle = 'rgba(127,255,107,0.9)';
+    slctx.lineWidth = 2;
+    slctx.beginPath();
+    slctx.moveTo(rpx + ux*markSize, rpy + uy*markSize);
+    slctx.lineTo(rpx + ux*markSize + px2*markSize, rpy + uy*markSize + py2*markSize);
+    slctx.lineTo(rpx + px2*markSize, rpy + py2*markSize);
+    slctx.stroke();
+  }
+
+  slctx.fillStyle = isPerp ? '#7fff6b' : '#a3d9ff';
+  slctx.beginPath();
+  slctx.arc(rpx, rpy, 7, 0, Math.PI*2);
+  slctx.fill();
+  slctx.strokeStyle = '#fff';
+  slctx.lineWidth = 1.5;
+  slctx.stroke();
+  slctx.fillStyle = '#ede8e0';
+  slctx.font = '600 11px "Courier New",monospace';
+  slctx.fillText('cw', rpx + 11, rpy + 14);
+
+  slctx.fillStyle = '#7fb4ff';
+  slctx.beginPath();
+  slctx.arc(opx, opy, 7, 0, Math.PI*2);
+  slctx.fill();
+  slctx.strokeStyle = '#fff';
+  slctx.lineWidth = 1.5;
+  slctx.stroke();
+  slctx.fillStyle = '#fff';
+  slctx.font = '600 12px "Courier New",monospace';
+  slctx.fillText('x = (1, 3)', opx + 11, opy - 9);
+
+  slctx.fillStyle = '#ede8e0';
+  slctx.beginPath(); slctx.arc(cx, cy, 3, 0, Math.PI*2); slctx.fill();
+
+  slctx.fillStyle = 'rgba(237,232,224,0.5)';
+  slctx.font = 'italic 11px "Source Sans 3",sans-serif';
+  slctx.fillText('orange tick = on-line point   blue = off-line   green = reconstruction', 14, H-14);
+
+  cReadout.textContent = cVal.toFixed(2);
+  document.getElementById('cwVal').textContent = `(${reconX.toFixed(2)}, ${reconY.toFixed(2)})`;
+  document.getElementById('errVal').textContent = errLen.toFixed(2);
+  const angElement = document.getElementById('angVal');
+  angElement.textContent = angDeg.toFixed(1) + '°';
+  angElement.classList.toggle('good', isPerp);
+  document.getElementById('errBar').style.width = Math.min(100, (errLen/4)*100) + '%';
+  document.getElementById('perpBanner').classList.toggle('show', isPerp);
+}
+
+slider.addEventListener('input', () => {
+  cVal = parseFloat(slider.value);
+  drawSlide();
+});
+
+document.getElementById('snapBtn').addEventListener('click', () => {
+  const startC = cVal;
+  const startTime = performance.now();
+  const dur = 600;
+  function step(t){
+    const k = Math.min(1, (t-startTime)/dur);
+    const ease = 1 - Math.pow(1-k, 3);
+    cVal = startC + (cOptimal - startC)*ease;
+    slider.value = cVal;
+    drawSlide();
+    if(k<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+});
+document.getElementById('resetSlider').addEventListener('click', () => {
+  cVal = 0;
+  slider.value = 0;
+  drawSlide();
+});
+
+drawSlide();
+window.addEventListener('resize', drawSlide);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ: pythagoras
+// ═══════════════════════════════════════════════════════════════════════════
+const pythCanvas = document.getElementById('pythCanvas');
+const pctx = pythCanvas.getContext('2d');
+const pythSlider = document.getElementById('pythSlider');
+const pythVal = document.getElementById('pythVal');
+
+function drawPyth(){
+  const dpr = window.devicePixelRatio || 1;
+  const W = pythCanvas.clientWidth || 380, H = 320;
+  pythCanvas.width = W*dpr; pythCanvas.height = H*dpr;
+  pythCanvas.style.height = H+'px';
+  pctx.setTransform(dpr,0,0,dpr,0,0);
+  pctx.fillStyle = '#14130f'; pctx.fillRect(0,0,W,H);
+
+  const lineY = H*0.62;
+  pctx.strokeStyle = 'rgba(232,168,76,0.85)';
+  pctx.lineWidth = 2.4;
+  pctx.beginPath();
+  pctx.moveTo(40, lineY); pctx.lineTo(W-40, lineY);
+  pctx.stroke();
+  pctx.fillStyle = 'rgba(232,168,76,0.7)';
+  pctx.font = 'italic 12px "Source Sans 3",sans-serif';
+  pctx.fillText('the line', W-90, lineY-10);
+
+  const footX = W*0.45;
+  const pointY = lineY - 100;
+  const pointX = footX;
+
+  const delta = parseFloat(pythSlider.value);
+  pythVal.textContent = delta.toFixed(2);
+  const slideScale = 70;
+  const greenX = footX + delta*slideScale;
+  const greenY = lineY;
+
+  pctx.strokeStyle = 'rgba(127,255,107,0.85)';
+  pctx.lineWidth = 2;
+  pctx.setLineDash([4,3]);
+  pctx.beginPath();
+  pctx.moveTo(footX, lineY);
+  pctx.lineTo(pointX, pointY);
+  pctx.stroke();
+  pctx.setLineDash([]);
+  pctx.strokeStyle = 'rgba(127,255,107,0.85)';
+  pctx.lineWidth = 1.5;
+  pctx.beginPath();
+  pctx.moveTo(footX, lineY-12);
+  pctx.lineTo(footX+12, lineY-12);
+  pctx.lineTo(footX+12, lineY);
+  pctx.stroke();
+  pctx.fillStyle = 'rgba(127,255,107,0.95)';
+  pctx.font = 'italic 600 12px "Source Sans 3",sans-serif';
+  pctx.fillText('perpendicular', footX-95, (lineY+pointY)/2);
+
+  if(Math.abs(delta) > 0.005){
+    pctx.strokeStyle = 'rgba(76,168,232,0.85)';
+    pctx.lineWidth = 2.5;
+    pctx.beginPath();
+    pctx.moveTo(footX, lineY);
+    pctx.lineTo(greenX, greenY);
+    pctx.stroke();
+    pctx.fillStyle = 'rgba(76,168,232,0.95)';
+    pctx.font = 'italic 600 11px "Source Sans 3",sans-serif';
+    pctx.fillText('slide δ', (footX+greenX)/2 - 14, lineY+18);
+  }
+
+  pctx.strokeStyle = 'rgba(255,107,107,0.95)';
+  pctx.lineWidth = 2.5;
+  pctx.setLineDash([5,4]);
+  pctx.beginPath();
+  pctx.moveTo(greenX, greenY);
+  pctx.lineTo(pointX, pointY);
+  pctx.stroke();
+  pctx.setLineDash([]);
+  if(Math.abs(delta) > 0.05){
+    pctx.fillStyle = 'rgba(255,107,107,0.95)';
+    pctx.font = 'italic 600 12px "Source Sans 3",sans-serif';
+    pctx.fillText('new error', (greenX+pointX)/2 + 8, (greenY+pointY)/2);
+  }
+
+  pctx.fillStyle = 'rgba(127,255,107,0.6)';
+  pctx.beginPath();
+  pctx.arc(footX, lineY, 4, 0, Math.PI*2);
+  pctx.fill();
+  pctx.fillStyle = 'rgba(237,232,224,0.7)';
+  pctx.font = 'italic 11px "Source Sans 3",sans-serif';
+  pctx.fillText('foot', footX-12, lineY+30);
+
+  pctx.fillStyle = '#7fff6b';
+  pctx.beginPath();
+  pctx.arc(greenX, greenY, 6, 0, Math.PI*2);
+  pctx.fill();
+  pctx.strokeStyle = '#fff';
+  pctx.lineWidth = 1.5;
+  pctx.stroke();
+
+  pctx.fillStyle = '#7fb4ff';
+  pctx.beginPath();
+  pctx.arc(pointX, pointY, 7, 0, Math.PI*2);
+  pctx.fill();
+  pctx.strokeStyle = '#fff';
+  pctx.lineWidth = 1.5;
+  pctx.stroke();
+  pctx.fillStyle = '#fff';
+  pctx.font = '600 12px "Courier New",monospace';
+  pctx.fillText('x', pointX+10, pointY-6);
+
+  const perpLen = lineY - pointY;
+  const slideLen = Math.abs(greenX - footX);
+  const newErrLen = Math.sqrt(slideLen*slideLen + perpLen*perpLen);
+  pctx.fillStyle = 'rgba(237,232,224,0.65)';
+  pctx.font = '600 11px "Courier New",monospace';
+  pctx.fillText(`perp²: ${(perpLen/slideScale).toFixed(2)}²`, 14, 22);
+  pctx.fillText(`+ slide²: ${(slideLen/slideScale).toFixed(2)}²`, 14, 40);
+  pctx.fillText(`= new²: ${(newErrLen/slideScale).toFixed(2)}²`, 14, 58);
+}
+
+pythSlider.addEventListener('input', drawPyth);
+drawPyth();
+window.addEventListener('resize', drawPyth);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ: parabola of squared error
+// ═══════════════════════════════════════════════════════════════════════════
+const parCanvas = document.getElementById('parabolaCanvas');
+const parctx = parCanvas.getContext('2d');
+
+// f(c) = ||x - cw||^2 with x=(1,3), w=(1,2)/sqrt(5).  In closed form:
+// f(c) = ||x||^2 - 2c(x.w) + c^2
+// ||x||^2 = 1+9 = 10; x.w = (1+6)/sqrt(5) = 7/sqrt(5)
+const f_x_dot_w = 7/Math.sqrt(5);
+const f_x_norm2 = 10;
+function f_of_c(c){ return f_x_norm2 - 2*c*f_x_dot_w + c*c; }
+const cMinPar = f_x_dot_w; // c* = x.w (since w is unit)
+let parHoverC = null;
+
+function drawParabola(){
+  const dpr = window.devicePixelRatio || 1;
+  const W = parCanvas.clientWidth || 420, H = 320;
+  parCanvas.width = W*dpr; parCanvas.height = H*dpr;
+  parCanvas.style.height = H+'px';
+  parctx.setTransform(dpr,0,0,dpr,0,0);
+  parctx.fillStyle = '#14130f'; parctx.fillRect(0,0,W,H);
+
+  const padL = 50, padR = 22, padT = 22, padB = 40;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const cMin = -2, cMax = 6;
+  const fMax = Math.max(f_of_c(cMin), f_of_c(cMax));
+  const fMin = 0;
+
+  function cToX(c){ return padL + ((c - cMin)/(cMax - cMin))*plotW; }
+  function fToY(v){ return padT + plotH - ((v - fMin)/(fMax - fMin))*plotH; }
+
+  // grid lines
+  parctx.strokeStyle = 'rgba(237,232,224,0.06)';
+  parctx.lineWidth = 1;
+  for(let g = cMin; g <= cMax; g++){
+    parctx.beginPath();
+    parctx.moveTo(cToX(g), padT);
+    parctx.lineTo(cToX(g), padT + plotH);
+    parctx.stroke();
+  }
+  for(let g = 0; g <= 20; g += 5){
+    if(g > fMax) break;
+    parctx.beginPath();
+    parctx.moveTo(padL, fToY(g));
+    parctx.lineTo(padL + plotW, fToY(g));
+    parctx.stroke();
+  }
+
+  // axes
+  parctx.strokeStyle = 'rgba(237,232,224,0.25)';
+  parctx.lineWidth = 1.2;
+  parctx.beginPath();
+  parctx.moveTo(padL, padT + plotH);
+  parctx.lineTo(padL + plotW, padT + plotH);
+  parctx.stroke();
+  parctx.beginPath();
+  parctx.moveTo(padL, padT);
+  parctx.lineTo(padL, padT + plotH);
+  parctx.stroke();
+
+  // labels
+  parctx.fillStyle = 'rgba(237,232,224,0.55)';
+  parctx.font = '11px "Source Sans 3",sans-serif';
+  parctx.fillText('c', padL + plotW + 6, padT + plotH + 4);
+  parctx.fillText('f(c)', padL - 10, padT - 6);
+  // tick labels
+  for(let g = cMin; g <= cMax; g++){
+    parctx.fillStyle = 'rgba(237,232,224,0.45)';
+    parctx.font = '10px "Courier New",monospace';
+    parctx.fillText(g.toString(), cToX(g)-3, padT + plotH + 14);
+  }
+
+  // parabola
+  parctx.strokeStyle = 'rgba(232,168,76,0.95)';
+  parctx.lineWidth = 2.4;
+  parctx.beginPath();
+  let started = false;
+  for(let i = 0; i <= 200; i++){
+    const c = cMin + (i/200)*(cMax - cMin);
+    const v = f_of_c(c);
+    const x = cToX(c), y = fToY(v);
+    if(!started){ parctx.moveTo(x,y); started = true; }
+    else parctx.lineTo(x,y);
+  }
+  parctx.stroke();
+
+  // minimum marker (vertical line from x-axis to the minimum)
+  const xMin = cToX(cMinPar), yMin = fToY(f_of_c(cMinPar));
+  parctx.strokeStyle = 'rgba(127,255,107,0.5)';
+  parctx.setLineDash([4,4]);
+  parctx.lineWidth = 1.5;
+  parctx.beginPath();
+  parctx.moveTo(xMin, padT + plotH);
+  parctx.lineTo(xMin, yMin);
+  parctx.stroke();
+  parctx.setLineDash([]);
+
+  parctx.fillStyle = '#7fff6b';
+  parctx.beginPath();
+  parctx.arc(xMin, yMin, 6, 0, Math.PI*2);
+  parctx.fill();
+  parctx.strokeStyle = '#fff';
+  parctx.lineWidth = 1.4;
+  parctx.stroke();
+
+  // labels for minimum
+  parctx.fillStyle = 'rgba(127,255,107,0.95)';
+  parctx.font = '600 11px "Courier New",monospace';
+  parctx.fillText(`c* = ${cMinPar.toFixed(2)}`, xMin + 9, yMin - 8);
+  parctx.fillText(`min = ${f_of_c(cMinPar).toFixed(2)}`, xMin + 9, yMin + 18);
+
+  // hover indicator
+  if(parHoverC !== null){
+    const v = f_of_c(parHoverC);
+    const hx = cToX(parHoverC), hy = fToY(v);
+    parctx.strokeStyle = 'rgba(232,168,76,0.5)';
+    parctx.setLineDash([3,3]);
+    parctx.lineWidth = 1;
+    parctx.beginPath();
+    parctx.moveTo(hx, padT + plotH);
+    parctx.lineTo(hx, hy);
+    parctx.stroke();
+    parctx.beginPath();
+    parctx.moveTo(padL, hy);
+    parctx.lineTo(hx, hy);
+    parctx.stroke();
+    parctx.setLineDash([]);
+    parctx.fillStyle = '#e8a84c';
+    parctx.beginPath();
+    parctx.arc(hx, hy, 4, 0, Math.PI*2);
+    parctx.fill();
+    parctx.fillStyle = 'rgba(232,168,76,0.95)';
+    parctx.font = '600 10px "Courier New",monospace';
+    parctx.fillText(`(${parHoverC.toFixed(2)}, ${v.toFixed(2)})`, hx + 7, hy - 7);
+  }
+}
+
+parCanvas.addEventListener('mousemove', e => {
+  const rect = parCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const padL = 50, padR = 22;
+  const plotW = rect.width - padL - padR;
+  const cMin = -2, cMax = 6;
+  if(x < padL || x > padL + plotW){ parHoverC = null; }
+  else { parHoverC = cMin + ((x - padL)/plotW)*(cMax - cMin); }
+  drawParabola();
+});
+parCanvas.addEventListener('mouseleave', () => { parHoverC = null; drawParabola(); });
+
+drawParabola();
+window.addEventListener('resize', drawParabola);
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
+</html>

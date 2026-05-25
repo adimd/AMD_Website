@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Data Has a Shape | Architecting Intelligence</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#ede8e0;--body:#b5aea3;--muted:#7d766b;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    /* nav */
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    /* layout */
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    /* article */
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.1rem;font-weight:300;margin:.35rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    /* sidebar */
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    /* viz */
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+
+    /* comments */
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    /* ── tabular dataset ──────────────────────────────────────────────────── */
+    .data-table{display:flex;justify-content:center;margin:1.4rem 0;font-variant-numeric:tabular-nums}
+    .dt-inner{display:grid;grid-template-columns:auto auto auto auto;gap:0;border:1px solid var(--border-hover);border-radius:10px;overflow:hidden;background:var(--bg-card)}
+    .dt-cell{padding:.55rem 1.1rem;font-family:'Courier New',monospace;font-size:.95rem;color:var(--ink);text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .dt-cell:last-child{border-right:none}
+    .dt-cell.head{background:rgba(232,168,76,0.08);color:var(--accent);font-weight:600;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border-hover)}
+    .dt-inner > .dt-cell:nth-last-child(-n+4){border-bottom:none}
+
+    /* ── VIZ 1: storage counter ───────────────────────────────────────────── */
+    .storage-wrap{display:grid;grid-template-columns:1.3fr 1fr;gap:1.4rem;align-items:start}
+    @media(max-width:840px){.storage-wrap{grid-template-columns:1fr}}
+    .storage-canvas{width:100%;height:auto;background:#14130f;border-radius:10px;border:1px solid var(--border);display:block}
+    .storage-side{display:flex;flex-direction:column;gap:1rem}
+    .mode-toggle{display:flex;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:4px;gap:4px}
+    .mode-btn{flex:1;padding:.6rem .8rem;border-radius:7px;background:transparent;border:none;color:var(--muted);cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:500;transition:all .2s;text-align:center}
+    .mode-btn.active{background:var(--accent-dim);color:var(--accent)}
+    .mode-btn:hover:not(.active){color:var(--body)}
+    .count-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem}
+    .count-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.3rem}
+    .count-value{font-family:'Courier New',monospace;font-size:2.2rem;color:var(--accent);font-weight:700;line-height:1;margin-bottom:.4rem;transition:color .25s}
+    .count-value.dropped{color:var(--green)}
+    .count-breakdown{font-family:'Courier New',monospace;font-size:.85rem;color:var(--body);line-height:1.6}
+    .count-breakdown .plus{color:var(--muted);margin:0 .35rem}
+    .saving-badge{display:inline-block;margin-top:.5rem;padding:.25rem .7rem;border-radius:999px;background:rgba(127,255,107,0.12);color:var(--green);font-size:.78rem;font-weight:600;letter-spacing:.04em}
+    .saving-badge.hidden{display:none}
+
+    /* ── VIZ 2: scaling slider ────────────────────────────────────────────── */
+    .scale-controls{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
+    .scale-slider-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+    .scale-slider-row label{font-size:.85rem;color:var(--muted);min-width:200px}
+    .scale-slider{flex:1;accent-color:var(--accent);max-width:400px;min-width:160px}
+    .scale-num{font-family:'Courier New',monospace;color:var(--accent);font-size:.95rem}
+    .scale-bars{display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem}
+    .scale-bar-row{display:grid;grid-template-columns:140px 1fr 110px;gap:.7rem;align-items:center}
+    .scale-bar-row .bl{font-size:.85rem;color:var(--body)}
+    .scale-bar-track{height:22px;background:rgba(237,232,224,0.05);border-radius:5px;overflow:hidden;position:relative}
+    .scale-bar-fill{height:100%;border-radius:5px;transition:width .3s ease-out}
+    .scale-bar-fill.naive{background:linear-gradient(90deg,rgba(255,107,107,0.7),rgba(255,107,107,0.4))}
+    .scale-bar-fill.smart{background:linear-gradient(90deg,var(--green),rgba(127,255,107,0.5))}
+    .scale-bar-row .br{font-family:'Courier New',monospace;font-size:.88rem;color:var(--ink);text-align:right}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}.dt-cell{padding:.45rem .7rem;font-size:.85rem}.scale-bar-row{grid-template-columns:1fr;gap:.3rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk ▾</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Data Has a Shape: How PCA Discovers It</span>
+  <h1>Data Has a Shape</h1>
+  <p class="blog-subtitle">An honest question to start a series with: how many real numbers does it take to store this dataset? The naive answer is the obvious one. It's also wrong by a lot.</p>
+
+  <h2>A small problem with a small dataset</h2>
+
+  <p>Here are four points. Each one has two coordinates.</p>
+
+  <div class="data-table">
+    <div class="dt-inner">
+      <div class="dt-cell head">point</div>
+      <div class="dt-cell head">x</div>
+      <div class="dt-cell head">y</div>
+      <div class="dt-cell head">visual</div>
+      <div class="dt-cell">\(x_1\)</div><div class="dt-cell">−7</div><div class="dt-cell">−14</div><div class="dt-cell" style="color:var(--accent)">●</div>
+      <div class="dt-cell">\(x_2\)</div><div class="dt-cell">2</div><div class="dt-cell">4</div><div class="dt-cell" style="color:var(--accent)">●</div>
+      <div class="dt-cell">\(x_3\)</div><div class="dt-cell">0.5</div><div class="dt-cell">1</div><div class="dt-cell" style="color:var(--accent)">●</div>
+      <div class="dt-cell">\(x_4\)</div><div class="dt-cell">0</div><div class="dt-cell">0</div><div class="dt-cell" style="color:var(--accent)">●</div>
+    </div>
+  </div>
+
+  <p>Question. How many real numbers do you need to write this dataset down on a disk?</p>
+
+  <p>The first answer everyone gives is eight. Four points, two coordinates each, eight numbers. That's also the answer a computer would give if you asked it nicely. Store the table, you're done.</p>
+
+  <p>Now look at the points for a second longer.</p>
+
+  <div class="callout">−14 is twice −7. 4 is twice 2. 1 is twice 0.5. 0 is twice 0.</div>
+
+  <p>Every single point sits exactly on the line \(y = 2x\). Not approximately. Not roughly. Exactly. So somewhere in those eight numbers we're being repetitive. We wrote down the y-coordinate for every point even though, for this dataset, the y-coordinate is just the x-coordinate scaled by two. We could have written down only the x-coordinate of each point and reconstructed the y from a single rule.</p>
+
+  <p>That's four numbers for the x-coordinates, plus a couple more to remember the rule itself. Six numbers, not eight. We just compressed the dataset by a quarter, and we did it without losing a single thing.</p>
+
+  <hr class="sep">
+
+  <h2>Direction, then position along it</h2>
+
+  <p>Let's pin down what just happened, because it's the entire idea this series is built on.</p>
+
+  <p>Instead of storing each point as a pair of coordinates, we made two observations. First, all the points share a <strong>direction</strong>. They all lie along the same line, which has slope 2, which we can encode as the unit vector pointing along \(y = 2x\). Second, each point has a <strong>position</strong> along that line. Some are far out, some are close to the origin, some are negative. That position is a single number per point.</p>
+
+  <p>So the recipe becomes:</p>
+
+  <ul>
+    <li><strong>Once</strong>, store a direction. For 2D data, that's two numbers.</li>
+    <li><strong>Per point</strong>, store one number telling us where on that direction the point lives.</li>
+  </ul>
+
+  <p>For our four points, that's \(2 + 4 = 6\) numbers. The naive way needed \(2 \times 4 = 8\). Same data, fewer numbers. We didn't approximate anything. The savings came from noticing that the data wasn't really using both dimensions it was given.</p>
+
+  <!-- VIZ 1: storage counter -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Two ways to write the same dataset down.</span></div>
+    <div class="viz-body">
+      <div class="storage-wrap">
+        <canvas id="storageCanvas" class="storage-canvas" width="500" height="400"></canvas>
+        <div class="storage-side">
+          <div class="mode-toggle">
+            <button class="mode-btn active" id="modeNaive">Store every coordinate</button>
+            <button class="mode-btn" id="modeSmart">Store direction + position</button>
+          </div>
+          <div class="count-card">
+            <div class="count-label">Numbers needed</div>
+            <div class="count-value" id="numCount">8</div>
+            <div class="count-breakdown" id="numBreakdown">2 coords <span class="plus">×</span> 4 points</div>
+            <div class="saving-badge hidden" id="savingBadge">25% saved, exact</div>
+          </div>
+        </div>
+      </div>
+      <p class="viz-note">Toggle between the two storage modes. In the smart mode, the line itself is stored once (the orange direction vector at the origin) and each point becomes a single tick mark along it. The dotted lines show the points dissolving into their positions on the line. No information is lost because the points were already on the line to begin with.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Why this matters when n gets big</h2>
+
+  <p>Saving two numbers on a four-point dataset is not going to win awards. The interesting thing isn't the absolute saving, it's how the saving grows.</p>
+
+  <p>If you have \(n\) data points each living in \(d\) dimensions, the naive storage cost is \(n \times d\). One number per coordinate per point. But if all the points lie on a single line in that \(d\)-dimensional space, the smart storage is \(d + n\): the direction vector once, plus one position per point.</p>
+
+  <p>Watch what happens as \(n\) grows.</p>
+
+  <!-- VIZ 2: scaling -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The same trick, at scale.</span></div>
+    <div class="viz-body">
+      <div class="scale-controls">
+        <div class="scale-slider-row">
+          <label>Number of points <span class="scale-num" id="nVal">4</span></label>
+          <input type="range" id="nSlider" class="scale-slider" min="2" max="1000" value="4" step="1">
+        </div>
+        <div class="scale-slider-row">
+          <label>Dimensions per point <span class="scale-num" id="dVal">2</span></label>
+          <input type="range" id="dSlider" class="scale-slider" min="2" max="100" value="2" step="1">
+        </div>
+      </div>
+      <div class="scale-bars">
+        <div class="scale-bar-row">
+          <div class="bl">Naive: \(n \times d\)</div>
+          <div class="scale-bar-track"><div class="scale-bar-fill naive" id="naiveBar" style="width:100%"></div></div>
+          <div class="br" id="naiveNum">8</div>
+        </div>
+        <div class="scale-bar-row">
+          <div class="bl">Smart: \(d + n\)</div>
+          <div class="scale-bar-track"><div class="scale-bar-fill smart" id="smartBar" style="width:75%"></div></div>
+          <div class="br" id="smartNum">6</div>
+        </div>
+      </div>
+      <p class="viz-note">For four points in 2D the saving is barely worth the effort. Push the slider. With a thousand points the naive method needs two thousand numbers. The smart method needs one thousand and two. The savings get more dramatic the more points and dimensions you have, because \(n \times d\) grows fast and \(d + n\) doesn't.</p>
+    </div>
+  </div>
+
+  <p>This is the whole motivation for what's coming. Real datasets are big. The number of points and the number of dimensions are both large, often very large. If we can write our data as a direction (or a few directions) plus a small set of positions per point, the savings stop being a curiosity and start being the difference between a dataset that fits in memory and one that doesn't.</p>
+
+  <hr class="sep">
+
+  <h2>The honest catch</h2>
+
+  <p>You've already spotted the problem. Our four points sat exactly on the line \(y = 2x\). Real data does not do this.</p>
+
+  <p>If I gave you the heights and weights of a hundred people, the points would lean towards a line, but they wouldn't sit on one. Tall people are usually heavier, but not in lockstep. There's noise. There's variation. There's the friend of yours who's six foot four and weighs ninety kilograms next to the friend who's five foot ten and weighs ninety-five.</p>
+
+  <p>So the question isn't whether real data lies on a line. It doesn't. The question is whether real data lies <em>close to</em> a line, and if so, whether we can use that closeness to compress at the cost of a small, controlled amount of error.</p>
+
+  <div class="callout">Exact compression works only when the data was already structured. Useful compression has to be willing to lose a little.</div>
+
+  <p>That single shift, from "exact" to "close enough", is what turns the storage trick from a curiosity into Principal Component Analysis. It's also the entire content of the next post.</p>
+
+  <hr class="sep">
+
+  <h2>What we have so far</h2>
+
+  <p>One idea. Storage cost is the lens. The naive way to store \(n\) data points in \(d\) dimensions is \(nd\) numbers. If those points happen to share a single direction, we can rewrite the dataset using \(d + n\) numbers without losing anything. The savings are dramatic when \(n\) and \(d\) get large.</p>
+
+  <p>One catch. This worked because the data was perfectly structured. Real data isn't. What we want is a version of this trick that works on data with noise, that gives us a controlled approximation rather than an exact rewrite.</p>
+
+  <p>One thing to carry forward. The idea that data might use less space than it occupies. That a dataset's natural description might be smaller than its naive description. We're going to spend the rest of the series turning that suspicion into an algorithm.</p>
+
+  <hr class="sep">
+
+  <h2>Where this is going</h2>
+
+  <p>Next time we take the same setup but break the assumption that points lie exactly on a line. We'll set up the question of how to <em>approximate</em> data with a direction, define what error means, and watch the algebra of "how close can we get" start to write itself. By the end of Part 2 we'll have a sharp problem to solve. After that, we solve it.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Data Has a Shape: How PCA Discovers It</h2>
+    <a class="sidebar-link active-topic" href="data-has-a-shape.html">
+      <div class="sidebar-link-title">Part 1: Data Has a Shape</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="cost-of-storing-everything.html">
+      <div class="sidebar-link-title">Part 2: The Cost of Storing Everything</div>
+      <div class="sidebar-link-note">When data won't sit on a line.</div>
+    </a>
+    <a class="sidebar-link" href="giving-up-perfection.html">
+      <div class="sidebar-link-title">Part 3: Giving Up Perfection</div>
+      <div class="sidebar-link-note">Minimise the error instead.</div>
+    </a>
+    <a class="sidebar-link" href="from-one-point-to-many.html">
+      <div class="sidebar-link-title">Part 4: From One Point to Many</div>
+      <div class="sidebar-link-note">Residuals shrink, spread grows.</div>
+    </a>
+    <a class="sidebar-link" href="spread-as-a-matrix.html">
+      <div class="sidebar-link-title">Part 5: Spread, Written as a Matrix</div>
+      <div class="sidebar-link-note">Variance, covariance, mean centering.</div>
+    </a>
+    <a class="sidebar-link" href="eigenvalue-surprise.html">
+      <div class="sidebar-link-title">Part 6: The Eigenvalue Surprise</div>
+      <div class="sidebar-link-note">An optimisation that solves itself.</div>
+    </a>
+    <a class="sidebar-link" href="more-than-one-direction.html">
+      <div class="sidebar-link-title">Part 7: More Than One Direction</div>
+      <div class="sidebar-link-note">Stacking components, staying orthogonal.</div>
+    </a>
+    <a class="sidebar-link" href="when-d-beats-n.html">
+      <div class="sidebar-link-title">Part 8: When Dimensions Outnumber Points</div>
+      <div class="sidebar-link-note">The dual trick.</div>
+    </a>
+    <a class="sidebar-link" href="bending-the-space.html">
+      <div class="sidebar-link-title">Part 9: Bending the Space</div>
+      <div class="sidebar-link-note">Kernels, and the circle that's secretly a line.</div>
+    </a>
+    <a class="sidebar-link" href="what-pca-isnt.html">
+      <div class="sidebar-link-title">Part 10: What PCA Is and Isn't</div>
+      <div class="sidebar-link-note">Variance, information, interpretability.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Storage as the motivation</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">nd vs d + n</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Direction once, position per point</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Why exact compression isn't enough</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// hamburger
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: storage counter — toggle between naive and smart storage
+// ═══════════════════════════════════════════════════════════════════════════
+const stCanvas = document.getElementById('storageCanvas');
+const stctx = stCanvas.getContext('2d');
+let storageMode = 'naive';
+let storageAnim = 0;     // 0 = full naive, 1 = full smart
+let storageTargetAnim = 0;
+
+const points = [
+  {x:-7,  y:-14, label:'x₁'},
+  {x:2,   y:4,   label:'x₂'},
+  {x:0.5, y:1,   label:'x₃'},
+  {x:0,   y:0,   label:'x₄'}
+];
+// unit direction along y = 2x, i.e. (1,2)/sqrt(5)
+const dirX = 1/Math.sqrt(5), dirY = 2/Math.sqrt(5);
+
+function drawStorage(){
+  const dpr = window.devicePixelRatio || 1;
+  const W = stCanvas.clientWidth || 500, H = 400;
+  stCanvas.width = W*dpr; stCanvas.height = H*dpr;
+  stCanvas.style.height = H+'px';
+  stctx.setTransform(dpr,0,0,dpr,0,0);
+  stctx.fillStyle = '#14130f'; stctx.fillRect(0,0,W,H);
+
+  const cx = W/2, cy = H/2;
+  // scale so the (-7,-14) point sits comfortably; y axis dominates
+  const scale = Math.min(W/22, H/40);
+
+  // grid
+  stctx.strokeStyle = 'rgba(237,232,224,0.04)';
+  stctx.lineWidth = 1;
+  for(let i=-12;i<=12;i++){
+    stctx.beginPath();
+    stctx.moveTo(cx+i*scale,0); stctx.lineTo(cx+i*scale,H); stctx.stroke();
+  }
+  for(let i=-22;i<=22;i++){
+    stctx.beginPath();
+    stctx.moveTo(0,cy+i*scale); stctx.lineTo(W,cy+i*scale); stctx.stroke();
+  }
+  // axes
+  stctx.strokeStyle = 'rgba(237,232,224,0.18)';
+  stctx.lineWidth = 1.2;
+  stctx.beginPath(); stctx.moveTo(0,cy); stctx.lineTo(W,cy); stctx.stroke();
+  stctx.beginPath(); stctx.moveTo(cx,0); stctx.lineTo(cx,H); stctx.stroke();
+  // axis labels
+  stctx.fillStyle = 'rgba(237,232,224,0.4)';
+  stctx.font = 'italic 12px "Source Sans 3",sans-serif';
+  stctx.fillText('x', W-14, cy-6);
+  stctx.fillText('y', cx+8, 14);
+
+  // line y = 2x — fade in with smart mode
+  if(storageAnim > 0){
+    const a = storageAnim;
+    stctx.strokeStyle = `rgba(232,168,76,${0.85*a})`;
+    stctx.lineWidth = 2.2;
+    const lineLen = Math.max(W,H)*1.5;
+    stctx.beginPath();
+    stctx.moveTo(cx - lineLen*dirX, cy + lineLen*dirY);
+    stctx.lineTo(cx + lineLen*dirX, cy - lineLen*dirY);
+    stctx.stroke();
+
+    // direction arrow at origin
+    const arrowLen = 60;
+    stctx.strokeStyle = `rgba(232,168,76,${a})`;
+    stctx.fillStyle = `rgba(232,168,76,${a})`;
+    stctx.lineWidth = 3;
+    stctx.beginPath();
+    stctx.moveTo(cx, cy);
+    stctx.lineTo(cx + arrowLen*dirX, cy - arrowLen*dirY);
+    stctx.stroke();
+    const ax = cx + arrowLen*dirX, ay = cy - arrowLen*dirY;
+    const ang = Math.atan2(-dirY, dirX);
+    stctx.beginPath();
+    stctx.moveTo(ax, ay);
+    stctx.lineTo(ax - 10*Math.cos(ang - Math.PI/6), ay - 10*Math.sin(ang - Math.PI/6));
+    stctx.lineTo(ax - 10*Math.cos(ang + Math.PI/6), ay - 10*Math.sin(ang + Math.PI/6));
+    stctx.closePath(); stctx.fill();
+    stctx.fillStyle = `rgba(232,168,76,${a})`;
+    stctx.font = '600 12px "Source Sans 3",sans-serif';
+    stctx.fillText('direction', ax + 10, ay - 4);
+  }
+
+  // dotted lines from origin to each point's position on the line — only in smart mode
+  if(storageAnim > 0){
+    stctx.strokeStyle = `rgba(232,168,76,${0.3*storageAnim})`;
+    stctx.setLineDash([4,4]);
+    stctx.lineWidth = 1;
+    points.forEach(p=>{
+      const px = cx + p.x*scale;
+      const py = cy - p.y*scale;
+      stctx.beginPath();
+      stctx.moveTo(cx, cy);
+      stctx.lineTo(px, py);
+      stctx.stroke();
+    });
+    stctx.setLineDash([]);
+  }
+
+  // points themselves
+  points.forEach(p=>{
+    const px = cx + p.x*scale;
+    const py = cy - p.y*scale;
+    const t = (p.x*dirX + p.y*dirY); // signed position along the line
+    const a = storageAnim;
+    // ball (fades out as we go to smart)
+    if(a < 1){
+      stctx.fillStyle = `rgba(127,180,255,${1-a*0.5})`;
+      stctx.beginPath();
+      stctx.arc(px, py, 5, 0, Math.PI*2);
+      stctx.fill();
+    }
+    // tick mark (fades in)
+    if(a > 0){
+      stctx.strokeStyle = `rgba(232,168,76,${a})`;
+      stctx.lineWidth = 3;
+      const perpX = -dirY, perpY = dirX;
+      const tickLen = 6;
+      stctx.beginPath();
+      stctx.moveTo(px - tickLen*perpX, py + tickLen*perpY);
+      stctx.lineTo(px + tickLen*perpX, py - tickLen*perpY);
+      stctx.stroke();
+    }
+    // label switches mid-animation
+    stctx.font = '600 11px "Courier New",monospace';
+    if(a < 0.5){
+      stctx.fillStyle = `rgba(237,232,224,${1-a*1.5})`;
+      stctx.fillText(`(${p.x}, ${p.y})`, px+10, py-9);
+    }else{
+      stctx.fillStyle = `rgba(232,168,76,${(a-0.5)*2})`;
+      const tDisplay = (Math.abs(t) < 0.001) ? '0' : t.toFixed(2);
+      stctx.fillText(tDisplay, px+10, py-9);
+    }
+  });
+
+  // bottom-of-canvas hint
+  stctx.fillStyle = 'rgba(237,232,224,0.5)';
+  stctx.font = 'italic 11px "Source Sans 3",sans-serif';
+  stctx.fillText(storageMode === 'naive' ? 'each point: 2 numbers' : 'each point: 1 number along the direction', 14, H-14);
+}
+
+function tickStorage(){
+  const diff = storageTargetAnim - storageAnim;
+  if(Math.abs(diff) > 0.001){
+    storageAnim += diff*0.18;
+    drawStorage();
+    requestAnimationFrame(tickStorage);
+  }else{
+    storageAnim = storageTargetAnim;
+    drawStorage();
+  }
+}
+
+function setStorageMode(m){
+  storageMode = m;
+  storageTargetAnim = (m === 'smart') ? 1 : 0;
+  document.getElementById('modeNaive').classList.toggle('active', m==='naive');
+  document.getElementById('modeSmart').classList.toggle('active', m==='smart');
+  const cv = document.getElementById('numCount');
+  const cb = document.getElementById('numBreakdown');
+  const sb = document.getElementById('savingBadge');
+  if(m === 'naive'){
+    cv.textContent = '8';
+    cv.classList.remove('dropped');
+    cb.innerHTML = '2 coords <span class="plus">×</span> 4 points';
+    sb.classList.add('hidden');
+  }else{
+    cv.textContent = '6';
+    cv.classList.add('dropped');
+    cb.innerHTML = '2 (direction) <span class="plus">+</span> 4 (positions)';
+    sb.classList.remove('hidden');
+  }
+  requestAnimationFrame(tickStorage);
+}
+
+document.getElementById('modeNaive').addEventListener('click', ()=>setStorageMode('naive'));
+document.getElementById('modeSmart').addEventListener('click', ()=>setStorageMode('smart'));
+drawStorage();
+window.addEventListener('resize', drawStorage);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: scaling slider — naive nd vs smart d + n
+// ═══════════════════════════════════════════════════════════════════════════
+const nSlider = document.getElementById('nSlider');
+const dSlider = document.getElementById('dSlider');
+const nVal = document.getElementById('nVal');
+const dVal = document.getElementById('dVal');
+const naiveBar = document.getElementById('naiveBar');
+const smartBar = document.getElementById('smartBar');
+const naiveNum = document.getElementById('naiveNum');
+const smartNum = document.getElementById('smartNum');
+
+function fmtNum(n){
+  if(n >= 1e6) return (n/1e6).toFixed(2)+'M';
+  if(n >= 1e3) return (n/1e3).toFixed(1)+'K';
+  return n.toString();
+}
+
+function updateScale(){
+  const n = parseInt(nSlider.value);
+  const d = parseInt(dSlider.value);
+  nVal.textContent = n.toLocaleString();
+  dVal.textContent = d.toLocaleString();
+  const naive = n*d;
+  const smart = n + d;
+  naiveNum.textContent = fmtNum(naive);
+  smartNum.textContent = fmtNum(smart);
+  naiveBar.style.width = '100%';
+  smartBar.style.width = Math.max(0.5, (smart/naive)*100) + '%';
+}
+nSlider.addEventListener('input', updateScale);
+dSlider.addEventListener('input', updateScale);
+updateScale();
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
+</html>

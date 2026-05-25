@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Everything is a Number · CS & AI Camp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Fraunces:ital,wght@0,400;0,600;0,900;1,600&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+Telugu:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-soft: #141414;
+    --ink: #f5f1e8;
+    --ink-dim: #a8a397;
+    --accent: #ff5e3a;
+    --accent-2: #ffd23f;
+    --accent-3: #06d6a0;
+    --accent-4: #4ea8de;
+    --grid: rgba(245, 241, 232, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Fraunces', Georgia, serif;
+  }
+
+  body {
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .deck { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+
+  .slide {
+    position: absolute; inset: 0;
+    padding: 5vh 6vw;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    overflow: auto;
+    animation: slideIn 0.5s ease-out;
+  }
+  .slide.active { display: flex; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(2.5rem, 7vw, 6rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+  }
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(2rem, 5vw, 4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+  }
+  h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    margin-bottom: 1rem;
+  }
+  p, li {
+    font-size: clamp(1rem, 1.4vw, 1.3rem);
+    line-height: 1.5;
+    color: var(--ink);
+    max-width: 70ch;
+  }
+  .lead {
+    font-size: clamp(1.2rem, 1.8vw, 1.6rem);
+    color: var(--ink-dim);
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+  }
+  .accent { color: var(--accent); }
+  .accent-2 { color: var(--accent-2); }
+  .accent-3 { color: var(--accent-3); }
+  .accent-4 { color: var(--accent-4); }
+  em.italic { font-style: italic; font-weight: 600; }
+  strong { font-weight: 900; color: var(--accent-2); }
+
+  code, .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+    background: var(--bg-soft);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    color: var(--accent-3);
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4vw;
+    align-items: center;
+  }
+  .three-col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2vw;
+  }
+
+  ul.clean { list-style: none; }
+  ul.clean li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--grid);
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  ul.clean li::before {
+    content: "→";
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 2vh; right: 2vw;
+    display: flex;
+    gap: 0.75rem;
+    z-index: 1000;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    align-items: center;
+  }
+  .nav button {
+    background: var(--bg-soft);
+    border: 1px solid var(--grid);
+    color: var(--ink);
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: var(--accent); border-color: var(--accent); }
+  .nav .counter { color: var(--ink-dim); padding: 0 0.5rem; }
+
+  .demo-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--accent);
+    color: var(--bg);
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+    width: fit-content;
+  }
+  .demo-tag::before {
+    content: "●";
+    color: var(--bg);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .title-slide {
+    text-align: left;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255, 94, 58, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(78, 168, 222, 0.15) 0%, transparent 50%),
+      var(--bg);
+  }
+  .title-slide h1 { font-size: clamp(3rem, 10vw, 9rem); }
+  .title-slide .everything { color: var(--accent); }
+  .title-slide .number { color: var(--accent-2); font-style: italic; }
+
+  .bg-numbers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    opacity: 0.07;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--ink);
+    word-break: break-all;
+    padding: 1rem;
+    z-index: 0;
+  }
+  .title-content { position: relative; z-index: 1; }
+
+  .stat {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(5rem, 12vw, 11rem);
+    line-height: 0.9;
+    color: var(--accent);
+    letter-spacing: -0.05em;
+  }
+
+  .img-card {
+    border: 1px solid var(--grid);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-soft);
+  }
+  .img-card img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    display: block;
+  }
+  .img-card .caption {
+    padding: 0.75rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--ink-dim);
+    border-top: 1px solid var(--grid);
+  }
+
+  .callout {
+    background: var(--bg-soft);
+    border-left: 4px solid var(--accent);
+    padding: 1.5rem 2rem;
+    font-size: clamp(1.1rem, 1.5vw, 1.4rem);
+    font-style: italic;
+    margin: 1.5rem 0;
+    line-height: 1.4;
+  }
+
+  .death-toll {
+    color: var(--accent);
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(2rem, 5vw, 4rem);
+    display: inline-block;
+    margin: 0 0.3em;
+  }
+
+  .widget {
+    background: var(--bg-soft);
+    border: 1px solid var(--grid);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin: 1rem 0;
+  }
+  .widget h4 {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--accent-2);
+    margin-bottom: 1rem;
+  }
+
+  button.btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    padding: 0.7rem 1.5rem;
+    border-radius: 6px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: transform 0.1s;
+  }
+  button.btn:hover { transform: translateY(-2px); }
+  button.btn.secondary {
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--ink-dim);
+  }
+  button.btn.secondary:hover { background: var(--bg-soft); }
+
+  input[type="number"], input[type="text"] {
+    background: var(--bg);
+    border: 1px solid var(--grid);
+    color: var(--ink);
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+  }
+
+  .progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width 0.3s;
+    z-index: 100;
+  }
+
+  .telugu-big {
+    font-family: 'Noto Sans Telugu', sans-serif;
+    font-size: clamp(5rem, 15vw, 12rem);
+    color: var(--accent);
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    text-shadow: 0 0 60px rgba(255, 94, 58, 0.4);
+    margin: 1rem 0;
+  }
+
+  .calc-display {
+    background: var(--bg);
+    border: 1px solid var(--accent-3);
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.3rem;
+    color: var(--accent-3);
+    margin: 0.5rem 0;
+    word-break: break-all;
+  }
+  .calc-display.wrong {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .bit-display {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+  .bit {
+    width: 56px; height: 56px;
+    border: 2px solid var(--grid);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    background: var(--bg);
+    transition: all 0.2s;
+    cursor: pointer;
+    user-select: none;
+  }
+  .bit.on {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(255, 94, 58, 0.5);
+  }
+  .bit:hover { border-color: var(--accent-2); }
+
+  .pixel-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--grid);
+    border: 1px solid var(--grid);
+    padding: 1px;
+    margin: 1rem 0;
+  }
+  .pixel {
+    aspect-ratio: 1;
+    transition: background 0.2s;
+    cursor: crosshair;
+  }
+
+  .part-label {
+    position: absolute;
+    top: 3vh; right: 4vw;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--ink-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .section-divider {
+    background: var(--accent);
+    color: var(--bg);
+    justify-content: center;
+  }
+  .section-divider h1 { color: var(--bg); }
+  .section-divider .eyebrow { color: var(--bg); }
+  .section-divider .lead { color: var(--bg); opacity: 0.85; }
+
+  .pull-quote {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+    line-height: 1.2;
+    color: var(--ink);
+    border-left: 6px solid var(--accent-2);
+    padding-left: 2rem;
+    margin: 2rem 0;
+    max-width: 60ch;
+  }
+
+  .vs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .vs-table th, .vs-table td {
+    padding: 0.65rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--grid);
+  }
+  .vs-table th {
+    color: var(--accent-2);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+  .vs-table td.bad { color: var(--accent); }
+  .vs-table td.good { color: var(--accent-3); }
+
+  .finale {
+    background:
+      radial-gradient(circle at 50% 50%, rgba(255, 94, 58, 0.2) 0%, transparent 60%),
+      var(--bg);
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+  }
+  .finale h1 { font-size: clamp(3rem, 11vw, 10rem); line-height: 0.95; }
+
+  .token {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    margin: 3px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+  }
+  .token-0 { background: rgba(255, 94, 58, 0.25); border: 1px solid var(--accent); }
+  .token-1 { background: rgba(255, 210, 63, 0.25); border: 1px solid var(--accent-2); }
+  .token-2 { background: rgba(6, 214, 160, 0.25); border: 1px solid var(--accent-3); }
+  .token-3 { background: rgba(78, 168, 222, 0.25); border: 1px solid var(--accent-4); }
+
+  .kbd-hint {
+    position: fixed;
+    bottom: 2vh; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--ink-dim);
+    letter-spacing: 0.1em;
+  }
+  .kbd {
+    background: var(--bg-soft);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--grid);
+  }
+
+  .unicode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    margin-top: 1rem;
+  }
+  .uni-cell {
+    background: var(--bg);
+    border: 1px solid var(--grid);
+    border-radius: 8px;
+    padding: 0.8rem 0.4rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .uni-cell:hover {
+    border-color: var(--accent-2);
+    transform: translateY(-2px);
+  }
+  .uni-cell .glyph {
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+  .uni-cell .code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent-3);
+  }
+
+  .ascii-cell {
+    background: var(--bg);
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid var(--grid);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+  }
+  .ascii-cell .ch { color: var(--ink); font-size: 1.4rem; line-height: 1; }
+  .ascii-cell .num { color: var(--accent-3); font-size: 0.9rem; }
+  .ascii-cell .bin { color: var(--ink-dim); font-size: 0.65rem; margin-top: 2px; }
+
+  .sound-wave {
+    width: 100%;
+    height: 140px;
+    background: var(--bg);
+    border-radius: 6px;
+    border: 1px solid var(--grid);
+    cursor: pointer;
+    margin: 0.5rem 0;
+  }
+
+  /* Image card hover effect */
+  .img-card img {
+    transition: transform 0.4s ease;
+  }
+  .img-card:hover img {
+    transform: scale(1.03);
+  }
+
+  /* Make scrollbars subtle */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg-soft); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--grid); }
+
+  .pixel-coord {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent-3);
+    margin-top: 0.5rem;
+  }
+
+  .compact-input { width: 120px !important; }
+
+  .keyboard-tip {
+    background: var(--bg);
+    border: 1px dashed var(--grid);
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--ink-dim);
+    margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+<!-- SLIDE 1: TITLE -->
+<section class="slide title-slide active">
+  <div class="bg-numbers" id="bgNumbers"></div>
+  <div class="title-content">
+    <div class="eyebrow">CS &amp; AI Camp · Session 01</div>
+    <h1>
+      <span class="everything">Everything</span><br>
+      is a <span class="number">number.</span>
+    </h1>
+    <p class="lead">A two hour journey from voltage levels to ChatGPT,<br>told through real disasters, hacks, and one Telugu character that broke Apple.</p>
+  </div>
+</section>
+
+<!-- SLIDE 2: OPENING HOOK -->
+<section class="slide">
+  <div class="part-label">Hook · 5 min</div>
+  <div class="eyebrow">Quick, before we start</div>
+  <h2>What do these three things have in common?</h2>
+  <div class="three-col" style="margin-top: 2rem;">
+    <div class="widget" style="text-align: center;">
+      <div style="font-size: 4rem;">📸</div>
+      <h3 style="margin-top: 0.5rem;">Your selfie</h3>
+      <p style="color: var(--ink-dim); font-family: 'Space Mono', monospace; font-size: 0.85rem;">36 million numbers</p>
+    </div>
+    <div class="widget" style="text-align: center;">
+      <div style="font-size: 4rem;">🎵</div>
+      <h3 style="margin-top: 0.5rem;">Your fav song</h3>
+      <p style="color: var(--ink-dim); font-family: 'Space Mono', monospace; font-size: 0.85rem;">16 million numbers</p>
+    </div>
+    <div class="widget" style="text-align: center;">
+      <div style="font-size: 4rem;">💬</div>
+      <h3 style="margin-top: 0.5rem;">Last WhatsApp msg</h3>
+      <p style="color: var(--ink-dim); font-family: 'Space Mono', monospace; font-size: 0.85rem;">A list of integers</p>
+    </div>
+  </div>
+  <p class="lead" style="margin-top: 2rem;">By the end of today, you will see <em class="italic accent">one number</em> that can crash an iPhone.</p>
+</section>
+
+<!-- SLIDE 3: PART 1 DIVIDER -->
+<section class="slide section-divider">
+  <div class="eyebrow">Part 01</div>
+  <h1>Why did we invent<br>digital electronics?</h1>
+  <p class="lead" style="margin-top: 2rem;">It all started with one frustrating problem.</p>
+</section>
+
+<!-- SLIDE 4: HUMAN COMPUTERS -->
+<section class="slide">
+  <div class="part-label">Part 01 · The mistake problem</div>
+  <div class="two-col">
+    <div>
+      <div class="eyebrow">A forgotten fact</div>
+      <h2>"Computer" used to be a <span class="accent">job title.</span></h2>
+      <p class="lead">Rooms full of people, usually women, doing trajectory math by hand for NASA, banks, and the military.</p>
+      <ul class="clean" style="margin-top: 1rem;">
+        <li>Katherine Johnson computed orbits for John Glenn's spaceflight.</li>
+        <li>WWII firing tables had errors that got soldiers killed.</li>
+        <li>The problem was never intelligence. It was fatigue, typos, and distraction.</li>
+      </ul>
+    </div>
+    <div class="img-card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Katherine_Johnson_at_NASA%2C_in_1966.jpg/800px-Katherine_Johnson_at_NASA%2C_in_1966.jpg" alt="Katherine Johnson at NASA in 1966" loading="lazy">
+      <div class="caption">Katherine Johnson at NASA, 1966</div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 5: MECHANICAL COMPUTERS -->
+<section class="slide">
+  <div class="part-label">Part 01 · The first machines</div>
+  <h2>So we built <span class="accent-2">machines</span> to be precise.</h2>
+  <div class="three-col" style="margin-top: 2rem;">
+    <div class="img-card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/NAMA_Machine_d%27Anticyth%C3%A8re_1.jpg/800px-NAMA_Machine_d%27Anticyth%C3%A8re_1.jpg" alt="Antikythera Mechanism" loading="lazy">
+      <div class="caption"><strong>Antikythera Mechanism</strong><br>~100 BCE · Greek · predicted eclipses</div>
+    </div>
+    <div class="img-card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Arts_et_Metiers_Pascaline_dsc03869.jpg/800px-Arts_et_Metiers_Pascaline_dsc03869.jpg" alt="Pascal's Calculator" loading="lazy">
+      <div class="caption"><strong>Pascaline</strong><br>1642 · Pascal · gears for addition</div>
+    </div>
+    <div class="img-card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Babbages_Difference_Engine_No.2_at_London_Science_Museum_in_2010.jpg/800px-Babbages_Difference_Engine_No.2_at_London_Science_Museum_in_2010.jpg" alt="Babbage Difference Engine" loading="lazy">
+      <div class="caption"><strong>Difference Engine</strong><br>1822 · Babbage · brass and ambition</div>
+    </div>
+  </div>
+  <p class="lead" style="margin-top: 2rem;">Beautiful. Brilliant. And ultimately, <em class="italic accent">doomed.</em></p>
+</section>
+
+<!-- SLIDE 6: WHY MECHANICAL FAILED -->
+<section class="slide">
+  <div class="part-label">Part 01 · The limits of gears</div>
+  <h2>Why gears could not take us further.</h2>
+  <ul class="clean" style="margin-top: 2rem; max-width: 65ch;">
+    <li><strong>Friction:</strong> every gear loses energy. More gears means slower, hotter, weaker.</li>
+    <li><strong>Wear:</strong> brass teeth grind down. Precision degrades.</li>
+    <li><strong>Scale:</strong> want to add 10 digit numbers? You need 10 gear stacks. 20 digits? Forget it.</li>
+    <li><strong>Speed:</strong> physical motion will always be slower than electricity.</li>
+  </ul>
+  <div class="callout" style="margin-top: 2rem;">
+    The future had to be <span class="accent-2">electronic</span>. No moving parts. Just electrons.
+  </div>
+</section>
+
+<!-- SLIDE 7: PART 2 DIVIDER -->
+<section class="slide section-divider">
+  <div class="eyebrow">Part 02</div>
+  <h1>How many states should<br>a switch have?</h1>
+  <p class="lead" style="margin-top: 2rem;">Two? Five? Ten? The answer changed everything.</p>
+</section>
+
+<!-- SLIDE 8: MULTI-STATE PROBLEM -->
+<section class="slide">
+  <div class="part-label">Part 02 · The road not taken</div>
+  <div class="two-col">
+    <div>
+      <div class="eyebrow">True story</div>
+      <h2>The Soviets tried <span class="accent">three states.</span></h2>
+      <p class="lead">The <em class="italic">Setun</em> computer in 1958 used ternary: minus one, zero, plus one. Mathematically elegant. Practically, a disaster.</p>
+      <ul class="clean" style="margin-top: 1rem;">
+        <li><strong>Noise:</strong> was that 4.7V a "5" or a "4"?</li>
+        <li><strong>Heat shifts voltage.</strong> So does humidity.</li>
+        <li><strong>Cost:</strong> hard to make millions of components that all agree.</li>
+      </ul>
+    </div>
+    <div class="widget">
+      <h4>The voltage problem</h4>
+      <svg viewBox="0 0 400 300" style="width: 100%; height: auto;">
+        <text x="10" y="20" fill="#a8a397" font-family="JetBrains Mono" font-size="11">10 states (chaos)</text>
+        <g stroke="#4ea8de" stroke-width="1" opacity="0.4">
+          <line x1="10" y1="35" x2="200" y2="35"/>
+          <line x1="10" y1="50" x2="200" y2="50"/>
+          <line x1="10" y1="65" x2="200" y2="65"/>
+          <line x1="10" y1="80" x2="200" y2="80"/>
+          <line x1="10" y1="95" x2="200" y2="95"/>
+        </g>
+        <path d="M 10 60 Q 50 30, 80 70 Q 110 95, 140 50 Q 170 75, 200 55" stroke="#ff5e3a" stroke-width="2" fill="none"/>
+        <text x="210" y="60" fill="#ff5e3a" font-family="JetBrains Mono" font-size="11">noise = wrong digit!</text>
+
+        <text x="10" y="160" fill="#a8a397" font-family="JetBrains Mono" font-size="11">2 states (robust)</text>
+        <g stroke="#06d6a0" stroke-width="1.5" opacity="0.6">
+          <line x1="10" y1="180" x2="200" y2="180"/>
+          <line x1="10" y1="240" x2="200" y2="240"/>
+        </g>
+        <text x="205" y="184" fill="#06d6a0" font-family="JetBrains Mono" font-size="11">HIGH = 1</text>
+        <text x="205" y="244" fill="#06d6a0" font-family="JetBrains Mono" font-size="11">LOW  = 0</text>
+        <path d="M 10 200 Q 50 175, 80 215 Q 110 235, 140 185 Q 170 220, 200 200" stroke="#ffd23f" stroke-width="2" fill="none"/>
+        <text x="50" y="270" fill="#ffd23f" font-family="JetBrains Mono" font-size="11">same noise → still clearly 1!</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 9: BINARY WINS -->
+<section class="slide">
+  <div class="part-label">Part 02 · The winner</div>
+  <h2>Binary wins because it is <span class="accent-3">robust.</span></h2>
+  <table class="vs-table">
+    <tr><th>Property</th><th>Multi-state (10)</th><th>Binary (2)</th></tr>
+    <tr><td>Tolerates noise</td><td class="bad">No</td><td class="good">Yes</td></tr>
+    <tr><td>Easy to manufacture</td><td class="bad">No</td><td class="good">Yes</td></tr>
+    <tr><td>Cheap to build</td><td class="bad">No</td><td class="good">Yes</td></tr>
+    <tr><td>Survives heat/humidity</td><td class="bad">Barely</td><td class="good">Easily</td></tr>
+    <tr><td>Information per switch</td><td class="good">More</td><td class="bad">Less</td></tr>
+  </table>
+  <p class="lead" style="margin-top: 1.5rem;">We trade information density for <em class="italic accent-3">reliability</em>. Then we just use a LOT of switches.</p>
+  <p style="font-family: 'Space Mono', monospace; color: var(--ink-dim); margin-top: 1rem;">Your phone has ~16 billion transistors. Each one: 0 or 1. That is it.</p>
+</section>
+
+<!-- SLIDE 10: PART 3 DIVIDER -->
+<section class="slide section-divider">
+  <div class="eyebrow">Part 03</div>
+  <h1>Binary is<br><em class="italic">everywhere.</em></h1>
+  <p class="lead" style="margin-top: 2rem;">Once you see it, you cannot unsee it.</p>
+</section>
+
+<!-- SLIDE 11: BINARY COUNTER -->
+<section class="slide">
+  <div class="part-label">Part 03 · Counting in binary</div>
+  <div class="demo-tag">Interactive · click the bits</div>
+  <h2>Build a number with 8 switches.</h2>
+  <p class="lead">Each bit doubles. 8 bits gives you 0 to 255.</p>
+
+  <div class="widget" style="margin-top: 1rem;">
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--ink-dim);">
+      <span style="width:56px;text-align:center">128</span><span style="width:56px;text-align:center">64</span><span style="width:56px;text-align:center">32</span><span style="width:56px;text-align:center">16</span><span style="width:56px;text-align:center">8</span><span style="width:56px;text-align:center">4</span><span style="width:56px;text-align:center">2</span><span style="width:56px;text-align:center">1</span>
+    </div>
+    <div class="bit-display" id="binaryBits">
+      <div class="bit" data-value="128">0</div>
+      <div class="bit" data-value="64">0</div>
+      <div class="bit" data-value="32">0</div>
+      <div class="bit" data-value="16">0</div>
+      <div class="bit" data-value="8">0</div>
+      <div class="bit" data-value="4">0</div>
+      <div class="bit" data-value="2">0</div>
+      <div class="bit" data-value="1">0</div>
+    </div>
+    <p style="font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; margin-top: 1rem;">
+      Decimal: <span id="binaryDecimal" class="accent-3" style="font-weight: 700;">0</span>
+      &nbsp; · &nbsp; ASCII: <span id="binaryAscii" class="accent-2">·</span>
+    </p>
+    <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <button class="btn secondary" onclick="window.setBinary(72)">Try 'H' (72)</button>
+      <button class="btn secondary" onclick="window.setBinary(255)">Try 255 (max)</button>
+      <button class="btn secondary" onclick="window.setBinary(42)">Try 42</button>
+      <button class="btn secondary" onclick="window.setBinary(0)">Reset</button>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 12: POWERS OF 2 -->
+<section class="slide">
+  <div class="part-label">Part 03 · Powers of 2</div>
+  <h2>Ever wondered <span class="accent">why...</span></h2>
+  <div class="two-col" style="margin-top: 1.5rem;">
+    <ul class="clean">
+      <li>Phone storage is <strong>64, 128, 256, 512 GB</strong>?</li>
+      <li>RAM is <strong>4, 8, 16, 32 GB</strong>?</li>
+      <li>A "kilobyte" is actually <strong>1024 bytes</strong>?</li>
+      <li>Old games had <strong>256 colors</strong>?</li>
+      <li>The internet ran out of IPv4 addresses at <strong>4.3 billion</strong>?</li>
+    </ul>
+    <div class="widget">
+      <h4>Powers of 2</h4>
+      <table class="vs-table" style="margin: 0;">
+        <tr><td>2⁸</td><td class="good">256</td></tr>
+        <tr><td>2¹⁰</td><td class="good">1,024</td></tr>
+        <tr><td>2¹⁶</td><td class="good">65,536</td></tr>
+        <tr><td>2²⁰</td><td class="good">~1 million</td></tr>
+        <tr><td>2³²</td><td class="good">~4.3 billion</td></tr>
+        <tr><td>2⁶⁴</td><td class="good">18 quintillion</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 13: BINARY SHIFT INTERACTIVE -->
+<section class="slide">
+  <div class="part-label">Part 03 · Binary magic tricks</div>
+  <div class="demo-tag">Interactive</div>
+  <h2>Multiplying by 2 is <span class="accent-3">free.</span></h2>
+  <p class="lead">Watch what happens when you shift the bits left or right.</p>
+  <div class="widget" style="margin-top: 1rem;">
+    <p style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; line-height: 2; margin-bottom: 1rem;">
+      Number: <span id="shiftDecimal" class="accent-3" style="font-size: 1.8rem; font-weight: 700;">5</span>
+      &nbsp;&nbsp; Binary: <span id="shiftBinary" class="accent-2" style="font-size: 1.5rem;">00000101</span>
+    </p>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <button class="btn" onclick="window.shift('left')">← Shift left (× 2)</button>
+      <button class="btn" onclick="window.shift('right')">Shift right (÷ 2) →</button>
+      <button class="btn secondary" onclick="window.shiftReset()">Reset to 5</button>
+    </div>
+    <p style="margin-top: 1rem; font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--ink-dim);" id="shiftLog">Click shift left. Notice the bits literally slide over.</p>
+  </div>
+  <div class="callout" style="margin-top: 1rem;">
+    This is why binary search, merge sort, and "halving" algorithms are so fast. <em class="italic">The hardware loves doubling.</em>
+  </div>
+</section>
+
+<!-- SLIDE 14: PART 4 DIVIDER -->
+<section class="slide section-divider">
+  <div class="eyebrow">Part 04</div>
+  <h1>But wait, what about<br><em class="italic">negative</em> numbers?</h1>
+  <p class="lead" style="margin-top: 2rem;">How do you say minus five with only 0s and 1s?</p>
+</section>
+
+<!-- SLIDE 15: SIGN MAGNITUDE -->
+<section class="slide">
+  <div class="part-label">Part 04 · First attempt</div>
+  <h2>Attempt 1: <span class="accent-4">Sign magnitude</span></h2>
+  <p class="lead">Use the leftmost bit as a +/- sign.</p>
+  <div class="widget" style="margin-top: 1rem;">
+    <table class="vs-table" style="margin: 0;">
+      <tr><td>+5</td><td><code>0101</code></td><td class="good">sign bit = 0 (positive)</td></tr>
+      <tr><td>-5</td><td><code>1101</code></td><td class="good">sign bit = 1 (negative)</td></tr>
+      <tr><td>+0</td><td><code>0000</code></td><td class="bad">wait...</td></tr>
+      <tr><td>-0</td><td><code>1000</code></td><td class="bad">two zeros??</td></tr>
+    </table>
+  </div>
+  <p class="lead accent" style="margin-top: 1.5rem; font-weight: 600;">Problem: two zeros. Hardware gets confused. Comparisons break.</p>
+</section>
+
+<!-- SLIDE 16: ONE'S COMPLEMENT -->
+<section class="slide">
+  <div class="part-label">Part 04 · Second attempt</div>
+  <h2>Attempt 2: <span class="accent-4">One's complement</span></h2>
+  <p class="lead">Flip every bit to make a negative.</p>
+  <div class="widget" style="margin-top: 1rem;">
+    <table class="vs-table" style="margin: 0;">
+      <tr><td>+5</td><td><code>0101</code></td><td>flip every bit ↓</td></tr>
+      <tr><td>-5</td><td><code>1010</code></td><td class="good">cleaner</td></tr>
+      <tr><td>+0</td><td><code>0000</code></td><td class="bad">but again...</td></tr>
+      <tr><td>-0</td><td><code>1111</code></td><td class="bad">two zeros</td></tr>
+    </table>
+  </div>
+  <p class="lead accent" style="margin-top: 1.5rem; font-weight: 600;">Same problem. We need something cleverer.</p>
+</section>
+
+<!-- SLIDE 17: TWO'S COMPLEMENT INTERACTIVE -->
+<section class="slide">
+  <div class="part-label">Part 04 · The elegant solution</div>
+  <div class="demo-tag">Interactive</div>
+  <h2><span class="accent-3">Two's complement.</span> Still in use today.</h2>
+  <p class="lead">Flip every bit, then add 1. Type a number and watch it work.</p>
+  <div class="two-col" style="margin-top: 1rem;">
+    <div class="widget">
+      <h4>Type any number from -128 to 127</h4>
+      <input type="number" id="twosInput" value="5" min="-128" max="127" class="compact-input" oninput="window.computeTwos()">
+      <div style="margin-top: 1rem; font-family: 'JetBrains Mono', monospace; line-height: 2; font-size: 1.1rem;" id="twosOutput"></div>
+    </div>
+    <div class="widget">
+      <h4>Test: 5 + (-5) = 0 ?</h4>
+      <p style="font-family: 'JetBrains Mono', monospace; line-height: 2; font-size: 1.1rem;">
+        &nbsp;&nbsp;<code>00000101</code> (+5)<br>
+        +<code>11111011</code> (-5)<br>
+        ──────────<br>
+        <code>100000000</code> <span class="accent">overflow</span><br>
+        = <code>00000000</code> ✨
+      </p>
+    </div>
+  </div>
+  <div class="callout" style="margin-top: 1rem;">
+    <strong>ONE unique zero.</strong> Addition just works, no special subtraction circuit needed. This is in <em class="italic">every chip on Earth.</em>
+  </div>
+</section>
+
+<!-- SLIDE 18: TWO'S COMPLEMENT WHEEL -->
+<section class="slide">
+  <div class="part-label">Part 04 · Visualizing the wheel</div>
+  <div class="demo-tag">Interactive · drag to spin</div>
+  <h2>The number wheel.</h2>
+  <p class="lead">4 bit numbers wrap around. That is why subtraction is just addition.</p>
+  <div class="widget" style="margin-top: 1rem; display: flex; flex-direction: column; align-items: center;">
+    <svg viewBox="0 0 400 400" style="width: 360px; height: 360px;" id="wheelSvg">
+      <circle cx="200" cy="200" r="160" stroke="rgba(245,241,232,0.1)" stroke-width="2" fill="none"/>
+      <g id="wheelNumbers" font-family="JetBrains Mono" font-size="14"></g>
+      <circle id="wheelDot" cx="200" cy="40" r="10" fill="#ffd23f"/>
+      <text x="200" y="195" text-anchor="middle" fill="#ffd23f" font-family="Fraunces" font-weight="900" font-size="48" id="wheelValue">0</text>
+      <text x="200" y="225" text-anchor="middle" fill="#a8a397" font-family="JetBrains Mono" font-size="14" id="wheelBinary">0000</text>
+    </svg>
+    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.5rem; flex-wrap: wrap;">
+      <button class="btn secondary" onclick="window.wheelStep(-1)">- 1</button>
+      <button class="btn" onclick="window.wheelStep(1)">+ 1</button>
+      <button class="btn secondary" onclick="window.wheelStep(-5)">- 5</button>
+      <button class="btn secondary" onclick="window.wheelStep(5)">+ 5</button>
+      <button class="btn secondary" onclick="window.wheelReset()">Reset</button>
+    </div>
+    <p style="text-align: center; font-family: 'Space Mono', monospace; font-size: 0.8rem; color: var(--ink-dim); margin-top: 0.5rem;">
+      Watch what happens when you go past +7 or below -8. It wraps!
+    </p>
+  </div>
+</section>
+
+<!-- SLIDE 19: PART 5 DIVIDER -->
+<section class="slide section-divider">
+  <div class="eyebrow">Part 05</div>
+  <h1>Decimals<br>are a <em class="italic">lie.</em></h1>
+  <p class="lead" style="margin-top: 2rem;">Computers are terrible at floating point math. And it killed people.</p>
+</section>
+
+<!-- SLIDE 20: 0.1 + 0.2 LIVE -->
+<section class="slide">
+  <div class="part-label">Part 05 · The shocking demo</div>
+  <div class="demo-tag">Try it yourself</div>
+  <h2>What is <code style="font-size: 1.3em;">0.1 + 0.2</code> ?</h2>
+  <div class="widget" style="margin-top: 1rem;">
+    <h4>Run it in this browser, right now</h4>
+    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+      <input type="number" id="numA" value="0.1" step="0.1" class="compact-input">
+      <span style="font-size: 1.5rem;">+</span>
+      <input type="number" id="numB" value="0.2" step="0.1" class="compact-input">
+      <button class="btn" onclick="window.computeFloat()">=</button>
+    </div>
+    <div class="calc-display" id="floatResult">0.30000000000000004</div>
+    <p style="margin-top: 1rem;">Then check: <code>0.1 + 0.2 == 0.3</code> &nbsp; → &nbsp; <span id="floatEquals" class="accent" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">false</span></p>
+    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <button class="btn secondary" onclick="window.tryFloat(0.1,0.2)">0.1 + 0.2</button>
+      <button class="btn secondary" onclick="window.tryFloat(0.1,0.1,0.1)">0.1 + 0.1 + 0.1</button>
+      <button class="btn secondary" onclick="window.tryFloat(0.7,0.1)">0.7 + 0.1</button>
+      <button class="btn secondary" onclick="window.tryFloat(0.2,0.3)">0.2 + 0.3 (this one works!)</button>
+    </div>
+  </div>
+  <p class="lead" style="margin-top: 1rem;">Your phone, your laptop, NASA's supercomputers, <em class="italic accent">all of them</em> think 0.1 plus 0.2 is not 0.3.</p>
+</section>
+
+<!-- SLIDE 21: WHY -->
+<section class="slide">
+  <div class="part-label">Part 05 · Why it happens</div>
+  <h2>Why?</h2>
+  <div class="two-col" style="margin-top: 1.5rem;">
+    <div>
+      <p class="lead">In decimal, <strong>1 divided by 3 is 0.3333...</strong>, infinite, can't be written exactly.</p>
+      <p class="lead" style="margin-top: 1rem;">In <em class="italic accent-2">binary</em>, 0.1 (one tenth) is also an infinite repeating fraction.</p>
+    </div>
+    <div class="widget">
+      <h4>0.1 in binary</h4>
+      <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; line-height: 1.6; word-break: break-all;">
+        0.0001100110011001100110011001100110011...
+      </p>
+      <p style="margin-top: 1rem; color: var(--ink-dim); font-size: 0.9rem;">Forever. The pattern <code>0011</code> repeats with no end.</p>
+    </div>
+  </div>
+  <div class="callout" style="margin-top: 1.5rem;">
+    Computers have <em class="italic">finite memory</em>. They chop it off. That tiny error is real. It is not a bug, it is a fundamental limit of binary.
+  </div>
+</section>
+
+<!-- SLIDE 22: PATRIOT INTRO -->
+<section class="slide">
+  <div class="part-label">Part 05 · Case study #1</div>
+  <div class="eyebrow accent">Case #1 · February 25, 1991 · Dhahran, Saudi Arabia</div>
+  <h2>The <span class="accent">Patriot Missile</span> Disaster.</h2>
+  <div class="two-col" style="margin-top: 1rem;">
+    <div>
+      <p class="lead">Gulf War. An Iraqi Scud missile is incoming. America's pride, the Patriot defense system, is supposed to shoot it down.</p>
+      <p class="lead" style="margin-top: 1rem;">It missed. The Scud hit a US Army barracks.</p>
+      <p style="margin-top: 1rem; font-size: 1.5rem;"><span class="death-toll">28</span> soldiers killed. <span class="death-toll">100+</span> injured.</p>
+    </div>
+    <div class="img-card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Patriot_missile_launch_b.jpg/800px-Patriot_missile_launch_b.jpg" alt="Patriot missile launch" loading="lazy">
+      <div class="caption">Patriot missile system, US Army</div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 23: PATRIOT EXPLANATION -->
+<section class="slide">
+  <div class="part-label">Part 05 · How a tiny number killed</div>
+  <h2>The cause was <span class="accent-2">0.1</span>.</h2>
+  <ul class="clean" style="margin-top: 1rem;">
+    <li>System tracks time in tenths of a second.</li>
+    <li>To get seconds, it multiplies by <strong>0.1</strong>.</li>
+    <li>But 0.1 cannot be stored exactly in binary. A tiny rounding error each time.</li>
+    <li>After <strong>100 hours of continuous operation</strong>, the clock was off by <strong>0.34 seconds</strong>.</li>
+    <li>In 0.34 seconds, a Scud travels <strong>half a kilometer</strong>.</li>
+    <li>The Patriot looked in the wrong place. The Scud got through.</li>
+  </ul>
+  <div class="callout" style="margin-top: 1.5rem; border-left-color: var(--accent);">
+    28 people died because binary <em class="italic">cannot store 0.1 exactly.</em>
+  </div>
+</section>
+
+<!-- SLIDE 24: ARIANE 5 -->
+<section class="slide">
+  <div class="part-label">Part 05 · Case study #2</div>
+  <div class="eyebrow accent">Case #2 · June 4, 1996 · French Guiana</div>
+  <h2>Ariane 5: <span class="accent">half a billion dollars,</span> 37 seconds.</h2>
+  <div class="two-col" style="margin-top: 1rem;">
+    <div>
+      <p class="lead">European Space Agency. Maiden flight of a brand new rocket. Years of work. Hundreds of millions of euros. Four scientific satellites on board.</p>
+      <p style="margin-top: 1rem; font-size: 2rem; font-weight: 900;" class="accent">37 seconds in. BOOM.</p>
+      <p class="lead" style="margin-top: 1rem;">A 64 bit floating point number was converted to a 16 bit integer. It did not fit.</p>
+    </div>
+    <div class="img-card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Ariane_5ES_with_ATV_4_on_its_way_to_ELA-3.jpg/800px-Ariane_5ES_with_ATV_4_on_its_way_to_ELA-3.jpg" alt="Ariane 5 rocket" loading="lazy">
+      <div class="caption">Ariane 5 rocket (later, successful flight)</div>
+    </div>
+  </div>
+  <p style="margin-top: 1rem; font-family: 'Space Mono', monospace; color: var(--ink-dim);">They reused code from Ariane 4. The new rocket flew faster. Number got too big. Overflow. Crash.</p>
+</section>
+
+<!-- SLIDE 25: PENTIUM -->
+<section class="slide">
+  <div class="part-label">Part 05 · Case study #3</div>
+  <div class="eyebrow accent">Case #3 · 1994 · Intel Corporation</div>
+  <h2>Even <span class="accent">Intel</span> got it wrong.</h2>
+  <div class="two-col" style="margin-top: 1rem;">
+    <div>
+      <p class="lead">A math professor named Thomas Nicely is computing prime numbers on his new Pentium. He gets a wrong answer.</p>
+      <p class="lead" style="margin-top: 1rem;">Five entries were missing from a lookup table inside the chip. <strong>1 in 9 billion divisions</strong> would be wrong.</p>
+      <p class="lead" style="margin-top: 1rem;">Intel said it was fine. Then IBM stopped selling Pentium PCs.</p>
+      <p style="margin-top: 1rem; font-size: 1.5rem;">Cost to Intel: <span class="death-toll">$475 M</span></p>
+    </div>
+    <div class="img-card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Intel_Pentium_A80501-66_processor.jpg/800px-Intel_Pentium_A80501-66_processor.jpg" alt="Intel Pentium processor" loading="lazy">
+      <div class="caption">Intel Pentium (1994). First full chip recall in history.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 26: THE LESSON -->
+<section class="slide">
+  <div class="part-label">Part 05 · The takeaway</div>
+  <div class="pull-quote">
+    Computers are <em class="italic accent">fast</em> at math.<br>
+    They are not <em class="italic accent-2">perfect.</em>
+  </div>
+  <p class="lead" style="margin-top: 1rem;">Anyone who tells you "computers don't make mistakes"<br>has never tried <code>0.1 + 0.2</code>.</p>
+</section>
+
+<!-- SLIDE 27: PART 6 LANGUAGE -->
+<section class="slide section-divider">
+  <div class="eyebrow">Part 06</div>
+  <h1>Language<br>is numbers too.</h1>
+  <p class="lead" style="margin-top: 2rem;">From ASCII to Unicode to AI tokens, every letter is a code.</p>
+</section>
+
+<!-- SLIDE 28: ASCII INTERACTIVE -->
+<section class="slide">
+  <div class="part-label">Part 06 · The original system</div>
+  <div class="demo-tag">Type anything</div>
+  <h2><span class="accent-2">ASCII</span> (1963)</h2>
+  <p class="lead">Every English letter, digit, and symbol becomes a number from 0 to 127.</p>
+  <div class="widget" style="margin-top: 1rem;">
+    <h4>Type a word, see its numbers</h4>
+    <input type="text" id="asciiInput" value="HELLO" maxlength="24" style="width: 280px; font-size: 1.2rem;" oninput="window.updateAscii()">
+    <div id="asciiOutput" style="margin-top: 1rem; display: flex; gap: 0.4rem; flex-wrap: wrap;"></div>
+  </div>
+  <p style="margin-top: 1.5rem; color: var(--ink-dim);">'A' is 65 &nbsp;·&nbsp; 'a' is 97 &nbsp;·&nbsp; '0' is 48 &nbsp;·&nbsp; space is 32</p>
+  <p class="keyboard-tip">Try typing your name. Try lowercase, uppercase, numbers, spaces.</p>
+</section>
+
+<!-- SLIDE 29: ASCII LIMITS -->
+<section class="slide">
+  <div class="part-label">Part 06 · ASCII is not enough</div>
+  <h2>But what about <span class="accent">हिन्दी, ಕನ್ನಡ, 中文, العربية, 🔥</span>?</h2>
+  <p class="lead" style="margin-top: 1rem;">ASCII has 128 characters. The world has thousands of scripts.</p>
+  <div class="callout" style="margin-top: 1.5rem;">
+    For decades, every country invented its own encoding. Email from Japan would arrive as garbled symbols on a German computer. Russian on a US server: nonsense. It was chaos.
+  </div>
+  <p class="lead" style="margin-top: 1rem;">Somebody had to <em class="italic accent-2">unify everything</em>.</p>
+</section>
+
+<!-- SLIDE 30: UNICODE INTERACTIVE -->
+<section class="slide">
+  <div class="part-label">Part 06 · Unicode</div>
+  <div class="demo-tag">Click any character</div>
+  <h2>Enter <span class="accent-2">Unicode</span> (1991)</h2>
+  <p class="lead">ONE number for every character in every language ever. 150,000+ characters and growing.</p>
+  <div class="widget" style="margin-top: 1rem;">
+    <div class="unicode-grid">
+      <div class="uni-cell" data-name="Latin A" data-cp="0041"><div class="glyph">A</div><div class="code">U+0041</div></div>
+      <div class="uni-cell" data-name="Latin a" data-cp="0061"><div class="glyph">a</div><div class="code">U+0061</div></div>
+      <div class="uni-cell" data-name="Digit 7" data-cp="0037"><div class="glyph">7</div><div class="code">U+0037</div></div>
+      <div class="uni-cell" data-name="Devanagari KA (Hindi)" data-cp="0915"><div class="glyph">क</div><div class="code">U+0915</div></div>
+      <div class="uni-cell" data-name="Kannada KA" data-cp="0C95"><div class="glyph">ಕ</div><div class="code">U+0C95</div></div>
+      <div class="uni-cell" data-name="Telugu KA" data-cp="0C15"><div class="glyph">క</div><div class="code">U+0C15</div></div>
+      <div class="uni-cell" data-name="Tamil KA" data-cp="0B95"><div class="glyph">க</div><div class="code">U+0B95</div></div>
+      <div class="uni-cell" data-name="Chinese 'middle'" data-cp="4E2D"><div class="glyph">中</div><div class="code">U+4E2D</div></div>
+      <div class="uni-cell" data-name="Japanese hiragana A" data-cp="3042"><div class="glyph">あ</div><div class="code">U+3042</div></div>
+      <div class="uni-cell" data-name="Arabic ALEF" data-cp="0627"><div class="glyph">ا</div><div class="code">U+0627</div></div>
+      <div class="uni-cell" data-name="Hebrew ALEF" data-cp="05D0"><div class="glyph">א</div><div class="code">U+05D0</div></div>
+      <div class="uni-cell" data-name="Cyrillic D (Russian)" data-cp="0414"><div class="glyph">Д</div><div class="code">U+0414</div></div>
+      <div class="uni-cell" data-name="Greek pi" data-cp="03C0"><div class="glyph">π</div><div class="code">U+03C0</div></div>
+      <div class="uni-cell" data-name="Egyptian hieroglyph A" data-cp="13000"><div class="glyph">𓀀</div><div class="code">U+13000</div></div>
+      <div class="uni-cell" data-name="Fire emoji" data-cp="1F525"><div class="glyph">🔥</div><div class="code">U+1F525</div></div>
+      <div class="uni-cell" data-name="Rocket" data-cp="1F680"><div class="glyph">🚀</div><div class="code">U+1F680</div></div>
+      <div class="uni-cell" data-name="India flag" data-cp="1F1EE-1F1F3"><div class="glyph">🇮🇳</div><div class="code">2 codepoints</div></div>
+      <div class="uni-cell" data-name="Heart" data-cp="2764"><div class="glyph">❤️</div><div class="code">U+2764</div></div>
+    </div>
+    <p id="uniInfo" style="margin-top: 1rem; font-family: 'Space Mono', monospace; font-size: 0.9rem; color: var(--accent-3);">Click any character to see its number.</p>
+  </div>
+</section>
+
+<!-- SLIDE 31: UNICODE TYPING DEMO -->
+<section class="slide">
+  <div class="part-label">Part 06 · Type in any language</div>
+  <div class="demo-tag">Type Kannada, Hindi, Telugu, anything</div>
+  <h2>Every character you type has a <span class="accent-3">number.</span></h2>
+  <div class="widget" style="margin-top: 1rem;">
+    <h4>Switch your keyboard language and type</h4>
+    <input type="text" id="unicodeInput" value="ನಮಸ್ಕಾರ 🙏" maxlength="20" style="width: 100%; max-width: 500px; font-size: 1.4rem; font-family: 'Noto Sans Telugu', sans-serif;" oninput="window.updateUnicodeBreakdown()">
+    <div id="unicodeOutput" style="margin-top: 1rem; display: flex; gap: 0.4rem; flex-wrap: wrap;"></div>
+  </div>
+  <p style="margin-top: 1rem; color: var(--ink-dim); font-family: 'Space Mono', monospace; font-size: 0.85rem;">
+    Try: <strong>ಕನ್ನಡ</strong> · <strong>हिन्दी</strong> · <strong>తెలుగు</strong> · <strong>தமிழ்</strong> · <strong>中文</strong> · <strong>😊🔥🇮🇳</strong>
+  </p>
+</section>
+
+<!-- SLIDE 32: TELUGU CHARACTER -->
+<section class="slide">
+  <div class="part-label">Part 06 · Case study #4</div>
+  <div class="eyebrow accent">Case #4 · February 2018 · Apple Inc.</div>
+  <h2>The Telugu character that <span class="accent">bricked iPhones.</span></h2>
+  <div class="telugu-big">జ్ఞా</div>
+  <p class="lead" style="text-align: center; margin-top: 1rem;">One character. Sent over iMessage. <em class="italic accent">Crashed every Apple device that displayed it.</em></p>
+</section>
+
+<!-- SLIDE 33: TELUGU EXPLANATION -->
+<section class="slide">
+  <div class="part-label">Part 06 · How one character broke a trillion dollar company</div>
+  <h2>What actually happened.</h2>
+  <ul class="clean" style="margin-top: 1rem;">
+    <li>iOS 11.2.5. Every iPhone, Mac, iPad, Apple Watch, HomePod.</li>
+    <li>Receive the character, and Messages crashes.</li>
+    <li>Open it again, it crashes again. And again. And again.</li>
+    <li>Display it in a notification, and the entire phone <strong>boot loops.</strong></li>
+    <li>Only fix: <strong>complete factory reset</strong>. All data gone.</li>
+    <li>Trolls on Twitter started spamming it to strangers' phones.</li>
+  </ul>
+  <div class="callout" style="margin-top: 1.5rem;">
+    <strong>Why?</strong> Telugu combines consonants into compound symbols. A specific sequence (consonant + virama + consonant + zero width non joiner + vowel) confused Apple's font renderer.
+  </div>
+  <p class="lead accent" style="margin-top: 1rem;">A trillion dollar company. Defeated by a Telugu vowel.</p>
+</section>
+
+<!-- SLIDE 34: TOKENS INTERACTIVE -->
+<section class="slide">
+  <div class="part-label">Part 06 · The AI angle</div>
+  <div class="demo-tag">Interactive</div>
+  <h2>When you chat with <span class="accent-3">ChatGPT or Claude...</span></h2>
+  <p class="lead">...the AI does not see your words. It sees <em class="italic accent-2">tokens</em>. Numbers.</p>
+  <div class="widget" style="margin-top: 1rem;">
+    <h4>Type a sentence</h4>
+    <input type="text" id="tokenInput" value="Hello, world! Tokenization is incredible." style="width: 100%; max-width: 600px; font-size: 1rem;" oninput="window.updateTokens()">
+    <div id="tokenOutput" style="margin-top: 1rem; line-height: 2.2;"></div>
+    <p id="tokenCount" style="margin-top: 1rem; font-family: 'Space Mono', monospace; color: var(--ink-dim);">tokens</p>
+  </div>
+  <p class="lead" style="margin-top: 1rem;">Every prompt you've ever sent to an AI was first turned into a <em class="italic">list of integers.</em></p>
+</section>
+
+<!-- SLIDE 35: PART 7 DIVIDER -->
+<section class="slide section-divider">
+  <div class="eyebrow">Part 07</div>
+  <h1>Images.<br>Songs.<br>Videos.</h1>
+  <p class="lead" style="margin-top: 2rem;">All numbers, all the way down.</p>
+</section>
+
+<!-- SLIDE 36: PIXEL DEMO -->
+<section class="slide">
+  <div class="part-label">Part 07 · Images are grids of numbers</div>
+  <div class="demo-tag">Click any pixel to inspect</div>
+  <h2>Every pixel is <span class="accent">3 numbers.</span></h2>
+  <div class="two-col" style="margin-top: 1rem;">
+    <div>
+      <p class="lead">Red (0 to 255). Green (0 to 255). Blue (0 to 255).</p>
+      <p style="margin-top: 1rem;">Your selfie has roughly 12 million pixels times 3 equals <strong>36 million numbers.</strong></p>
+      <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button class="btn" onclick="window.drawPixels('smile')">Smile</button>
+        <button class="btn secondary" onclick="window.drawPixels('heart')">Heart</button>
+        <button class="btn secondary" onclick="window.drawPixels('arrow')">Arrow</button>
+        <button class="btn secondary" onclick="window.drawPixels('random')">Random</button>
+        <button class="btn secondary" onclick="window.drawPixels('gradient')">Gradient</button>
+      </div>
+      <p id="pixelInfo" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--ink-dim); margin-top: 1rem;">Click a pixel in the grid to see its RGB values.</p>
+      <p id="pixelCoord" class="pixel-coord"></p>
+    </div>
+    <div class="widget">
+      <div class="pixel-grid" id="pixelGrid" style="grid-template-columns: repeat(16, 1fr); width: 100%; aspect-ratio: 1;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 37: AUDIO INTERACTIVE -->
+<section class="slide">
+  <div class="part-label">Part 07 · Sound is numbers over time</div>
+  <div class="demo-tag">Click "Play" to hear it</div>
+  <h2>A song is just <span class="accent-3">16 million numbers</span> read fast.</h2>
+  <div class="two-col" style="margin-top: 1rem;">
+    <div>
+      <ul class="clean">
+        <li>A microphone measures air pressure <strong>44,100 times per second.</strong></li>
+        <li>Each measurement is a number from <strong>-32,768 to +32,767.</strong></li>
+        <li>3 minute song equals roughly 16 million numbers.</li>
+        <li>Spotify just reads them back in order.</li>
+      </ul>
+      <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button class="btn" onclick="window.playTone(440)">Play A (440 Hz)</button>
+        <button class="btn secondary" onclick="window.playTone(261.63)">C</button>
+        <button class="btn secondary" onclick="window.playTone(329.63)">E</button>
+        <button class="btn secondary" onclick="window.playTone(392)">G</button>
+        <button class="btn secondary" onclick="window.playChord()">Chord</button>
+      </div>
+      <p id="audioInfo" style="margin-top: 1rem; font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--ink-dim);">Click a note. The numbers below are real audio samples being computed live.</p>
+    </div>
+    <div class="widget">
+      <h4>Air pressure → samples → numbers</h4>
+      <canvas id="soundCanvas" class="sound-wave"></canvas>
+      <p id="audioSamples" style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--accent-2); word-break: break-all; max-height: 60px; overflow: hidden;">[ ... ]</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 38: VIDEO -->
+<section class="slide">
+  <div class="part-label">Part 07 · Video is images × time</div>
+  <h2>A movie is <span class="accent">billions of numbers.</span></h2>
+  <div class="three-col" style="margin-top: 2rem;">
+    <div class="widget">
+      <h4>Per frame</h4>
+      <p style="font-size: 2.5rem; font-family: 'Fraunces', serif; font-weight: 900; color: var(--accent-2);">6 million</p>
+      <p style="color: var(--ink-dim);">numbers (HD: 1920 × 1080 × 3)</p>
+    </div>
+    <div class="widget">
+      <h4>Per second (30 fps)</h4>
+      <p style="font-size: 2.5rem; font-family: 'Fraunces', serif; font-weight: 900; color: var(--accent-2);">180 million</p>
+      <p style="color: var(--ink-dim);">numbers</p>
+    </div>
+    <div class="widget">
+      <h4>Per 2 hour film</h4>
+      <p style="font-size: 2.5rem; font-family: 'Fraunces', serif; font-weight: 900; color: var(--accent-2);">1.3 trillion</p>
+      <p style="color: var(--ink-dim);">numbers (uncompressed)</p>
+    </div>
+  </div>
+  <div class="callout" style="margin-top: 2rem;">
+    Codecs like MP4 and H.264 are the art of <em class="italic">predicting</em> the next numbers so you do not have to store all of them.
+  </div>
+</section>
+
+<!-- SLIDE 39: FILE EXPLORER GAME -->
+<section class="slide">
+  <div class="part-label">Part 07 · Putting it together</div>
+  <div class="demo-tag">Quick quiz</div>
+  <h2>How is <span class="accent-2">this</span> stored as numbers?</h2>
+  <p class="lead">Click the answer for each.</p>
+  <div class="widget" style="margin-top: 1rem;" id="quizArea">
+    <div id="quizQuestion" style="font-size: 1.5rem; margin-bottom: 1rem;"></div>
+    <div id="quizOptions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+    <p id="quizFeedback" style="margin-top: 1rem; font-family: 'Space Mono', monospace; font-size: 0.95rem; min-height: 1.5rem;"></p>
+    <p id="quizScore" style="margin-top: 0.5rem; color: var(--ink-dim); font-family: 'Space Mono', monospace; font-size: 0.85rem;">Score: 0</p>
+  </div>
+</section>
+
+<!-- SLIDE 40: PUNCHLINE -->
+<section class="slide finale">
+  <h2 style="font-size: clamp(1.5rem, 3vw, 2.4rem); color: var(--ink-dim); max-width: 80ch;">Photos. Songs. Texts. Videos. Faces on video calls. ChatGPT. The Mona Lisa as a JPEG.</h2>
+  <h1 style="margin-top: 2rem;">All of it.<br><span class="accent">Just numbers.</span></h1>
+</section>
+
+<!-- SLIDE 41: CLOSING -->
+<section class="slide">
+  <div class="part-label">Closing · 5 min</div>
+  <h2>Why this matters for <span class="accent-3">you.</span></h2>
+  <ul class="clean" style="margin-top: 2rem; max-width: 75ch;">
+    <li><strong>Every feature of your phone</strong> is clever ways to push numbers around. Faster GPU equals more number crunching per second.</li>
+    <li><strong>Every bug is a number bug at heart.</strong> Patriot (decimal precision), Ariane (overflow), Pentium (lookup table), Telugu (encoding edge case), Y2K (only 2 digits for year).</li>
+    <li><strong>Every new field,</strong> AI, VR, blockchain, quantum, starts by asking: <em class="italic accent-2">"how do we represent THIS as numbers?"</em></li>
+  </ul>
+  <div class="callout" style="margin-top: 2rem;">
+    <strong>Tonight's challenge:</strong> Pick anything you love, a song, a meme, a video, and ask: <em class="italic">"How would I store this as numbers?"</em><br>If you can answer that, you can build it.
+  </div>
+</section>
+
+<!-- SLIDE 42: FINALE -->
+<section class="slide finale">
+  <h1>Everything<br><span class="accent">is a number.</span></h1>
+  <p class="lead" style="margin-top: 2rem; opacity: 0.7;">Questions?</p>
+</section>
+
+</div>
+
+<div class="nav">
+  <button id="prev">←</button>
+  <span class="counter"><span id="cur">1</span> / <span id="total">1</span></span>
+  <button id="next">→</button>
+</div>
+
+<div class="kbd-hint">
+  <span class="kbd">←</span> <span class="kbd">→</span> navigate &nbsp; · &nbsp;
+  <span class="kbd">F</span> fullscreen
+</div>
+
+<script>
+  // ============== NAVIGATION ==============
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let current = 0;
+  document.getElementById('total').textContent = totalSlides;
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= totalSlides) return;
+    slides[current].classList.remove('active');
+    current = idx;
+    slides[current].classList.add('active');
+    document.getElementById('cur').textContent = current + 1;
+    document.getElementById('progress').style.width = ((current + 1) / totalSlides * 100) + '%';
+
+    // Re-init widgets when their slide becomes active
+    if (slides[current].querySelector('#pixelGrid')) initPixelGrid();
+    if (slides[current].querySelector('#wheelNumbers')) initWheel();
+    if (slides[current].querySelector('#soundCanvas')) initSoundCanvas();
+    if (slides[current].querySelector('#quizArea')) initQuiz();
+  }
+
+  document.getElementById('next').onclick = () => goTo(current + 1);
+  document.getElementById('prev').onclick = () => goTo(current - 1);
+
+  document.addEventListener('keydown', (e) => {
+    // Don't intercept arrow keys when typing in an input
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      if (e.key === 'Escape') e.target.blur();
+      return;
+    }
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); goTo(current + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goTo(current - 1); }
+    else if (e.key === 'Home') goTo(0);
+    else if (e.key === 'End') goTo(totalSlides - 1);
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  // ============== TITLE BG NUMBERS ==============
+  (function fillBgNumbers() {
+    const el = document.getElementById('bgNumbers');
+    if (!el) return;
+    let s = '';
+    for (let i = 0; i < 4000; i++) s += Math.random() < 0.5 ? '0 ' : '1 ';
+    el.textContent = s;
+  })();
+
+  // ============== BINARY COUNTER ==============
+  const bits = document.querySelectorAll('#binaryBits .bit');
+  const decimalOut = document.getElementById('binaryDecimal');
+  const asciiOut = document.getElementById('binaryAscii');
+
+  function updateBinary() {
+    let total = 0;
+    bits.forEach(b => {
+      if (b.classList.contains('on')) total += parseInt(b.dataset.value);
+    });
+    decimalOut.textContent = total;
+    // ASCII printable range
+    if (total >= 32 && total <= 126) asciiOut.textContent = "'" + String.fromCharCode(total) + "'";
+    else if (total >= 0 && total <= 31) asciiOut.textContent = '(control)';
+    else asciiOut.textContent = '·';
+  }
+
+  bits.forEach(b => {
+    b.addEventListener('click', () => {
+      b.classList.toggle('on');
+      b.textContent = b.classList.contains('on') ? '1' : '0';
+      updateBinary();
+    });
+  });
+
+  window.setBinary = function(val) {
+    val = val & 0xFF;
+    bits.forEach(b => {
+      const v = parseInt(b.dataset.value);
+      const on = (val & v) !== 0;
+      b.classList.toggle('on', on);
+      b.textContent = on ? '1' : '0';
+    });
+    updateBinary();
+  };
+
+  // ============== BINARY SHIFT ==============
+  let shiftVal = 5;
+  function updateShift(msg) {
+    shiftVal = shiftVal & 0xFF;
+    document.getElementById('shiftDecimal').textContent = shiftVal;
+    document.getElementById('shiftBinary').textContent = shiftVal.toString(2).padStart(8, '0');
+    if (msg) document.getElementById('shiftLog').textContent = msg;
+  }
+  window.shift = function(dir) {
+    if (dir === 'left') {
+      const before = shiftVal;
+      shiftVal = (shiftVal << 1) & 0xFF;
+      updateShift(before + ' shifted left becomes ' + shiftVal + ' (that is ' + before + ' × 2)');
+    } else {
+      const before = shiftVal;
+      shiftVal = shiftVal >> 1;
+      updateShift(before + ' shifted right becomes ' + shiftVal + ' (that is ' + before + ' ÷ 2)');
+    }
+  };
+  window.shiftReset = function() {
+    shiftVal = 5;
+    updateShift('Reset to 5.');
+  };
+
+  // ============== TWO'S COMPLEMENT INPUT ==============
+  window.computeTwos = function() {
+    const input = document.getElementById('twosInput');
+    let val = parseInt(input.value);
+    if (isNaN(val)) val = 0;
+    if (val > 127) val = 127;
+    if (val < -128) val = -128;
+
+    const unsigned = val < 0 ? (val + 256) : val;
+    const bin = unsigned.toString(2).padStart(8, '0');
+
+    let html = '';
+    if (val >= 0) {
+      html = `+${val} = <code>${bin}</code> <span style="color: var(--ink-dim);">(direct)</span>`;
+    } else {
+      const posBin = (-val).toString(2).padStart(8, '0');
+      const flipped = posBin.split('').map(b => b === '0' ? '1' : '0').join('');
+      html = `
+        +${-val} = <code>${posBin}</code><br>
+        flip = <code>${flipped}</code><br>
+        add 1 = <code>${bin}</code> = <span class="accent-3">${val}</span>
+      `;
+    }
+    document.getElementById('twosOutput').innerHTML = html;
+  };
+
+  // ============== TWO'S COMPLEMENT WHEEL ==============
+  let wheelVal = 0;
+  let wheelInited = false;
+
+  function initWheel() {
+    if (wheelInited) return;
+    const g = document.getElementById('wheelNumbers');
+    if (!g) return;
+    const order = [0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1];
+    const cx = 200, cy = 200, r = 180;
+    order.forEach((n, i) => {
+      const angle = (i / 16) * 2 * Math.PI - Math.PI/2;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r + 5;
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t.setAttribute('x', x);
+      t.setAttribute('y', y);
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('fill', n < 0 ? '#ff5e3a' : '#06d6a0');
+      t.textContent = n;
+      g.appendChild(t);
+    });
+    wheelInited = true;
+    updateWheel();
+  }
+
+  function updateWheel() {
+    while (wheelVal > 7) wheelVal -= 16;
+    while (wheelVal < -8) wheelVal += 16;
+
+    const order = [0,1,2,3,4,5,6,7,-8,-7,-6,-5,-4,-3,-2,-1];
+    const idx = order.indexOf(wheelVal);
+    const angle = (idx / 16) * 2 * Math.PI - Math.PI/2;
+    const cx = 200, cy = 200, r = 160;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+
+    const dot = document.getElementById('wheelDot');
+    if (dot) { dot.setAttribute('cx', x); dot.setAttribute('cy', y); }
+
+    document.getElementById('wheelValue').textContent = wheelVal;
+    const bin = ((wheelVal % 16) + 16) % 16;
+    document.getElementById('wheelBinary').textContent = bin.toString(2).padStart(4, '0');
+  }
+
+  window.wheelStep = function(d) { wheelVal += d; updateWheel(); };
+  window.wheelReset = function() { wheelVal = 0; updateWheel(); };
+
+  // ============== FLOATING POINT ==============
+  window.computeFloat = function() {
+    const a = parseFloat(document.getElementById('numA').value);
+    const b = parseFloat(document.getElementById('numB').value);
+    const result = a + b;
+    const el = document.getElementById('floatResult');
+    el.textContent = result.toPrecision(20).replace(/0+$/, '0');
+    // "expected" by simple decimal addition
+    const dpA = (a.toString().split('.')[1] || '').length;
+    const dpB = (b.toString().split('.')[1] || '').length;
+    const dp = Math.max(dpA, dpB);
+    const expected = parseFloat(((a * Math.pow(10, dp) + b * Math.pow(10, dp)) / Math.pow(10, dp)).toFixed(dp));
+    const isWrong = result !== expected;
+    el.classList.toggle('wrong', isWrong);
+    document.getElementById('floatEquals').textContent = (result === expected) ? 'true ✓' : 'false ✗';
+    document.getElementById('floatEquals').style.color = (result === expected) ? 'var(--accent-3)' : 'var(--accent)';
+  };
+
+  window.tryFloat = function(...nums) {
+    if (nums.length === 2) {
+      document.getElementById('numA').value = nums[0];
+      document.getElementById('numB').value = nums[1];
+      window.computeFloat();
+    } else {
+      // For more than 2 numbers, sum them
+      const sum = nums.reduce((a,b) => a+b, 0);
+      const el = document.getElementById('floatResult');
+      el.textContent = nums.join(' + ') + ' = ' + sum.toPrecision(20).replace(/0+$/, '0');
+      el.classList.add('wrong');
+    }
+  };
+
+  // ============== ASCII DEMO ==============
+  window.updateAscii = function() {
+    const input = document.getElementById('asciiInput');
+    const out = document.getElementById('asciiOutput');
+    if (!input || !out) return;
+    out.innerHTML = '';
+    for (const ch of input.value) {
+      const code = ch.charCodeAt(0);
+      const bin = code.toString(2).padStart(8, '0');
+      const cell = document.createElement('div');
+      cell.className = 'ascii-cell';
+      cell.innerHTML = `
+        <div class="ch">${ch === ' ' ? '␣' : ch}</div>
+        <div class="num">${code}</div>
+        <div class="bin">${bin}</div>
+      `;
+      out.appendChild(cell);
+    }
+  };
+
+  // ============== UNICODE CELLS ==============
+  document.querySelectorAll('.uni-cell').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const name = cell.dataset.name;
+      const cp = cell.dataset.cp;
+      const glyph = cell.querySelector('.glyph').textContent;
+      const info = document.getElementById('uniInfo');
+      if (info) {
+        info.innerHTML = `<strong style="color: var(--accent-2);">${glyph}</strong> &nbsp; ${name} &nbsp; · &nbsp; Unicode codepoint: <span style="color: var(--accent-3);">U+${cp}</span> &nbsp; · &nbsp; Decimal: <span style="color: var(--accent-3);">${parseInt(cp.split('-')[0], 16)}</span>`;
+      }
+    });
+  });
+
+  // ============== UNICODE TYPING ==============
+  window.updateUnicodeBreakdown = function() {
+    const input = document.getElementById('unicodeInput');
+    const out = document.getElementById('unicodeOutput');
+    if (!input || !out) return;
+    out.innerHTML = '';
+    // Use Array.from to handle multi-codepoint emoji correctly
+    const chars = Array.from(input.value);
+    chars.forEach(ch => {
+      const cp = ch.codePointAt(0);
+      const hex = cp.toString(16).toUpperCase().padStart(4, '0');
+      const cell = document.createElement('div');
+      cell.className = 'ascii-cell';
+      cell.style.minWidth = '70px';
+      cell.innerHTML = `
+        <div class="ch" style="font-size: 1.6rem;">${ch === ' ' ? '␣' : ch}</div>
+        <div class="num">U+${hex}</div>
+        <div class="bin">${cp}</div>
+      `;
+      out.appendChild(cell);
+    });
+  };
+
+  // ============== TOKENIZER ==============
+  function tokenize(text) {
+    if (!text) return [];
+    const re = /\s+|[a-zA-Z]+|[^\sa-zA-Z]+/g;
+    const matches = text.match(re) || [];
+    const tokens = [];
+    for (const m of matches) {
+      if (/^[a-zA-Z]+$/.test(m) && m.length > 5) {
+        const breaks = ['ing','ation','ize','ization','tion','er','ed','ly','ness','able','ible'];
+        let remaining = m;
+        let parts = [];
+        while (remaining.length > 0) {
+          let matched = false;
+          for (const b of breaks) {
+            if (remaining.toLowerCase().endsWith(b) && remaining.length > b.length) {
+              parts.unshift(remaining.slice(-b.length));
+              remaining = remaining.slice(0, -b.length);
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) { parts.unshift(remaining); break; }
+        }
+        tokens.push(...parts);
+      } else {
+        tokens.push(m);
+      }
+    }
+    return tokens;
+  }
+
+  function hashToId(s) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    return Math.abs(h) % 100000;
+  }
+
+  window.updateTokens = function() {
+    const input = document.getElementById('tokenInput');
+    const out = document.getElementById('tokenOutput');
+    const count = document.getElementById('tokenCount');
+    if (!input || !out) return;
+    const toks = tokenize(input.value);
+    out.innerHTML = '';
+    toks.forEach((t, i) => {
+      if (/^\s+$/.test(t)) {
+        out.appendChild(document.createTextNode(' '));
+        return;
+      }
+      const span = document.createElement('span');
+      span.className = `token token-${i % 4}`;
+      span.textContent = `${t} · ${hashToId(t)}`;
+      out.appendChild(span);
+    });
+    count.textContent = `${toks.filter(t => !/^\s+$/.test(t)).length} tokens · each becomes an integer for the AI`;
+  };
+
+  // ============== PIXEL GRID ==============
+  const GRID = 16;
+  let pixelInited = false;
+  let pixelData = [];
+
+  function initPixelGrid() {
+    if (pixelInited) return;
+    const grid = document.getElementById('pixelGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        const div = document.createElement('div');
+        div.className = 'pixel';
+        div.style.background = 'rgb(10,10,10)';
+        div.dataset.x = x;
+        div.dataset.y = y;
+        div.addEventListener('click', () => {
+          const rgb = pixelData[y * GRID + x] || [10,10,10];
+          const coord = document.getElementById('pixelCoord');
+          if (coord) coord.innerHTML = `Pixel (${x}, ${y}) = RGB(<span style="color: #ff5e3a;">${rgb[0]}</span>, <span style="color: #06d6a0;">${rgb[1]}</span>, <span style="color: #4ea8de;">${rgb[2]}</span>) → that is 3 numbers!`;
+        });
+        grid.appendChild(div);
+      }
+    }
+    pixelInited = true;
+    window.drawPixels('smile');
+  }
+
+  function getPattern(name) {
+    const grid = Array(GRID).fill().map(() => Array(GRID).fill([10,10,10]));
+    if (name === 'smile') {
+      for (let y = 0; y < GRID; y++) {
+        for (let x = 0; x < GRID; x++) {
+          const dx = x - 7.5, dy = y - 7.5;
+          const d = Math.sqrt(dx*dx + dy*dy);
+          if (d < 7.5 && d > 6) grid[y][x] = [255, 210, 63];
+          else if (d < 7) grid[y][x] = [255, 94, 58];
+        }
+      }
+      grid[5][5] = [10,10,10]; grid[5][10] = [10,10,10];
+      grid[6][5] = [10,10,10]; grid[6][10] = [10,10,10];
+      for (let x = 5; x <= 10; x++) {
+        const dx = x - 7.5;
+        const y = Math.round(10 + 0.4*dx*dx*0.5);
+        if (y < GRID) grid[y][x] = [10,10,10];
+      }
+      grid[11][5] = [10,10,10]; grid[11][10] = [10,10,10];
+    } else if (name === 'heart') {
+      const pat = [
+        "0011001100110000",
+        "0111111111111100",
+        "1111111111111110",
+        "1111111111111110",
+        "1111111111111110",
+        "0111111111111100",
+        "0011111111111000",
+        "0001111111110000",
+        "0000111111100000",
+        "0000011111000000",
+        "0000001110000000",
+        "0000000100000000",
+        "0000000000000000",
+        "0000000000000000",
+        "0000000000000000",
+        "0000000000000000",
+      ];
+      for (let y = 0; y < GRID; y++)
+        for (let x = 0; x < GRID; x++)
+          grid[y][x] = pat[y].charAt(x) === '1' ? [255, 94, 58] : [10,10,10];
+    } else if (name === 'arrow') {
+      const pat = [
+        "0000000110000000",
+        "0000001111000000",
+        "0000011111100000",
+        "0000111111110000",
+        "0001111111111000",
+        "0011111111111100",
+        "0111111111111110",
+        "1111111111111111",
+        "0000011111100000",
+        "0000011111100000",
+        "0000011111100000",
+        "0000011111100000",
+        "0000011111100000",
+        "0000011111100000",
+        "0000011111100000",
+        "0000011111100000",
+      ];
+      for (let y = 0; y < GRID; y++)
+        for (let x = 0; x < GRID; x++)
+          grid[y][x] = pat[y].charAt(x) === '1' ? [6, 214, 160] : [10,10,10];
+    } else if (name === 'random') {
+      for (let y = 0; y < GRID; y++)
+        for (let x = 0; x < GRID; x++) {
+          grid[y][x] = [
+            Math.floor(Math.random()*255),
+            Math.floor(Math.random()*255),
+            Math.floor(Math.random()*255),
+          ];
+        }
+    } else if (name === 'gradient') {
+      for (let y = 0; y < GRID; y++)
+        for (let x = 0; x < GRID; x++) {
+          grid[y][x] = [
+            Math.floor(255 * x / 15),
+            Math.floor(255 * y / 15),
+            Math.floor(255 * (1 - x/15)),
+          ];
+        }
+    }
+    return grid;
+  }
+
+  window.drawPixels = function(name) {
+    initPixelGrid();
+    const grid = document.getElementById('pixelGrid');
+    if (!grid) return;
+    const pat = getPattern(name);
+    const cells = grid.querySelectorAll('.pixel');
+    pixelData = [];
+    let i = 0;
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        const [r, g, b] = pat[y][x];
+        cells[i].style.background = `rgb(${r},${g},${b})`;
+        pixelData.push([r, g, b]);
+        i++;
+      }
+    }
+    const info = document.getElementById('pixelInfo');
+    if (info) info.textContent = '16 × 16 = 256 cells. Each cell stores 3 numbers (RGB). Total: 768 numbers in this image.';
+    const coord = document.getElementById('pixelCoord');
+    if (coord) coord.textContent = '';
+  };
+
+  // ============== AUDIO ==============
+  let audioCtx;
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  function drawWave(freq) {
+    const canvas = document.getElementById('soundCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth * 2;
+    canvas.height = canvas.offsetHeight * 2;
+    ctx.scale(2, 2);
+    const w = canvas.offsetWidth, h = canvas.offsetHeight;
+    ctx.clearRect(0, 0, w, h);
+
+    // Wave
+    ctx.strokeStyle = '#06d6a0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const cycles = freq / 100;
+    for (let x = 0; x < w; x++) {
+      const t = (x / w) * cycles * 2 * Math.PI;
+      const y = h/2 + Math.sin(t) * (h/2 - 10);
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Samples
+    ctx.fillStyle = '#ffd23f';
+    const samples = [];
+    for (let i = 0; i < 16; i++) {
+      const x = (i / 16) * w;
+      const t = (i / 16) * cycles * 2 * Math.PI;
+      const sampleVal = Math.sin(t);
+      const y = h/2 + sampleVal * (h/2 - 10);
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, 2*Math.PI);
+      ctx.fill();
+      samples.push(Math.round(sampleVal * 32767));
+    }
+
+    const samplesEl = document.getElementById('audioSamples');
+    if (samplesEl) {
+      samplesEl.textContent = '[ ' + samples.slice(0, 10).join(', ') + ', ... ]';
+    }
+  }
+
+  function initSoundCanvas() {
+    drawWave(440);
+  }
+
+  window.playTone = function(freq) {
+    try {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.8);
+      drawWave(freq);
+      const info = document.getElementById('audioInfo');
+      if (info) info.textContent = `Playing ${freq} Hz. That means ${freq} waves per second. Numbers being computed: 44,100 per second.`;
+    } catch(e) { console.warn(e); }
+  };
+
+  window.playChord = function() {
+    [261.63, 329.63, 392].forEach(f => window.playTone(f));
+    const info = document.getElementById('audioInfo');
+    if (info) info.textContent = 'C major chord. Three waves added together, all encoded as numbers, all coming out of one speaker.';
+  };
+
+  // ============== QUIZ ==============
+  const quizData = [
+    { q: "📸 A 16×16 pixel emoji uses how many numbers?", opts: ["16", "256", "768", "1024"], a: 2, exp: "256 pixels × 3 (R, G, B) = 768 numbers." },
+    { q: "🎵 A 3 minute song at CD quality uses about how many numbers?", opts: ["1 thousand", "16 thousand", "16 million", "16 billion"], a: 2, exp: "44,100 samples per second × 180 seconds × 2 channels ≈ 16 million numbers." },
+    { q: "💬 The letter 'A' in ASCII is the number...", opts: ["32", "48", "65", "97"], a: 2, exp: "'A' is 65. 'a' is 97. Capital first." },
+    { q: "🔥 The fire emoji 🔥 is Unicode...", opts: ["U+0041", "U+1F525", "U+0915", "U+4E2D"], a: 1, exp: "U+1F525, in the emoji block." },
+    { q: "🚀 A 2 hour HD movie (uncompressed) is how many numbers?", opts: ["1 million", "1 billion", "1 trillion", "1 quadrillion"], a: 2, exp: "Roughly 1.3 trillion numbers. Compression saves us." },
+  ];
+  let quizIdx = 0, quizScore = 0, quizInited = false;
+
+  function initQuiz() {
+    if (quizInited) return;
+    quizInited = true;
+    showQuizQ();
+  }
+
+  function showQuizQ() {
+    const q = quizData[quizIdx];
+    document.getElementById('quizQuestion').textContent = q.q;
+    const opts = document.getElementById('quizOptions');
+    opts.innerHTML = '';
+    q.opts.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'btn secondary';
+      btn.textContent = opt;
+      btn.onclick = () => answerQuiz(i);
+      opts.appendChild(btn);
+    });
+    document.getElementById('quizFeedback').textContent = '';
+  }
+
+  function answerQuiz(i) {
+    const q = quizData[quizIdx];
+    const fb = document.getElementById('quizFeedback');
+    if (i === q.a) {
+      fb.innerHTML = `<span style="color: var(--accent-3);">✓ Correct!</span> ${q.exp}`;
+      quizScore++;
+    } else {
+      fb.innerHTML = `<span style="color: var(--accent);">✗ Not quite.</span> ${q.exp}`;
+    }
+    document.getElementById('quizScore').textContent = `Score: ${quizScore} / ${quizIdx + 1}`;
+    // disable buttons
+    document.querySelectorAll('#quizOptions .btn').forEach((b, j) => {
+      b.disabled = true;
+      if (j === q.a) b.style.background = 'var(--accent-3)';
+      else if (j === i) b.style.background = 'var(--accent)';
+    });
+    // next after delay
+    setTimeout(() => {
+      quizIdx = (quizIdx + 1) % quizData.length;
+      if (quizIdx === 0) {
+        // finished
+        document.getElementById('quizQuestion').textContent = `Done! Final score: ${quizScore} / ${quizData.length}`;
+        document.getElementById('quizOptions').innerHTML = '<button class="btn" onclick="window.resetQuiz()">Play again</button>';
+        document.getElementById('quizFeedback').textContent = quizScore === quizData.length ? 'Perfect. You see the world differently now.' : 'Not bad. Now you see how numbers underlie everything.';
+      } else {
+        showQuizQ();
+      }
+    }, 2500);
+  }
+
+  window.resetQuiz = function() {
+    quizIdx = 0;
+    quizScore = 0;
+    document.getElementById('quizScore').textContent = 'Score: 0';
+    showQuizQ();
+  };
+
+  // ============== INIT ==============
+  window.updateAscii();
+  window.updateUnicodeBreakdown();
+  window.updateTokens();
+  window.computeTwos();
+  updateBinary();
+  updateShift();
+</script>
+</body>
+</html>
