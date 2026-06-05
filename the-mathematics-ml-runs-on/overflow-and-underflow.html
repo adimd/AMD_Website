@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>When a Number Isn't Equal to Itself | The Mathematics ML Runs On</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#f4efe7;--body:#cbc4b9;--muted:#9e968a;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.016;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.22rem;color:var(--body);font-weight:400;margin-bottom:2.2rem;line-height:1.62}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.19rem;font-weight:400;margin-bottom:1.35rem;line-height:1.8}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.93em;background:rgba(232,168,76,.15);padding:.2rem .48rem;border-radius:4px;color:#f1dcb2;font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.15rem;font-weight:400;margin:.4rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:1rem;color:#bcb5a8;margin-top:1.1rem;font-style:italic;line-height:1.72}
+
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+  <style>
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.6rem 0;overflow-x:auto;font-family:'Courier New',monospace;font-size:.92rem;line-height:1.75;color:var(--body);white-space:pre}
+    .codeblock .cmt{color:var(--muted)}
+    .codeblock .out{color:var(--green)}
+    .codeblock .kw{color:var(--blue)}
+
+    .preset-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.2rem}
+    .preset-btn{padding:.4rem .85rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:'Courier New',monospace}
+    .preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+    .dc-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.8rem}
+    .dc-row .lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);min-width:108px}
+    .dc-slider{flex:1;min-width:200px;accent-color:var(--accent)}
+    .dc-toggle{display:flex;gap:.5rem}
+    .dc-tbtn{padding:.4rem .9rem;border-radius:999px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--body);cursor:pointer;font-size:.85rem;font-family:'Courier New',monospace}
+    .dc-tbtn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+    .dc-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;margin-top:1rem}
+    .dc-cat{font-size:1.5rem;font-weight:500;font-family:'Courier New',monospace;color:var(--ink);margin-bottom:8px}
+    .dc-stat{font-size:1rem;color:var(--muted);margin:7px 0;line-height:1.55}
+    .dc-stat b{color:var(--ink);font-weight:500;font-family:'Courier New',monospace}
+    .dc-bits{font-family:'Courier New',monospace;font-size:1.05rem;letter-spacing:1px;margin-top:.7rem;word-break:break-all}
+    .dc-bits .sgn{color:var(--red)} .dc-bits .exp{color:var(--blue)} .dc-bits .man{color:var(--green)}
+
+    .ol-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;margin-top:1rem}
+    .ol-op{font-size:1.3rem;font-family:'Courier New',monospace;color:var(--ink);margin-bottom:8px}
+    .ol-res{font-size:1.5rem;font-weight:500;font-family:'Courier New',monospace;margin-bottom:10px}
+    .ol-cat{display:inline-block;padding:.3rem .8rem;border-radius:999px;font-size:.82rem;font-weight:500;margin-bottom:.7rem}
+    .ol-stat{font-size:1rem;color:var(--muted);margin:7px 0;line-height:1.5}
+    .ol-stat b{color:var(--ink);font-weight:500;font-family:'Courier New',monospace}
+
+    .rp-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+    .rp-row .lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+    .rp-slider{flex:1;min-width:220px;accent-color:var(--accent)}
+    .rp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;margin-top:1rem}
+    .rp-mag{font-size:1.35rem;font-weight:500;font-family:'Courier New',monospace;color:var(--ink);margin-bottom:10px}
+    .rp-stat{font-size:1rem;color:var(--muted);margin:8px 0;line-height:1.55}
+    .rp-stat b{color:var(--ink);font-weight:500;font-family:'Courier New',monospace}
+    .rp-barlbl{font-size:.85rem;color:var(--muted);margin-top:.7rem}
+    .rp-bar{height:18px;background:var(--bg-elevated);border-radius:6px;overflow:hidden;margin-top:.3rem}
+    .rp-fill{height:100%;border-radius:6px;background:var(--green);transition:width .15s}
+
+    .quiz-progress{font-family:'Courier New',monospace;font-size:.95rem;color:var(--accent);margin-bottom:1.2rem;letter-spacing:.02em}
+    .quiz-q{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.3rem 1.4rem;margin-bottom:1.1rem}
+    .quiz-q-text{font-size:1.12rem;color:var(--ink);font-weight:500;margin-bottom:1rem;line-height:1.5}
+    .quiz-q-num{color:var(--accent);font-family:'Courier New',monospace;margin-right:.5rem}
+    .quiz-opt{display:block;width:100%;text-align:left;padding:.75rem 1rem;margin:.5rem 0;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);font-family:inherit;font-size:1.04rem;cursor:pointer;transition:all .18s;line-height:1.45}
+    .quiz-opt:hover:not(:disabled){border-color:var(--accent);color:var(--ink)}
+    .quiz-opt:disabled{cursor:default}
+    .quiz-opt.correct{background:var(--green-dim);border-color:rgba(127,255,107,.5);color:var(--ink)}
+    .quiz-opt.wrong{background:var(--red-dim);border-color:rgba(255,107,107,.5);color:var(--ink)}
+    .quiz-opt .mk{float:right;font-weight:700;margin-left:.6rem}
+    .quiz-opt.correct .mk{color:var(--green)}
+    .quiz-opt.wrong .mk{color:var(--red)}
+    .quiz-explain{margin-top:.8rem;padding:.85rem 1.1rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.62;display:none}
+    .quiz-explain.show{display:block;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .quiz-final{margin-top:1.3rem;padding:1.2rem 1.4rem;border-radius:10px;background:var(--bg-card);border:1px solid var(--accent);font-family:var(--display);font-size:1.4rem;color:var(--ink);text-align:center;display:none}
+    .quiz-final.show{display:block;animation:rise .4s cubic-bezier(.22,1,.36,1) both}
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk &#9662;</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+  <span class="series-tag"><span class="series-dot"></span>The Mathematics ML Runs On &middot; Class 4</span>
+  <h1>When a Number Isn't Equal to Itself</h1>
+  <p class="blog-subtitle">Multiply two big numbers and the answer comes back as infinity. Divide zero by zero and you get something that isn't even equal to itself. The number line has a top and a bottom, and strange things live at both ends. Let's go out and have a look.</p>
+
+  <h2>Two things a computer shouldn't be able to do</h2>
+
+  <p>Let me show you two short programs. I want you to notice that both of them print something that, by any arithmetic you learned in school, should be impossible.</p>
+
+  <div class="codeblock"><span class="kw">float</span> big = 3.0e38f;
+printf(<span class="out">"%f\n"</span>, big * 2);        <span class="cmt">// inf</span>
+<span class="kw">float</span> z = 0.0f;
+printf(<span class="out">"%f\n"</span>, z / z);           <span class="cmt">// nan</span>
+printf(<span class="out">"%d\n"</span>, (z/z) == (z/z)); <span class="cmt">// 0</span></div>
+
+  <p>The first one took a big number, doubled it, and got back <code>inf</code>. Not a bigger number. Infinity. The second divided zero by zero and got <code>nan</code>, and then, stranger still, when we asked whether that result equals itself, the machine said no.</p>
+
+  <p>Back in Class 3 we learned what the machine does when an answer falls between two representable numbers. It rounds to the nearer one. But neither of these answers fell between anything. They ran clean off the ends of the number line. And it turns out the line has two ends, a top and a bottom, and both behave strangely once you reach them. So let's walk out to each edge and see what's actually there.</p>
+
+  <hr class="sep">
+
+  <h2>Where do these strange values even come from?</h2>
+
+  <p>Before we go to the edges, there's one question everything else hangs on. Remember the formula a normal float obeys: <code>value = (-1)<sup>sign</sup> &times; 1.mantissa &times; 2<sup>(E-127)</sup></code>, where <code>E</code> is the 8-bit exponent, a whole number somewhere from 0 to 255. Sit with that formula for a moment, because there are two things it simply cannot do, no matter which bits you hand it.</p>
+
+  <p>It can never give you zero. The significand <code>1.m</code> always starts with that hidden 1, so it is at least 1, and two raised to any power is never zero, so the whole thing is always a bit more than nothing. Zero is unreachable. And it can't stretch on forever either, because <code>E</code> is only 8 bits wide, so the exponent runs out at both ends.</p>
+
+  <p>So the format needs an escape hatch, and here is the part I find genuinely elegant. It builds both hatches out of a single move. It takes the two most extreme exponent codes, <code>00000000</code> and <code>11111111</code>, and quietly pulls them out of the pool of ordinary numbers, holding them back for special meanings. That one decision pays off twice. The normal numbers now use only codes 1 through 254, which is exactly why the real exponent stops at <code>1 - 127 = -126</code> at the bottom and <code>254 - 127 = +127</code> at the top, the range we have been quoting since Class 2. And the two codes we set aside are now free to mean zero, the tiny numbers near zero, infinity, and that not-a-number value. The reach of the ordinary numbers and the existence of the strange ones turn out to be the same decision.</p>
+
+  <p>Don't take my word for it. Drag the exponent code below from one end to the other, and watch the meaning of the number change the instant you hit either extreme.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Drag the exponent code and watch what the number becomes</span></div>
+    <div class="viz-body">
+      <div class="dc-row">
+        <span class="lbl">Exponent code E</span>
+        <input type="range" id="dcExp" class="dc-slider" min="0" max="255" value="127">
+      </div>
+      <div class="dc-row">
+        <span class="lbl">Mantissa</span>
+        <div class="dc-toggle">
+          <button type="button" class="dc-tbtn on" id="dcM0">all zero</button>
+          <button type="button" class="dc-tbtn" id="dcMn">nonzero</button>
+        </div>
+      </div>
+      <div class="dc-card">
+        <div class="dc-cat" id="dcCat"></div>
+        <div class="dc-stat" id="dcStat1"></div>
+        <div class="dc-stat" id="dcStat2"></div>
+        <div class="dc-bits" id="dcBits"></div>
+      </div>
+      <p class="viz-note">Everything in the middle is an ordinary number. Slide to the very left and the very right, the two codes we reserved, and watch the special values appear.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The lay of the land</h2>
+
+  <p>Here is the whole number line that decision produces. The largest finite value a float can hold is the biggest possible significand, just under 2, times the biggest scale, <code>2<sup>127</sup></code>, and that works out to about <code>3.4 &times; 10<sup>38</sup></code>. The smallest ordinary value is <code>2<sup>-126</sup></code>. Push above the top and you overflow. Sink below the bottom and you underflow. Let's take the top first.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Two edges, one soft and one hard</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 168" role="img" aria-label="From zero: a subnormal ramp up to the smallest normal at 2 to the minus 126, then normal numbers up to 3.4e38, then overflow to infinity.">
+        <text x="340" y="28" text-anchor="middle" style="font:14px 'Source Sans 3',sans-serif;fill:#cbc4b9">the territory: two edges, one soft and one hard</text>
+        <polygon points="160,86 160,112 70,99" fill="#0F6E56" opacity="0.45"/>
+        <rect x="160" y="86" width="360" height="26" fill="#5F5E5A" opacity="0.5"/>
+        <rect x="520" y="86" width="90" height="26" fill="#993C1D" opacity="0.5"/>
+        <line x1="160" y1="84" x2="160" y2="114" stroke="#9e968a" stroke-width="0.5"/>
+        <line x1="520" y1="84" x2="520" y2="114" stroke="#9e968a" stroke-width="0.5"/>
+        <text x="118" y="74" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#7fff6b">subnormals (ramp)</text>
+        <text x="340" y="74" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#cbc4b9">normal numbers</text>
+        <text x="565" y="74" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#ff6b6b">overflow</text>
+        <text x="70"  y="130" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#9e968a">0</text>
+        <text x="160" y="130" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#9e968a">2^-126</text>
+        <text x="520" y="130" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#9e968a">3.4e38</text>
+        <text x="612" y="130" text-anchor="middle" style="font:13px 'Courier New',monospace;fill:#9e968a">inf</text>
+        <text x="340" y="152" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">sink below 2^-126 and you slide down a ramp to 0; rise above 3.4e38 and you jump to infinity</text>
+      </svg>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The top edge: what happens when a number gets too big</h2>
+
+  <p>Say your number has grown too big. What does the machine actually do with it?</p>
+
+  <p>Picture a multiplication where the true answer comes out larger than that <code>3.4 &times; 10<sup>38</sup></code> ceiling. The machine does what it always does, it goes looking for the nearest float to round to. Except this time there isn't one. You have walked off the end of the list, and there is simply nothing out there to land on.</p>
+
+  <p>So what can it possibly return? It can't invent a number, and it can't return nothing, the answer has to be <em>some</em> 32 bits. So the people who designed this set aside one pattern that means, roughly, "bigger than anything I can write down." We call it infinity.</p>
+
+  <p>Now here is the question I would actually stop and ask. When the machine stores that infinity, what happens to the real number you were trying to make, the genuine huge value? The answer is a little ruthless: it is gone. Whether you overflowed to <code>10<sup>40</sup></code> or all the way to <code>10<sup>300</sup></code>, you get back the exact same bits. Infinity does not remember how big you were. It only keeps two facts, that you were too big, and which direction you were headed, positive or negative. Everything else is thrown away.</p>
+
+  <p>You might think that is careless. It isn't, and it's worth seeing why. Compare it to what an <em>integer</em> does when it overflows. It quietly wraps around to some small or negative value and says nothing at all, so your "four billion and one" silently becomes zero and your program marches on computing nonsense. A float refuses to do that. It hands you a loud, unmistakable <code>inf</code> that survives every step afterward and that you can test for directly. It would rather wave a flag than tell you a convincing lie.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The top cliff, up close</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 226" role="img" aria-label="Near the top of the float range the finite numbers grow sparser as they approach FLT_MAX at 3.4e38. Any result past the rounding midpoint jumps to a wall labelled infinity and its magnitude is erased.">
+        <text x="340" y="26" text-anchor="middle" style="font:14px 'Source Sans 3',sans-serif;fill:#cbc4b9">beyond the last float, the answer jumps to infinity</text>
+        <line x1="55" y1="140" x2="600" y2="140" stroke="#7d766b" stroke-width="0.6" opacity="0.7"/>
+        <line x1="70"  y1="132" x2="70"  y2="148" stroke="#4ca8e8" stroke-width="1.4"/>
+        <line x1="106" y1="132" x2="106" y2="148" stroke="#4ca8e8" stroke-width="1.4"/>
+        <line x1="148" y1="132" x2="148" y2="148" stroke="#4ca8e8" stroke-width="1.4"/>
+        <line x1="198" y1="132" x2="198" y2="148" stroke="#4ca8e8" stroke-width="1.4"/>
+        <line x1="258" y1="132" x2="258" y2="148" stroke="#4ca8e8" stroke-width="1.4"/>
+        <line x1="330" y1="132" x2="330" y2="148" stroke="#4ca8e8" stroke-width="1.4"/>
+        <line x1="418" y1="132" x2="418" y2="148" stroke="#4ca8e8" stroke-width="1.4"/>
+        <line x1="520" y1="130" x2="520" y2="150" stroke="#4ca8e8" stroke-width="2"/>
+        <text x="520" y="166" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#cbc4b9">FLT_MAX</text>
+        <text x="520" y="180" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#9e968a">3.4e38</text>
+        <text x="230" y="116" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#4ca8e8">finite floats, gaps doubling each octave</text>
+        <line x1="562" y1="110" x2="562" y2="170" stroke="#9e968a" stroke-width="0.8" stroke-dasharray="3 3"/>
+        <text x="562" y="102" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">midpoint</text>
+        <rect x="520" y="128" width="83" height="24" fill="#ff6b6b" opacity="0.13"/>
+        <rect x="606" y="86" width="40" height="108" fill="#ff6b6b" opacity="0.3"/>
+        <text x="626" y="146" text-anchor="middle" style="font:18px 'Courier New',monospace;fill:#ff6b6b">inf</text>
+        <path d="M572 134 Q594 122 606 126" fill="none" stroke="#ff6b6b" stroke-width="1.4" marker-end="url(#c4ov)"/>
+        <defs><marker id="c4ov" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#ff6b6b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+        <text x="340" y="208" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">cross the midpoint and the result snaps to infinity, its real size gone; an integer here would quietly wrap to a small wrong value instead</text>
+      </svg>
+      <p class="viz-note">Up near the top the gaps are already about 2 x 10^31 wide, so the floats are spread thin. Past FLT_MAX there is nothing left to round to, so anything beyond the midpoint becomes the same infinity, no matter how far past it went.</p>
+    </div>
+  </div>
+
+  <p>And one last thing, because it surprises people. Infinity is a real, usable value. Ask whether <code>inf</code> equals <code>inf</code> and the answer is yes. Ask whether <code>inf</code> is bigger than a billion and the answer is yes. It behaves the way you would hope a sensible infinity should, add one and it is still infinity, divide one by it and you get zero. There are only two questions it cannot answer, and they are the ones where the answer genuinely makes no sense: infinity minus infinity, and infinity times zero. Both of those hand you back the strange not-a-number value, which is where the next character in this story walks in. First, though, play with the edges yourself.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Try a few operations and see which edge each one falls off</span></div>
+    <div class="viz-body">
+      <div class="preset-row" id="olPre"></div>
+      <div class="ol-card">
+        <div class="ol-op" id="olOp"></div>
+        <div class="ol-res" id="olRes"></div>
+        <div class="ol-cat" id="olCat"></div>
+        <div class="ol-stat" id="olNote"></div>
+        <div class="ol-stat" id="olBits"></div>
+      </div>
+      <p class="viz-note">Watch the labels. Too big saturates to infinity. A finite number over zero gives a signed infinity. An operation with no answer gives NaN. Something too small vanishes to zero. The hardware quietly raises a different flag for each one.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The value that refuses to be a number</h2>
+
+  <p>That brings us back to the oddity from the very first program, zero divided by zero. Let me just ask it plainly: what number <em>should</em> <code>0 / 0</code> be?</p>
+
+  <p>Division is really a question in disguise. When you write <code>a / b</code>, you are asking "what number, multiplied by <code>b</code>, gives me back <code>a</code>?" So <code>0 / 0</code> is asking "what number, multiplied by zero, gives zero?" And the trouble is obvious the moment you try to answer it. One works. So does seven. So does minus a thousand. <em>Every</em> number multiplied by zero gives zero, so there is no single right answer to hand back.</p>
+
+  <p>Now the machine is genuinely stuck, and notice it has no good options. It can't pick a number and pretend, because any number it chose would be an arbitrary lie buried in your data. It can't call the answer infinity, because <code>0 / 0</code> is not enormous, it is undefined, which is a different thing. So it does the only honest thing left. It returns a value whose entire meaning is "there is no number here." That is NaN, short for not a number, and it lives in that reserved top code, the same one as infinity, but with a nonzero mantissa to tell the two apart.</p>
+
+  <p>And once you accept that NaN means "no number lives here," its three famous behaviors stop looking like quirks and start looking inevitable. It spreads, because any sum or product that touches a non-number is itself a non-number, which is why a single NaN in one gradient can turn an entire model to NaN in a single step. It refuses every comparison, because asking whether a non-number is less than five has no sensible answer, so the machine just says false to all of them. And it is not even equal to itself, which is the puzzle we opened with. The reason is simple once you see it: <code>==</code> asks whether two <em>values</em> are the same, and NaN is not a value, so there is nothing there to be equal. That last fact is genuinely useful, by the way. Since <code>x</code> not equal to <code>x</code> is true for nothing else in the entire number system, it is the standard way to ask "is this thing a NaN?"</p>
+
+  <hr class="sep">
+
+  <h2>The bottom edge, and a much gentler cliff</h2>
+
+  <p>Now the other end of the line, down near zero. This one is the cleverer of the two, so let me build it up slowly.</p>
+
+  <p>We already said the reserved code <code>E = 0</code> has to give us zero, since the ordinary formula never can. But check what the ordinary formula would do at <code>E = 0</code>: it gives <code>1.0 &times; 2<sup>-127</sup></code>, which is a tiny number, but it is not zero. So the bottom code can't reach zero the normal way either. The format has to redefine it. When <code>E = 0</code>, it switches to a different rule: <code>value = (0.mantissa) &times; 2<sup>-126</sup></code>. The leading digit is now a zero instead of that hidden one, which finally lets the significand shrink all the way down, so a zero mantissa gives you a true, honest zero. (Two of them, actually, a positive and a negative zero, which compare as equal but quietly remember their sign, so that one over positive zero is plus infinity and one over negative zero is minus infinity.)</p>
+
+  <p>But here is the question worth stopping on. Why is the exponent fixed at <code>-126</code>, when the field would naturally say <code>-127</code>? It looks like a typo. It isn't, and the reason is the whole point of this design. Imagine for a second we had no special numbers down here at all. The smallest ordinary number is <code>2<sup>-126</sup></code>, and the gap between it and its neighbour just above is a minuscule <code>2<sup>-149</sup></code>. But the drop from <code>2<sup>-126</sup></code> straight down to zero would be the full <code>2<sup>-126</sup></code>, about eight million times wider than the gaps right above it. That is a cliff. Everything in that huge empty space would have nowhere to go but zero, and would simply vanish.</p>
+
+  <p>The fix is to fill that space with extra numbers, and choosing the exponent <code>-126</code> is what makes them fit perfectly. With that choice, the spacing between these new tiny numbers comes out to exactly <code>2<sup>-149</sup></code>, the very same gap we had just above the smallest normal number. So instead of a cliff, the steps simply continue, evenly, all the way down to zero. A staircase instead of a drop. This is called gradual underflow, and the numbers filling that space are the subnormals.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The bottom: cliff versus ramp</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 330" role="img" aria-label="Two stacked number lines of the region between 0 and 2 to the minus 126. Without subnormals the region is empty, a sheer cliff where values flush to zero. With subnormals the region is filled with evenly spaced steps, a gentle ramp to zero.">
+        <text x="340" y="24" text-anchor="middle" style="font:14px 'Source Sans 3',sans-serif;fill:#cbc4b9">the same stretch between 0 and 2^-126, two ways</text>
+
+        <text x="70" y="58" style="font:12px 'Source Sans 3',sans-serif;fill:#ff6b6b">if floats stopped at the smallest normal</text>
+        <line x1="70" y1="104" x2="620" y2="104" stroke="#7d766b" stroke-width="0.6" opacity="0.7"/>
+        <circle cx="70" cy="104" r="3" fill="#cbc4b9"/>
+        <text x="70" y="124" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#9e968a">0</text>
+        <line x1="300" y1="96" x2="300" y2="112" stroke="#cbc4b9" stroke-width="1.6"/>
+        <text x="300" y="124" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#9e968a">2^-126</text>
+        <rect x="300" y="98" width="320" height="12" fill="#7fff6b" opacity="0.14"/>
+        <text x="460" y="90" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#7fff6b">normal numbers</text>
+        <text x="185" y="100" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#ff6b6b">nothing here; every value flushes to 0</text>
+        <path d="M296 98 Q180 64 80 100" fill="none" stroke="#ff6b6b" stroke-width="1.3" marker-end="url(#c4cl)"/>
+        <text x="205" y="76" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#ff6b6b">a sheer drop of 2^-126</text>
+
+        <line x1="40" y1="168" x2="640" y2="168" stroke="#7d766b" stroke-width="0.4" opacity="0.4"/>
+
+        <text x="70" y="206" style="font:12px 'Source Sans 3',sans-serif;fill:#7fff6b">with subnormals (what really happens)</text>
+        <line x1="70" y1="256" x2="620" y2="256" stroke="#7d766b" stroke-width="0.6" opacity="0.7"/>
+        <circle cx="70" cy="256" r="3" fill="#cbc4b9"/>
+        <text x="70" y="276" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#9e968a">0</text>
+        <line x1="300" y1="248" x2="300" y2="264" stroke="#cbc4b9" stroke-width="1.6"/>
+        <text x="300" y="276" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#9e968a">2^-126</text>
+        <rect x="300" y="250" width="320" height="12" fill="#7fff6b" opacity="0.14"/>
+        <text x="460" y="242" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#7fff6b">normal numbers</text>
+        <line x1="80" y1="248" x2="80" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="96" y1="248" x2="96" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="112" y1="248" x2="112" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="128" y1="248" x2="128" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="144" y1="248" x2="144" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="160" y1="248" x2="160" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="176" y1="248" x2="176" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="192" y1="248" x2="192" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="208" y1="248" x2="208" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="224" y1="248" x2="224" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="240" y1="248" x2="240" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="256" y1="248" x2="256" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="272" y1="248" x2="272" y2="264" stroke="#e8a84c" stroke-width="1.3"/><line x1="288" y1="248" x2="288" y2="264" stroke="#e8a84c" stroke-width="1.3"/>
+        <text x="185" y="242" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#e8a84c">even 2^-149 steps, a gentle staircase to 0</text>
+
+        <text x="340" y="312" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">empty above is the cliff we would have had; filled evenly below is the ramp we got, and the steps match at the seam with no kink</text>
+        <defs><marker id="c4cl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#ff6b6b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      </svg>
+      <p class="viz-note">Both pictures show the exact same span between 0 and the smallest normal. Without subnormals it is one huge empty gap, about eight million times wider than the gaps just above it, so everything there collapses to 0. With subnormals it is paved with equal steps the same size as the gap just above the floor, so numbers settle gently toward 0 instead of falling off.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Nothing is free: what the soft landing costs</h2>
+
+  <p>That gentle ramp has a price, and to see it clearly, forget floats for a second and picture a kitchen scale that only reads in whole grams. Whatever you put on it, you are off by up to half a gram. Now weigh a 500 gram bag of flour: half a gram is a rounding error so small you trust every digit. Then weigh a single 2 gram almond on the same scale: now that same half-gram wobble is a quarter of the whole thing, and you can barely trust the reading at all. The scale never changed. What changed is how big that fixed error looks <em>next to the thing you are weighing</em>.</p>
+
+  <p>That ratio, the gap measured against the number itself, is what really decides how many digits you can trust. And here is the lovely thing about ordinary floats: that ratio stays the same everywhere. Every step down the line, the gap shrinks right along with the numbers, so a float always pins down about seven significant digits whether you are weighing a coffee price or a national budget. That steadiness is the float's whole promise.</p>
+
+  <p>The subnormals are the one place that promise breaks. Down there the gap can't shrink any further, it is frozen at <code>2<sup>-149</sup></code>, but the numbers keep getting smaller. So we are back on the kitchen scale, weighing smaller and smaller things with a fixed wobble. The trusted digits drain away, one bit per step down, until at the very bottom the smallest subnormal is known only to within a hundred percent of itself. It is the same single decision wearing two faces: freezing the gap is what gives us the smooth ramp, and it is also what makes the precision rot. You can't have one without the other. Drag down the ramp below and watch the precision empty out.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Walk down the ramp and watch the precision drain</span></div>
+    <div class="viz-body">
+      <div class="rp-row">
+        <span class="lbl">Octaves below the smallest normal</span>
+        <input type="range" id="rpJ" class="rp-slider" min="0" max="23" value="0">
+      </div>
+      <div class="rp-card">
+        <div class="rp-mag" id="rpMag"></div>
+        <div class="rp-stat" id="rpGap"></div>
+        <div class="rp-stat" id="rpRel"></div>
+        <div class="rp-barlbl" id="rpBarLbl"></div>
+        <div class="rp-bar"><div class="rp-fill" id="rpFill"></div></div>
+      </div>
+      <p class="viz-note">The gap never moves, it is stuck at 2^-149. The bar is the precision you have left, and it empties as the numbers shrink under that fixed gap.</p>
+    </div>
+  </div>
+
+  <p>There is one more thing hiding in that frozen gap, and it is a quiet preview of where we go next. If every subnormal is spaced exactly <code>2<sup>-149</sup></code> apart, then every subnormal is just a whole-number count of <code>2<sup>-149</sup></code> steps. No exponent is scaling anything down there anymore, only an integer is changing. Which means the very bottom of the floating-point line isn't really floating-point at all. It is a plain, evenly spaced ruler, exactly the kind of fixed-point number system Class 5 is about.</p>
+
+  <hr class="sep">
+
+  <h2>Everything in one table</h2>
+
+  <p>If you only remember one picture from this class, make it this one. Every value a float can hold is decided by those two reserved exponent codes:</p>
+
+  <div class="codeblock">E = 0,        m = 0    -> +/- zero        (0 x 2^-126)
+E = 0,        m != 0   -> subnormal      ((0.m) x 2^-126, the ramp to zero)
+E = 1 .. 254, any m    -> normal numbers ((1.m) x 2^(E-127), range -126 .. +127)
+E = 255,      m = 0    -> +/- infinity   (the overflow target, a real value)
+E = 255,      m != 0   -> NaN            (no answer, spreads, never equals itself)</div>
+
+  <h2>Why any of this matters if you train models</h2>
+
+  <p>You might wonder why a course on machine learning is spending a whole class at the ragged edges of the number line. The answer is that these edges are where training runs go to die, and they do it constantly. Take a softmax. It calls <code>exp</code> on every score, and if one score is even moderately large, <code>exp</code> of it overflows to infinity. Then the softmax divides infinity by infinity, gets NaN, the NaN spreads into the loss and then into every weight, and your model is dead by the next step. The fix is pure Class 4 thinking: subtract the largest score first, so the biggest thing you ever feed to <code>exp</code> is zero, and nothing overflows. Underflow is the same story upside down: multiply a long run of small probabilities and they slide off the bottom to zero, which is why people add up the logarithms instead.</p>
+
+  <p>Both edges are also the reason mixed-precision training does the things it does. Multiplying the loss by a big constant before computing gradients is just lifting those gradients up out of the rotting subnormal basement before they lose all their precision. And the whole reason <code>bfloat16</code> exists, keeping the full exponent range of a 32-bit float while throwing away mantissa bits, is a bet that for machine learning, staying away from these cliffs matters more than carrying extra digits. On a chip with no floating-point unit, like the ESP32-C3 on the bench, all of this, the overflow check, the spreading NaN, the subnormal ramp, is software the processor runs by hand on every single operation.</p>
+
+  <hr class="sep">
+
+  <h2>What's next</h2>
+
+  <p>That finishes the floating-point story. Class 2 built the grid of numbers, Class 3 covered the rounding that happens between them, and this class handled the two ends. Class 5 leaves floating point behind for integers and fixed-point, the world that edge devices actually live in when there is no floating-point unit to lean on. And you have already met its central idea, sitting quietly at the bottom of the subnormal ramp: a fixed ruler where only a whole number changes.</p>
+
+  <div class="callout">Two reserved exponent codes do all the work here. Code 255 with an empty mantissa is infinity, a real value that overflow saturates to instead of wrapping like an integer. Code 255 with a nonzero mantissa is NaN, the honest "no answer here" that spreads and never equals itself. And code 0 redefines the formula to make zero and to lay a gentle, evenly spaced ramp down to it, trading away a little precision for a soft landing instead of a cliff.</div>
+
+  <hr class="sep">
+
+  <h2>See if it stuck</h2>
+
+  <p>Seven questions, all answerable from what you just read. Tap an answer and it tells you right away whether it holds, and why.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A short, self-marking quiz</span></div>
+    <div class="viz-body">
+      <div class="quiz-progress" id="quizProgress"></div>
+      <div id="quizHost"></div>
+      <div class="quiz-final" id="quizFinal"></div>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The Mathematics ML Runs On &middot; Unit 1</h2>
+    <a class="sidebar-link" href="the-real-line-and-the-finite-machine.html">
+      <div class="sidebar-link-title">Class 1: The Real Line and the Finite Machine</div>
+      <div class="sidebar-link-note">Why the list is finite.</div>
+    </a>
+    <a class="sidebar-link" href="how-a-floating-point-number-is-built.html">
+      <div class="sidebar-link-title">Class 2: How a Floating-Point Number Is Built</div>
+      <div class="sidebar-link-note">Sign, exponent, mantissa.</div>
+    </a>
+    <a class="sidebar-link" href="rounding-and-machine-epsilon.html">
+      <div class="sidebar-link-title">Class 3: Rounding and Machine Epsilon</div>
+      <div class="sidebar-link-note">When arithmetic lies.</div>
+    </a>
+    <a class="sidebar-link active-topic" href="overflow-and-underflow.html">
+      <div class="sidebar-link-title">Class 4: Overflow and Underflow</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="integer-and-fixed-point.html">
+      <div class="sidebar-link-title">Class 5: Integer, Fixed-Point, No FPU</div>
+      <div class="sidebar-link-note">The world edge ML lives in.</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Reserve codes 0 and 255 to patch the formula</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Overflow saturates to infinity, a real value</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">NaN is not a value, so it equals nothing</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Subnormals ramp gently to zero</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The ramp trades precision for the soft landing</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The bottom is a fixed-point grid</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+<script>
+document.getElementById('year').textContent=new Date().getFullYear();
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ── VIZ 1: exponent-code decoder ─────────────────────────────────────────────
+(function(){
+  const slider=document.getElementById('dcExp'),m0=document.getElementById('dcM0'),mn=document.getElementById('dcMn');
+  let mantNonzero=false;
+  function fnum(x){if(x===0)return'0';const a=Math.abs(x);if(a>=1e-4&&a<1e7)return Number(x.toPrecision(6)).toString();return x.toExponential(2);}
+  function refresh(){
+    const E=+slider.value;
+    const expBin=E.toString(2).padStart(8,'0');
+    const manBin=mantNonzero?'10000000000000000000000':'00000000000000000000000';
+    let cat,s1,s2;
+    if(E===255 && !mantNonzero){cat='\u00b1 Infinity';s1='the overflow target; exponent all ones, mantissa zero';s2='value = +\u221e (a real, comparable value, but no magnitude)';}
+    else if(E===255 && mantNonzero){cat='NaN';s1='no numeric answer; exponent all ones, mantissa nonzero';s2='value = not a number (contagious, never equal to itself)';}
+    else if(E===0 && !mantNonzero){cat='\u00b1 Zero';s1='the redefined bottom code; exponent and mantissa both zero';s2='value = 0';}
+    else if(E===0 && mantNonzero){cat='Subnormal';s1='gradual underflow; uses (0.m) \u00d7 2^-126';s2='value is a tiny number between 0 and 2^-126';}
+    else{const a=E-127;cat='Normal number';s1='actual exponent = '+E+' \u2212 127 = '+a;s2='value = 1.m \u00d7 2^'+a+' (for m=0, that is '+fnum(Math.pow(2,a))+')';}
+    document.getElementById('dcCat').textContent=cat;
+    document.getElementById('dcStat1').innerHTML=s1;
+    document.getElementById('dcStat2').innerHTML=s2;
+    document.getElementById('dcBits').innerHTML='<span class="sgn">0</span> <span class="exp">'+expBin+'</span> <span class="man">'+manBin+'</span>';
+  }
+  slider.addEventListener('input',refresh);
+  m0.addEventListener('click',()=>{mantNonzero=false;m0.classList.add('on');mn.classList.remove('on');refresh();});
+  mn.addEventListener('click',()=>{mantNonzero=true;mn.classList.add('on');m0.classList.remove('on');refresh();});
+  refresh();
+})();
+
+// ── VIZ 2: operation lab ─────────────────────────────────────────────────────
+(function(){
+  const OPS=[
+    {op:"FLT_MAX \u00d7 2", res:"+\u221e", bits:"0x7F800000", cat:"overflow", note:"too big to represent, so it saturates to +infinity"},
+    {op:"1 / 0", res:"+\u221e", bits:"0x7F800000", cat:"divide by zero", note:"a finite number over zero gives a signed infinity"},
+    {op:"0 / 0", res:"NaN", bits:"0x7FC00000", cat:"invalid", note:"every number satisfies c \u00d7 0 = 0, so there is no answer"},
+    {op:"\u221a(\u22121)", res:"NaN", bits:"0xFFC00000", cat:"invalid", note:"no real number squares to a negative"},
+    {op:"\u221e \u2212 \u221e", res:"NaN", bits:"0xFFC00000", cat:"invalid", note:"indeterminate, the answer could be anything"},
+    {op:"1e\u221225 \u00d7 1e\u221225", res:"0", bits:"0x00000000", cat:"underflow", note:"1e-50 is below the smallest subnormal, so it vanishes to 0"},
+    {op:"FLT_MAX \u00d7 1", res:"3.4028235e38", bits:"0x7F7FFFFF", cat:"finite", note:"stays a normal finite number, no edge hit"}
+  ];
+  const COL={overflow:['var(--blue-dim)','var(--blue)'],'divide by zero':['var(--blue-dim)','var(--blue)'],invalid:['var(--red-dim)','var(--red)'],underflow:['var(--accent-dim)','var(--accent)'],finite:['var(--green-dim)','var(--green)']};
+  function show(o){
+    document.getElementById('olOp').textContent=o.op;
+    const r=document.getElementById('olRes');r.textContent='= '+o.res;
+    r.style.color=(o.cat==='invalid')?'var(--red)':(o.cat==='finite'?'var(--green)':(o.cat==='underflow'?'var(--accent)':'var(--blue)'));
+    const c=document.getElementById('olCat');c.textContent=o.cat;
+    const col=COL[o.cat];c.style.background=col[0];c.style.color=col[1];
+    document.getElementById('olNote').textContent=o.note;
+    document.getElementById('olBits').innerHTML='float32 bits: <b>'+o.bits+'</b>';
+  }
+  const ph=document.getElementById('olPre');
+  OPS.forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.className='preset-btn';b.textContent=o.op;b.addEventListener('click',()=>show(o));ph.appendChild(b);});
+  show(OPS[0]);
+})();
+
+// ── VIZ 3: subnormal precision ramp ──────────────────────────────────────────
+(function(){
+  const slider=document.getElementById('rpJ');
+  const P=Math.pow;
+  function refresh(){
+    const j=+slider.value;
+    const mag=P(2,-(126+j)), rel=P(2,-(23-j)), bitsLeft=23-j;
+    const figs=(bitsLeft/3.3219);
+    let where = j===0 ? ' (top of the ramp, just below the smallest normal)' : (j===23 ? ' (the smallest subnormal)' : '');
+    document.getElementById('rpMag').textContent='magnitude \u2248 2^-'+(126+j)+' = '+mag.toExponential(3)+where;
+    document.getElementById('rpGap').innerHTML='absolute gap = <b>2^-149</b> (frozen, never changes)';
+    document.getElementById('rpRel').innerHTML='relative gap = gap / value = 2^-'+(23-j)+' = <b>'+(rel>=1e-4?Number(rel.toPrecision(4)):rel.toExponential(2))+'</b>   ('+(rel>=1?'100% error':(rel*100).toPrecision(3)+'% error')+')';
+    document.getElementById('rpBarLbl').innerHTML='surviving precision: <b>'+bitsLeft+'</b> of 23 bits  (\u2248 '+figs.toFixed(1)+' significant figures)';
+    const f=document.getElementById('rpFill');f.style.width=(bitsLeft/23*100)+'%';
+    f.style.background = bitsLeft>=12 ? 'var(--green)' : (bitsLeft>=4 ? 'var(--accent)' : 'var(--red)');
+  }
+  slider.addEventListener('input',refresh);refresh();
+})();
+
+// ── interactive quiz ─────────────────────────────────────────────────────────
+(function(){
+  const QUIZ=[
+    {q:"The largest normal float has actual exponent +127, not +128. Why?",
+     opts:[{t:"the bias is actually 128"},{t:"exponent code 255 is reserved for inf/NaN, so the top normal code is 254, and 254 - 127 = 127",c:true},{t:"127 is the largest value 8 bits can hold"},{t:"the mantissa can never reach 2"}],
+     ex:"Code 255 is reserved, so normals stop at code 254, and 254 - 127 = 127. The range is the shadow of the reservation."},
+    {q:"When a value overflows to +inf, what happens to the bits that encoded its magnitude?",
+     opts:[{t:"they are preserved so you can recover how big it was"},{t:"they are overwritten by the infinity pattern; the magnitude is gone",c:true},{t:"the mantissa stores how far past FLT_MAX you went"},{t:"they wrap to a large negative number"}],
+     ex:"Overflow writes the fixed infinity pattern (exp all ones, mantissa zero). All magnitude information is destroyed; every overflow gives the same bits."},
+    {q:"inf == inf is true, but nan == nan is false. The cleanest reason is:",
+     opts:[{t:"inf is positive and nan is negative"},{t:"inf is one fixed value so it equals itself; nan is not a value at all, so it equals nothing",c:true},{t:"nan gets a random mantissa each time"},{t:"it is a compiler quirk"}],
+     ex:"== compares values. Infinity is a genuine value (one pattern), so it equals itself; NaN is the absence of a value, so it equals nothing, even with identical bits."},
+    {q:"The subnormal formula uses exponent -126, not the -127 the field would naively give. Why?",
+     opts:[{t:"to save a bit"},{t:"so the subnormal step (2^-149) matches the gap just above the smallest normal, making the spacing seamless",c:true},{t:"because -127 is itself reserved"},{t:"it is arbitrary"}],
+     ex:"-126 makes the subnormal step equal the gap just above 2^-126, so the staircase crosses the boundary with no kink. -127 would halve the step and create a discontinuity."},
+    {q:"0.0 / 0.0 returns NaN rather than 0 or inf because:",
+     opts:[{t:"division by zero is always infinity"},{t:"every c satisfies c x 0 = 0, so there is no unique answer and no number is correct",c:true},{t:"the hardware is too slow"},{t:"0/0 is defined as 1"}],
+     ex:"0/0 has no unique answer (any c works) and no location on the line, so returning any number would be a lie. NaN is the honest result."},
+    {q:"As a value sinks deeper into the subnormal range, its relative precision:",
+     opts:[{t:"stays fixed at about 7 significant figures"},{t:"improves, since the gap is so tiny"},{t:"collapses, because the gap is frozen at 2^-149 while the value keeps halving",c:true},{t:"is undefined"}],
+     ex:"The frozen gap becomes an ever-larger fraction of an ever-smaller number, so relative error doubles each octave and significant figures drain from 7 to none."},
+    {q:"In a softmax, subtracting the maximum logit before exp() is done to:",
+     opts:[{t:"make the formula cleaner"},{t:"stop exp(large logit) from overflowing to inf, which would make the normalization inf/inf = nan",c:true},{t:"speed up the exponential"},{t:"prevent underflow only"}],
+     ex:"Subtracting the max keeps the largest argument to exp at 0, so nothing overflows to inf and the softmax does not collapse to inf/inf = nan."}
+  ];
+  let answered=0,score=0;
+  const host=document.getElementById('quizHost'),prog=document.getElementById('quizProgress'),fin=document.getElementById('quizFinal');
+  function updateProg(){prog.textContent=answered+' / '+QUIZ.length+' answered   \u00b7   score '+score;}
+  QUIZ.forEach((item,qi)=>{
+    const card=document.createElement('div');card.className='quiz-q';
+    const qt=document.createElement('div');qt.className='quiz-q-text';qt.innerHTML='<span class="quiz-q-num">Q'+(qi+1)+'.</span>'+item.q;card.appendChild(qt);
+    const btns=[],correctIdx=item.opts.findIndex(z=>z.c);
+    item.opts.forEach(o=>{
+      const b=document.createElement('button');b.className='quiz-opt';b.type='button';b.innerHTML=o.t+'<span class="mk"></span>';
+      b.addEventListener('click',()=>{
+        if(card.dataset.done)return;card.dataset.done='1';answered++;btns.forEach(x=>x.disabled=true);
+        if(o.c){b.classList.add('correct');b.querySelector('.mk').textContent='\u2713';score++;}
+        else{b.classList.add('wrong');b.querySelector('.mk').textContent='\u2717';const r=btns[correctIdx];r.classList.add('correct');r.querySelector('.mk').textContent='\u2713';}
+        ex.classList.add('show');updateProg();if(answered===QUIZ.length)showFinal();
+      });
+      btns.push(b);card.appendChild(b);
+    });
+    const ex=document.createElement('div');ex.className='quiz-explain';ex.textContent=item.ex;card.appendChild(ex);
+    host.appendChild(card);
+  });
+  function showFinal(){let msg;
+    if(score===QUIZ.length)msg='A clean sweep. The edges hold no mystery. Ready for Class 5.';
+    else if(score>=QUIZ.length-1)msg=score+' out of '+QUIZ.length+'. The cliffs are clear. On to integers and fixed-point.';
+    else if(score>=QUIZ.length-3)msg=score+' out of '+QUIZ.length+'. Solid. Replay the decoder and the ramp and you have it.';
+    else msg=score+' out of '+QUIZ.length+'. Worth another pass. Reserved codes, saturate not wrap, and the seamless ramp are the spine.';
+    fin.textContent=msg;fin.classList.add('show');}
+  updateProg();
+})();
+</script>
+</body>
+</html>
