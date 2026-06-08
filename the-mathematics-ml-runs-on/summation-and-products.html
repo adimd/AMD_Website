@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Sum, the Product, and the Number That Vanishes | The Mathematics ML Runs On</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#f4efe7;--body:#cbc4b9;--muted:#9e968a;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.016;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.22rem;color:var(--body);font-weight:400;margin-bottom:2.2rem;line-height:1.62}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.19rem;font-weight:400;margin-bottom:1.35rem;line-height:1.8}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.93em;background:rgba(232,168,76,.15);padding:.2rem .48rem;border-radius:4px;color:#f1dcb2;font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.15rem;font-weight:400;margin:.4rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:1rem;color:#bcb5a8;margin-top:1.1rem;font-style:italic;line-height:1.72}
+
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+  <style>
+    .m{font-family:Georgia,'Times New Roman',serif;font-style:italic;color:var(--ink)}
+    .m sub,.m sup{font-style:normal}
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.5rem 0;overflow-x:auto;font-family:'Courier New',monospace;font-size:.9rem;line-height:1.7;color:var(--body);white-space:pre}
+    .codeblock .cmt{color:var(--muted)} .codeblock .out{color:var(--green)} .codeblock .kw{color:var(--blue)} .codeblock .red{color:var(--red)} .codeblock .str{color:var(--accent)}
+    .codeblock .cap{display:block;color:var(--muted);font-size:.78rem;margin-bottom:.5rem;font-family:var(--sans);font-style:italic}
+    .lead-q{font-family:var(--display);font-size:1.5rem;font-style:italic;color:var(--ink);line-height:1.42;margin:1.7rem 0;padding-left:1.1rem;border-left:3px solid var(--accent)}
+    .ml-tag{display:inline-block;font-family:'Courier New',monospace;font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);background:var(--blue-dim);border:1px solid rgba(76,168,232,.3);border-radius:4px;padding:.12rem .5rem;margin-bottom:.4rem}
+
+    .lab-btn{padding:.5rem 1rem;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);cursor:pointer;font-size:.88rem;font-family:'Courier New',monospace}
+    .lab-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .lab-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+    .ctl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:.6rem}
+    .ctl-lbl{font-size:.74rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-right:.2rem}
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;margin-top:1rem}
+    .stat{font-size:1rem;color:var(--muted);margin:7px 0;line-height:1.55}
+    .stat b{color:var(--ink);font-weight:500;font-family:'Courier New',monospace}
+    .big{font-size:1.35rem;font-weight:500;font-family:'Courier New',monospace;color:var(--ink);margin:6px 0}
+    .note-line{font-size:1rem;color:var(--muted);line-height:1.6;min-height:2.4em;margin-top:.6rem}
+    .run-steps{font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);line-height:1.85;margin:.4rem 0}
+    .run-steps .k{color:var(--muted)} .run-steps b{color:var(--ink)}
+    .dim-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.7rem}
+    .dim-row .lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);min-width:130px}
+    .dim-slider{flex:1;min-width:170px;accent-color:var(--accent)}
+
+    .twocol{display:flex;gap:1rem;flex-wrap:wrap}
+    .twocol .pane{flex:1;min-width:250px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem}
+    .pane h4{font-family:var(--sans);font-size:.95rem;color:var(--ink);margin-bottom:.6rem;font-weight:600}
+    .pane .prow{font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);margin:3px 0}
+    .pane .tot{margin-top:.55rem;padding-top:.55rem;border-top:1px dashed var(--border);font-family:'Courier New',monospace;font-size:1rem;color:var(--ink)}
+    .pane.bad{border-color:rgba(255,107,107,.4)} .pane.bad .tot{color:var(--red)}
+    .pane.good{border-color:rgba(127,255,107,.4)} .pane.good .tot{color:var(--green)}
+
+    .quiz-progress{font-family:'Courier New',monospace;font-size:.95rem;color:var(--accent);margin-bottom:1.2rem;letter-spacing:.02em}
+    .quiz-q{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.3rem 1.4rem;margin-bottom:1.1rem}
+    .quiz-q-text{font-size:1.12rem;color:var(--ink);font-weight:500;margin-bottom:1rem;line-height:1.5}
+    .quiz-q-num{color:var(--accent);font-family:'Courier New',monospace;margin-right:.5rem}
+    .quiz-opt{display:block;width:100%;text-align:left;padding:.75rem 1rem;margin:.5rem 0;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);font-family:inherit;font-size:1.04rem;cursor:pointer;transition:all .18s;line-height:1.45}
+    .quiz-opt:hover:not(:disabled){border-color:var(--accent);color:var(--ink)}
+    .quiz-opt:disabled{cursor:default}
+    .quiz-opt.correct{background:var(--green-dim);border-color:rgba(127,255,107,.5);color:var(--ink)}
+    .quiz-opt.wrong{background:var(--red-dim);border-color:rgba(255,107,107,.5);color:var(--ink)}
+    .quiz-opt .mk{float:right;font-weight:700;margin-left:.6rem}
+    .quiz-opt.correct .mk{color:var(--green)} .quiz-opt.wrong .mk{color:var(--red)}
+    .quiz-explain{margin-top:.8rem;padding:.85rem 1.1rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.62;display:none}
+    .quiz-explain.show{display:block;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .quiz-final{margin-top:1.3rem;padding:1.2rem 1.4rem;border-radius:10px;background:var(--bg-card);border:1px solid var(--accent);font-family:var(--display);font-size:1.4rem;color:var(--ink);text-align:center;display:none}
+    .quiz-final.show{display:block;animation:rise .4s cubic-bezier(.22,1,.36,1) both}
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk &#9662;</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>The Mathematics ML Runs On &middot; Class 7</span>
+  <h1>The Sum, the Product, and the Number That Vanishes</h1>
+  <p class="blog-subtitle">Two symbols, sigma and pi, do nothing more than fold a list of numbers into one, by adding or by multiplying. The adding runs almost the whole field. The multiplying hides a flaw that destroys training runs after a few dozen steps, and the way out is the single most important piece of arithmetic in machine learning, and the reason logarithms exist at all.</p>
+
+  <h2>From one output to one number</h2>
+
+  <p>A function commits to one output for each input. So why is that not the end of the story?</p>
+
+  <p>Because we almost never ask a function for a single output. We sweep it across a whole collection of inputs and are left holding a list. A loss function returns an error for every example in the dataset: a thousand examples, a thousand errors. A language model returns a probability for every word it predicts: a ten-word sentence, ten probabilities. A vector is itself a list, one number per dimension. And a list is not an answer. What we want is one number drawn out of it: the total error, the score of the sentence, the length of the vector.</p>
+
+  <p class="lead-q">So the operation sitting underneath almost everything is this: take a list of numbers and collapse it into one. What are the ways to do that?</p>
+
+  <p>There are two basic ones, and you have used both since long before you could name them. You can <strong>add</strong> the list, or you can <strong>multiply</strong> it. Add five prices and you have a bill. Multiply the chances of three coin flips and you have the chance they all land heads, <span class="m">0.5 &times; 0.5 &times; 0.5 = 0.125</span>. These two ways of folding a list are so common that each earned its own symbol: a capital <strong>sigma</strong>, <span class="m">&Sigma;</span>, for "add this list," and a capital <strong>pi</strong>, <span class="m">&Pi;</span>, for "multiply this list." That is the whole connection to Class 6: functions produce lists of values, and sigma and pi are how a list becomes a single number again.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A function gives a list; sigma folds it into one number</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 170" role="img" aria-label="A function f evaluated at inputs 1 through 4 produces four outputs, and a sigma collapses those outputs into a single total.">
+        <text x="60" y="30" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">inputs</text>
+        <text x="250" y="30" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">outputs of f (a list)</text>
+        <text x="560" y="30" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#e8a84c">one number</text>
+        <g style="font:12px 'Courier New',monospace;fill:#cbc4b9">
+          <text x="60" y="62">1</text><text x="60" y="86">2</text><text x="60" y="110">3</text><text x="60" y="134">4</text>
+        </g>
+        <g fill="#2a2826" stroke="#4ca8e8"><rect x="110" y="48" width="60" height="92" rx="8"/></g>
+        <text x="140" y="100" text-anchor="middle" style="font:15px Georgia,serif;font-style:italic;fill:#4ca8e8">f</text>
+        <g style="font:12px 'Courier New',monospace;fill:#f4efe7">
+          <text x="250" y="62">f(1)</text><text x="250" y="86">f(2)</text><text x="250" y="110">f(3)</text><text x="250" y="134">f(4)</text>
+        </g>
+        <g stroke="#9e968a" stroke-width="1">
+          <line x1="72" y1="58" x2="108" y2="70" marker-end="url(#c7m)"/><line x1="72" y1="82" x2="108" y2="84" marker-end="url(#c7m)"/>
+          <line x1="72" y1="106" x2="108" y2="100" marker-end="url(#c7m)"/><line x1="72" y1="130" x2="108" y2="116" marker-end="url(#c7m)"/>
+        </g>
+        <text x="380" y="98" text-anchor="middle" style="font:40px Georgia,serif;fill:#e8a84c">&Sigma;</text>
+        <line x1="300" y1="92" x2="352" y2="92" stroke="#9e968a" stroke-width="1" marker-end="url(#c7m)"/>
+        <line x1="410" y1="92" x2="500" y2="92" stroke="#9e968a" stroke-width="1" marker-end="url(#c7m)"/>
+        <rect x="500" y="74" width="120" height="40" rx="8" fill="#e8a84c" opacity="0.12" stroke="#e8a84c"/>
+        <text x="560" y="99" text-anchor="middle" style="font:14px 'Courier New',monospace;fill:#f4efe7">total</text>
+        <defs><marker id="c7m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#9e968a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      </svg>
+      <p class="viz-note">Class 6 built the left half, a function turning inputs into outputs. This class is the right half, folding that list of outputs back into one number, by adding (sigma) or multiplying (pi).</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Section 1 &middot; Sigma: add up a list</h2>
+
+  <p>To add a list of numbers in code, you write a loop with a running total:</p>
+
+  <div class="codeblock"><span class="cap">add up the list a = [2, 5, 3, 7, 1]</span>total = 0
+for i in range(len(a)):
+    total = total + a[i]
+<span class="cmt"># total is now 18</span></div>
+
+  <p>The sigma is that loop, written in one stroke:</p>
+
+  <div class="codeblock"><span class="cap">read aloud: "the sum, for i from 1 to n, of a-sub-i"</span>total = &Sigma; a&#8202;<sub>i</sub>   (i from 1 to n)</div>
+
+  <p>Every part of the symbol matches a part of the loop, and nothing else is hidden in it.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Reading the sigma, part by part</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 220" role="img" aria-label="The summation symbol broken into parts: the sigma means add every term, the number on top is where to stop, the i equals 1 below is where to start and the counter name, and a-sub-i is the term for each i.">
+        <text x="150" y="138" text-anchor="middle" style="font:78px Georgia,serif;fill:#e8a84c">&Sigma;</text>
+        <text x="150" y="58" text-anchor="middle" style="font:22px Georgia,serif;fill:#f4efe7;font-style:italic">n</text>
+        <text x="150" y="190" text-anchor="middle" style="font:20px Georgia,serif;fill:#f4efe7;font-style:italic">i = 1</text>
+        <text x="232" y="128" style="font:30px Georgia,serif;fill:#f4efe7;font-style:italic">a</text>
+        <text x="252" y="138" style="font:18px Georgia,serif;fill:#f4efe7">i</text>
+        <line x1="180" y1="50" x2="430" y2="50" stroke="#7d766b" stroke-width="0.7"/><text x="436" y="55" style="font:13px 'Source Sans 3',sans-serif;fill:#cbc4b9">where to stop counting (the last index, n)</text>
+        <line x1="150" y1="108" x2="430" y2="108" stroke="#7d766b" stroke-width="0.7"/><text x="436" y="113" style="font:13px 'Source Sans 3',sans-serif;fill:#e8a84c">the sigma: add up everything to its right</text>
+        <line x1="195" y1="185" x2="430" y2="160" stroke="#7d766b" stroke-width="0.7"/><text x="436" y="150" style="font:13px 'Source Sans 3',sans-serif;fill:#cbc4b9">where to start, and the counter's</text><text x="436" y="168" style="font:13px 'Source Sans 3',sans-serif;fill:#cbc4b9">name (i, beginning at 1)</text>
+        <line x1="245" y1="135" x2="430" y2="200" stroke="#7d766b" stroke-width="0.7"/><text x="436" y="205" style="font:13px 'Source Sans 3',sans-serif;fill:#cbc4b9">the term: the thing you add for each i</text>
+      </svg>
+      <p class="viz-note">It reads: "let i count from 1 up to n, and add a-sub-i each time." The loop above, in one symbol.</p>
+    </div>
+  </div>
+
+  <p>Expanding it just means writing the terms out: <span class="m">&Sigma; a<sub>i</sub></span> is <span class="m">a<sub>1</sub> + a<sub>2</sub> + a<sub>3</sub> + a<sub>4</sub> + a<sub>5</sub></span>, which for our list is <span class="m">2 + 5 + 3 + 7 + 1 = 18</span>. Build any sum or product below and the running value updates term by term, exactly as the loop would.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Builder: watch the running total accumulate</span></div>
+    <div class="viz-body">
+      <div class="ctl-row"><span class="ctl-lbl">list</span>
+        <button class="lab-btn on" id="sbPre0">2, 5, 3, 7, 1</button>
+        <button class="lab-btn" id="sbPre1">2, 3, 4</button>
+        <button class="lab-btn" id="sbPre2">0.5, 0.5, 0.5</button>
+      </div>
+      <div class="ctl-row"><span class="ctl-lbl">operation</span>
+        <button class="lab-btn on" id="sbModeSum">&Sigma; add them</button>
+        <button class="lab-btn" id="sbModeProd">&Pi; multiply them</button>
+      </div>
+      <div class="card">
+        <div class="stat" id="sbNotation"></div>
+        <div class="run-steps" id="sbSteps"></div>
+        <div class="big" id="sbResult"></div>
+      </div>
+      <p class="viz-note">Flip to &Pi; and the same list is multiplied instead. For 0.5, 0.5, 0.5 under multiplication the running value shrinks, which is the seed of Section 3.</p>
+    </div>
+  </div>
+
+  <p class="ml-tag">why this matters for ML</p>
+  <p>Adding up a list is, quietly, most of what a model computes. It shows up in three places that hold up nearly everything later.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.5rem 0 .4rem">An average</h3>
+  <p>Your model has just made a thousand predictions, and you measured how far off each one was. How wrong is the model? You cannot answer from a thousand separate numbers; you need a single one. So you add the errors and divide by how many there are. The dividing makes it an average; the adding is a sum.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Folding many errors into one number</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 165" role="img" aria-label="Four error bars of different heights are added and divided by their count to give one bar, the average error, which is the loss.">
+        <text x="30" y="24" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">one error per prediction (here, 4 of the thousand)</text>
+        <g fill="#e8a84c" opacity="0.85">
+          <rect x="90" y="74" width="26" height="60"/><rect x="128" y="92" width="26" height="42"/><rect x="166" y="58" width="26" height="76"/><rect x="204" y="86" width="26" height="48"/>
+        </g>
+        <line x1="90" y1="134" x2="232" y2="134" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="250" y1="100" x2="296" y2="100" stroke="#9e968a" stroke-width="1.1" marker-end="url(#c7av)"/>
+        <text x="333" y="96" text-anchor="middle" style="font:30px Georgia,serif;fill:#e8a84c">&Sigma;</text>
+        <text x="333" y="120" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">add</text>
+        <text x="392" y="96" text-anchor="middle" style="font:15px 'Courier New',monospace;fill:#f4efe7">&divide; n</text>
+        <text x="392" y="120" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">share out</text>
+        <line x1="430" y1="100" x2="476" y2="100" stroke="#9e968a" stroke-width="1.1" marker-end="url(#c7av)"/>
+        <rect x="500" y="78" width="40" height="56" fill="#7fff6b" opacity="0.7"/>
+        <line x1="495" y1="134" x2="545" y2="134" stroke="#7d766b" stroke-width="0.8"/>
+        <text x="520" y="152" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#7fff6b">average error</text>
+        <defs><marker id="c7av" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#9e968a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      </svg>
+    </div>
+  </div>
+
+  <p>Written out it is <span class="m">(1/n) &Sigma; error<sub>i</sub></span>: the <span class="m">&Sigma;</span> adds the errors, <span class="m">error<sub>i</sub></span> is the error on the <span class="m">i</span>-th example, and the <span class="m">(1/n)</span> turns the total into a typical value. That number is what everyone calls the <strong>loss</strong>, and the entire activity of training is moving it downward.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">A dot product</h3>
+  <p>You have a list of inputs, and beside it a list of <strong>weights</strong> the model has learned, one per input, each saying how much that input should count toward the answer. How do you fold the two lists into a single score? You pair them up by position, multiply each pair, and add the products.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A dot product: pair up, multiply, then add</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 215" role="img" aria-label="Two aligned rows: the input 4, 5, 6 on top and the weights 1, 2, 3 below. Each column is multiplied to give 4, 10, 18, and the products are added to 32.">
+        <text x="30" y="62" style="font:13px 'Source Sans 3',sans-serif;fill:#4ca8e8">input x</text>
+        <text x="30" y="126" style="font:13px 'Source Sans 3',sans-serif;fill:#e8a84c">weights w</text>
+        <g style="font:18px 'Courier New',monospace;fill:#f4efe7">
+          <rect x="198" y="40" width="64" height="40" rx="6" fill="#2a2826" stroke="#4ca8e8"/><text x="230" y="66" text-anchor="middle">4</text>
+          <rect x="328" y="40" width="64" height="40" rx="6" fill="#2a2826" stroke="#4ca8e8"/><text x="360" y="66" text-anchor="middle">5</text>
+          <rect x="458" y="40" width="64" height="40" rx="6" fill="#2a2826" stroke="#4ca8e8"/><text x="490" y="66" text-anchor="middle">6</text>
+          <rect x="198" y="104" width="64" height="40" rx="6" fill="#2a2826" stroke="#e8a84c"/><text x="230" y="130" text-anchor="middle">1</text>
+          <rect x="328" y="104" width="64" height="40" rx="6" fill="#2a2826" stroke="#e8a84c"/><text x="360" y="130" text-anchor="middle">2</text>
+          <rect x="458" y="104" width="64" height="40" rx="6" fill="#2a2826" stroke="#e8a84c"/><text x="490" y="130" text-anchor="middle">3</text>
+        </g>
+        <g stroke="#7d766b" stroke-width="0.8" stroke-dasharray="3 3"><line x1="230" y1="80" x2="230" y2="104"/><line x1="360" y1="80" x2="360" y2="104"/><line x1="490" y1="80" x2="490" y2="104"/></g>
+        <g style="font:12px 'Courier New',monospace;fill:#9e968a"><text x="246" y="96">&times;</text><text x="376" y="96">&times;</text><text x="506" y="96">&times;</text></g>
+        <g style="font:14px 'Courier New',monospace;fill:#7fff6b"><text x="230" y="172" text-anchor="middle">= 4</text><text x="360" y="172" text-anchor="middle">= 10</text><text x="490" y="172" text-anchor="middle">= 18</text></g>
+        <text x="360" y="202" text-anchor="middle" style="font:15px 'Courier New',monospace;fill:#f4efe7">add the products:  4 + 10 + 18 = <tspan fill="#e8a84c">32</tspan></text>
+      </svg>
+    </div>
+  </div>
+
+  <p>In symbols this is <span class="m">&Sigma; w<sub>i</sub> x<sub>i</sub></span>. Now look closely at <em>when</em> the score comes out large. It is large precisely when big inputs line up with big weights, when the two lists point the same way; it is small when they pull in opposite directions. A dot product is a measure of how much two lists <strong>agree</strong>. That single idea is why it is everywhere: a <strong>neuron</strong> is one dot product, scoring an input against the weights it has learned to look for, a layer is many neurons side by side, and a deep network is layers of them, so "agreement, summed" is the innermost act of the entire machine, run billions of times. The same operation later measures how similar two vectors are, which is how models compare meanings.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">An expected value</h3>
+  <p>Sometimes an outcome is uncertain and you want to know what to expect on average. Say a scratchcard pays nothing 70% of the time, pays <span class="m">&#36;5</span> 20% of the time, and pays <span class="m">&#36;50</span> the other 10%. What is one card worth?</p>
+  <p>A first guess might be to average the three prizes, <span class="m">(0 + 5 + 50) / 3 &asymp; &#36;18</span>. But that is too high, because <span class="m">&#36;0</span> happens far more often than <span class="m">&#36;50</span>, and a plain average treats them as equally common. The honest way is to imagine playing many times. Over 100 cards you would expect about 70 of them to pay nothing, 20 to pay <span class="m">&#36;5</span>, and 10 to pay <span class="m">&#36;50</span>.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">What one scratchcard is worth</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 175" role="img" aria-label="A bar of 100 cards split into 70 paying zero dollars, 20 paying five dollars, and 10 paying fifty dollars. Over 100 cards the total is 600 dollars, which is 6 dollars per card.">
+        <text x="30" y="26" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">100 cards, split by how often each prize comes up</text>
+        <rect x="60" y="40" width="350" height="34" fill="#7d766b" opacity="0.55"/><text x="235" y="62" text-anchor="middle" style="font:14px 'Courier New',monospace;fill:#f4efe7">&#36;0</text>
+        <rect x="410" y="40" width="100" height="34" fill="#4ca8e8" opacity="0.55"/><text x="460" y="62" text-anchor="middle" style="font:14px 'Courier New',monospace;fill:#f4efe7">&#36;5</text>
+        <rect x="510" y="40" width="50" height="34" fill="#e8a84c" opacity="0.6"/><text x="535" y="62" text-anchor="middle" style="font:13px 'Courier New',monospace;fill:#f4efe7">&#36;50</text>
+        <text x="235" y="90" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">70 cards</text>
+        <text x="460" y="90" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">20 cards</text>
+        <text x="535" y="90" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">10 cards</text>
+        <text x="60" y="122" style="font:13px 'Courier New',monospace;fill:#cbc4b9">total over 100 cards:  70&times;&#36;0  +  20&times;&#36;5  +  10&times;&#36;50  =  &#36;600</text>
+        <text x="60" y="150" style="font:13px 'Courier New',monospace;fill:#f4efe7">per card:  &#36;600 &divide; 100 = <tspan fill="#e8a84c">&#36;6</tspan>   (= 0.7&times;0 + 0.2&times;5 + 0.1&times;50)</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>So a card is worth <span class="m">&#36;6</span> on average, and the way we found it was to weight each prize by how often it happens and add: <span class="m">0.7&times;0 + 0.2&times;5 + 0.1&times;50 = 6</span>. Each outcome multiplied by its probability, all summed. That is the <strong>expected value</strong>, written <span class="m">&Sigma; p<sub>i</sub> x<sub>i</sub></span>, and it is just the dot product of the outcomes with their probabilities. Weighting values by how likely they are, instead of treating them as equally common, is how you take an average when some things happen more than others, and it runs all through probability and learning.</p>
+
+  <p>Average, dot product, expected value: each is a list folded by adding. Read a <span class="m">&Sigma;</span> as a for-loop that adds, and most of the symbols in a paper turn back into code you already understand.</p>
+
+  <hr class="sep">
+
+  <h2>Section 2 &middot; Pi: multiply a list</h2>
+
+  <p>Pi is the same machine as sigma with one part swapped. The running value starts at <span class="m">1</span> instead of <span class="m">0</span>, and each step multiplies instead of adds:</p>
+
+  <div class="codeblock"><span class="cap">multiply the list a = [2, 3, 4]</span>running = 1
+for i in range(len(a)):
+    running = running * a[i]
+<span class="cmt"># running is now 24</span></div>
+
+  <p>You read <span class="m">&Pi; a<sub>i</sub></span> exactly like the sigma, with one word changed: the big pi means "multiply everything to my right." The mechanics are that simple. The real question is why we would multiply a list rather than add it.</p>
+
+  <p>In Section 1 we combined a list by adding. So why not always add? Probabilities are the clearest case where adding is simply the wrong tool. Take a fair coin and ask for the chance of heads three times in a row. Each flip is a <span class="m">0.5</span> chance. Add them and you get <span class="m">1.5</span>, which is impossible: nothing has a 150% chance. Adding has broken. The correct way to combine the chances of a sequence is to multiply them.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">For probabilities, adding breaks and multiplying is right</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 160" role="img" aria-label="Adding 0.5 plus 0.5 plus 0.5 gives 1.5, marked wrong because a chance cannot exceed 1. Multiplying 0.5 times 0.5 times 0.5 gives 0.125, marked correct, the chance of three heads in a row.">
+        <text x="40" y="50" style="font:17px 'Courier New',monospace;fill:#cbc4b9">0.5 + 0.5 + 0.5 = <tspan fill="#ff6b6b">1.5</tspan></text>
+        <text x="40" y="76" style="font:12px 'Source Sans 3',sans-serif;fill:#ff6b6b">&#10007;&nbsp; impossible: a probability can never go above 1, so adding is the wrong tool here</text>
+        <line x1="40" y1="96" x2="640" y2="96" stroke="#3a3733" stroke-width="0.8"/>
+        <text x="40" y="124" style="font:17px 'Courier New',monospace;fill:#cbc4b9">0.5 &times; 0.5 &times; 0.5 = <tspan fill="#7fff6b">0.125</tspan></text>
+        <text x="40" y="150" style="font:12px 'Source Sans 3',sans-serif;fill:#7fff6b">&#10003;&nbsp; the chance of three heads in a row, exactly what we wanted</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>So pi is the tool for combining probabilities, the way sigma was the tool for combining sizes. But that just moves the question: why does multiplying give the chance of a sequence? It is worth seeing exactly why, because the reason is the whole reason pi matters.</p>
+
+  <p class="ml-tag">why this matters for ML</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.5rem 0 .4rem">Why "all of them happen" is a multiplication</h3>
+  <p>If two uncertain things might each happen, what is the chance they <em>both</em> do? Take a concrete pair. It rains on 30% of days. And on rainy days, half the time you forget your umbrella. Out of 100 days, how many are both rainy and umbrella-less?</p>
+  <p>Walk it in two steps. First, 30 of the 100 days are rainy. Then, of those 30 rainy days, half, so 15, are the ones you also forgot the umbrella. So it happens on 15 days in 100, a chance of <span class="m">0.15</span>. Notice exactly how we got 15: we took 30% of the days, and then 50% <em>of those</em>. A fraction of a fraction. And taking a fraction of a fraction is multiplying: <span class="m">0.3 &times; 0.5 = 0.15</span>.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A fraction of a fraction is a multiplication</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 175" role="img" aria-label="Three bars: all 100 days, then the 30 percent that are rainy, then 50 percent of those, which is 15 days that are both rainy and umbrella-less. 0.3 times 0.5 is 0.15.">
+        <rect x="60" y="30" width="400" height="30" fill="#7d766b" opacity="0.5"/><text x="470" y="50" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">all 100 days</text>
+        <rect x="60" y="74" width="120" height="30" fill="#4ca8e8" opacity="0.55"/><text x="190" y="94" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">30 rainy days  (take 30% of all)</text>
+        <rect x="60" y="118" width="60" height="30" fill="#e8a84c" opacity="0.6"/><text x="130" y="138" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">15 of those, umbrella forgotten  (take 50% of the rainy days)</text>
+        <text x="60" y="168" style="font:13px 'Courier New',monospace;fill:#f4efe7">0.3 &times; 0.5 = <tspan fill="#e8a84c">0.15</tspan></text>
+      </svg>
+    </div>
+  </div>
+
+  <p>That is the rule. When events are <strong>independent</strong>, meaning one happening does not change the odds of another, the chance that they all happen is the product of their separate chances, one factor for each "and also." So for a list of probabilities, the product <span class="m">&Pi; p<sub>i</sub></span> finally has a clear meaning: it is the chance that all of them happen at once. And since every factor is below 1, the product shrinks with each new one, which becomes the seed of Section 3. First, though, this single meaning grows into the most important number in training.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Step 1: a model assigns a probability to what happens</h3>
+  <p>Before we can judge a model, we have to be clear what a model even is here. A model is a guess about how the world behaves, and the simplest one imaginable is a single number: the chance of rain. Suppose a model claims rain has a 30% chance. That one number is a complete model, because it tells you the probability of either thing that can happen on a day: rain with probability <span class="m">0.3</span>, dry with probability <span class="m">0.7</span>.</p>
+  <p>With a model in hand, you can ask how probable any particular stretch of weather is. Take three days that went rain, then dry, then rain. The model gave rain a <span class="m">0.3</span> chance, dry a <span class="m">0.7</span> chance, and rain again <span class="m">0.3</span>, and by the multiplying rule the chance of that exact three-day run is their product:</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">One model, one stretch of weather</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 185" role="img" aria-label="A model with rain chance 0.3 and dry chance 0.7. For three days that went rain, dry, rain, it assigns 0.3, 0.7, 0.3, and their product is 0.063.">
+        <text x="40" y="26" style="font:13px 'Source Sans 3',sans-serif;fill:#9e968a">the model: rain has chance <tspan fill="#4ca8e8">0.3</tspan>,  dry has chance <tspan fill="#cbc4b9">0.7</tspan></text>
+        <g style="font:13px sans-serif;fill:#f4efe7" text-anchor="middle">
+          <rect x="194" y="48" width="72" height="32" rx="5" fill="#2a2826" stroke="#4ca8e8"/><text x="230" y="69">rain</text>
+          <rect x="324" y="48" width="72" height="32" rx="5" fill="#2a2826" stroke="#9e968a"/><text x="360" y="69">dry</text>
+          <rect x="454" y="48" width="72" height="32" rx="5" fill="#2a2826" stroke="#4ca8e8"/><text x="490" y="69">rain</text>
+        </g>
+        <g stroke="#7d766b" stroke-width="0.8" stroke-dasharray="3 3"><line x1="230" y1="80" x2="230" y2="104"/><line x1="360" y1="80" x2="360" y2="104"/><line x1="490" y1="80" x2="490" y2="104"/></g>
+        <g style="font:14px 'Courier New',monospace;fill:#cbc4b9" text-anchor="middle">
+          <rect x="194" y="104" width="72" height="32" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="230" y="125">0.3</text>
+          <rect x="324" y="104" width="72" height="32" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="360" y="125">0.7</text>
+          <rect x="454" y="104" width="72" height="32" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="490" y="125">0.3</text>
+        </g>
+        <text x="360" y="170" text-anchor="middle" style="font:14px 'Courier New',monospace;fill:#f4efe7">0.3 &times; 0.7 &times; 0.3 = <tspan fill="#e8a84c">0.063</tspan></text>
+      </svg>
+    </div>
+  </div>
+
+  <p>So a model, plus a stretch of days, gives back one number: how probable the model thought that exact weather was. That is the model running in its natural direction, from a known model to the chance of an outcome. Hold onto that, because the whole idea of learning comes from turning it around.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Step 2: in real life we have the days, not the model</h3>
+  <p>That example quietly cheated: it started by handing you the model, the 30% rain chance. Real life never does. Nobody tells you a new city's true rain chance. What you actually have is the opposite: the days already happened, you watched them, and the model is the unknown you are trying to find. The question you really face is the reverse of Step 1:</p>
+  <p class="lead-q">Given the days we actually saw, which model should we believe?</p>
+  <p>This reversal is the heart of learning from data, so it is worth saying plainly. In Step 1 the model was known and the outcome was the question. Now the outcome is known, it is fixed, it happened, and the model is the question.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Step 3: score a candidate by how probable it makes what you saw</h3>
+  <p>We cannot look up the true model. But we can do something almost as good: take any candidate model we like and ask it the Step 1 question about the data we already have. If this candidate were the truth, how probable was the week we actually saw? A candidate under which the observed week comes out very probable is a believable explanation of it. A candidate under which the week was nearly impossible is not.</p>
+  <p>Make it concrete. Say the week you watched had two rainy days and three dry ones. Try a candidate that believes rain is rare, a 10% chance. Ask it how probable that week was, the Step 1 way, multiplying the chance it gave to each day:</p>
+  <div class="codeblock"><span class="cap">candidate: rain chance 10%, scoring the observed week (2 rainy, 3 dry)</span>0.1 &times; 0.1 &times; 0.9 &times; 0.9 &times; 0.9 = 0.0073</div>
+  <p>Almost nothing. This candidate is shocked that it rained twice, because it believed rain almost never comes. Under it, the week we saw looks like a fluke, so it is a poor explanation of the data.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Step 4: compare two candidates</h3>
+  <p>One score on its own means little; the score earns its keep when you compare. So try a second candidate that believes rain is much more common, a 40% chance, and score the same week the same way. Here are both, side by side on the identical five days:</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The same week, scored by two candidate models</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 232" role="img" aria-label="The observed week rain, dry, dry, rain, dry. Candidate A with rain chance 0.4 gives the days 0.4, 0.6, 0.6, 0.4, 0.6 and a product of 0.0346, fitting well. Candidate B with rain chance 0.1 gives 0.1, 0.9, 0.9, 0.1, 0.9 and a product of 0.0073, fitting badly because it is shocked by the rainy days.">
+        <text x="18" y="48" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">happened</text>
+        <g style="font:12px sans-serif;fill:#f4efe7" text-anchor="middle">
+          <rect x="114" y="28" width="72" height="30" rx="5" fill="#2a2826" stroke="#4ca8e8"/><text x="150" y="48">rain</text>
+          <rect x="204" y="28" width="72" height="30" rx="5" fill="#2a2826" stroke="#9e968a"/><text x="240" y="48">dry</text>
+          <rect x="294" y="28" width="72" height="30" rx="5" fill="#2a2826" stroke="#9e968a"/><text x="330" y="48">dry</text>
+          <rect x="384" y="28" width="72" height="30" rx="5" fill="#2a2826" stroke="#4ca8e8"/><text x="420" y="48">rain</text>
+          <rect x="474" y="28" width="72" height="30" rx="5" fill="#2a2826" stroke="#9e968a"/><text x="510" y="48">dry</text>
+        </g>
+        <text x="18" y="92" style="font:12px 'Source Sans 3',sans-serif;fill:#f4efe7">Candidate A</text><text x="18" y="108" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">rain 40%</text>
+        <g style="font:12px 'Courier New',monospace;fill:#cbc4b9" text-anchor="middle">
+          <rect x="114" y="82" width="72" height="30" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="150" y="102">0.4</text>
+          <rect x="204" y="82" width="72" height="30" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="240" y="102">0.6</text>
+          <rect x="294" y="82" width="72" height="30" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="330" y="102">0.6</text>
+          <rect x="384" y="82" width="72" height="30" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="420" y="102">0.4</text>
+          <rect x="474" y="82" width="72" height="30" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="510" y="102">0.6</text>
+        </g>
+        <text x="330" y="134" text-anchor="middle" style="font:13px 'Courier New',monospace;fill:#7fff6b">product = 0.0346   (fits well: barely surprised)</text>
+        <text x="18" y="172" style="font:12px 'Source Sans 3',sans-serif;fill:#f4efe7">Candidate B</text><text x="18" y="188" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">rain 10%</text>
+        <g style="font:12px 'Courier New',monospace;fill:#cbc4b9" text-anchor="middle">
+          <rect x="114" y="162" width="72" height="30" rx="5" fill="#2a2826" stroke="#ff6b6b"/><text x="150" y="182">0.1</text>
+          <rect x="204" y="162" width="72" height="30" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="240" y="182">0.9</text>
+          <rect x="294" y="162" width="72" height="30" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="330" y="182">0.9</text>
+          <rect x="384" y="162" width="72" height="30" rx="5" fill="#2a2826" stroke="#ff6b6b"/><text x="420" y="182">0.1</text>
+          <rect x="474" y="162" width="72" height="30" rx="5" fill="#2a2826" stroke="#3a3733"/><text x="510" y="182">0.9</text>
+        </g>
+        <text x="330" y="214" text-anchor="middle" style="font:13px 'Courier New',monospace;fill:#ff6b6b">product = 0.0073   (fits badly: shocked by the rain)</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>The 40% candidate gives the week <span class="m">0.0346</span>, nearly five times the 10% candidate's <span class="m">0.0073</span>. It is barely surprised by what happened, so it explains the week far better. That score, the probability a candidate model assigns to the data you actually saw, has a name: the <strong>likelihood</strong>. The rule for using it is the one we just watched: the higher a model's likelihood, the better it fits the data.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Step 5: test them all, and keep the best</h3>
+  <p>Two candidates were enough to see the idea. To actually learn the rain chance, do not stop at two, let the candidate take every value between 0 and 1, and score each one by the likelihood, the probability it gives the week you saw. A few of them:</p>
+  <ul style="color:var(--body);line-height:1.7;margin:1rem 0 1.2rem;padding-left:1.4rem">
+    <li><span class="m">p = 0.1</span>: <span class="m">0.1 &times; 0.1 &times; 0.9 &times; 0.9 &times; 0.9 = 0.0073</span>. Too low, shocked by the two rainy days.</li>
+    <li><span class="m">p = 0.4</span>: <span class="m">0.4 &times; 0.4 &times; 0.6 &times; 0.6 &times; 0.6 = 0.0346</span>. Comfortable with both the rain and the dry.</li>
+    <li><span class="m">p = 0.8</span>: <span class="m">0.8 &times; 0.8 &times; 0.2 &times; 0.2 &times; 0.2 = 0.0051</span>. Too high, shocked by the three dry days.</li>
+  </ul>
+  <p>Plot the likelihood for every value of <span class="m">p</span> and the scores rise to a single clear peak:</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Scoring every candidate by the probability it gives the observed week</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 235" role="img" aria-label="A bar chart over candidate rain chances from 0.1 to 0.8. The bars are low at the extremes, rise toward the middle, and peak at p equals 0.4, the candidate that makes the observed two-rainy, three-dry week most probable.">
+        <text x="60" y="22" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">probability the candidate gives to the observed week (the likelihood)</text>
+        <line x1="64" y1="40" x2="64" y2="190" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="64" y1="190" x2="624" y2="190" stroke="#7d766b" stroke-width="0.8"/>
+        <g>
+          <rect x="67" y="160" width="46" height="30" fill="#4ca8e8" opacity="0.4"/>
+          <rect x="152" y="107" width="46" height="83" fill="#4ca8e8" opacity="0.4"/>
+          <rect x="237" y="65" width="46" height="125" fill="#4ca8e8" opacity="0.4"/>
+          <rect x="322" y="50" width="46" height="140" fill="#e8a84c" opacity="0.85"/>
+          <rect x="407" y="63" width="46" height="127" fill="#4ca8e8" opacity="0.4"/>
+          <rect x="492" y="97" width="46" height="93" fill="#4ca8e8" opacity="0.4"/>
+          <rect x="577" y="169" width="46" height="21" fill="#4ca8e8" opacity="0.4"/>
+        </g>
+        <text x="345" y="42" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#e8a84c">the winner: makes the week most probable</text>
+        <text x="90" y="150" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">too low</text>
+        <text x="600" y="160" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">too high</text>
+        <g style="font:12px 'Courier New',monospace;fill:#cbc4b9" text-anchor="middle">
+          <text x="90" y="206">0.1</text><text x="175" y="206">0.2</text><text x="260" y="206">0.3</text><text x="345" y="206">0.4</text><text x="430" y="206">0.5</text><text x="515" y="206">0.6</text><text x="600" y="206">0.8</text>
+        </g>
+        <text x="344" y="228" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">candidate rain chance p</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>The peak sits exactly at <span class="m">p = 0.4</span>, which is just two rainy days out of five, the answer you would have guessed without any of this. That agreement is the reassurance that the method is sane. The real prize is the recipe it followed, choose the model that makes the observed data most probable, because that recipe does not care how complicated the model is. It works the same when the model is a single rain chance and when it is the billions of numbers inside a neural network. Choosing a model this way is called <strong>maximum likelihood</strong>, and most of training is a version of it.</p>
+
+  <p>One feeling to carry out of all five steps: the likelihood measures how unsurprised a model is by reality. A model that fits the world expects what happens and gives it a high probability; a poor one is caught off guard and gives it a low one. Training is the search for the model that finds the world least surprising.</p>
+
+  <p>A language model is this exact idea with words in place of weather. Its model is not one rain chance but billions of weights, and at each position it gives a probability to the word that actually came next. The likelihood of a whole sentence is the product of those per-word probabilities, <span class="m">&Pi; p<sub>i</sub></span>, and training adjusts the billions of weights to make the real text as probable as it can, the product as large as it can. A three-word sentence the model rated <span class="m">0.2</span>, then <span class="m">0.1</span>, then <span class="m">0.5</span> has likelihood <span class="m">0.2 &times; 0.1 &times; 0.5 = 0.01</span>. So this product is the exact quantity training works to push upward, which is what turns the next section into a genuine problem.</p>
+
+  <hr class="sep">
+
+  <h2>Section 3 &middot; The product that vanishes</h2>
+
+  <p>Section 2 left us with the likelihood, a product of probabilities that training works to make as large as it can. A real dataset pours hundreds or thousands of probabilities into that product. Before any maximizing can happen, a computer has to actually compute it, and that is where a quiet disaster is waiting.</p>
+
+  <p class="lead-q">A product of hundreds of probabilities, each a number between 0 and 1. What does a real computer actually hold at the end?</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.6rem 0 .4rem">The true value shrinks fast, but never to zero</h3>
+  <p>Start with the friendliest product there is, coin flips. The chance of heads <span class="m">n</span> times in a row is <span class="m">0.5</span> multiplied by itself <span class="m">n</span> times, and every extra flip halves the result. Ten flips in a row is about one in a thousand; twenty is about one in a million. The number drops with astonishing speed. But notice the one thing that stays true the whole way down: it is never zero. Halving a positive number leaves a positive number, always. On paper the product keeps shrinking forever and never actually reaches zero.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Halving over and over: tiny, but never zero</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 180" role="img" aria-label="A curve falling from 0.5 toward the horizontal axis as the number of flips grows, getting ever closer to zero but never touching it. Ten flips is about 0.001, twenty about 0.0000009.">
+        <line x1="60" y1="150" x2="630" y2="150" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="30" x2="60" y2="150" stroke="#7d766b" stroke-width="0.8"/>
+        <text x="40" y="46" text-anchor="end" style="font:11px 'Courier New',monospace;fill:#9e968a">0.5</text>
+        <text x="40" y="153" text-anchor="end" style="font:11px 'Courier New',monospace;fill:#9e968a">0</text>
+        <path d="M60 44 Q150 132 300 145 T630 149" fill="none" stroke="#4ca8e8" stroke-width="2.2"/>
+        <circle cx="180" cy="139" r="3" fill="#e8a84c"/><text x="186" y="132" style="font:11px 'Source Sans 3',sans-serif;fill:#cbc4b9">10 flips &asymp; 0.001</text>
+        <circle cx="320" cy="146" r="3" fill="#e8a84c"/><text x="326" y="139" style="font:11px 'Source Sans 3',sans-serif;fill:#cbc4b9">20 flips &asymp; 0.0000009</text>
+        <text x="345" y="172" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">number of flips &rarr; (the curve hugs the axis but never touches it)</text>
+      </svg>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">On a real chip, it hits exactly zero</h3>
+  <p>Now stop doing it on paper and do it on the chip from Unit 1, which stores numbers as a <code>float</code>. Keep halving and count the flips:</p>
+
+  <div class="codeblock"><span class="cap">on the bench: probability of n heads in a row, in float</span>float p = 1.0f;
+for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, again and again</span>
+
+<span class="cmt">// p becomes EXACTLY 0.0 after only 150 flips,</span>
+<span class="cmt">// even though the true value 0.5^150 is about 7e-46: tiny, but NOT zero</span></div>
+
+  <p>Not a small number. A flat, exact <span class="m">0</span>. And not after thousands of steps, after about <strong>150</strong>. A real likelihood is worse still, because word and data probabilities sit well below one-half and there are hundreds of them. With each probability around <span class="m">0.1</span>, the product underflows to zero after only <strong>46</strong> of them. The paper math says positive forever; the chip says zero within a paragraph.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Why exactly zero, and not just very small?</h3>
+  <p>The reason is the single most useful idea in this section, and it is the hinge that the fix in Section 4 turns on. Recall from Unit 1 how a <code>float</code> actually stores a number. It does not keep a long string of digits. It keeps a few significant digits and, separately, an exponent that says where the decimal point sits, a value times a power of two. Those are two different budgets, one for the digits and one for the exponent.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A float is digits times a power, and only the exponent runs out</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 150" role="img" aria-label="A float stores a number as digits times a power of two. The digits, about seven significant figures, have plenty of room. The exponent has limited room and bottoms out near ten to the minus forty-five.">
+        <text x="40" y="34" style="font:13px 'Source Sans 3',sans-serif;fill:#9e968a">a float stores a number as:  (a few digits) &times; (a power of two)</text>
+        <text x="40" y="78" style="font:13px 'Courier New',monospace;fill:#7fff6b">the digits</text>
+        <text x="190" y="78" style="font:15px 'Courier New',monospace;fill:#f4efe7">1.602</text>
+        <text x="300" y="78" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">about 7 significant figures, plenty of room, never the problem here</text>
+        <text x="40" y="116" style="font:13px 'Courier New',monospace;fill:#ff6b6b">the exponent</text>
+        <text x="190" y="116" style="font:15px 'Courier New',monospace;fill:#f4efe7">10<tspan font-size="11" dy="-6">-38</tspan></text>
+        <text x="300" y="116" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">limited room: it bottoms out near 10<tspan font-size="9" dy="-5">-45</tspan><tspan dy="5">, and below that nothing exists</tspan></text>
+      </svg>
+    </div>
+  </div>
+
+  <p>In our shrinking product, the digits were never in trouble. The exponent was. A float's exponent reaches down only to about <span class="m">10<sup>-38</sup></span>, and a little further, to roughly <span class="m">10<sup>-45</sup></span>, through some special small values. But our product needed an exponent near <span class="m">10<sup>-46</sup></span>, then <span class="m">10<sup>-150</sup></span>, then beyond. It did not run out of digits; it ran out of exponent. Once a step lands past the smallest exponent the float can write, there is no number left for it to be, so it snaps to <span class="m">0</span>. This is the bottom cliff from Class 4, underflow, and a product of small numbers runs off it within a few dozen steps.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The product walks off the bottom of what a float can hold</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 280" role="img" aria-label="A chart with the number of probabilities multiplied on the horizontal axis and the size of the number, in powers of ten, on the vertical axis. The product falls one decade per factor, crosses the float floor near ten to the minus forty-five at about 45 factors, and then drops to zero.">
+        <line x1="80" y1="46" x2="80" y2="246" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="80" y1="246" x2="630" y2="246" stroke="#7d766b" stroke-width="0.8"/>
+        <g style="font:10px 'Courier New',monospace;fill:#9e968a" text-anchor="end">
+          <text x="74" y="54">10^0</text><text x="74" y="111">10^-15</text><text x="74" y="168">10^-30</text><text x="74" y="225">10^-45</text>
+        </g>
+        <line x1="80" y1="221" x2="630" y2="221" stroke="#ff6b6b" stroke-width="1.1" stroke-dasharray="6 4"/>
+        <text x="630" y="215" text-anchor="end" style="font:11px 'Courier New',monospace;fill:#ff6b6b">float floor (~10^-45): the smallest positive number it can store</text>
+        <rect x="80" y="221" width="550" height="25" fill="#ff6b6b" opacity="0.08"/>
+        <text x="355" y="239" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#ff6b6b">anything smaller has nowhere to land, so it becomes exactly 0</text>
+        <line x1="80" y1="50" x2="355" y2="221" stroke="#4ca8e8" stroke-width="2.4"/>
+        <text x="150" y="120" transform="rotate(32 150 120)" style="font:11px 'Source Sans 3',sans-serif;fill:#4ca8e8">the product, one decade smaller per factor</text>
+        <circle cx="355" cy="221" r="3.5" fill="#ff6b6b"/>
+        <path d="M355 221 Q372 236 384 246" fill="none" stroke="#ff6b6b" stroke-width="2" marker-end="url(#c7u)"/>
+        <text x="392" y="240" style="font:11px 'Courier New',monospace;fill:#ff6b6b">0</text>
+        <text x="300" y="266" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">number of probabilities multiplied &rarr;</text>
+        <defs><marker id="c7u" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#ff6b6b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      </svg>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Why a zero here is a catastrophe, not a rounding slip</h3>
+  <p>A tiny number rounded to zero sounds harmless. It is not, and the reason reaches back to what learning actually does. From Section 2, training compares candidate models by their likelihoods and climbs toward the ones that score higher. The <em>differences</em> between those scores are the entire signal it follows. Underflow erases that signal. A decent model might give the data a likelihood near <span class="m">10<sup>-50</sup></span> and a slightly better one near <span class="m">10<sup>-48</sup></span>, but both fall past the floor and are stored as the same flat <span class="m">0</span>. A genuinely good model and a hopeless one, <span class="m">10<sup>-50</sup></span> against <span class="m">10<sup>-300</sup></span>, also both read as <span class="m">0</span>. The numbers that told these models apart are gone, and once every likelihood is pinned at zero there is no "higher" left to climb toward. Training goes blind: no direction looks any better than another, so the model cannot tell how to improve, and so it does not.</p>
+  <p>There is an obvious thing to try, and it is worth following because it leads exactly where the next section goes. The number is too small to store, so do not store the number, store its <strong>logarithm</strong> instead. The log of a tiny positive value is a manageable negative one, with no underflow anywhere in sight. That instinct is the right one. But done naively it arrives one step too late. If you let the probabilities multiply all the way down to a stored <span class="m">0</span> and only <em>then</em> take the log, you are computing <span class="m">log(0)</span>, which is <span class="m">-&infin;</span>, the infinity from Class 4. That is worse than the zero it replaced: it pours into the loss and turns the gradients to <span class="m">NaN</span>, killing the run outright rather than merely starving it of signal.</p>
+  <p>So the lesson is sharp, and it sets the whole task of Section 4. Taking the log is the answer, but only if you take it <em>before</em> the product is ever formed, so the doomed multiplication never happens in the first place. The trick will be to turn the product into something the log can ride through safely from the start.</p>
+
+  <p class="ml-tag">why this matters for ML</p>
+  <p>This is not a rare corner you can dodge with care. A likelihood multiplies one probability for every example in the data, and any real dataset has far more than the few dozen factors it takes to underflow, so the naive product is all but guaranteed to collapse to zero. The single most important quantity in training cannot be computed the way its definition reads. That is a real wall, and the rest of the class is about getting over it. Pick a probability and a count and watch the wall arrive:</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Find the cliff yourself</span></div>
+    <div class="viz-body">
+      <div class="dim-row"><span class="lbl">each probability</span><input type="range" id="ufP" class="dim-slider" min="5" max="95" step="5" value="50"><span id="ufPlab" style="font-family:'Courier New',monospace;color:var(--accent)"></span></div>
+      <div class="dim-row"><span class="lbl">how many factors</span><input type="range" id="ufN" class="dim-slider" min="1" max="400" step="1" value="60"><span id="ufNlab" style="font-family:'Courier New',monospace;color:var(--accent)"></span></div>
+      <div class="card">
+        <div class="stat" id="ufTrue"></div>
+        <div class="stat" id="ufProd"></div>
+        <div class="stat" id="ufLog"></div>
+        <div class="note-line" id="ufNote"></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Section 4 &middot; The fix: turn the product into a sum</h2>
+
+  <p>Section 3 ended with a sharp demand: take the log before the product is ever formed, so the doomed multiplication never happens. At first that sounds impossible. The likelihood <em>is</em> a product, and the log seems to come afterward, once the product already exists.</p>
+
+  <p class="lead-q">How can you take the log of a product without first building the product?</p>
+
+  <p>The entire fix rests on one property of logarithms. Once it is in view, the impossible-sounding demand turns routine.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.6rem 0 .4rem">The one property of logarithms</h3>
+  <p>A logarithm answers a plain question: what power is this number? Working in powers of ten, <span class="m">log 1000 = 3</span>, because <span class="m">1000 = 10<sup>3</sup></span>. The log of a number is its exponent, loosely the count of its zeros.</p>
+  <p>Now watch what multiplication does to exponents. <span class="m">10<sup>2</sup> &times; 10<sup>3</sup> = 10<sup>5</sup></span>, and the exponent <span class="m">5</span> is simply <span class="m">2 + 3</span>: multiplying the two numbers <em>added</em> their exponents. And since a log just is the exponent, that is the same as saying the log of a product equals the sum of the logs.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A log is an exponent, and multiplying adds exponents</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 150" role="img" aria-label="Ten squared times ten cubed equals ten to the fifth, and the exponents two plus three equal five, showing that multiplying numbers adds their logs.">
+        <text x="340" y="58" text-anchor="middle" style="font:22px 'Courier New',monospace;fill:#f4efe7">10<tspan font-size="13" dy="-8">2</tspan><tspan dy="8">  &times;  10</tspan><tspan font-size="13" dy="-8">3</tspan><tspan dy="8">  =  10</tspan><tspan font-size="13" dy="-8">5</tspan></text>
+        <line x1="150" y1="78" x2="150" y2="98" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="335" y1="78" x2="335" y2="98" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="540" y1="78" x2="540" y2="98" stroke="#7d766b" stroke-width="0.8"/>
+        <text x="340" y="120" text-anchor="middle" style="font:18px 'Courier New',monospace;fill:#e8a84c">the exponents:   2  +  3  =  5</text>
+        <text x="340" y="142" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">multiplying the numbers added their logs: log(a &times; b) = log a + log b</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>So <span class="m">log(a &times; b) = log a + log b</span>. It is not a rule to memorize; it is only "exponents add when you multiply," stated for any two numbers instead of round powers of ten. And there is something almost uncanny about it. We were hunting for a function that turns multiplication into addition, and the logarithm is essentially the only continuous function that does. That is exactly why logs were invented four centuries ago, to turn the punishing multiplications of astronomy and navigation into additions a person could carry out by hand. Our underflow is the same old problem in modern dress, and it has the same answer.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">The product becomes a sum</h3>
+  <p>Apply that property across the whole likelihood, every probability at once, and the product collapses into a sum:</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The log turns the product into a sum</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 175" role="img" aria-label="The log of a product p1 times p2 times p3 and so on equals the sum log p1 plus log p2 plus log p3 and so on. The product, a pi, becomes a sum, a sigma.">
+        <text x="340" y="48" text-anchor="middle" style="font:18px 'Courier New',monospace;fill:#f4efe7">log( p1 <tspan fill="#e8a84c">&times;</tspan> p2 <tspan fill="#e8a84c">&times;</tspan> p3 <tspan fill="#e8a84c">&times;</tspan> &hellip; <tspan fill="#e8a84c">&times;</tspan> pn )</text>
+        <text x="340" y="90" text-anchor="middle" style="font:24px 'Source Sans 3',sans-serif;fill:#e8a84c">&#8595;</text>
+        <text x="340" y="108" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">the log turns every &times; into a +</text>
+        <text x="340" y="140" text-anchor="middle" style="font:18px 'Courier New',monospace;fill:#f4efe7">log p1 <tspan fill="#7fff6b">+</tspan> log p2 <tspan fill="#7fff6b">+</tspan> log p3 <tspan fill="#7fff6b">+</tspan> &hellip; <tspan fill="#7fff6b">+</tspan> log pn</text>
+        <text x="340" y="166" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#cbc4b9">a product of probabilities (a &Pi;) becomes a sum of logs (a &Sigma;)</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>A product of <span class="m">n</span> probabilities, a pi, becomes a sum of <span class="m">n</span> logs, a sigma. This is the moment Sections 1 and 2 were quietly building toward: the fix literally turns the one symbol into the other. And here is how it meets Section 3's demand exactly. You do not multiply the probabilities and then take a log. You take the log of each probability first, getting a modest number from each, and add those up. The product is never formed, so it can never underflow. The log is applied <em>before</em> the multiplication that would have sunk it, which was the whole requirement.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Why the sum cannot underflow</h3>
+  <p>Look at the size of the numbers you now carry. <span class="m">log(0.1)</span> is about <span class="m">-2.3</span>; <span class="m">log(0.5)</span> about <span class="m">-0.69</span>. Add a few hundred of them and you land somewhere around <span class="m">-200</span> to <span class="m">-700</span>, a number a float holds without a flicker. There is no tiny value anywhere to lose, because we only ever add ordinary ones. Here is the same three-probability likelihood from Section 2, done both ways:</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The same likelihood, multiplied vs added as logs</span></div>
+    <div class="viz-body">
+      <div class="twocol">
+        <div class="pane bad">
+          <h4>Multiply the probabilities (a product)</h4>
+          <div class="prow">0.2</div>
+          <div class="prow">&times; 0.1</div>
+          <div class="prow">&times; 0.5</div>
+          <div class="tot">= 0.01&nbsp;&nbsp;&nbsp;and with 300 such factors &rarr; 0</div>
+        </div>
+        <div class="pane good">
+          <h4>Add their logs (a sum)</h4>
+          <div class="prow">log 0.2 = -1.61</div>
+          <div class="prow">log 0.1 = -2.30</div>
+          <div class="prow">log 0.5 = -0.69</div>
+          <div class="tot">sum = -4.61&nbsp;&nbsp;&nbsp;and with 300, only about -690</div>
+        </div>
+      </div>
+      <p class="viz-note">And -4.61 is exactly log(0.01): the sum of logs is the log of the product, carried in a form the machine can hold.</p>
+    </div>
+  </div>
+
+  <p>There is a deeper way to see why this buys so much room, straight from Section 3. A float spends only about eight of its bits on the exponent, which is why its reach stops near <span class="m">10<sup>-38</sup></span> and a product runs out of exponent so fast. Taking the log moves that exponent out of the cramped exponent field and into the float's full value, the whole significant-digits budget, a vastly larger space. We trade a little precision we do not need for an enormous range we very much do. The log-likelihood is the product's exponent, finally given enough room to breathe.</p>
+
+  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Does it crown a different winner?</h3>
+  <p>It is worth pausing on what we have quietly done, because it should make you uneasy. We set out to make the likelihood as large as possible. Now we are making the sum of its logs as large as possible instead, and those are not the same number. A decent model might give the data a likelihood of <span class="m">0.01</span>, but its log-likelihood is <span class="m">log(0.01) = -4.6</span>, a <em>negative</em> number. We have swapped the target we chase. So the fair question is whether the swap is harmless: when we climb toward the largest sum of logs, are we still climbing toward the best model, or could it quietly hand the prize to a worse one?</p>
+  <p>Test it on two models before trusting it on a billion. Model A gives the observed data a likelihood of <span class="m">0.01</span>; model B gives it <span class="m">0.0001</span>. A is clearly the better fit, a hundred times more likely. Now compare them the new way, by their logs: <span class="m">log(0.01) = -4.6</span> and <span class="m">log(0.0001) = -9.2</span>. Both are negative, and the better model's log, <span class="m">-4.6</span>, is the larger of the two because it sits closer to zero. A is still ahead. The swap did not reorder them.</p>
+  <p>One case is not a proof, but the reason it worked is general. The logarithm has a single feature that settles every case at once: it only ever climbs.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The log only ever climbs, so it never changes the winner</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 200" role="img" aria-label="A rising logarithm curve: as the input grows the log grows and never turns back, so a bigger input always has a bigger log.">
+        <line x1="60" y1="170" x2="640" y2="170" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="20" x2="60" y2="170" stroke="#7d766b" stroke-width="0.8"/>
+        <text x="350" y="192" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">the likelihood (the input) &rarr;</text>
+        <text x="52" y="22" text-anchor="end" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">log</text>
+        <path d="M70 165 Q140 120 240 95 T440 60 T640 38" fill="none" stroke="#7fff6b" stroke-width="2.4"/>
+        <circle cx="200" cy="103" r="4" fill="#4ca8e8"/><text x="200" y="96" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#4ca8e8">smaller likelihood</text>
+        <circle cx="470" cy="57" r="4" fill="#e8a84c"/><text x="470" y="50" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#e8a84c">bigger likelihood</text>
+        <line x1="200" y1="103" x2="200" y2="170" stroke="#4ca8e8" stroke-width="0.6" stroke-dasharray="3 3"/>
+        <line x1="470" y1="57" x2="470" y2="170" stroke="#e8a84c" stroke-width="0.6" stroke-dasharray="3 3"/>
+        <text x="350" y="150" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#cbc4b9">move right and the curve is always higher: a bigger likelihood always has a bigger log</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>Feed the log a bigger input and you always get a bigger output; its graph rises from left to right and never once turns back down. So whenever one likelihood is larger than another, its log is larger too, with no exceptions. Taking logs stretches and shifts the numbers, but it never swaps their order. The model sitting at the top of the likelihood ranking is still at the top of the log-likelihood ranking. Maximizing the sum of logs therefore lands on the exact same model as maximizing the likelihood would have, except by a route that never goes near the underflow cliff. We get the right winner and a number the machine can actually hold.</p>
+
+  <p class="ml-tag">why this matters for ML</p>
+  <p>The quantity <span class="m">&Sigma; log(p<sub>i</sub>)</span> is the <strong>log-likelihood</strong>, and training maximizes it. Flip its sign and average it and you have the <strong>cross-entropy</strong>, also called the <strong>negative log-likelihood loss</strong>, <span class="m">-(1/n) &Sigma; log(p<sub>i</sub>)</span>, the loss behind essentially every classifier and language model. That formula is not arbitrary. It is a sum of logs precisely so the product it stands for cannot underflow to zero and take the run with it. The two quiet symbols from the opening, sigma and pi, joined by a logarithm, are the difference between a model that learns and one that dies on its first batch.</p>
+
+  <hr class="sep">
+
+  <h2>What to carry out of Class 7</h2>
+
+  <p>Functions hand us lists of values, and we constantly need to fold a list into one number. Sigma does it by adding, pi by multiplying, and each symbol only records where to start, where to stop, and the term to combine, the loops you already write. Adding runs the field: a loss is an average, a neuron is a dot product measuring how much an input agrees with its weights, an expectation is a weighted sum. Multiplying gives the likelihood, the probability a model assigns to the data actually seen, a measure of how unsurprised it is by reality, which training pushes upward. But a product of many probabilities underflows to a hard zero on real hardware, because a float runs out of room in its exponent, the bottom cliff from Class 4, and that zero poisons training through <span class="m">log(0) = -&infin;</span>. The escape is to carry the exponent rather than the value, which is what a logarithm is, turning <span class="m">log(a &times; b) = log a + log b</span> into <span class="m">log(&Pi; p<sub>i</sub>) = &Sigma; log p<sub>i</sub></span>: the dangerous product becomes a safe sum of modest numbers that preserves every comparison. That sum is the log-likelihood every loss function is quietly built from.</p>
+
+  <div class="callout">A product of probabilities is the right idea and the wrong computation. A float runs out of exponent and the product collapses to zero. Carry its exponent instead, which is exactly what taking a logarithm does, and the pi becomes a sigma, the tiny number becomes a sum of ordinary ones, and the likelihood at the heart of machine learning becomes something a finite machine can hold.</div>
+  <hr class="sep">
+
+  <h2>See if it stuck</h2>
+  <p>Eight questions, all answerable from this post. Tap an answer for an immediate verdict and the reason.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A short, self-marking quiz</span></div>
+    <div class="viz-body">
+      <div class="quiz-progress" id="quizProgress"></div>
+      <div id="quizHost"></div>
+      <div class="quiz-final" id="quizFinal"></div>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website" data-repo-id="R_kgDOQlniOw"
+            data-category="General" data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname" data-strict="0" data-reactions-enabled="1"
+            data-emit-metadata="0" data-input-position="bottom" data-theme="dark"
+            data-lang="en" crossorigin="anonymous" async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The Mathematics ML Runs On &middot; Unit 2</h2>
+    <a class="sidebar-link" href="sets-and-functions.html">
+      <div class="sidebar-link-title">Class 6: Sets, and a Function as a Map</div>
+      <div class="sidebar-link-note">Done</div>
+    </a>
+    <a class="sidebar-link active-topic" href="summation-and-products.html">
+      <div class="sidebar-link-title">Class 7: Summation, Products, and Underflow</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Class 8: Counting and the Sample Space</div>
+      <div class="sidebar-link-note">Coming next</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Class 9: Sequences, Limits, Convergence</div>
+      <div class="sidebar-link-note">Upcoming</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The series</h2>
+    <a class="sidebar-link" href="the-mathematics-ml-runs-on.html">
+      <div class="sidebar-link-title">All units and classes</div>
+      <div class="sidebar-link-note">Unit 1 complete, Unit 2 in progress</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Functions give lists; sigma and pi fold them to one number</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A dot product is a sum of products</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A likelihood is a product of probabilities</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Many sub-one factors underflow to zero</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Logs turn the product into a safe sum</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+<script>
+document.getElementById('year').textContent=new Date().getFullYear();
+var hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',function(){hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(function(l){l.addEventListener('click',function(){hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';});});
+
+/* ---- sigma / pi builder with running accumulation ---- */
+(function(){
+  var lists=[[2,5,3,7,1],[2,3,4],[0.5,0.5,0.5]];
+  var cur=0, mode='sum';
+  function fmt(x){ if(Math.abs(x-Math.round(x))<1e-9) return String(Math.round(x)); return (+x.toFixed(4)).toString(); }
+  var preBtns=[document.getElementById('sbPre0'),document.getElementById('sbPre1'),document.getElementById('sbPre2')];
+  var sumBtn=document.getElementById('sbModeSum'),prodBtn=document.getElementById('sbModeProd');
+  function render(){
+    var a=lists[cur], n=a.length, sym=(mode==='sum')?'&Sigma;':'&Pi;', opc=(mode==='sum')?'+':'&times;';
+    document.getElementById('sbNotation').innerHTML='notation: <b>'+sym+' a<sub>i</sub></b>  (i from 1 to '+n+'),  list a = ['+a.map(fmt).join(', ')+']';
+    var run=(mode==='sum')?0:1, lines='<div class="k">start: '+fmt(run)+'</div>';
+    for(var i=0;i<n;i++){ run=(mode==='sum')?run+a[i]:run*a[i];
+      lines+='<div>'+opc+' '+fmt(a[i])+'  &rarr;  running = <b>'+fmt(run)+'</b></div>'; }
+    document.getElementById('sbSteps').innerHTML=lines;
+    document.getElementById('sbResult').innerHTML='result = <b>'+fmt(run)+'</b>';
+    preBtns.forEach(function(b,i){b.classList.toggle('on',i===cur);});
+    sumBtn.classList.toggle('on',mode==='sum');prodBtn.classList.toggle('on',mode==='prod');
+  }
+  preBtns.forEach(function(b,i){b.addEventListener('click',function(){cur=i;render();});});
+  sumBtn.addEventListener('click',function(){mode='sum';render();});
+  prodBtn.addEventListener('click',function(){mode='prod';render();});
+  render();
+})();
+
+/* ---- underflow demo ---- */
+(function(){
+  var pEl=document.getElementById('ufP'),nEl=document.getElementById('ufN');
+  function refresh(){
+    var p=(+pEl.value)/100, n=+nEl.value;
+    document.getElementById('ufPlab').textContent=p.toFixed(2);
+    document.getElementById('ufNlab').textContent=n;
+    var exp10=n*Math.log10(p);
+    var pf=Math.fround(p), prod=1.0;
+    for(var i=0;i<n;i++){ prod=Math.fround(prod*pf); }
+    var logsum=n*Math.log(p);
+    document.getElementById('ufTrue').innerHTML='true value (the math): about <b>10^'+exp10.toFixed(1)+'</b>  (positive, never actually zero)';
+    if(prod===0){
+      document.getElementById('ufProd').innerHTML='float product: <b style="color:var(--red)">0  (underflowed)</b>';
+    } else {
+      document.getElementById('ufProd').innerHTML='float product: <b>'+prod.toExponential(3)+'</b>';
+    }
+    document.getElementById('ufLog').innerHTML='sum of logs (the fix): <b style="color:var(--green)">'+logsum.toFixed(2)+'</b>  (always finite)';
+    document.getElementById('ufNote').textContent = (prod===0)
+      ? 'The float fell off the bottom cliff and reports exactly 0, while the sum of logs is an ordinary number. This is why models work in log-space.'
+      : 'Still above the floor. Add more factors, or make each probability smaller, and watch the float product snap to 0 while the sum of logs barely changes pace.';
+  }
+  pEl.addEventListener('input',refresh);nEl.addEventListener('input',refresh);refresh();
+})();
+
+/* ---- quiz ---- */
+(function(){
+  var QUIZ=[
+    {q:"The symbol &Sigma; (sigma) is shorthand for:",
+     opts:["multiply a list of terms together","add up a list of terms","pick the largest term","count the terms"],c:1,
+     ex:"Sigma means add up the list. It is a for-loop with a running total and a plus sign, written as one symbol."},
+    {q:"In &Sigma; a&#8202;<sub>i</sub> with i going from 1 to n, what is n?",
+     opts:["the first term","the index where you stop, the last term","the number being added","the running total"],c:1,
+     ex:"The number on top is where the counter stops. The bottom (i = 1) is where it starts, and a-sub-i is the term combined each step."},
+    {q:"The symbol &Pi; (pi) is shorthand for:",
+     opts:["add a list","multiply a list together","divide the terms","take the average"],c:1,
+     ex:"Pi is sigma with one change: it multiplies the list instead of adding it, starting the running value at 1."},
+    {q:"A dot product, written &Sigma; w&#8202;<sub>i</sub> x&#8202;<sub>i</sub>, is:",
+     opts:["a product of sums","a sum of products","a single multiplication","a list of averages"],c:1,
+     ex:"You multiply matching entries, then add the products. It is what every neuron computes and what every entry of a matrix multiply is."},
+    {q:"The likelihood, the probability a model assigns to the data actually observed, is computed as:",
+     opts:["the sum of the per-item probabilities","the product of the per-item probabilities","the largest probability","the average probability"],c:1,
+     ex:"Independent probabilities combine by multiplying, a pi. Training adjusts the model to make this product, the likelihood, as large as possible."},
+    {q:"Multiply a few hundred probabilities (each below 1) in a float and you get:",
+     opts:["a tiny but positive number","exactly 0, even though the true value is positive","a negative number","infinity"],c:1,
+     ex:"The product drops below the smallest number a float can hold and rounds to a hard 0, often after only a few dozen factors."},
+    {q:"Why does the product become exactly zero?",
+     opts:["the chip rounds up","it falls below the float's smallest representable value, the floor from Class 4","probabilities cannot be multiplied","the loop runs too long"],c:1,
+     ex:"Multiplying sub-one numbers drives the value past the float's underflow floor, where there is no number left to round to, so it becomes 0."},
+    {q:"The fix, taking logs, works because:",
+     opts:["logs make numbers bigger","log of a product is the sum of the logs, and log preserves which value is larger","logs remove the probabilities","it rounds the product up"],c:1,
+     ex:"Since log(a b) = log a + log b, the pi becomes a sigma of modest numbers that never underflow. Log is increasing, so it preserves comparisons. That sum is the log-likelihood every loss is built from."}
+  ];
+  var answered=0,score=0;
+  var host=document.getElementById('quizHost'),prog=document.getElementById('quizProgress'),fin=document.getElementById('quizFinal');
+  function up(){prog.textContent=answered+' / '+QUIZ.length+' answered   \u00b7   score '+score;}
+  QUIZ.forEach(function(item,qi){
+    var card=document.createElement('div');card.className='quiz-q';
+    var qt=document.createElement('div');qt.className='quiz-q-text';qt.innerHTML='<span class="quiz-q-num">Q'+(qi+1)+'.</span>'+item.q;card.appendChild(qt);
+    var btns=[];
+    item.opts.forEach(function(text,oi){
+      var b=document.createElement('button');b.className='quiz-opt';b.type='button';b.innerHTML=text+'<span class="mk"></span>';
+      b.addEventListener('click',function(){
+        if(card.dataset.done)return;card.dataset.done='1';answered++;btns.forEach(function(x){x.disabled=true;});
+        if(oi===item.c){b.classList.add('correct');b.querySelector('.mk').textContent='\u2713';score++;}
+        else{b.classList.add('wrong');b.querySelector('.mk').textContent='\u2717';var rr=btns[item.c];rr.classList.add('correct');rr.querySelector('.mk').textContent='\u2713';}
+        ex.classList.add('show');up();if(answered===QUIZ.length)done();
+      });
+      btns.push(b);card.appendChild(b);
+    });
+    var ex=document.createElement('div');ex.className='quiz-explain';ex.textContent=item.ex;card.appendChild(ex);
+    host.appendChild(card);
+  });
+  function done(){var m;
+    if(score===QUIZ.length)m='Every one. Sigma, pi, and the log trick are the notation the rest of the course runs on.';
+    else if(score>=QUIZ.length-1)m=score+' out of '+QUIZ.length+'. Strong. The notation has clicked.';
+    else if(score>=QUIZ.length-3)m=score+' out of '+QUIZ.length+'. Solid. Replay the builder and the underflow chart and it locks in.';
+    else m=score+' out of '+QUIZ.length+'. Worth another pass: sigma adds, pi multiplies, products of sub-one numbers underflow, and logs turn the product into a sum.';
+    fin.textContent=m;fin.classList.add('show');}
+  up();
+})();
+</script>
+</body>
+</html>
