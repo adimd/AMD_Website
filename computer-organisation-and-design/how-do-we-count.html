@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>How Do We Count? | Computer Organisation & Design</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#f4efe7;--body:#cbc4b9;--muted:#9e968a;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.016;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}
+    a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}
+    .nav-links a:hover::after{width:100%}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.22rem;color:var(--body);font-weight:400;margin-bottom:2.2rem;line-height:1.62}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article p{font-size:1.19rem;font-weight:400;margin-bottom:1.35rem;line-height:1.8}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.93em;background:rgba(232,168,76,.15);padding:.2rem .48rem;border-radius:4px;color:#f1dcb2;font-family:'Courier New',monospace}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+    .lead-q{font-family:var(--display);font-size:1.5rem;font-style:italic;color:var(--ink);line-height:1.42;margin:1.7rem 0;padding-left:1.1rem;border-left:3px solid var(--accent)}
+
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.5rem 0;overflow-x:auto;font-family:'Courier New',monospace;font-size:.9rem;line-height:1.7;color:var(--body);white-space:pre}
+    .codeblock .cmt{color:var(--muted)}
+    .codeblock .kw{color:var(--blue)}
+    .codeblock .cap{display:block;color:var(--muted);font-size:.78rem;margin-bottom:.5rem;font-family:var(--sans);font-style:italic}
+
+    .run-row{display:flex;align-items:center;gap:.7rem;margin:.45rem 0 .2rem;flex-wrap:wrap}
+    .run-out{font-family:'Courier New',monospace;font-size:.84rem;line-height:1.55;color:var(--green);background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.65rem .85rem;white-space:pre-wrap;margin:.35rem 0 0;min-height:1.1rem;overflow-x:auto}
+    .run-out.empty{color:var(--muted)}
+    .run-hint{font-size:.78rem;color:var(--muted)}
+    .lab-btn{padding:.5rem 1rem;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);cursor:pointer;font-size:.88rem;font-family:'Courier New',monospace}
+    .lab-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+    .thread-box{margin:2rem 0;padding:1.2rem 1.5rem;border-radius:0 var(--radius) var(--radius) 0;border-left:3px solid var(--blue);background:var(--blue-dim)}
+    .thread-label{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:.5rem}
+    .thread-text{font-size:1.08rem;color:var(--body);line-height:1.72}
+    .thread-text strong{color:var(--ink)}
+
+    .yt-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:2rem 0;background:#000}
+    .yt-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:10px}
+    .yt-caption{font-size:.88rem;color:var(--muted);margin-top:.6rem;font-style:italic;line-height:1.5}
+
+    .closing-statement{margin:2.5rem 0;padding:2rem 2.2rem;border-radius:var(--radius);background:var(--bg-elevated);border:1px solid var(--border-hover);font-family:var(--display);font-size:1.22rem;color:var(--body);line-height:1.82;font-style:italic}
+    .closing-statement strong{color:var(--ink);font-style:normal}
+
+    .img-wrap{margin:2rem 0;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+    .img-wrap img{width:100%;display:block;object-fit:cover;max-height:480px}
+    .img-caption{padding:.7rem 1rem;font-size:.88rem;color:var(--muted);font-style:italic;line-height:1.5;background:var(--bg-elevated)}
+
+    /* interactive binary counter */
+    .counter-wrap{display:flex;flex-direction:column;gap:1.2rem}
+    .bit-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+    .bit-cell{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .bit-weight{font-size:10px;color:var(--muted);font-family:'Courier New',monospace}
+    .bit-box{width:52px;height:52px;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;font-family:'Courier New',monospace;transition:all .18s;cursor:default}
+    .bit-box.on{background:rgba(232,168,76,.15);border-color:rgba(232,168,76,.5);color:var(--accent)}
+    .bit-box.off{background:var(--bg);color:var(--muted)}
+    .counter-vals{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap}
+    .counter-val{text-align:center}
+    .counter-val-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'Courier New',monospace}
+    .counter-val-num{font-size:22px;font-weight:700;font-family:'Courier New',monospace;color:var(--ink);margin-top:3px}
+    .counter-val-num.bin{color:var(--accent)}
+    .counter-val-num.dec{color:var(--blue)}
+    .counter-controls{display:flex;justify-content:center;gap:10px}
+    .ctrl-btn{padding:.5rem 1.4rem;border-radius:8px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--body);cursor:pointer;font-size:.9rem;font-family:'Courier New',monospace;transition:all .15s}
+    .ctrl-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .ctrl-btn.primary{background:rgba(232,168,76,.1);border-color:rgba(232,168,76,.4);color:var(--accent)}
+    .ctrl-btn.primary:hover{background:rgba(232,168,76,.2)}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}.bit-box{width:42px;height:42px;font-size:18px}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a>
+      <a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a>
+      <a href="../projects.html">Projects</a>
+      <a href="../teaching.html">Teaching</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a>
+  <a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a>
+  <a href="../projects.html">Projects</a>
+  <a href="../teaching.html">Teaching</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Computer Organisation &amp; Design &middot; Class 2</span>
+  <h1>How Do We Count?</h1>
+  <p class="blog-subtitle">Humans have been counting for fifty thousand years. We have used fingers, pebbles, knotted ropes, clay tablets, gear wheels, and vacuum tubes. Every method worked. Every method also had a way of going wrong. This class is the story of that search, and why it ended where it did.</p>
+
+  <p>The last class was about what happens when engineers do not understand how numbers live inside machines. The wallpaper, the float, the timestamp, the AGC. All of it traced back to one question: how does a machine represent a number, and what are the limits of that representation?</p>
+
+  <p>But that question has a question underneath it. Before machines represented numbers, humans did. And the choices humans made about how to count, across thousands of years and dozens of civilisations, shaped every decision the engineers who built the first computers had to make. To understand why computers count the way they do, you need to understand how counting itself evolved.</p>
+
+  <p>So this class starts not with electronics or circuits or bits. It starts with a shepherd.</p>
+
+  <hr class="sep">
+
+  <h2>The oldest problem in computing</h2>
+
+  <p>Imagine you have a hundred sheep. Every morning you let them out to graze. Every evening you bring them back. Your job is to know if one is missing.</p>
+
+  <p>A hundred sheep look more or less the same. You cannot remember each face. You cannot hold the number 100 in your head reliably across a full day of other things happening. And if a wolf takes one sheep in the night, you need to know. Your livelihood depends on it.</p>
+
+  <p>The solution a shepherd arrived at fifty thousand years ago is the solution every computer still uses today. You find a proxy. A pebble for each sheep. When a sheep goes out, a pebble goes in one pile. When it comes back, the pebble moves to another pile. At the end of the day, if the piles match, all sheep are accounted for. If there is a pebble left over, one sheep is missing.</p>
+
+  <p>The pebble is doing something profound. It is externalising the act of counting. The shepherd does not need to remember 100. They need to remember that piles must match. The abstract problem of counting has been reduced to a concrete physical comparison. One thing per thing. The correspondence is the computation.</p>
+
+  <p class="lead-q">This is the oldest idea in computing. Not circuits. Not code. The idea that you can represent a quantity with something physical, and manipulate the physical thing instead of the abstract number.</p>
+
+  <p>The word calculation itself comes from the Latin <em>calculus</em>, which means small stone. Pebble. The entire history of computing is an attempt to do what the shepherd was doing, faster, with larger numbers, and with fewer errors.</p>
+
+  <div class="img-wrap">
+    <img referrerpolicy="no-referrer" src="https://upload.wikimedia.org/wikipedia/commons/4/42/Os_d%27Ishango_IRSNB.JPG"
+         alt="The Ishango bone, a 20,000 year old baboon fibula covered in tally notches, Royal Belgian Institute of Natural Sciences"/>
+    <p class="img-caption">The Ishango bone. A baboon fibula, 20,000 years old, found in what is now the Democratic Republic of Congo. The notches carved into it in three columns are the oldest known mathematical artifact. A shepherd's pebble, made permanent in bone.</p>
+  </div>
+
+  <p>That last part, fewer errors, is the thread that runs through everything in this class. Every counting system humans ever built was an attempt to be more accurate than the one before. And the story of why computers count in binary is the story of what accuracy actually demands from a physical system.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Every counting system ever built tried to answer two questions</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 580 100" role="img" aria-label="Two questions that every counting system must answer: how do we represent a quantity, and how do we know the representation is still accurate">
+        <rect x="20" y="16" width="248" height="68" rx="10" fill="rgba(232,168,76,.07)" stroke="rgba(232,168,76,.3)" stroke-width="1"/>
+        <text x="144" y="44" text-anchor="middle" style="font:700 13px 'Source Sans 3',sans-serif;fill:#e8a84c">How do we represent a quantity?</text>
+        <text x="144" y="64" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">pebbles, notches, symbols, voltages</text>
+        <text x="144" y="78" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">every system has an answer</text>
+
+        <text x="290" y="54" text-anchor="middle" style="font:700 18px 'Source Sans 3',sans-serif;fill:#3a3733">&amp;</text>
+
+        <rect x="312" y="16" width="248" height="68" rx="10" fill="rgba(76,168,232,.07)" stroke="rgba(76,168,232,.3)" stroke-width="1"/>
+        <text x="436" y="44" text-anchor="middle" style="font:700 13px 'Source Sans 3',sans-serif;fill:#4ca8e8">Is the representation still accurate?</text>
+        <text x="436" y="64" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">pebbles lost, gears slip, tubes burn out</text>
+        <text x="436" y="78" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">every system has a failure mode</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>Every counting system in history, from pebbles to punch cards, is an answer to the first question. The history of computing is really the history of the second. Each technology solved the representation problem in a new way, and each time it hit a new accuracy wall. The story of binary is the story of what finally broke through that wall.</p>
+
+  <hr class="sep">
+
+  <h2>Different worlds, different bases</h2>
+
+  <p>The shepherd's pebbles answered the first question. One pebble per sheep is a representation. But it scales terribly. A thousand sheep means a thousand pebbles. A hundred thousand sheep means you are carrying a cart of stones. So humans asked a harder version of the first question: can we represent large quantities with fewer symbols?</p>
+
+  <p>The answer is positional notation. Instead of one symbol per unit, you use position to carry meaning. The same symbol means something different depending on where it sits. This is the single most powerful idea in the history of mathematics, and different civilisations arrived at it independently, making very different choices about one thing: the base.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">What positional notation actually means</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 580 200" role="img" aria-label="Visual showing how the digit 3 means different things in different positions in the number 333, and how this works in both decimal and other bases">
+
+        <!-- title -->
+        <text x="290" y="20" text-anchor="middle" style="font:13px 'Source Sans 3',sans-serif;fill:#9e968a">The same symbol. Three different positions. Three different values.</text>
+
+        <!-- the number 333 broken down -->
+        <g>
+          <!-- hundreds -->
+          <rect x="40" y="36" width="120" height="100" rx="10" fill="rgba(232,168,76,.09)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/>
+          <text x="100" y="86" text-anchor="middle" style="font:700 44px 'Courier New',monospace;fill:#e8a84c">3</text>
+          <text x="100" y="116" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">hundreds column</text>
+          <text x="100" y="130" text-anchor="middle" style="font:700 12px 'Courier New',monospace;fill:#e8a84c">3 x 100 = 300</text>
+
+          <!-- tens -->
+          <rect x="180" y="36" width="120" height="100" rx="10" fill="rgba(76,168,232,.07)" stroke="rgba(76,168,232,.25)" stroke-width="1.5"/>
+          <text x="240" y="86" text-anchor="middle" style="font:700 44px 'Courier New',monospace;fill:#4ca8e8">3</text>
+          <text x="240" y="116" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">tens column</text>
+          <text x="240" y="130" text-anchor="middle" style="font:700 12px 'Courier New',monospace;fill:#4ca8e8">3 x 10 = 30</text>
+
+          <!-- ones -->
+          <rect x="320" y="36" width="120" height="100" rx="10" fill="rgba(127,255,107,.06)" stroke="rgba(127,255,107,.2)" stroke-width="1.5"/>
+          <text x="380" y="86" text-anchor="middle" style="font:700 44px 'Courier New',monospace;fill:#7fff6b">3</text>
+          <text x="380" y="116" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">ones column</text>
+          <text x="380" y="130" text-anchor="middle" style="font:700 12px 'Courier New',monospace;fill:#7fff6b">3 x 1 = 3</text>
+
+          <!-- total -->
+          <text x="290" y="170" text-anchor="middle" style="font:13px 'Source Sans 3',sans-serif;fill:#9e968a">add them up:</text>
+          <text x="290" y="188" text-anchor="middle" style="font:700 14px 'Courier New',monospace;fill:#cbc4b9">300 + 30 + 3 = 333</text>
+        </g>
+
+        <!-- key insight -->
+        <text x="510" y="86" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#9e968a">The digit is</text>
+        <text x="510" y="102" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#9e968a">always 3.</text>
+        <text x="510" y="122" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#5a5550">The column</text>
+        <text x="510" y="136" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#5a5550">decides the</text>
+        <text x="510" y="150" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#5a5550">weight.</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>In decimal the column weights are powers of 10: ones, tens, hundreds, thousands. But there is nothing special about 10. You could use any number as the base. The column weights would then be powers of that base instead. This is where civilisations diverged.</p>
+
+  <p>The Babylonians chose base 60. Not arbitrary. 60 is divisible by 2, 3, 4, 5, 6, 10, 12, 15, 20, and 30. That makes fractions clean in a way that decimal is not. One third of 60 is 20, a whole number. In base 10, one third is 0.333 repeating, a number that cannot be written down exactly. The Babylonians were not being unusual. They were optimising for the accuracy of their calculations with fractions, which their astronomy required.</p>
+
+  <div class="img-wrap">
+    <img referrerpolicy="no-referrer" src="https://upload.wikimedia.org/wikipedia/commons/c/c2/Plimpton_322.jpg"
+         alt="Plimpton 322, Babylonian clay tablet from 1800 BC showing base-60 Pythagorean triples, Columbia University"
+         onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/3/3b/Cuneiform_script2.jpg'"/>
+    <p class="img-caption">Plimpton 322, a Babylonian clay tablet from around 1800 BC, Columbia University collection. Fifteen rows of base-60 numbers encoding what we now recognise as Pythagorean triples. Advanced mathematics, accurate to six decimal places in some entries, pressed into wet clay with a reed stylus. Their system answered the representation question beautifully. Their accuracy failure was permanent: a scribe who made a mistake could not erase it. Once the clay dried, the error was there forever.</p>
+  </div>
+
+  <p>Their base-60 system is still alive today. When you look at a clock and see 60 seconds in a minute and 60 minutes in an hour, that is a Babylonian decision. When a GPS receiver works out your position using 360 degrees of longitude, 360 being 6 times 60, that is base 60 inside a modern satellite system. A four-thousand-year-old number choice running in orbit. The representation persisted. The accuracy problem did not go away.</p>
+
+  <p>The Mayans counted in base 20, probably because they counted on both fingers and toes. Their calendar tracked multiple interlocking cycles with extraordinary precision. But their system still required skilled human calculation. The accuracy failure was the same as every other human system: it could not go beyond what a person could execute without error.</p>
+
+  <div class="img-wrap">
+    <img referrerpolicy="no-referrer" src="https://upload.wikimedia.org/wikipedia/commons/8/85/Dresden_Codex_p09.jpg"
+         alt="Dresden Codex page 9, Mayan manuscript showing base-20 numbers in dots and bars"
+         onerror="this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='block'"/>
+    <div class="img-fallback" style="display:none;padding:2rem;background:var(--bg-elevated);text-align:center">
+      <svg viewBox="0 0 400 200" width="100%" style="max-height:200px">
+        <rect width="400" height="200" fill="rgba(232,168,76,.05)" stroke="rgba(232,168,76,.2)" stroke-width="1" rx="8"/>
+        <text x="200" y="80" text-anchor="middle" style="font:700 14px 'Source Sans 3',sans-serif;fill:#e8a84c">Dresden Codex — c. 1200 AD</text>
+        <text x="200" y="106" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">Mayan base-20 numbers in dots and bars</text>
+        <text x="200" y="128" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#9e968a">● = 1 &nbsp;&nbsp; ━ = 5</text>
+        <text x="200" y="154" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#5a5550">Held at Saxon State Library, Dresden, Germany</text>
+      </svg>
+    </div>
+    <p class="img-caption">Dresden Codex, page 9, c. 1200 AD. One of only four surviving Mayan manuscripts. The dots and bars encode numbers in base 20: one dot equals one, one bar equals five. The astronomical tables in this manuscript tracked Venus and lunar cycles with accuracy that would not be matched in Europe for centuries.</p>
+  </div>
+
+  <p>The Romans had no positional system at all. I means 1 wherever it appears. There is no concept of a hundreds column. You cannot do long division in Roman numerals. The representation was the failure. Complex arithmetic was so difficult that Romans relied on abacuses for actual calculation, which just moved the accuracy problem back to the operator's hands.</p>
+
+  <p>The decimal system we use today came from India. It reached Europe through Arab mathematicians and only became standard there around the 13th century. Fibonacci wrote a book in 1202 that was essentially an argument for adopting it over Roman numerals. Merchants adopted it quickly because it made accounting dramatically more accurate. The key thing is this: base 10 did not win because it is mathematically optimal. It won because humans have ten fingers. A biological accident became a civilisational standard. And that standard was never designed with machines in mind.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Different civilisations, the same two questions — different answers every time</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 600 240" role="img" aria-label="Four civilisations and their number bases, each with a representation answer and an accuracy failure">
+
+        <text x="20"  y="20" style="font:700 10px 'Source Sans 3',sans-serif;fill:#9e968a;text-transform:uppercase;letter-spacing:.06em">Civilisation</text>
+        <text x="150" y="20" style="font:700 10px 'Source Sans 3',sans-serif;fill:#9e968a;text-transform:uppercase;letter-spacing:.06em">Base</text>
+        <text x="210" y="20" style="font:700 10px 'Source Sans 3',sans-serif;fill:#e8a84c;text-transform:uppercase;letter-spacing:.06em">How they represented numbers</text>
+        <text x="400" y="20" style="font:700 10px 'Source Sans 3',sans-serif;fill:#ff6b6b;text-transform:uppercase;letter-spacing:.06em">Accuracy failure</text>
+        <line x1="0" y1="28" x2="600" y2="28" stroke="rgba(237,232,224,.06)" stroke-width="1"/>
+
+        <text x="20"  y="58" style="font:13px 'Source Sans 3',sans-serif;fill:#cbc4b9">Babylonian</text>
+        <text x="150" y="58" style="font:700 13px 'Courier New',monospace;fill:#e8a84c">60</text>
+        <text x="210" y="58" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">Wedge marks on clay tablets</text>
+        <text x="400" y="58" style="font:12px 'Source Sans 3',sans-serif;fill:#ff6b6b">Clay is permanent. Errors last forever.</text>
+        <line x1="0" y1="70" x2="600" y2="70" stroke="rgba(237,232,224,.04)" stroke-width="1"/>
+
+        <text x="20"  y="100" style="font:13px 'Source Sans 3',sans-serif;fill:#cbc4b9">Mayan</text>
+        <text x="150" y="100" style="font:700 13px 'Courier New',monospace;fill:#e8a84c">20</text>
+        <text x="210" y="100" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">Dots and bars on manuscripts</text>
+        <text x="400" y="100" style="font:12px 'Source Sans 3',sans-serif;fill:#ff6b6b">Cannot scale beyond human memory.</text>
+        <line x1="0" y1="112" x2="600" y2="112" stroke="rgba(237,232,224,.04)" stroke-width="1"/>
+
+        <text x="20"  y="142" style="font:13px 'Source Sans 3',sans-serif;fill:#cbc4b9">Roman</text>
+        <text x="150" y="142" style="font:700 13px 'Courier New',monospace;fill:#ff6b6b">none</text>
+        <text x="210" y="142" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">Symbols, no positional value</text>
+        <text x="400" y="142" style="font:12px 'Source Sans 3',sans-serif;fill:#ff6b6b">Cannot do long division at all.</text>
+        <line x1="0" y1="154" x2="600" y2="154" stroke="rgba(237,232,224,.04)" stroke-width="1"/>
+
+        <text x="20"  y="184" style="font:13px 'Source Sans 3',sans-serif;fill:#cbc4b9">Indian</text>
+        <text x="150" y="184" style="font:700 13px 'Courier New',monospace;fill:#7fff6b">10</text>
+        <text x="210" y="184" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">Positional digits 0 through 9</text>
+        <text x="400" y="184" style="font:12px 'Source Sans 3',sans-serif;fill:#ff6b6b">Humans still make arithmetic errors.</text>
+
+        <text x="300" y="220" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#5a5550">every system solved the representation question differently — none of them fully solved the accuracy question</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>Look at the pattern. Every civilisation that developed a number system solved the first question. They all found a way to represent quantities. But not one of them solved the second question. The accuracy failure always remained. Different shape, different era, same problem: somewhere in the chain, a human makes an error, and the count is wrong.</p>
+
+  <p>That pattern is what drives everything that comes next. The dream of a machine that removes the human from the calculation entirely.</p>
+
+  <hr class="sep">
+
+  <h2>The dream of a machine that does not make mistakes</h2>
+
+  <p>By the 17th century the first question was largely solved. Positional decimal notation worked well. You could represent any number with ten symbols and a column system. But the second question, is the counting accurate, was still very much alive.</p>
+
+  <p>Skilled mathematicians made arithmetic errors. Those errors ended up in logarithm tables, trigonometric tables, astronomical tables. Ships navigated using tables with known mistakes. Artillery was aimed using logarithm tables that had not been fully verified. The errors had real consequences. The question that the shepherd asked about pebbles was now being asked about tables of numbers: is this count still right?</p>
+
+  <p>The abacus was an attempt to improve accuracy. It is a positional system made physical. Each column of beads represents a different power of 10. You do arithmetic by moving beads rather than holding intermediate results in your head. The abacus externalises the calculation, reducing the chance of losing track. A skilled operator could add and subtract faster than most people with a pen. But the accuracy failure remained human: a misplaced bead, a moment of distraction, and the answer is wrong.</p>
+
+  <div class="img-wrap">
+    <img referrerpolicy="no-referrer" src="https://upload.wikimedia.org/wikipedia/commons/a/af/Abacus_6.png"
+         alt="A traditional Chinese abacus showing beads on rods representing positional decimal values"
+         onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/b/ba/Boulier1.JPG'"/>
+    <p class="img-caption">An abacus. Each column of beads represents a power of 10. Moving a bead is performing arithmetic. The abacus removes the need to hold intermediate results in memory, reducing human error. But the human is still in the loop. A misplaced bead is a wrong answer. The accuracy question has not been answered, only partially reduced.</p>
+  </div>
+
+  <p>The question that everyone was asking by the 1600s was a sharper version of the second question: could you build a machine that removed the human from the calculation entirely? Not reduced human error. Eliminated it.</p>
+
+  <p>Blaise Pascal tried in 1642. He built the Pascaline to help his father, a tax collector, who spent hours doing repetitive addition by hand. The machine had a series of wheels with ten teeth each, one for each decimal digit. Turning a wheel advanced the digit. When a wheel completed a full rotation it advanced the next wheel by one tooth. Mechanical carry. The machine was doing decimal addition by rotating gears, with no human deciding each step.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The Pascaline, 1642 — press + to turn the units wheel</span></div>
+    <div class="viz-body" style="padding:0">
+      <div id="pascaline-widget" style="background:#13110e;padding:1.4rem 1.2rem;font-family:'Courier New',monospace">
+
+        <!-- display row -->
+        <div style="display:flex;justify-content:center;gap:8px;margin-bottom:1rem">
+          <div style="text-align:center">
+            <div style="font-size:9px;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">thousands</div>
+            <div id="pw-d3" style="width:54px;height:42px;background:#0d0b08;border:1px solid rgba(232,168,76,.35);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#e8a84c;transition:all .15s">0</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:9px;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">hundreds</div>
+            <div id="pw-d2" style="width:54px;height:42px;background:#0d0b08;border:1px solid rgba(232,168,76,.35);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#e8a84c;transition:all .15s">0</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:9px;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">tens</div>
+            <div id="pw-d1" style="width:54px;height:42px;background:#0d0b08;border:1px solid rgba(232,168,76,.35);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#e8a84c;transition:all .15s">0</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:9px;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">units</div>
+            <div id="pw-d0" style="width:54px;height:42px;background:#0d0b08;border:1px solid rgba(232,168,76,.6);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#e8a84c;transition:all .15s">0</div>
+          </div>
+        </div>
+
+        <!-- gear canvas -->
+        <div style="display:flex;justify-content:center;align-items:center;gap:0;margin-bottom:1rem;position:relative">
+          <canvas id="pw-canvas" width="420" height="130" style="display:block;max-width:100%"></canvas>
+        </div>
+
+        <!-- status line -->
+        <div id="pw-status" style="text-align:center;font-size:11px;color:#9e968a;min-height:1.4em;margin-bottom:.9rem">Turn the units wheel to add 1</div>
+
+        <!-- controls -->
+        <div style="display:flex;justify-content:center;gap:10px">
+          <button id="pw-add" style="padding:.5rem 1.4rem;border-radius:8px;border:1px solid rgba(232,168,76,.4);background:rgba(232,168,76,.1);color:#e8a84c;cursor:pointer;font-size:.9rem;font-family:'Courier New',monospace;transition:all .15s">+ Add 1</button>
+          <button id="pw-add10" style="padding:.5rem 1.4rem;border-radius:8px;border:1px solid rgba(76,168,232,.3);background:rgba(76,168,232,.07);color:#4ca8e8;cursor:pointer;font-size:.9rem;font-family:'Courier New',monospace;transition:all .15s">+ Add 10</button>
+          <button id="pw-reset" style="padding:.5rem 1rem;border-radius:8px;border:1px solid rgba(237,232,224,.1);background:transparent;color:#5a5550;cursor:pointer;font-size:.9rem;font-family:'Courier New',monospace">Reset</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var val = 0;
+    var digits = [
+      document.getElementById('pw-d0'),
+      document.getElementById('pw-d1'),
+      document.getElementById('pw-d2'),
+      document.getElementById('pw-d3')
+    ];
+    var status = document.getElementById('pw-status');
+    var canvas = document.getElementById('pw-canvas');
+    var ctx = canvas.getContext('2d');
+
+    // gear rotation angles for each wheel
+    var angles = [0, 0, 0, 0];
+    var animFrame = null;
+    var targetAngles = [0, 0, 0, 0];
+    var carrying = [];
+
+    function drawGears() {
+      var W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      var cx = [80, 180, 280, 380];
+      var colors = ['#e8a84c', '#4ca8e8', '#7fff6b', '#9e968a'];
+      var activeIdx = 0; // units is always active when adding 1
+
+      for (var i = 0; i < 4; i++) {
+        var x = cx[i], y = H/2, r = 44, ri = 32;
+        var angle = angles[i];
+        var isCarrying = carrying.indexOf(i) !== -1;
+        var col = colors[i];
+
+        // outer ring
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI*2);
+        ctx.strokeStyle = isCarrying ? '#ff6b6b' : col.replace(')', ',.35)').replace('rgb', 'rgba').replace('#', 'rgba(').replace(')', ',.25)');
+        ctx.strokeStyle = isCarrying ? 'rgba(255,107,107,.6)' : 'rgba('+hexToRgb(col)+', .3)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // inner fill
+        ctx.beginPath();
+        ctx.arc(x, y, ri, 0, Math.PI*2);
+        ctx.fillStyle = isCarrying ? 'rgba(255,107,107,.08)' : 'rgba('+hexToRgb(col)+', .06)';
+        ctx.fill();
+
+        // 10 teeth
+        for (var t = 0; t < 10; t++) {
+          var tAngle = angle + t * (Math.PI*2/10);
+          var tx = x + Math.cos(tAngle) * r;
+          var ty = y + Math.sin(tAngle) * r;
+          ctx.save();
+          ctx.translate(tx, ty);
+          ctx.rotate(tAngle);
+          ctx.beginPath();
+          ctx.roundRect ? ctx.roundRect(-4, -7, 8, 14, 2) : ctx.rect(-4, -7, 8, 14);
+          ctx.fillStyle = isCarrying ? 'rgba(255,107,107,.5)' : 'rgba('+hexToRgb(col)+', .55)';
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // digit label in centre
+        var d = Math.floor(val / Math.pow(10, i)) % 10;
+        ctx.fillStyle = isCarrying ? '#ff6b6b' : col;
+        ctx.font = 'bold 16px Courier New';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(d, x, y);
+
+        // wheel name below
+        var names = ['units','tens','hundreds','thousands'];
+        ctx.fillStyle = '#5a5550';
+        ctx.font = '9px Source Sans 3, sans-serif';
+        ctx.fillText(names[i], x, y + 52);
+
+        // carry arrow between wheels
+        if (i < 3) {
+          var ax = cx[i] + 52, ay = H/2 - 16;
+          ctx.strokeStyle = isCarrying ? 'rgba(255,107,107,.7)' : 'rgba(90,85,80,.3)';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(cx[i]+46, H/2);
+          ctx.lineTo(cx[i+1]-46, H/2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          // arrowhead
+          ctx.fillStyle = isCarrying ? 'rgba(255,107,107,.7)' : 'rgba(90,85,80,.3)';
+          ctx.beginPath();
+          ctx.moveTo(cx[i+1]-44, H/2);
+          ctx.lineTo(cx[i+1]-50, H/2-4);
+          ctx.lineTo(cx[i+1]-50, H/2+4);
+          ctx.fill();
+        }
+      }
+    }
+
+    function hexToRgb(hex) {
+      hex = hex.replace('#','');
+      var r = parseInt(hex.substring(0,2),16);
+      var g = parseInt(hex.substring(2,4),16);
+      var b = parseInt(hex.substring(4,6),16);
+      return r+','+g+','+b;
+    }
+
+    function updateDisplay(flash) {
+      for (var i = 0; i < 4; i++) {
+        var d = Math.floor(val / Math.pow(10, i)) % 10;
+        digits[i].textContent = d;
+        if (flash && flash.indexOf(i) !== -1) {
+          digits[i].style.color = '#ff6b6b';
+          digits[i].style.borderColor = 'rgba(255,107,107,.7)';
+        } else {
+          digits[i].style.color = '#e8a84c';
+          digits[i].style.borderColor = i === 0 ? 'rgba(232,168,76,.6)' : 'rgba(232,168,76,.35)';
+        }
+      }
+    }
+
+    function animate() {
+      var done = true;
+      for (var i = 0; i < 4; i++) {
+        var diff = targetAngles[i] - angles[i];
+        if (Math.abs(diff) > 0.005) {
+          angles[i] += diff * 0.18;
+          done = false;
+        } else {
+          angles[i] = targetAngles[i];
+        }
+      }
+      drawGears();
+      if (!done) {
+        animFrame = requestAnimationFrame(animate);
+      } else {
+        carrying = [];
+        drawGears();
+      }
+    }
+
+    function addValue(n) {
+      var oldVal = val;
+      val = Math.min(val + n, 9999);
+      if (val === oldVal) return;
+
+      // figure out which wheels carry
+      var newCarrying = [];
+      var tmp = oldVal;
+      for (var step = 0; step < n; step++) {
+        var prev = tmp % 10;
+        tmp++;
+        if (tmp % 10 === 0 && prev === 9) {
+          // units carried
+          newCarrying.push(0);
+          // check tens
+          var prevTens = Math.floor(tmp/10) % 10;
+          if (prevTens === 0) {
+            newCarrying.push(1);
+            // check hundreds
+            var prevHun = Math.floor(tmp/100) % 10;
+            if (prevHun === 0) newCarrying.push(2);
+          }
+        }
+      }
+
+      // rotate wheels
+      var step = Math.PI*2/10;
+      for (var i = 0; i < 4; i++) {
+        var oldD = Math.floor(oldVal / Math.pow(10,i)) % 10;
+        var newD = Math.floor(val / Math.pow(10,i)) % 10;
+        var diff = newD - oldD;
+        if (diff < 0) diff += 10;
+        targetAngles[i] += diff * step * (n === 10 && i > 0 ? 1 : 1);
+      }
+
+      // status message
+      if (newCarrying.length > 0) {
+        var names = ['units','tens','hundreds'];
+        var carryNames = newCarrying.map(function(c){ return names[c]; });
+        status.textContent = 'Carry! When ' + (n===10?'tens':'units') + ' hit 9→0, ' + (newCarrying.length > 1 ? 'multiple wheels carry automatically' : 'the next wheel advances by one tooth');
+        status.style.color = '#ff6b6b';
+        carrying = newCarrying;
+      } else {
+        status.textContent = 'Units wheel turned. Current value: ' + val + (val >= 9 ? ' — one more step will trigger a carry' : '');
+        status.style.color = '#9e968a';
+        carrying = [];
+      }
+
+      updateDisplay(newCarrying);
+      if (animFrame) cancelAnimationFrame(animFrame);
+      animate();
+    }
+
+    document.getElementById('pw-add').addEventListener('click', function(){ addValue(1); });
+    document.getElementById('pw-add10').addEventListener('click', function(){ addValue(10); });
+    document.getElementById('pw-reset').addEventListener('click', function(){
+      val = 0;
+      angles = [0,0,0,0];
+      targetAngles = [0,0,0,0];
+      carrying = [];
+      status.textContent = 'Turn the units wheel to add 1';
+      status.style.color = '#9e968a';
+      updateDisplay([]);
+      drawGears();
+    });
+
+    // initial draw
+    drawGears();
+    updateDisplay([]);
+  })();
+  </script>
+
+  <p>The Pascaline worked, but it was fragile and expensive. Pascal built about fifty of them and sold very few. The accuracy problem was not solved. It was moved. Human arithmetic error was replaced by mechanical failure, and mechanical failure turned out to be just as persistent. Ten teeth per wheel means ten states to maintain perfectly, and in a machine with many interacting wheels, one worn tooth introduced an error that cascaded through every subsequent calculation.</p>
+
+  <p>Gottfried Leibniz improved on Pascal's design and also, separately, thought seriously about binary arithmetic. He published a paper on binary in 1703, drawn to the philosophical elegance of a system with only two symbols. But Leibniz kept the two ideas separate. The engineering advantage of binary was not visible in the gear era. More wheels, smaller numbers per column, but no fundamental improvement in reliability. The case for binary only becomes clear when you change the physical medium entirely.</p>
+
+  <p>Charles Babbage pushed the dream as far as it could go in metal. In the 1820s he designed the Difference Engine to compute and print mathematical tables automatically, no human in the calculation loop at all. His Analytical Engine went further still: a store for memory, a mill for processing, conditional instructions. Ada Lovelace, working with Babbage, wrote what is considered the first algorithm intended for a machine to execute. The concepts were exactly right. Everything a modern computer does was described in those designs.</p>
+
+  <div class="img-wrap">
+    <img referrerpolicy="no-referrer"
+         src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdVeljV6FXZPNsLDPK-AVgdWn40GN6Z1H8Gg&s"
+         alt="Babbage's Difference Engine No. 2, Computer History Museum, Mountain View California"
+         onerror="this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='block'"/>
+    <div class="img-fallback" style="display:none;padding:2rem;background:var(--bg-elevated);text-align:center">
+      <svg viewBox="0 0 400 160" width="100%" style="max-height:160px">
+        <rect width="400" height="160" fill="rgba(232,168,76,.05)" stroke="rgba(232,168,76,.2)" stroke-width="1" rx="8"/>
+        <text x="200" y="60" text-anchor="middle" style="font:700 14px 'Source Sans 3',sans-serif;fill:#e8a84c">Babbage's Difference Engine No. 2</text>
+        <text x="200" y="84" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">8,000 parts. 5 tons. 11 feet long.</text>
+        <text x="200" y="106" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">Designed 1847. Built 1991.</text>
+        <text x="200" y="136" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#5a5550">Computer History Museum, Mountain View, California</text>
+      </svg>
+    </div>
+    <p class="img-caption">Babbage's Difference Engine No. 2 at the Computer History Museum, Mountain View. 8,000 parts, five tonnes, eleven feet long. Designed in the 1840s. Never built in Babbage's lifetime. This working replica was completed in 1991 from his original drawings, 153 years later, proving the design was sound. Victorian manufacturing simply could not hold the tolerances. The machine was right. The metal was not precise enough.</p>
+  </div>
+
+  <p>Neither machine was ever completed. Not primarily because of money, though that was part of it. The precision required for thousands of interlocking brass gears, each machined to tolerances that Victorian manufacturing could not consistently achieve, was simply beyond what the era could produce. A single slightly worn gear introduced an error that propagated through every calculation that followed. The machine designed to eliminate human arithmetic error was defeated by its own mechanical error. The accuracy wall had not moved. It had just changed shape.</p>
+
+  <p class="lead-q">From pebbles to gears, the pattern is the same. Every generation solved the representation problem and immediately hit a new accuracy wall. The question was always the same one the shepherd was asking: is the count still right?</p>
+
+  <p>The answer to that question would only come when engineers stopped asking what base was most convenient for humans, and started asking what physical system was most reliable. That shift in question is where binary comes from.</p>
+
+  <hr class="sep">
+
+  <h2>Electricity changes the question</h2>
+
+  <p>By the 1930s and 1940s, electricity had been powering machines for decades. But the idea of using electrical circuits to do arithmetic was still new. The first instinct was the same one Pascal had: build the machine to speak decimal, because humans speak decimal, and the machine should match the humans who use it.</p>
+
+  <p>ENIAC, completed in 1945 at the University of Pennsylvania, was the first general-purpose electronic computer. It was enormous, filling an entire room, weighing 30 tonnes. And it was decimal. Each decimal digit in ENIAC was stored using a ring of ten vacuum tubes called a ring counter. At any moment, exactly one of the ten tubes was switched on, representing the digit 0 through 9. To store the number 7, tube seven was on and the other nine were off.</p>
+
+  <p>This felt natural. Decimal in, decimal out. No conversion required. Humans could read the machine's internal state directly. The representation problem was solved in the most obvious way imaginable.</p>
+
+  <p>But the accuracy question had a brutal answer.</p>
+
+  <div class="img-wrap">
+    <img referrerpolicy="no-referrer"
+         src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRy2AhHw0DwtXPyW_0Wx7R2ps-YwDFxUvgMWA&s"
+         alt="ENIAC at the Moore School of Electrical Engineering, 1946. US Army photograph, public domain."
+         onerror="this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='block'"/>
+    <div class="img-fallback" style="display:none;padding:2rem;background:var(--bg-elevated);text-align:center">
+      <svg viewBox="0 0 400 160" width="100%" style="max-height:160px">
+        <rect width="400" height="160" fill="rgba(255,107,107,.05)" stroke="rgba(255,107,107,.2)" stroke-width="1" rx="8"/>
+        <text x="200" y="56" text-anchor="middle" style="font:700 14px 'Source Sans 3',sans-serif;fill:#ff6b6b">ENIAC — 1945</text>
+        <text x="200" y="80" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">18,000 vacuum tubes. 30 tonnes. Room-sized.</text>
+        <text x="200" y="102" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">10 tubes per decimal digit. 9 always wasted.</text>
+        <text x="200" y="136" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#5a5550">Moore School of Electrical Engineering, Philadelphia, 1946</text>
+      </svg>
+    </div>
+    <p class="img-caption">ENIAC at the Moore School of Electrical Engineering, Philadelphia, 1946. US Army photograph. The panels stretching wall to wall across the room are banks of vacuum tubes. Eighteen thousand of them. Each one a potential failure point.</p>
+  </div>
+
+  <div class="img-wrap" style="margin-top:1rem">
+    <img referrerpolicy="no-referrer"
+         src="https://upload.wikimedia.org/wikipedia/commons/e/e9/Elektronenroehren-auswahl.jpg"
+         alt="A selection of vacuum tubes of various sizes"
+         onerror="this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='block'"/>
+    <div class="img-fallback" style="display:none;padding:2rem;background:var(--bg-elevated);text-align:center">
+      <svg viewBox="0 0 400 140" width="100%" style="max-height:140px">
+        <rect width="400" height="140" fill="rgba(232,168,76,.05)" stroke="rgba(232,168,76,.2)" stroke-width="1" rx="8"/>
+        <text x="200" y="50" text-anchor="middle" style="font:700 14px 'Source Sans 3',sans-serif;fill:#e8a84c">Vacuum Tube</text>
+        <text x="200" y="74" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">Glows orange. Runs hot. Burns out like a light bulb.</text>
+        <text x="200" y="96" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">ENIAC needed 18,000 working simultaneously.</text>
+        <text x="200" y="120" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#5a5550">Engineers replaced several every single day.</text>
+      </svg>
+    </div>
+    <p class="img-caption">Vacuum tubes. Each one glows orange when active, runs hot, and burns out unpredictably, exactly like a light bulb. ENIAC needed eighteen thousand of them working simultaneously. Engineers expected to replace several every single day.</p>
+  </div>
+
+  <p>ENIAC had approximately 18,000 vacuum tubes in total. Vacuum tubes fail the way light bulbs fail. They burn out. They wear. They become unreliable with heat and age. On a machine with 18,000 tubes, failure was not an occasional event. It was continuous. Engineers expected to spend significant time every single day finding which tubes had failed and replacing them. The machine built to eliminate human arithmetic error was producing errors of its own, constantly, from failing components.</p>
+
+  <p>The engineers working on these machines started to notice something. The ring counter used ten tubes per digit and only one was ever on at a time. Nine tubes were wasted, sitting off, contributing nothing to the computation but contributing fully to the failure rate. What if you only needed each tube to represent one of two states? On or off. Not one of ten. Then you could store information with far fewer tubes, and every tube would be doing useful work.</p>
+
+  <p>To store the digit 7 in decimal required ten tubes. To store the number 7 in binary requires only three tubes. 7 in binary is 111. Three bits, each either on or off. Fewer components. Fewer things to fail. And crucially, each component is being asked to do the easiest possible job: be on, or be off. Not maintain one of ten precisely calibrated states. Just two.</p>
+
+  <p class="lead-q">The shift to binary was not a mathematical preference. It was an engineering survival decision. Fewer components, simpler states, fewer failures. The accuracy wall that had stopped every previous counting system was finally breakable.</p>
+
+  <p>Claude Shannon provided the mathematical foundation in a paper he wrote in 1937, before ENIAC was even built. He showed that Boolean algebra, the branch of mathematics dealing with true and false, maps perfectly onto electrical circuits with switches. Every logical operation, AND, OR, NOT, could be implemented directly in a switching circuit. And Boolean algebra is inherently binary. True or false. On or off. Shannon was not inventing binary for computers. He was showing that binary is the natural language that electrical switching circuits already speak.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Why two states is the right answer to the accuracy question</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 600 200" role="img" aria-label="Two voltage diagrams side by side. Left shows ten voltage levels for decimal, with narrow margins between states and noise causing ambiguity. Right shows two voltage levels for binary with a wide margin between them making errors nearly impossible.">
+
+        <!-- decimal voltages -->
+        <text x="130" y="18" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#ff6b6b;text-transform:uppercase;letter-spacing:.05em">Decimal: 10 voltage levels</text>
+
+        <!-- voltage bands -->
+        <rect x="20" y="24" width="220" height="14" rx="2" fill="rgba(255,107,107,.15)" stroke="rgba(255,107,107,.3)" stroke-width="1"/>
+        <rect x="20" y="42" width="220" height="14" rx="2" fill="rgba(255,107,107,.12)" stroke="rgba(255,107,107,.25)" stroke-width="1"/>
+        <rect x="20" y="60" width="220" height="14" rx="2" fill="rgba(255,107,107,.1)"  stroke="rgba(255,107,107,.2)"  stroke-width="1"/>
+        <rect x="20" y="78" width="220" height="14" rx="2" fill="rgba(255,107,107,.08)" stroke="rgba(255,107,107,.18)" stroke-width="1"/>
+        <rect x="20" y="96" width="220" height="14" rx="2" fill="rgba(255,107,107,.06)" stroke="rgba(255,107,107,.15)" stroke-width="1"/>
+        <rect x="20" y="114" width="220" height="14" rx="2" fill="rgba(255,107,107,.05)" stroke="rgba(255,107,107,.12)" stroke-width="1"/>
+        <rect x="20" y="132" width="220" height="14" rx="2" fill="rgba(255,107,107,.04)" stroke="rgba(255,107,107,.1)"  stroke-width="1"/>
+        <rect x="20" y="150" width="220" height="14" rx="2" fill="rgba(255,107,107,.03)" stroke="rgba(255,107,107,.08)" stroke-width="1"/>
+        <rect x="20" y="168" width="220" height="14" rx="2" fill="rgba(255,107,107,.02)" stroke="rgba(255,107,107,.06)" stroke-width="1"/>
+        <g style="font:9px 'Courier New',monospace;fill:#9e968a">
+          <text x="248" y="35">9 (5V)</text>
+          <text x="248" y="53">8</text>
+          <text x="248" y="71">7</text>
+          <text x="248" y="89">6</text>
+          <text x="248" y="107">5</text>
+          <text x="248" y="125">4</text>
+          <text x="248" y="143">3</text>
+          <text x="248" y="161">2</text>
+          <text x="248" y="179">1</text>
+        </g>
+        <text x="130" y="200" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#ff6b6b">narrow margins, noise causes misread</text>
+
+        <!-- divider -->
+        <line x1="298" y1="14" x2="298" y2="190" stroke="rgba(237,232,224,.06)" stroke-width="1"/>
+
+        <!-- binary voltages -->
+        <text x="448" y="18" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#7fff6b;text-transform:uppercase;letter-spacing:.05em">Binary: 2 voltage levels</text>
+
+        <rect x="318" y="24"  width="260" height="60" rx="6" fill="rgba(127,255,107,.1)" stroke="rgba(127,255,107,.3)" stroke-width="1.5"/>
+        <text x="448" y="58" text-anchor="middle" style="font:700 13px 'Courier New',monospace;fill:#7fff6b">HIGH = 1</text>
+        <text x="448" y="76" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">anything above threshold</text>
+
+        <rect x="318" y="120" width="260" height="60" rx="6" fill="rgba(76,168,232,.08)" stroke="rgba(76,168,232,.25)" stroke-width="1.5"/>
+        <text x="448" y="154" text-anchor="middle" style="font:700 13px 'Courier New',monospace;fill:#4ca8e8">LOW = 0</text>
+        <text x="448" y="172" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">anything below threshold</text>
+
+        <!-- gap label -->
+        <line x1="580" y1="84" x2="580" y2="120" stroke="rgba(237,232,224,.2)" stroke-width="1"/>
+        <text x="590" y="106" style="font:9px 'Source Sans 3',sans-serif;fill:#7fff6b">wide</text>
+        <text x="590" y="116" style="font:9px 'Source Sans 3',sans-serif;fill:#7fff6b">gap</text>
+
+        <text x="448" y="200" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#7fff6b">noise has to be enormous to cause a misread</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>The physical advantage of binary is not about mathematics. It is about the gap between states. In a decimal system, ten voltage levels have to coexist within the same voltage range. The gap between adjacent states is narrow. Any electrical noise, any temperature drift, any component ageing pushes the voltage slightly and the system misreads a 7 as an 8. In a binary system, there are only two states. The gap between them is wide. Noise has to be enormous to push a signal across the boundary. In practice, properly designed binary circuits almost never misread a state.</p>
+
+  <p>John von Neumann and the engineers who designed the stored-program computers of the late 1940s chose binary not because they preferred it aesthetically. They chose it because it was the only answer that held up when you asked the accuracy question seriously. Two states is the minimum possible complexity. Minimum complexity is maximum reliability. Maximum reliability was always the goal.</p>
+
+  <p>And so the question of base, which had been decided by biology for fifty thousand years, was finally decided by physics. Not ten fingers. Not sixty Babylonian divisors. The minimum number of states a physical system can reliably distinguish. Two.</p>
+
+  <div class="thread-box">
+    <div class="thread-label">The two questions — answered for the first time</div>
+    <div class="thread-text">How do we represent a quantity? Binary. On or off. High or low. One of two states. <strong>Is the representation still accurate?</strong> For the first time in fifty thousand years of counting, the answer is yes, structurally and physically. Not because engineers were more careful. Because two states is the hardest configuration a physical system can be asked to confuse. The accuracy problem that defeated every previous counting system, from pebbles to Babbage's gears, was not solved by better materials or more careful humans. It was solved by choosing the base that made error nearly impossible by design.</div>
+  </div>
+
+  <p>But choosing binary creates a new problem immediately. A machine that counts in binary produces output that no human can read. 11111111 is 255. 10000000000000000 is 65536. Engineers who need to inspect memory, debug hardware, write addresses, cannot work in raw binary strings. The representation question, which binary solved for machines, is now unsolved for humans.</p>
+
+  <p>But before we get to that, there is something worth slowing down for. Because binary is not as foreign as it looks.</p>
+
+  <hr class="sep">
+
+  <h2>You already know how to count in binary</h2>
+
+  <p>Think about what the number 347 actually means. Not as a symbol you recognise on sight. As a calculation. It means three hundreds, four tens, and seven ones. You add them up and get 347. You have known this since primary school and it has been automatic ever since.</p>
+
+  <p>Now look at where those groups come from. A hundred is 10 times 10. Ten is just 10. One is 1. In other words: 10², 10¹, 10⁰. Each column in a decimal number is the base raised to a power. The rightmost column is always the base to the zero, which is 1. The next column is the base to the one. The one after that is the base squared. This is the formula, and it works for any base, not just ten.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The same formula — different base</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 600 220" role="img" aria-label="Side by side comparison showing how 347 in decimal and 101 in binary both use the same positional notation formula, just with base 10 versus base 2">
+
+        <!-- decimal side -->
+        <text x="140" y="20" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#e8a84c;text-transform:uppercase;letter-spacing:.06em">Decimal — base 10</text>
+
+        <rect x="20"  y="32" width="72" height="72" rx="8" fill="rgba(232,168,76,.08)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/>
+        <rect x="104" y="32" width="72" height="72" rx="8" fill="rgba(232,168,76,.08)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/>
+        <rect x="188" y="32" width="72" height="72" rx="8" fill="rgba(232,168,76,.08)" stroke="rgba(232,168,76,.3)" stroke-width="1.5"/>
+
+        <text x="56"  y="76" text-anchor="middle" style="font:700 32px 'Courier New',monospace;fill:#e8a84c">3</text>
+        <text x="140" y="76" text-anchor="middle" style="font:700 32px 'Courier New',monospace;fill:#e8a84c">4</text>
+        <text x="224" y="76" text-anchor="middle" style="font:700 32px 'Courier New',monospace;fill:#e8a84c">7</text>
+
+        <text x="56"  y="116" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#9e968a">10²= 100</text>
+        <text x="140" y="116" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#9e968a">10¹= 10</text>
+        <text x="224" y="116" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#9e968a">10⁰= 1</text>
+
+        <text x="56"  y="134" text-anchor="middle" style="font:700 10px 'Courier New',monospace;fill:#e8a84c">3×100=300</text>
+        <text x="140" y="134" text-anchor="middle" style="font:700 10px 'Courier New',monospace;fill:#e8a84c">4×10=40</text>
+        <text x="224" y="134" text-anchor="middle" style="font:700 10px 'Courier New',monospace;fill:#e8a84c">7×1=7</text>
+
+        <text x="140" y="162" text-anchor="middle" style="font:12px 'Courier New',monospace;fill:#cbc4b9">300 + 40 + 7 = 347</text>
+
+        <!-- divider -->
+        <line x1="300" y1="20" x2="300" y2="175" stroke="rgba(237,232,224,.08)" stroke-width="1"/>
+
+        <!-- binary side -->
+        <text x="460" y="20" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#4ca8e8;text-transform:uppercase;letter-spacing:.06em">Binary — base 2</text>
+
+        <rect x="320" y="32" width="72" height="72" rx="8" fill="rgba(76,168,232,.07)" stroke="rgba(76,168,232,.25)" stroke-width="1.5"/>
+        <rect x="404" y="32" width="72" height="72" rx="8" fill="rgba(76,168,232,.07)" stroke="rgba(76,168,232,.25)" stroke-width="1.5"/>
+        <rect x="488" y="32" width="72" height="72" rx="8" fill="rgba(76,168,232,.07)" stroke="rgba(76,168,232,.25)" stroke-width="1.5"/>
+
+        <text x="356" y="76" text-anchor="middle" style="font:700 32px 'Courier New',monospace;fill:#4ca8e8">1</text>
+        <text x="440" y="76" text-anchor="middle" style="font:700 32px 'Courier New',monospace;fill:#4ca8e8">0</text>
+        <text x="524" y="76" text-anchor="middle" style="font:700 32px 'Courier New',monospace;fill:#4ca8e8">1</text>
+
+        <text x="356" y="116" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#9e968a">2²= 4</text>
+        <text x="440" y="116" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#9e968a">2¹= 2</text>
+        <text x="524" y="116" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#9e968a">2⁰= 1</text>
+
+        <text x="356" y="134" text-anchor="middle" style="font:700 10px 'Courier New',monospace;fill:#4ca8e8">1×4=4</text>
+        <text x="440" y="134" text-anchor="middle" style="font:700 10px 'Courier New',monospace;fill:#9e968a">0×2=0</text>
+        <text x="524" y="134" text-anchor="middle" style="font:700 10px 'Courier New',monospace;fill:#4ca8e8">1×1=1</text>
+
+        <text x="460" y="162" text-anchor="middle" style="font:12px 'Courier New',monospace;fill:#cbc4b9">4 + 0 + 1 = 5</text>
+
+        <text x="300" y="205" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#5a5550">The formula is identical. Only the base changed.</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>That is all binary is. The same positional system, with the base changed from 10 to 2. The column weights are 1, 2, 4, 8, 16, 32, 64, 128 instead of 1, 10, 100, 1000. Each digit is multiplied by its column weight and the results are added up. You learned this before you were ten, and you have been doing it automatically in decimal ever since. In binary, the only thing that changes is that the digit in each column can only be 0 or 1, and the column weights are powers of 2.</p>
+
+  <p>Carrying works exactly the same way too. In decimal, when a column exceeds 9, you write a 1 in the next column and start again from 0. In binary, the same thing happens when a column exceeds 1. That little carry you wrote in pencil above the column during long addition in school is exactly what a binary adder circuit does, thousands of millions of times per second.</p>
+
+  <p>Here is what counting looks like when you run both systems side by side. Watch what happens at 2, at 4, at 8.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Decimal and binary side by side — the carry fires at 2, 4, 8</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 580 340" role="img" aria-label="Table showing decimal 0 through 15 alongside binary equivalents, with carry events at 2, 4 and 8 highlighted">
+
+        <text x="80"  y="20" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#9e968a;text-transform:uppercase;letter-spacing:.06em">Decimal</text>
+        <text x="300" y="20" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#4ca8e8;text-transform:uppercase;letter-spacing:.06em">Binary</text>
+        <text x="460" y="20" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#9e968a;text-transform:uppercase;letter-spacing:.06em">What happened</text>
+        <line x1="0" y1="28" x2="580" y2="28" stroke="rgba(237,232,224,.06)" stroke-width="1"/>
+
+        <g style="font:13px 'Courier New',monospace">
+          <text x="80"  y="52" text-anchor="middle" fill="#cbc4b9">0</text>
+          <text x="300" y="52" text-anchor="middle" fill="#4ca8e8">0000</text>
+          <line x1="0" y1="60" x2="580" y2="60" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <text x="80"  y="82" text-anchor="middle" fill="#cbc4b9">1</text>
+          <text x="300" y="82" text-anchor="middle" fill="#4ca8e8">0001</text>
+          <line x1="0" y1="90" x2="580" y2="90" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <rect x="0" y="92" width="580" height="28" fill="rgba(255,107,107,.04)"/>
+          <text x="80"  y="112" text-anchor="middle" fill="#cbc4b9">2</text>
+          <text x="300" y="112" text-anchor="middle" fill="#ff6b6b">0010</text>
+          <text x="460" y="112" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#ff6b6b">carry — 1s column full</text>
+          <line x1="0" y1="120" x2="580" y2="120" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <text x="80"  y="142" text-anchor="middle" fill="#cbc4b9">3</text>
+          <text x="300" y="142" text-anchor="middle" fill="#4ca8e8">0011</text>
+          <line x1="0" y1="150" x2="580" y2="150" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <rect x="0" y="152" width="580" height="28" fill="rgba(255,107,107,.04)"/>
+          <text x="80"  y="172" text-anchor="middle" fill="#cbc4b9">4</text>
+          <text x="300" y="172" text-anchor="middle" fill="#ff6b6b">0100</text>
+          <text x="460" y="172" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#ff6b6b">carry — 2s column full</text>
+          <line x1="0" y1="180" x2="580" y2="180" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <text x="80"  y="202" text-anchor="middle" fill="#cbc4b9">5</text>
+          <text x="300" y="202" text-anchor="middle" fill="#4ca8e8">0101</text>
+          <line x1="0" y1="210" x2="580" y2="210" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <text x="80"  y="232" text-anchor="middle" fill="#cbc4b9">6</text>
+          <text x="300" y="232" text-anchor="middle" fill="#4ca8e8">0110</text>
+          <line x1="0" y1="240" x2="580" y2="240" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <text x="80"  y="262" text-anchor="middle" fill="#cbc4b9">7</text>
+          <text x="300" y="262" text-anchor="middle" fill="#4ca8e8">0111</text>
+          <line x1="0" y1="270" x2="580" y2="270" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <rect x="0" y="272" width="580" height="28" fill="rgba(255,107,107,.04)"/>
+          <text x="80"  y="292" text-anchor="middle" fill="#cbc4b9">8</text>
+          <text x="300" y="292" text-anchor="middle" fill="#ff6b6b">1000</text>
+          <text x="460" y="292" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#ff6b6b">carry — 4s column full</text>
+          <line x1="0" y1="300" x2="580" y2="300" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <text x="80"  y="322" text-anchor="middle" fill="#cbc4b9">15</text>
+          <text x="300" y="322" text-anchor="middle" fill="#4ca8e8">1111</text>
+          <text x="460" y="322" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">all four bits on</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <p>The carries happen at exactly the powers of 2. They will keep happening at 16, 32, 64, 128. Each one is a column filling up and overflowing into the next, exactly the way 9 overflows into 10 in decimal, exactly the way 19 overflows into 20. The rule is the same. The threshold is lower because the alphabet is smaller.</p>
+
+  <p class="lead-q">Binary is not a different kind of mathematics. It is the same mathematics running on a machine with a two-symbol alphabet instead of ten.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">One byte — 8 bits. Toggle any bit and watch the value update.</span></div>
+    <div class="viz-body" style="padding:1.4rem 1rem">
+
+      <div style="display:flex;justify-content:center;gap:6px;margin-bottom:6px">
+        <div style="width:56px;text-align:center;font:10px 'Courier New',monospace;color:#5a5550">2⁷=128</div>
+        <div style="width:56px;text-align:center;font:10px 'Courier New',monospace;color:#5a5550">2⁶=64</div>
+        <div style="width:56px;text-align:center;font:10px 'Courier New',monospace;color:#5a5550">2⁵=32</div>
+        <div style="width:56px;text-align:center;font:10px 'Courier New',monospace;color:#5a5550">2⁴=16</div>
+        <div style="width:56px;text-align:center;font:10px 'Courier New',monospace;color:#5a5550">2³=8</div>
+        <div style="width:56px;text-align:center;font:10px 'Courier New',monospace;color:#5a5550">2²=4</div>
+        <div style="width:56px;text-align:center;font:10px 'Courier New',monospace;color:#5a5550">2¹=2</div>
+        <div style="width:56px;text-align:center;font:10px 'Courier New',monospace;color:#5a5550">2⁰=1</div>
+      </div>
+
+      <div style="display:flex;justify-content:center;gap:6px;margin-bottom:1rem" id="bit-row"></div>
+
+      <div id="bit-equation" style="text-align:center;font:12px 'Courier New',monospace;color:#9e968a;min-height:1.4em;margin-bottom:.8rem"></div>
+
+      <div style="display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;margin-bottom:1rem">
+        <div style="text-align:center">
+          <div style="font:10px 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Binary</div>
+          <div id="bf-bin" style="font:700 22px 'Courier New',monospace;color:#4ca8e8;letter-spacing:2px">00000000</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font:10px 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Decimal</div>
+          <div id="bf-dec" style="font:700 22px 'Courier New',monospace;color:#e8a84c">0</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
+        <button class="bf-preset ctrl-btn" data-val="0">0</button>
+        <button class="bf-preset ctrl-btn" data-val="1">1</button>
+        <button class="bf-preset ctrl-btn" data-val="42">42</button>
+        <button class="bf-preset ctrl-btn" data-val="127">127</button>
+        <button class="bf-preset ctrl-btn" data-val="128">128</button>
+        <button class="bf-preset ctrl-btn" data-val="255">255</button>
+        <button class="bf-preset ctrl-btn primary" data-val="-1">Reset</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var weights = [128,64,32,16,8,4,2,1];
+    var bits = [0,0,0,0,0,0,0,0];
+    var row = document.getElementById('bit-row');
+
+    weights.forEach(function(w,i) {
+      var btn = document.createElement('button');
+      btn.style.cssText = 'width:56px;height:56px;border-radius:8px;border:1px solid rgba(237,232,224,.15);background:var(--bg);cursor:pointer;font:700 20px Courier New,monospace;transition:all .15s;color:#5a5550';
+      btn.textContent = '0';
+      btn.addEventListener('click', function() {
+        bits[i] = bits[i] ? 0 : 1;
+        update();
+      });
+      row.appendChild(btn);
+    });
+
+    function update() {
+      var val = 0;
+      var parts = [];
+      row.querySelectorAll('button').forEach(function(btn,i) {
+        var on = bits[i] === 1;
+        btn.textContent = bits[i];
+        btn.style.background = on ? 'rgba(76,168,232,.12)' : 'var(--bg)';
+        btn.style.borderColor = on ? 'rgba(76,168,232,.5)' : 'rgba(237,232,224,.15)';
+        btn.style.color = on ? '#4ca8e8' : '#5a5550';
+        if (on) { val += weights[i]; parts.push(weights[i]); }
+      });
+      document.getElementById('bf-dec').textContent = val;
+      document.getElementById('bf-bin').textContent = bits.join('');
+      document.getElementById('bit-equation').textContent = parts.length
+        ? parts.join(' + ') + ' = ' + val
+        : 'no bits on — value is 0';
+    }
+
+    document.querySelectorAll('.bf-preset').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var val = parseInt(this.dataset.val);
+        bits = val === -1
+          ? [0,0,0,0,0,0,0,0]
+          : [0,1,2,3,4,5,6,7].map(function(i){ return (val>>(7-i))&1; });
+        update();
+      });
+    });
+
+    update();
+  })();
+  </script>
+
+  <p>Try 255. All eight bits on. Each column contributes its weight and the sum is 128+64+32+16+8+4+2+1. Try 128. Only the leftmost bit on, value exactly half of 255+1. Try 42. The widget is doing the same arithmetic you did in primary school: multiply each digit by its column weight and add. The column weights are just powers of 2 instead of powers of 10.</p>
+
+  <p>One byte holds values from 0 to 255. That is 256 possible states, which is 2⁸. This is not arbitrary. It falls directly out of the arithmetic. And it is exactly why the wallpaper in Class 1 broke at 271. One byte, eight bits, maximum value 255. When image processing produced 271, the number outgrew its container. Now you can see precisely what that container is and exactly why it holds what it holds.</p>
+
+  <p>There is one problem that binary does not solve, and it is worth naming before we move on. Binary is easy for a machine to store and process. It is very hard for a human to read. The number 178 is 10110010. The number 65535 is 1111111111111111. Inspect a memory address or a network packet and you are staring at a wall of ones and zeros that gives nothing away at a glance. Engineers needed a shorthand. That shorthand is where the next section begins.</p>
+
+  <hr class="sep">
+
+  <h2>Converting between decimal and binary</h2>
+
+  <p>Before we get to that shorthand, there is something worth establishing. The claim underlying everything so far is that binary can represent any number that decimal can represent. Not approximately. Exactly. Every whole number you have ever written in decimal has a binary equivalent, and converting between them is not a matter of estimation or rounding. It is exact arithmetic.</p>
+
+  <p>Going from binary to decimal you already know how to do. The bit flipper in the last section is doing it: multiply each bit by its column weight and add. 10110010 has bits on in the 128, 32, 16, and 2 positions. 128 + 32 + 16 + 2 = 178. One calculation, exact answer, no ambiguity.</p>
+
+  <p>Going the other direction, decimal to binary, takes a different method. You divide repeatedly by 2 and collect the remainders. Each remainder tells you whether there is a 1 in the current bit position. Read the remainders from bottom to top and you have the binary number. The reason this works is that dividing by 2 is asking: "does this number have a 1 in the current column?" The remainder is the answer.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Converting 178 to binary — divide by 2, collect remainders bottom up</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 580 320" role="img" aria-label="Step by step division of 178 by 2, showing remainder at each step and how reading remainders bottom up gives the binary number 10110010">
+
+        <!-- column headers -->
+        <text x="80"  y="20" text-anchor="middle" style="font:700 10px 'Source Sans 3',sans-serif;fill:#9e968a;text-transform:uppercase;letter-spacing:.06em">Divide</text>
+        <text x="200" y="20" text-anchor="middle" style="font:700 10px 'Source Sans 3',sans-serif;fill:#9e968a;text-transform:uppercase;letter-spacing:.06em">Result</text>
+        <text x="310" y="20" text-anchor="middle" style="font:700 10px 'Source Sans 3',sans-serif;fill:#9e968a;text-transform:uppercase;letter-spacing:.06em">Remainder</text>
+        <text x="430" y="20" text-anchor="middle" style="font:700 10px 'Source Sans 3',sans-serif;fill:#9e968a;text-transform:uppercase;letter-spacing:.06em">Bit position</text>
+        <line x1="0" y1="28" x2="580" y2="28" stroke="rgba(237,232,224,.07)" stroke-width="1"/>
+
+        <g style="font:13px 'Courier New',monospace">
+          <!-- row 1 -->
+          <text x="80"  y="52" text-anchor="middle" fill="#cbc4b9">178 ÷ 2</text>
+          <text x="200" y="52" text-anchor="middle" fill="#cbc4b9">= 89</text>
+          <text x="310" y="52" text-anchor="middle" fill="#9e968a">r <tspan fill="#4ca8e8">0</tspan></text>
+          <text x="430" y="52" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif" fill="#5a5550">2⁰ = 1s</text>
+          <line x1="0" y1="60" x2="580" y2="60" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <!-- row 2 -->
+          <text x="80"  y="82" text-anchor="middle" fill="#cbc4b9">89 ÷ 2</text>
+          <text x="200" y="82" text-anchor="middle" fill="#cbc4b9">= 44</text>
+          <text x="310" y="82" text-anchor="middle" fill="#9e968a">r <tspan fill="#e8a84c">1</tspan></text>
+          <text x="430" y="82" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif" fill="#5a5550">2¹ = 2s</text>
+          <line x1="0" y1="90" x2="580" y2="90" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <!-- row 3 -->
+          <text x="80"  y="112" text-anchor="middle" fill="#cbc4b9">44 ÷ 2</text>
+          <text x="200" y="112" text-anchor="middle" fill="#cbc4b9">= 22</text>
+          <text x="310" y="112" text-anchor="middle" fill="#9e968a">r <tspan fill="#4ca8e8">0</tspan></text>
+          <text x="430" y="112" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif" fill="#5a5550">2² = 4s</text>
+          <line x1="0" y1="120" x2="580" y2="120" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <!-- row 4 -->
+          <text x="80"  y="142" text-anchor="middle" fill="#cbc4b9">22 ÷ 2</text>
+          <text x="200" y="142" text-anchor="middle" fill="#cbc4b9">= 11</text>
+          <text x="310" y="142" text-anchor="middle" fill="#9e968a">r <tspan fill="#4ca8e8">0</tspan></text>
+          <text x="430" y="142" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif" fill="#5a5550">2³ = 8s</text>
+          <line x1="0" y1="150" x2="580" y2="150" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <!-- row 5 -->
+          <text x="80"  y="172" text-anchor="middle" fill="#cbc4b9">11 ÷ 2</text>
+          <text x="200" y="172" text-anchor="middle" fill="#cbc4b9">= 5</text>
+          <text x="310" y="172" text-anchor="middle" fill="#9e968a">r <tspan fill="#e8a84c">1</tspan></text>
+          <text x="430" y="172" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif" fill="#5a5550">2⁴ = 16s</text>
+          <line x1="0" y1="180" x2="580" y2="180" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <!-- row 6 -->
+          <text x="80"  y="202" text-anchor="middle" fill="#cbc4b9">5 ÷ 2</text>
+          <text x="200" y="202" text-anchor="middle" fill="#cbc4b9">= 2</text>
+          <text x="310" y="202" text-anchor="middle" fill="#9e968a">r <tspan fill="#e8a84c">1</tspan></text>
+          <text x="430" y="202" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif" fill="#5a5550">2⁵ = 32s</text>
+          <line x1="0" y1="210" x2="580" y2="210" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <!-- row 7 -->
+          <text x="80"  y="232" text-anchor="middle" fill="#cbc4b9">2 ÷ 2</text>
+          <text x="200" y="232" text-anchor="middle" fill="#cbc4b9">= 1</text>
+          <text x="310" y="232" text-anchor="middle" fill="#9e968a">r <tspan fill="#4ca8e8">0</tspan></text>
+          <text x="430" y="232" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif" fill="#5a5550">2⁶ = 64s</text>
+          <line x1="0" y1="240" x2="580" y2="240" stroke="rgba(237,232,224,.03)" stroke-width="1"/>
+
+          <!-- row 8 -->
+          <text x="80"  y="262" text-anchor="middle" fill="#cbc4b9">1 ÷ 2</text>
+          <text x="200" y="262" text-anchor="middle" fill="#cbc4b9">= 0</text>
+          <text x="310" y="262" text-anchor="middle" fill="#9e968a">r <tspan fill="#e8a84c">1</tspan></text>
+          <text x="430" y="262" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif" fill="#5a5550">2⁷ = 128s</text>
+          <line x1="0" y1="270" x2="580" y2="270" stroke="rgba(237,232,224,.06)" stroke-width="1"/>
+        </g>
+
+        <!-- upward arrow -->
+        <text x="20" y="298" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">read remainders</text>
+        <text x="20" y="312" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">bottom to top</text>
+        <line x1="148" y1="305" x2="148" y2="275" stroke="rgba(237,232,224,.2)" stroke-width="1" marker-end="url(#uarr)"/>
+        <defs>
+          <marker id="uarr" viewBox="0 0 10 10" refX="5" refY="9" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M1 9L5 1L9 9" fill="none" stroke="rgba(237,232,224,.4)" stroke-width="1.5" stroke-linecap="round"/>
+          </marker>
+        </defs>
+
+        <!-- result -->
+        <text x="380" y="298" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">reading up:</text>
+        <text x="380" y="314" text-anchor="middle" style="font:700 15px 'Courier New',monospace;fill:#e8a84c">1 0 1 1 0 0 1 0</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>Read the remainders from the bottom row up: 1, 0, 1, 1, 0, 0, 1, 0. That is 10110010. Verify it with the bit flipper: set bits 7, 5, 4, and 1 and the display shows 128 + 32 + 16 + 2 = 178. The two methods are inverses of each other and they agree exactly.</p>
+
+  <p>The reason you read bottom-up is that the first division by 2 strips off the rightmost bit, the lowest column weight. The second division strips off the next one. Each step peels one bit off the right end of the number. Reading the remainders back in reverse gives you the bits in the correct order, from most significant to least.</p>
+
+  <p>A few more examples are worth doing by hand, because the feel of the pattern matters as much as understanding why it works.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Three worked conversions — step through each one</span></div>
+    <div class="viz-body" style="padding:0">
+      <div id="conv-widget" style="font-family:'Source Sans 3',sans-serif;background:#13110e">
+
+        <!-- tab bar -->
+        <div style="display:flex;border-bottom:1px solid rgba(237,232,224,.08)">
+          <button class="conv-tab active" data-idx="0" style="flex:1;padding:.85rem;background:rgba(232,168,76,.08);border:none;border-bottom:2px solid #e8a84c;color:#e8a84c;font:600 1rem 'Source Sans 3',sans-serif;cursor:pointer;transition:all .2s">13</button>
+          <button class="conv-tab" data-idx="1" style="flex:1;padding:.85rem;background:transparent;border:none;border-bottom:2px solid transparent;color:#5a5550;font:600 1rem 'Source Sans 3',sans-serif;cursor:pointer;transition:all .2s">255</button>
+          <button class="conv-tab" data-idx="2" style="flex:1;padding:.85rem;background:transparent;border:none;border-bottom:2px solid transparent;color:#5a5550;font:600 1rem 'Source Sans 3',sans-serif;cursor:pointer;transition:all .2s">100</button>
+        </div>
+
+        <!-- panels -->
+        <div id="conv-panels" style="padding:1.6rem 1.4rem">
+
+          <!-- panel 0: 13 -->
+          <div class="conv-panel" data-idx="0">
+            <div style="display:flex;align-items:baseline;gap:1rem;margin-bottom:1.2rem">
+              <span style="font:700 3rem 'Courier New',monospace;color:#e8a84c">13</span>
+              <span style="font:.95rem 'Source Sans 3',sans-serif;color:#9e968a">in decimal. What is it in binary?</span>
+            </div>
+
+            <p style="font:.95rem 'Source Sans 3',sans-serif;color:#9e968a;margin-bottom:1.2rem;line-height:1.7">Divide by 2 repeatedly. Each remainder is one bit, starting from the rightmost. Read them bottom to top.</p>
+
+            <div style="display:grid;grid-template-columns:auto auto auto auto;gap:.5rem .8rem;align-items:center;margin-bottom:1.4rem;font:'Courier New',monospace">
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Step</span>
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Division</span>
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Result</span>
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Remainder = bit</span>
+
+              <span style="color:#5a5550;font-size:.9rem">1</span>
+              <span style="color:#cbc4b9;font-size:.95rem">13 ÷ 2</span>
+              <span style="color:#cbc4b9;font-size:.95rem">= 6</span>
+              <span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> &nbsp;→ bit 0 (1s)</span>
+
+              <span style="color:#5a5550;font-size:.9rem">2</span>
+              <span style="color:#cbc4b9;font-size:.95rem">6 ÷ 2</span>
+              <span style="color:#cbc4b9;font-size:.95rem">= 3</span>
+              <span style="color:#9e968a;font-size:.95rem">r <strong style="color:#9e968a">0</strong> &nbsp;→ bit 1 (2s)</span>
+
+              <span style="color:#5a5550;font-size:.9rem">3</span>
+              <span style="color:#cbc4b9;font-size:.95rem">3 ÷ 2</span>
+              <span style="color:#cbc4b9;font-size:.95rem">= 1</span>
+              <span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> &nbsp;→ bit 2 (4s)</span>
+
+              <span style="color:#5a5550;font-size:.9rem">4</span>
+              <span style="color:#cbc4b9;font-size:.95rem">1 ÷ 2</span>
+              <span style="color:#cbc4b9;font-size:.95rem">= 0 &nbsp;✓ done</span>
+              <span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> &nbsp;→ bit 3 (8s)</span>
+            </div>
+
+            <div style="background:rgba(76,168,232,.06);border:1px solid rgba(76,168,232,.2);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem">
+              <div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem">Read remainders bottom to top</div>
+              <div style="display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap">
+                <div style="text-align:center">
+                  <div style="font:.75rem 'Source Sans 3',sans-serif;color:#5a5550;margin-bottom:.3rem">bit 3</div>
+                  <div style="width:44px;height:44px;border-radius:8px;background:rgba(76,168,232,.15);border:1px solid rgba(76,168,232,.4);display:flex;align-items:center;justify-content:center;font:700 1.4rem 'Courier New',monospace;color:#4ca8e8">1</div>
+                  <div style="font:.75rem 'Courier New',monospace;color:#5a5550;margin-top:.3rem">8</div>
+                </div>
+                <div style="text-align:center">
+                  <div style="font:.75rem 'Source Sans 3',sans-serif;color:#5a5550;margin-bottom:.3rem">bit 2</div>
+                  <div style="width:44px;height:44px;border-radius:8px;background:rgba(76,168,232,.15);border:1px solid rgba(76,168,232,.4);display:flex;align-items:center;justify-content:center;font:700 1.4rem 'Courier New',monospace;color:#4ca8e8">1</div>
+                  <div style="font:.75rem 'Courier New',monospace;color:#5a5550;margin-top:.3rem">4</div>
+                </div>
+                <div style="text-align:center">
+                  <div style="font:.75rem 'Source Sans 3',sans-serif;color:#5a5550;margin-bottom:.3rem">bit 1</div>
+                  <div style="width:44px;height:44px;border-radius:8px;background:rgba(237,232,224,.04);border:1px solid rgba(237,232,224,.1);display:flex;align-items:center;justify-content:center;font:700 1.4rem 'Courier New',monospace;color:#5a5550">0</div>
+                  <div style="font:.75rem 'Courier New',monospace;color:#5a5550;margin-top:.3rem">2</div>
+                </div>
+                <div style="text-align:center">
+                  <div style="font:.75rem 'Source Sans 3',sans-serif;color:#5a5550;margin-bottom:.3rem">bit 0</div>
+                  <div style="width:44px;height:44px;border-radius:8px;background:rgba(76,168,232,.15);border:1px solid rgba(76,168,232,.4);display:flex;align-items:center;justify-content:center;font:700 1.4rem 'Courier New',monospace;color:#4ca8e8">1</div>
+                  <div style="font:.75rem 'Courier New',monospace;color:#5a5550;margin-top:.3rem">1</div>
+                </div>
+                <div style="margin-left:.5rem;padding-left:.8rem;border-left:1px solid rgba(237,232,224,.1)">
+                  <div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550;margin-bottom:.2rem">Binary</div>
+                  <div style="font:700 1.8rem 'Courier New',monospace;color:#4ca8e8">1101</div>
+                  <div style="font:.8rem 'Source Sans 3',sans-serif;color:#9e968a;margin-top:.2rem">8 + 4 + 0 + 1 = <strong style="color:#e8a84c">13</strong> ✓</div>
+                </div>
+              </div>
+            </div>
+
+            <p style="font:.9rem 'Source Sans 3',sans-serif;color:#5a5550;line-height:1.65">13 is small enough to fit in 4 bits. Only four divisions before the result reaches 0. The two 0 bits in the middle (bit 1, the 2s column) show that 13 has no contribution from 2 — it is made of 8, 4, and 1.</p>
+          </div>
+
+          <!-- panel 1: 255 -->
+          <div class="conv-panel" data-idx="1" style="display:none">
+            <div style="display:flex;align-items:baseline;gap:1rem;margin-bottom:1.2rem">
+              <span style="font:700 3rem 'Courier New',monospace;color:#e8a84c">255</span>
+              <span style="font:.95rem 'Source Sans 3',sans-serif;color:#9e968a">in decimal. What is it in binary?</span>
+            </div>
+
+            <p style="font:.95rem 'Source Sans 3',sans-serif;color:#9e968a;margin-bottom:1.2rem;line-height:1.7">255 = 2⁸ − 1. Every bit position from 0 to 7 contributes. Watch what happens at each division.</p>
+
+            <div style="display:grid;grid-template-columns:auto auto auto auto;gap:.5rem .8rem;align-items:center;margin-bottom:1.4rem;font:'Courier New',monospace">
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Step</span>
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Division</span>
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Result</span>
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Remainder = bit</span>
+
+              <span style="color:#5a5550;font-size:.9rem">1</span><span style="color:#cbc4b9;font-size:.95rem">255 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 127</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 0</span>
+              <span style="color:#5a5550;font-size:.9rem">2</span><span style="color:#cbc4b9;font-size:.95rem">127 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 63</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 1</span>
+              <span style="color:#5a5550;font-size:.9rem">3</span><span style="color:#cbc4b9;font-size:.95rem">63 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 31</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 2</span>
+              <span style="color:#5a5550;font-size:.9rem">4</span><span style="color:#cbc4b9;font-size:.95rem">31 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 15</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 3</span>
+              <span style="color:#5a5550;font-size:.9rem">5</span><span style="color:#cbc4b9;font-size:.95rem">15 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 7</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 4</span>
+              <span style="color:#5a5550;font-size:.9rem">6</span><span style="color:#cbc4b9;font-size:.95rem">7 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 3</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 5</span>
+              <span style="color:#5a5550;font-size:.9rem">7</span><span style="color:#cbc4b9;font-size:.95rem">3 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 1</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 6</span>
+              <span style="color:#5a5550;font-size:.9rem">8</span><span style="color:#cbc4b9;font-size:.95rem">1 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 0 &nbsp;✓ done</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 7</span>
+            </div>
+
+            <div style="background:rgba(76,168,232,.06);border:1px solid rgba(76,168,232,.2);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem">
+              <div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem">Eight remainders — all 1s</div>
+              <div style="display:flex;gap:.4rem;align-items:flex-end;flex-wrap:wrap">
+                <div style="font:700 2rem 'Courier New',monospace;color:#4ca8e8;letter-spacing:3px">11111111</div>
+                <div style="margin-left:.8rem;padding-left:.8rem;border-left:1px solid rgba(237,232,224,.1)">
+                  <div style="font:.8rem 'Source Sans 3',sans-serif;color:#9e968a">128+64+32+16+8+4+2+1</div>
+                  <div style="font:.9rem 'Source Sans 3',sans-serif;color:#9e968a">= <strong style="color:#e8a84c">255</strong> ✓</div>
+                  <div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550;margin-top:.3rem">Maximum value of one byte</div>
+                </div>
+              </div>
+            </div>
+
+            <p style="font:.9rem 'Source Sans 3',sans-serif;color:#5a5550;line-height:1.65">Every odd number produces a remainder of 1. Every even number produces 0. Since 255, 127, 63, 31, 15, 7, 3, and 1 are all odd, every step gives remainder 1. Eight steps, eight 1s, eight bits all on. This is exactly the maximum value of a byte, and it is the number the wallpaper color value exceeded.</p>
+          </div>
+
+          <!-- panel 2: 100 -->
+          <div class="conv-panel" data-idx="2" style="display:none">
+            <div style="display:flex;align-items:baseline;gap:1rem;margin-bottom:1.2rem">
+              <span style="font:700 3rem 'Courier New',monospace;color:#e8a84c">100</span>
+              <span style="font:.95rem 'Source Sans 3',sans-serif;color:#9e968a">in decimal. What is it in binary?</span>
+            </div>
+
+            <p style="font:.95rem 'Source Sans 3',sans-serif;color:#9e968a;margin-bottom:1.2rem;line-height:1.7">100 is a round decimal number. In binary it will look nothing like round. That is the point.</p>
+
+            <div style="display:grid;grid-template-columns:auto auto auto auto;gap:.5rem .8rem;align-items:center;margin-bottom:1.4rem;font:'Courier New',monospace">
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Step</span>
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Division</span>
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Result</span>
+              <span style="font-size:.75rem;color:#5a5550;text-transform:uppercase;letter-spacing:.06em">Remainder = bit</span>
+
+              <span style="color:#5a5550;font-size:.9rem">1</span><span style="color:#cbc4b9;font-size:.95rem">100 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 50</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#9e968a">0</strong> → bit 0 (1s)</span>
+              <span style="color:#5a5550;font-size:.9rem">2</span><span style="color:#cbc4b9;font-size:.95rem">50 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 25</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#9e968a">0</strong> → bit 1 (2s)</span>
+              <span style="color:#5a5550;font-size:.9rem">3</span><span style="color:#cbc4b9;font-size:.95rem">25 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 12</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 2 (4s)</span>
+              <span style="color:#5a5550;font-size:.9rem">4</span><span style="color:#cbc4b9;font-size:.95rem">12 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 6</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#9e968a">0</strong> → bit 3 (8s)</span>
+              <span style="color:#5a5550;font-size:.9rem">5</span><span style="color:#cbc4b9;font-size:.95rem">6 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 3</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#9e968a">0</strong> → bit 4 (16s)</span>
+              <span style="color:#5a5550;font-size:.9rem">6</span><span style="color:#cbc4b9;font-size:.95rem">3 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 1</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 5 (32s)</span>
+              <span style="color:#5a5550;font-size:.9rem">7</span><span style="color:#cbc4b9;font-size:.95rem">1 ÷ 2</span><span style="color:#cbc4b9;font-size:.95rem">= 0 &nbsp;✓ done</span><span style="color:#9e968a;font-size:.95rem">r <strong style="color:#4ca8e8">1</strong> → bit 6 (64s)</span>
+            </div>
+
+            <div style="background:rgba(76,168,232,.06);border:1px solid rgba(76,168,232,.2);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem">
+              <div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem">Read remainders bottom to top</div>
+              <div style="display:flex;gap:.4rem;align-items:flex-end;flex-wrap:wrap">
+                <div style="text-align:center">
+                  <div style="font:.7rem 'Courier New',monospace;color:#5a5550;margin-bottom:.3rem">64</div>
+                  <div style="width:40px;height:40px;border-radius:7px;background:rgba(76,168,232,.15);border:1px solid rgba(76,168,232,.4);display:flex;align-items:center;justify-content:center;font:700 1.3rem 'Courier New',monospace;color:#4ca8e8">1</div>
+                </div>
+                <div style="text-align:center">
+                  <div style="font:.7rem 'Courier New',monospace;color:#5a5550;margin-bottom:.3rem">32</div>
+                  <div style="width:40px;height:40px;border-radius:7px;background:rgba(76,168,232,.15);border:1px solid rgba(76,168,232,.4);display:flex;align-items:center;justify-content:center;font:700 1.3rem 'Courier New',monospace;color:#4ca8e8">1</div>
+                </div>
+                <div style="text-align:center">
+                  <div style="font:.7rem 'Courier New',monospace;color:#5a5550;margin-bottom:.3rem">16</div>
+                  <div style="width:40px;height:40px;border-radius:7px;background:rgba(237,232,224,.04);border:1px solid rgba(237,232,224,.1);display:flex;align-items:center;justify-content:center;font:700 1.3rem 'Courier New',monospace;color:#5a5550">0</div>
+                </div>
+                <div style="text-align:center">
+                  <div style="font:.7rem 'Courier New',monospace;color:#5a5550;margin-bottom:.3rem">8</div>
+                  <div style="width:40px;height:40px;border-radius:7px;background:rgba(237,232,224,.04);border:1px solid rgba(237,232,224,.1);display:flex;align-items:center;justify-content:center;font:700 1.3rem 'Courier New',monospace;color:#5a5550">0</div>
+                </div>
+                <div style="text-align:center">
+                  <div style="font:.7rem 'Courier New',monospace;color:#5a5550;margin-bottom:.3rem">4</div>
+                  <div style="width:40px;height:40px;border-radius:7px;background:rgba(76,168,232,.15);border:1px solid rgba(76,168,232,.4);display:flex;align-items:center;justify-content:center;font:700 1.3rem 'Courier New',monospace;color:#4ca8e8">1</div>
+                </div>
+                <div style="text-align:center">
+                  <div style="font:.7rem 'Courier New',monospace;color:#5a5550;margin-bottom:.3rem">2</div>
+                  <div style="width:40px;height:40px;border-radius:7px;background:rgba(237,232,224,.04);border:1px solid rgba(237,232,224,.1);display:flex;align-items:center;justify-content:center;font:700 1.3rem 'Courier New',monospace;color:#5a5550">0</div>
+                </div>
+                <div style="text-align:center">
+                  <div style="font:.7rem 'Courier New',monospace;color:#5a5550;margin-bottom:.3rem">1</div>
+                  <div style="width:40px;height:40px;border-radius:7px;background:rgba(237,232,224,.04);border:1px solid rgba(237,232,224,.1);display:flex;align-items:center;justify-content:center;font:700 1.3rem 'Courier New',monospace;color:#5a5550">0</div>
+                </div>
+                <div style="margin-left:.8rem;padding-left:.8rem;border-left:1px solid rgba(237,232,224,.1)">
+                  <div style="font:700 1.8rem 'Courier New',monospace;color:#4ca8e8">1100100</div>
+                  <div style="font:.9rem 'Source Sans 3',sans-serif;color:#9e968a;margin-top:.2rem">64 + 32 + 4 = <strong style="color:#e8a84c">100</strong> ✓</div>
+                </div>
+              </div>
+            </div>
+
+            <p style="font:.9rem 'Source Sans 3',sans-serif;color:#5a5550;line-height:1.65">100 is round in decimal because it is a power of 10 times some small integer. In binary it is not round at all, because 100 is not a clean power of 2. 1100100 is the exact representation — no rounding, no approximation. The same quantity, written in a base where it happens to look irregular.</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var tabs = document.querySelectorAll('.conv-tab');
+    var panels = document.querySelectorAll('.conv-panel');
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        var idx = parseInt(this.dataset.idx);
+        tabs.forEach(function(t) {
+          t.style.background = 'transparent';
+          t.style.borderBottom = '2px solid transparent';
+          t.style.color = '#5a5550';
+        });
+        panels.forEach(function(p) { p.style.display = 'none'; });
+        this.style.background = 'rgba(232,168,76,.08)';
+        this.style.borderBottom = '2px solid #e8a84c';
+        this.style.color = '#e8a84c';
+        panels[idx].style.display = 'block';
+      });
+    });
+  })();
+  </script>
+
+  <p>Every one of those decimal numbers has a binary representation that is exact. Not an approximation. Not a rounding. The same value, written in a different base. This is the point that matters: switching from decimal to binary does not lose any information for whole numbers. Every quantity you can name in decimal, you can name in binary. The machine counts in a different base from the one you grew up with, but it is counting the same things.</p>
+
+  <p>255 is worth pausing on. Eight divisions, eight remainders, every single one a 1. Eight bits all on. This is not a coincidence. 255 is 2⁸ minus 1, which means it is the largest number eight bits can hold, which means every column is contributing its full weight. And this is exactly why one byte goes from 0 to 255 and not to some other number. The arithmetic determines the container size, and the container size determines where numbers overflow. The wallpaper color value that broke Android was not an arbitrary limit. It was 255, the edge of a byte, exceeded by one.</p>
+
+  <p class="lead-q">The machine did not make up a rule about 255. The rule comes from the arithmetic, which comes from the choice of base, which comes from the physics of two-state circuits.</p>
+
+  <p>There is one thing this does not yet solve. Binary is exact, reliable, and physically grounded. It is also completely unreadable to a human being. The number 178 is <code>10110010</code>. The number 2038 is <code>11111110110</code>. A memory address, a color value, a network packet — stare at a wall of ones and zeros for long enough and your eyes stop seeing digits at all. Engineers needed a shorthand. Not an approximation. A shorthand that maps onto binary exactly, one-to-one, no information lost.</p>
+
+  <hr class="sep">
+
+  <h2>Hexadecimal — the same count, sixteen symbols</h2>
+
+  <p>The shorthand they chose is base 16, called hexadecimal, or hex. The reason 16 is the right choice is not arbitrary. 16 is 2⁴. That means exactly four binary digits always map to exactly one hex digit. Not sometimes. Always. The boundary falls perfectly on every group of four bits.</p>
+
+  <p>Decimal only has ten digits: 0 through 9. Hex needs sixteen, so it borrows six letters. The digits are 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F. A is 10, B is 11, C is 12, D is 13, E is 14, F is 15. That is all sixteen values a group of four bits can hold, given a complete symbol each.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The complete map — four bits to one hex digit</span></div>
+    <div class="viz-body" style="padding:1.2rem">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;max-width:560px;margin:0 auto">
+        <!-- header -->
+        <div style="font:.7rem 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;padding-bottom:.3rem">Binary</div>
+        <div style="font:.7rem 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;padding-bottom:.3rem">Decimal</div>
+        <div style="font:.7rem 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;padding-bottom:.3rem">Hex</div>
+        <div style="font:.7rem 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;padding-bottom:.3rem">Note</div>
+
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">0000</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">0</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">0</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">0001</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">1</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">1</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">0010</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">2</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">2</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">0011</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">3</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">3</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">0100</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">4</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">4</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">0101</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">5</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">5</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">0110</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">6</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">6</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">0111</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">7</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">7</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">1000</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">8</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">8</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550">carry fires here</div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">1001</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">9</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">9</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">1010</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">10</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">A</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550">decimal runs out of digits</div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">1011</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">11</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">B</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">1100</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">12</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">C</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">1101</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">13</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">D</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">1110</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">14</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">E</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550"></div>
+        <div style="font:.9rem 'Courier New',monospace;color:#4ca8e8">1111</div><div style="font:.9rem 'Courier New',monospace;color:#9e968a">15</div><div style="font:.9rem 'Courier New',monospace;color:#e8a84c">F</div><div style="font:.8rem 'Source Sans 3',sans-serif;color:#5a5550">four bits all on</div>
+      </div>
+    </div>
+  </div>
+
+  <p>The conversion between binary and hex requires no arithmetic at all. You split the binary number into groups of four from the right, and substitute each group for its hex digit. That is it. No division, no remainders, no calculation. Pure substitution.</p>
+
+  <p>Take <code>10110010</code>, which is 178 in decimal. Split it: <code>1011</code> and <code>0010</code>. Look up each group in the table: 1011 is B, 0010 is 2. The hex is <code>B2</code>. Two characters instead of eight. The same number, four times shorter, and every bit still perfectly recoverable by going back the other way.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Binary to hex — split into fours, substitute each group</span></div>
+    <div class="viz-body" style="padding:1.4rem">
+      <div style="display:flex;flex-direction:column;gap:1.4rem;max-width:520px;margin:0 auto">
+
+        <!-- 178 -->
+        <div>
+          <div style="font:.75rem 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem">178 → binary → hex</div>
+          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+            <div style="display:flex;gap:2px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem">
+                <div style="display:flex;gap:2px">
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#e8a84c">1</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#e8a84c">0</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#e8a84c">1</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#e8a84c">1</span>
+                </div>
+                <span style="font:700 1.1rem 'Courier New',monospace;color:#e8a84c">B</span>
+              </div>
+              <span style="color:#5a5550;padding:0 .2rem;align-self:center">|</span>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem">
+                <div style="display:flex;gap:2px">
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#4ca8e8">0</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#4ca8e8">0</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#4ca8e8">1</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#4ca8e8">0</span>
+                </div>
+                <span style="font:700 1.1rem 'Courier New',monospace;color:#4ca8e8">2</span>
+              </div>
+            </div>
+            <span style="color:#5a5550;font-size:1.2rem">→</span>
+            <span style="font:700 1.6rem 'Courier New',monospace;color:#e8a84c">0xB2</span>
+            <span style="font:.85rem 'Source Sans 3',sans-serif;color:#5a5550">= 178 in decimal</span>
+          </div>
+        </div>
+
+        <!-- 255 -->
+        <div>
+          <div style="font:.75rem 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem">255 → binary → hex</div>
+          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+            <div style="display:flex;gap:2px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem">
+                <div style="display:flex;gap:2px">
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#e8a84c">1</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#e8a84c">1</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#e8a84c">1</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#e8a84c">1</span>
+                </div>
+                <span style="font:700 1.1rem 'Courier New',monospace;color:#e8a84c">F</span>
+              </div>
+              <span style="color:#5a5550;padding:0 .2rem;align-self:center">|</span>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem">
+                <div style="display:flex;gap:2px">
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#4ca8e8">1</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#4ca8e8">1</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#4ca8e8">1</span>
+                  <span style="width:28px;height:34px;border-radius:5px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 1rem 'Courier New',monospace;color:#4ca8e8">1</span>
+                </div>
+                <span style="font:700 1.1rem 'Courier New',monospace;color:#4ca8e8">F</span>
+              </div>
+            </div>
+            <span style="color:#5a5550;font-size:1.2rem">→</span>
+            <span style="font:700 1.6rem 'Courier New',monospace;color:#e8a84c">0xFF</span>
+            <span style="font:.85rem 'Source Sans 3',sans-serif;color:#5a5550">= 255. Maximum byte value.</span>
+          </div>
+        </div>
+
+        <!-- 2038 -->
+        <div>
+          <div style="font:.75rem 'Source Sans 3',sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem">2038 → binary → hex</div>
+          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+            <div style="display:flex;gap:2px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem">
+                <div style="display:flex;gap:2px">
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(127,255,107,.07);border:1px solid rgba(127,255,107,.2);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#7fff6b">0</span>
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(127,255,107,.07);border:1px solid rgba(127,255,107,.2);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#7fff6b">1</span>
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(127,255,107,.07);border:1px solid rgba(127,255,107,.2);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#7fff6b">1</span>
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(127,255,107,.07);border:1px solid rgba(127,255,107,.2);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#7fff6b">1</span>
+                </div>
+                <span style="font:700 .95rem 'Courier New',monospace;color:#7fff6b">7</span>
+              </div>
+              <span style="color:#5a5550;padding:0 .1rem;align-self:center">|</span>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem">
+                <div style="display:flex;gap:2px">
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#e8a84c">1</span>
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#e8a84c">1</span>
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#e8a84c">1</span>
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.3);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#e8a84c">1</span>
+                </div>
+                <span style="font:700 .95rem 'Courier New',monospace;color:#e8a84c">F</span>
+              </div>
+              <span style="color:#5a5550;padding:0 .1rem;align-self:center">|</span>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem">
+                <div style="display:flex;gap:2px">
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#4ca8e8">0</span>
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#4ca8e8">1</span>
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#4ca8e8">1</span>
+                  <span style="width:22px;height:30px;border-radius:4px;background:rgba(76,168,232,.1);border:1px solid rgba(76,168,232,.3);display:flex;align-items:center;justify-content:center;font:700 .85rem 'Courier New',monospace;color:#4ca8e8">0</span>
+                </div>
+                <span style="font:700 .95rem 'Courier New',monospace;color:#4ca8e8">6</span>
+              </div>
+            </div>
+            <span style="color:#5a5550;font-size:1.2rem">→</span>
+            <span style="font:700 1.5rem 'Courier New',monospace;color:#e8a84c">0x7F6</span>
+            <span style="font:.85rem 'Source Sans 3',sans-serif;color:#5a5550">= 2038. The year the Unix clock overflows.</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <p>You will see the <code>0x</code> prefix everywhere in computing. It is just a convention to signal that the digits following are hexadecimal, not decimal. <code>0xFF</code> is 255. <code>0xB2</code> is 178. The prefix is not part of the number. It is a label saying which language the number is written in.</p>
+
+  <p>Look at what just happened to the 2038 problem. In Class 1 it was a story about a date, a future catastrophe, something abstract about computers running out of time. Now look at it in hex. The year 2038 is <code>0x7F6</code>. The maximum value a 32-bit signed Unix timestamp can hold is <code>0x7FFFFFFF</code>. Eight hex digits, all F after the first 7. The clock has been counting up toward that wall since 1 January 1970, and when it gets there, the next increment flips the high bit from 0 to 1, and the entire number becomes negative. Every system reading that timestamp thinks the year just became 1901.</p>
+
+  <p>In decimal, none of that is obvious. The overflow value 2147483647 is just a large number. In hex, <code>0x7FFFFFFF</code> tells you everything immediately. Seven. Then seven Fs. The first bit is 0, meaning positive. All remaining 31 bits are 1. One more increment and the first bit becomes 1, meaning negative. The problem is sitting right there in the representation, visible the moment you know how to read it. That is what hex is for.</p>
+
+  <p>This is what hex is actually for. Not to replace binary and not to replace decimal. To give humans a compact window into exactly what the machine is holding, without any translation loss. Every hex digit is four bits. Every two hex digits is one byte. The correspondence is exact and permanent.</p>
+
+  <hr class="sep">
+
+  <p>Step back for a moment and look at what this class has covered. A shepherd fifty thousand years ago used pebbles to track sheep. One pebble per sheep because the correspondence was the only thing that mattered. Babylonians used base 60 to keep their fractions clean. Mayans used base 20 because that was the number of their fingers and toes. Pascal built a machine with ten-toothed wheels because that matched the decimal system humans used. ENIAC used ten vacuum tubes per digit for the same reason.</p>
+
+  <p>Every one of those systems was a different answer to the same question: what symbols do we use, and how many? Pebbles have one state: present or absent. Babylonian digits have sixty values. Decimal digits have ten. Binary digits have two. Hexadecimal digits have sixteen. The underlying idea in all of them is identical. A symbol in a position carries a weight. Weights are added up. The total is the number.</p>
+
+  <p class="lead-q">Decimal, binary, hex. Different symbols. Different base. The same counting. The shepherd would recognise all of it.</p>
+
+  <p>The difference is what happens at the accuracy wall. Pebbles get lost. Human scribes make mistakes. Gear teeth wear. Vacuum tubes burn out. Decimal ring counters misread voltages. Binary circuits with two wide voltage states almost never confuse a 0 for a 1. The choice of base two was not a preference. It was the first answer to the accuracy question that held up under physical reality.</p>
+
+  <p>Hex is just how humans write that answer down.</p>
+
+  <hr class="sep">
+
+  <h2>Test yourself</h2>
+
+  <p>Ten questions. Some are mechanical, some ask you to think. Take your time with the ones that feel slow.</p>
+
+  <div id="quiz-widget" style="margin-top:1.4rem">
+
+    <div id="quiz-questions"></div>
+
+    <div id="quiz-result" style="display:none;margin-top:1.4rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:1.4rem 1.6rem">
+      <div id="quiz-score" style="font:700 1.4rem 'Courier New',monospace;color:#e8a84c;margin-bottom:.5rem"></div>
+      <div id="quiz-feedback" style="font:.95rem 'Source Sans 3',sans-serif;color:#9e968a;line-height:1.7;margin-bottom:1rem"></div>
+      <button id="quiz-retry" style="padding:.5rem 1.2rem;border-radius:8px;border:1px solid rgba(232,168,76,.4);background:rgba(232,168,76,.08);color:#e8a84c;cursor:pointer;font:.9rem 'Source Sans 3',sans-serif">Try again</button>
+    </div>
+
+  </div>
+
+  <script>
+  (function() {
+    var questions = [
+      {
+        q: "What is 1101 in decimal?",
+        opts: ["11", "13", "14", "12"],
+        ans: 1,
+        explain: "1×8 + 1×4 + 0×2 + 1×1 = 8 + 4 + 0 + 1 = 13."
+      },
+      {
+        q: "Convert 25 to binary using repeated division by 2.",
+        opts: ["10101", "11001", "10011", "11000"],
+        ans: 1,
+        explain: "25÷2=12 r1, 12÷2=6 r0, 6÷2=3 r0, 3÷2=1 r1, 1÷2=0 r1. Reading remainders bottom up: 11001. Check: 16+8+0+0+1 = 25."
+      },
+      {
+        q: "Why does binary win over decimal for physical circuits?",
+        opts: [
+          "Binary arithmetic is faster to compute",
+          "Two voltage states have a wide gap between them, making misreads almost impossible",
+          "Binary numbers are always shorter than decimal numbers",
+          "Transistors were invented for binary logic"
+        ],
+        ans: 1,
+        explain: "The reliability advantage is physical. Two states means a wide voltage gap. Noise has to be enormous to push a signal across that boundary. Ten decimal states crammed into the same voltage range leave narrow margins where small noise causes misreads."
+      },
+      {
+        q: "What is the maximum value that fits in one byte?",
+        opts: ["128", "256", "255", "127"],
+        ans: 2,
+        explain: "One byte is 8 bits. All 8 bits on gives 128+64+32+16+8+4+2+1 = 255. This is 2⁸ − 1. The byte can hold 256 distinct values (0 through 255)."
+      },
+      {
+        q: "Convert 10110010 from binary to hex.",
+        opts: ["0xA2", "0xB2", "0xC2", "0xB3"],
+        ans: 1,
+        explain: "Split into groups of four from the right: 1011 | 0010. 1011 = 11 = B. 0010 = 2. Result: 0xB2."
+      },
+      {
+        q: "In the wallpaper story from Class 1, a color value of 271 caused Android to crash. Why exactly is 271 a problem for a system using one byte per color channel?",
+        opts: [
+          "271 is not divisible by 2",
+          "271 exceeds 255, the maximum value a single byte can hold, so the number overflows its container",
+          "The display driver only accepts values up to 270",
+          "271 in binary contains nine bits, which is too long"
+        ],
+        ans: 1,
+        explain: "One byte holds 8 bits, maximum value 255. 271 needs 9 bits (100001111). The 9th bit has nowhere to go. The system either truncates or wraps around, producing a completely wrong color value."
+      },
+      {
+        q: "Why does 0.1 + 0.2 not equal 0.3 exactly in binary floating point?",
+        opts: [
+          "The processor rounds all decimal inputs before computing",
+          "0.1 in binary is a repeating pattern that never terminates, for the same reason 1/3 repeats in decimal",
+          "Floating point always introduces a small random error",
+          "The + operator uses integer arithmetic internally"
+        ],
+        ans: 1,
+        explain: "10 does not divide cleanly into powers of 2, so 1/10 (which is 0.1) cannot be represented exactly in binary, just as 1/3 cannot be represented exactly in decimal. The stored value is the nearest approximation, and approximation errors accumulate."
+      },
+      {
+        q: "What does the 0x prefix mean when you see it before a number like 0xFF?",
+        opts: [
+          "The number is negative",
+          "The number is in octal (base 8)",
+          "The number is written in hexadecimal (base 16)",
+          "The number is a memory address only"
+        ],
+        ans: 2,
+        explain: "0x is a convention to signal hexadecimal. 0xFF means F×16 + F = 15×16 + 15 = 255. The prefix is a label, not part of the value."
+      },
+      {
+        q: "How many bits does one hex digit represent, and why is this number not a coincidence?",
+        opts: [
+          "8 bits, because a byte is the standard unit",
+          "3 bits, because 2³ = 8 values",
+          "4 bits, because 2⁴ = 16 which matches the 16 hex digits exactly",
+          "6 bits, because base 64 was considered first"
+        ],
+        ans: 2,
+        explain: "16 = 2⁴. Four binary digits have exactly 16 possible states (0000 to 1111). Each hex digit maps to exactly one 4-bit group. This is why the conversion requires no arithmetic — pure substitution."
+      },
+      {
+        q: "A Babylonian scribe and a modern CPU engineer are both trying to solve the same problem. What is it?",
+        opts: [
+          "How to perform multiplication without paper",
+          "How to represent large quantities with fewer symbols, accurately",
+          "How to share calculations between multiple people",
+          "How to store numbers in less physical space"
+        ],
+        ans: 1,
+        explain: "From pebbles to positional notation to binary, every system is an answer to two questions: how do we represent a quantity, and is the representation still accurate? The Babylonians chose base 60 for clean fractions. Engineers chose base 2 for reliable circuits. Different symbols, same underlying problem."
+      }
+    ];
+
+    var answers = new Array(questions.length).fill(null);
+
+    function render() {
+      var container = document.getElementById('quiz-questions');
+      container.innerHTML = '';
+      questions.forEach(function(q, qi) {
+        var card = document.createElement('div');
+        card.style.cssText = 'background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:1.3rem 1.5rem;margin-bottom:.9rem;transition:border-color .2s';
+
+        var qnum = document.createElement('div');
+        qnum.style.cssText = 'font:.75rem Source Sans 3,sans-serif;color:#5a5550;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem';
+        qnum.textContent = 'Question ' + (qi + 1) + ' of ' + questions.length;
+        card.appendChild(qnum);
+
+        var qtext = document.createElement('div');
+        qtext.style.cssText = 'font:1rem Source Sans 3,sans-serif;color:#f4efe7;margin-bottom:1rem;line-height:1.65';
+        qtext.textContent = q.q;
+        card.appendChild(qtext);
+
+        q.opts.forEach(function(opt, oi) {
+          var btn = document.createElement('button');
+          var selected = answers[qi] === oi;
+          btn.style.cssText = 'display:block;width:100%;text-align:left;padding:.65rem .9rem;margin-bottom:.4rem;border-radius:8px;border:1px solid ' +
+            (selected ? 'rgba(232,168,76,.6)' : 'rgba(237,232,224,.08)') +
+            ';background:' + (selected ? 'rgba(232,168,76,.1)' : 'transparent') +
+            ';color:' + (selected ? '#e8a84c' : '#9e968a') +
+            ';cursor:pointer;font:.92rem Source Sans 3,sans-serif;line-height:1.5;transition:all .15s';
+          btn.textContent = opt;
+          btn.addEventListener('click', function() {
+            answers[qi] = oi;
+            render();
+          });
+          card.appendChild(btn);
+        });
+
+        container.appendChild(card);
+      });
+
+      var allAnswered = answers.every(function(a) { return a !== null; });
+      var submitWrap = document.createElement('div');
+      submitWrap.style.cssText = 'text-align:center;margin-top:.6rem';
+      var submit = document.createElement('button');
+      submit.textContent = allAnswered ? 'Check answers' : 'Answer all questions to submit';
+      submit.disabled = !allAnswered;
+      submit.style.cssText = 'padding:.6rem 1.6rem;border-radius:8px;border:1px solid rgba(232,168,76,' + (allAnswered ? '.5' : '.2') + ');background:rgba(232,168,76,' + (allAnswered ? '.12' : '.04') + ');color:' + (allAnswered ? '#e8a84c' : '#5a5550') + ';cursor:' + (allAnswered ? 'pointer' : 'default') + ';font:.95rem Source Sans 3,sans-serif;transition:all .2s';
+      submit.addEventListener('click', function() {
+        if (!allAnswered) return;
+        showResult();
+      });
+      submitWrap.appendChild(submit);
+      container.appendChild(submitWrap);
+    }
+
+    function showResult() {
+      var score = answers.reduce(function(s, a, i) { return s + (a === questions[i].ans ? 1 : 0); }, 0);
+      var total = questions.length;
+      var pct = Math.round(score / total * 100);
+
+      var resultEl = document.getElementById('quiz-result');
+      document.getElementById('quiz-score').textContent = score + ' / ' + total + ' (' + pct + '%)';
+
+      var feedback = '';
+      if (pct === 100) feedback = 'Every question right. The ideas from this class are sitting solidly.';
+      else if (pct >= 80) feedback = 'Strong. A couple of things to revisit, but the core is there.';
+      else if (pct >= 60) feedback = 'Decent foundation. Go back over the sections where the answers surprised you.';
+      else feedback = 'More rereading would help before moving on. The ideas build on each other, so gaps here will widen later.';
+
+      // add per-question breakdown
+      var breakdown = '<div style="margin-top:1rem;display:flex;flex-direction:column;gap:.6rem">';
+      questions.forEach(function(q, i) {
+        var correct = answers[i] === q.ans;
+        breakdown += '<div style="border-left:3px solid ' + (correct ? '#7fff6b' : '#ff6b6b') + ';padding:.6rem .9rem;background:rgba(' + (correct ? '127,255,107' : '255,107,107') + ',.04);border-radius:0 8px 8px 0">';
+        breakdown += '<div style="font:.8rem Source Sans 3,sans-serif;color:' + (correct ? '#7fff6b' : '#ff6b6b') + ';margin-bottom:.3rem">Q' + (i+1) + ': ' + (correct ? 'Correct' : 'Incorrect — you chose: ' + q.opts[answers[i]]) + '</div>';
+        breakdown += '<div style="font:.85rem Source Sans 3,sans-serif;color:#9e968a;line-height:1.6">' + q.explain + '</div>';
+        breakdown += '</div>';
+      });
+      breakdown += '</div>';
+
+      document.getElementById('quiz-feedback').innerHTML = feedback + breakdown;
+      resultEl.style.display = 'block';
+      resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    document.getElementById('quiz-retry').addEventListener('click', function() {
+      answers = new Array(questions.length).fill(null);
+      document.getElementById('quiz-result').style.display = 'none';
+      render();
+      document.getElementById('quiz-widget').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    render();
+  })();
+  </script>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Computer Organisation &amp; Design</h2>
+    <a class="sidebar-link" href="class1.html">
+      <div class="sidebar-link-title">Class 1: The Machine Doesn&rsquo;t Care</div>
+      <div class="sidebar-link-note">Done</div>
+    </a>
+    <a class="sidebar-link active-topic" href="#">
+      <div class="sidebar-link-title">Class 2: How Do We Count?</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Class 3: Coming soon</div>
+      <div class="sidebar-link-note"></div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The thread</h2>
+    <p style="font-size:.92rem;color:var(--muted);line-height:1.6">How do we count? And is the counting accurate? Every system in history is an answer to the first question. The search for an answer to the second is why computers count in binary.</p>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+var hb = document.getElementById('hamburger'), mo = document.getElementById('mobileMenu');
+hb.addEventListener('click', function() {
+  hb.classList.toggle('active');
+  mo.classList.toggle('active');
+  document.body.style.overflow = mo.classList.contains('active') ? 'hidden' : '';
+});
+mo.querySelectorAll('a').forEach(function(l) {
+  l.addEventListener('click', function() {
+    hb.classList.remove('active');
+    mo.classList.remove('active');
+    document.body.style.overflow = '';
+  });
+});
+</script>
+</body>
+</html>

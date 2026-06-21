@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>A Battery Made of Salt Water | Biosignal Acquisition for Embedded Engineers</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#f4efe7;--body:#cbc4b9;--muted:#9e968a;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.016;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.22rem;color:var(--body);font-weight:400;margin-bottom:2.2rem;line-height:1.62}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.19rem;font-weight:400;margin-bottom:1.35rem;line-height:1.8}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.93em;background:rgba(232,168,76,.15);padding:.2rem .48rem;border-radius:4px;color:#f1dcb2;font-family:'Courier New',monospace}
+    .eqn{display:block;text-align:center;font-family:'Courier New',monospace;font-size:1.12rem;color:#f1dcb2;background:rgba(232,168,76,.08);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1.5rem 0;line-height:1.7;overflow-x:auto}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.15rem;font-weight:400;margin:.4rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:1rem;color:#bcb5a8;margin-top:1.1rem;font-style:italic;line-height:1.72}
+
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+  <style>
+    /* shared control bits */
+    .ctl-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin:.7rem 0}
+    .ctl-row .lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);min-width:140px}
+    .ctl-slider{flex:1;min-width:180px;accent-color:var(--accent)}
+    .ctl-val{font-family:'Courier New',monospace;font-size:.95rem;color:var(--ink);min-width:120px;text-align:right}
+    .preset-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.9rem}
+    .preset-btn{padding:.45rem .9rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:'Courier New',monospace}
+    .preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .preset-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+
+    /* nernst calculator */
+    .nc-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;margin-top:1.2rem}
+    .nc-big{font-size:1.7rem;font-weight:500;font-family:'Courier New',monospace;color:var(--ink);margin-bottom:10px}
+    .nc-stat{font-size:1rem;color:var(--muted);margin:7px 0;line-height:1.55}
+    .nc-stat b{color:var(--ink);font-weight:500;font-family:'Courier New',monospace}
+    .nc-axis{position:relative;height:58px;margin:1.5rem 0 .3rem}
+    .nc-track{position:absolute;top:30px;left:0;right:0;height:2px;background:var(--border-hover)}
+    .nc-zero{position:absolute;top:22px;width:1px;height:16px;background:var(--muted)}
+    .nc-zerotag{position:absolute;top:40px;font-family:'Courier New',monospace;font-size:.72rem;color:var(--muted);transform:translateX(-50%)}
+    .nc-rest{position:absolute;top:18px;width:2px;height:24px;background:var(--green);opacity:.8}
+    .nc-resttag{position:absolute;top:-2px;font-family:'Courier New',monospace;font-size:.72rem;color:var(--green);transform:translateX(-50%);white-space:nowrap}
+    .nc-mark{position:absolute;top:14px;width:3px;height:32px;background:var(--accent);border-radius:2px;transition:left .15s}
+    .nc-marktag{position:absolute;top:-4px;font-family:'Courier New',monospace;font-size:.78rem;color:var(--accent);transform:translateX(-50%);white-space:nowrap;transition:left .15s}
+
+    /* boltzmann chart */
+    .bz-wrap{width:100%}
+    .bz-readout{font-family:'Courier New',monospace;font-size:.98rem;color:var(--body);margin-top:.6rem;line-height:1.7}
+    .bz-readout b{color:var(--accent)}
+
+    /* quiz */
+    .quiz-progress{font-family:'Courier New',monospace;font-size:.95rem;color:var(--accent);margin-bottom:1.2rem;letter-spacing:.02em}
+    .quiz-q{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.3rem 1.4rem;margin-bottom:1.1rem}
+    .quiz-q-text{font-size:1.12rem;color:var(--ink);font-weight:500;margin-bottom:1rem;line-height:1.5}
+    .quiz-q-num{color:var(--accent);font-family:'Courier New',monospace;margin-right:.5rem}
+    .quiz-opt{display:block;width:100%;text-align:left;padding:.75rem 1rem;margin:.5rem 0;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);font-family:inherit;font-size:1.04rem;cursor:pointer;transition:all .18s;line-height:1.45}
+    .quiz-opt:hover:not(:disabled){border-color:var(--accent);color:var(--ink)}
+    .quiz-opt:disabled{cursor:default}
+    .quiz-opt.correct{background:var(--green-dim);border-color:rgba(127,255,107,.5);color:var(--ink)}
+    .quiz-opt.wrong{background:var(--red-dim);border-color:rgba(255,107,107,.5);color:var(--ink)}
+    .quiz-opt .mk{float:right;font-weight:700;margin-left:.6rem}
+    .quiz-opt.correct .mk{color:var(--green)}
+    .quiz-opt.wrong .mk{color:var(--red)}
+    .quiz-explain{margin-top:.8rem;padding:.85rem 1.1rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.62;display:none}
+    .quiz-explain.show{display:block;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .quiz-final{margin-top:1.3rem;padding:1.2rem 1.4rem;border-radius:10px;background:var(--bg-card);border:1px solid var(--accent);font-family:var(--display);font-size:1.4rem;color:var(--ink);text-align:center;display:none}
+    .quiz-final.show{display:block;animation:rise .4s cubic-bezier(.22,1,.36,1) both}
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk &#9662;</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+  <span class="series-tag"><span class="series-dot"></span>Biosignal Acquisition for Embedded Engineers &middot; Class 2</span>
+  <h1>A Battery Made of Salt Water</h1>
+  <p class="blog-subtitle">Every living cell holds a steady voltage across a membrane two molecules thick, and it does it while sitting electrically still. This post derives that voltage from one law of statistical physics, then springs a trap: the same equation produces the single largest offset your electrodes will ever fight.</p>
+
+  <h2>A voltage that just sits there</h2>
+
+  <p>Last time I said a biopotential exists because cells "actively separate ionic charge," and then I moved on before answering the obvious question: separate it how, and why does that make a voltage that just sits there? Look at what we are actually claiming. A cell at rest, not firing, not signalling, doing nothing you would call dramatic, still holds about 70 millivolts across its membrane, inside negative. It holds it for hours, the way a battery on a shelf holds 1.5 volts: quietly, indefinitely, with nothing obviously happening.</p>
+
+  <p>A voltage usually means something is going on, yet here is a thing that is electrically quiet and maintains a potential difference forever. So: what is the battery? What chemistry pins a stable voltage across a sheet of fat, and can we predict its value from first principles instead of memorising "about minus seventy" from a chart? Answer that and we own the source of every signal in this series. There is also a second result waiting at the end that I will get to once we have the equation.</p>
+
+  <hr class="sep">
+
+  <h2>Three ingredients, and the fight between them</h2>
+
+  <p>The whole result falls out of three facts rubbing against each other.</p>
+
+  <p>The first is a concentration gradient. The water inside the cell and the water outside are both salty, but not the <em>same</em> salty. Potassium ions (K+) are packed densely inside and scarce outside, roughly 140 against 5 in the usual units. Sodium (Na+) is the mirror image, plentiful outside and rare within. Somebody built those gradients and somebody pays to keep them, which we will come back to.</p>
+
+  <p>The second is selectivity. The membrane is an oily insulator that ions cannot cross unaided, punched through with protein channels that act as fussy doorways. At rest, the doors that happen to be open are mostly potassium doors, so the resting membrane lets K+ through and blocks nearly everything else. That pickiness is the mechanism, not a footnote.</p>
+
+  <p>The third a circuits person already knows. A thin insulating sheet with a conductor on each face is a capacitor, and the membrane, with salt water inside and out, is exactly that. It becomes important at the end.</p>
+
+  <p>Now watch the three collide. Potassium is crowded inside and empty outside, so diffusion, the blind statistical drift of crowded things toward open space, shoves K+ out through the open potassium doors. But every K+ that leaves carries its positive charge out and abandons a negative charge inside. The interior tips negative. And a negative interior reaches back out and tugs the positive potassium toward home. So one ion feels two influences at once, pointed opposite ways: diffusion pushing it out, the growing electric field pulling it back. The voltage slides until those two exactly cancel, net flow stops, and whatever voltage exists at that instant simply stays. That balance point is the number we are after, and it is called the Nernst potential.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Two forces on one ion, pointed opposite ways</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 280" role="img" aria-label="A cross section of a cell membrane. The inside is crowded with potassium ions and the outside is sparse. Diffusion pushes potassium outward through an open channel, while the electric field from the negative interior pulls it back inward. The two influences balance at the Nernst potential.">
+        <!-- outside / inside backgrounds -->
+        <rect x="0" y="0" width="680" height="96" fill="rgba(76,168,232,.05)"/>
+        <rect x="0" y="184" width="680" height="96" fill="rgba(232,168,76,.05)"/>
+        <!-- membrane -->
+        <rect x="0" y="96" width="680" height="88" fill="rgba(237,232,224,.04)"/>
+        <line x1="0" y1="96" x2="680" y2="96" stroke="#7d766b" stroke-width="1"/>
+        <line x1="0" y1="184" x2="680" y2="184" stroke="#7d766b" stroke-width="1"/>
+        <text x="14" y="26" style="font:13px 'Source Sans 3',sans-serif;fill:#4ca8e8">OUTSIDE &middot; little K+</text>
+        <text x="14" y="210" style="font:13px 'Source Sans 3',sans-serif;fill:#e8a84c">INSIDE &middot; lots of K+, now slightly negative</text>
+        <text x="640" y="145" text-anchor="end" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">lipid membrane (a capacitor)</text>
+
+        <!-- inside K+ crowd -->
+        <g fill="#e8a84c" font-family="'Courier New',monospace" font-size="11" text-anchor="middle">
+          <circle cx="60" cy="215" r="9"/><text x="60" y="219" fill="#1a1917">+</text>
+          <circle cx="100" cy="240" r="9"/><text x="100" y="244" fill="#1a1917">+</text>
+          <circle cx="150" cy="225" r="9"/><text x="150" y="229" fill="#1a1917">+</text>
+          <circle cx="210" cy="248" r="9"/><text x="210" y="252" fill="#1a1917">+</text>
+          <circle cx="270" cy="222" r="9"/><text x="270" y="226" fill="#1a1917">+</text>
+          <circle cx="330" cy="245" r="9"/><text x="330" y="249" fill="#1a1917">+</text>
+          <circle cx="410" cy="226" r="9"/><text x="410" y="230" fill="#1a1917">+</text>
+          <circle cx="470" cy="247" r="9"/><text x="470" y="251" fill="#1a1917">+</text>
+          <circle cx="540" cy="224" r="9"/><text x="540" y="228" fill="#1a1917">+</text>
+          <circle cx="600" cy="244" r="9"/><text x="600" y="248" fill="#1a1917">+</text>
+        </g>
+        <!-- outside K+ sparse -->
+        <g fill="#4ca8e8" font-family="'Courier New',monospace" font-size="11" text-anchor="middle">
+          <circle cx="120" cy="50" r="9"/><text x="120" y="54" fill="#1a1917">+</text>
+          <circle cx="500" cy="44" r="9"/><text x="500" y="48" fill="#1a1917">+</text>
+        </g>
+
+        <!-- open channel in the middle -->
+        <rect x="320" y="96" width="40" height="88" fill="#1a1917" stroke="#7fff6b" stroke-width="1.5"/>
+        <text x="340" y="92" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#7fff6b">open K+ channel</text>
+        <circle cx="340" cy="140" r="9" fill="#e8a84c"/><text x="340" y="144" text-anchor="middle" font-family="'Courier New',monospace" font-size="11" fill="#1a1917">+</text>
+
+        <!-- diffusion arrow (up/out) -->
+        <line x1="300" y1="150" x2="300" y2="70" stroke="#e8a84c" stroke-width="2"/>
+        <polygon points="300,58 295,72 305,72" fill="#e8a84c"/>
+        <text x="294" y="115" text-anchor="end" style="font:12px 'Source Sans 3',sans-serif;fill:#e8a84c">diffusion pushes out</text>
+        <!-- electric pull (down/in) -->
+        <line x1="380" y1="70" x2="380" y2="150" stroke="#4ca8e8" stroke-width="2"/>
+        <polygon points="380,162 375,148 385,148" fill="#4ca8e8"/>
+        <text x="386" y="115" style="font:12px 'Source Sans 3',sans-serif;fill:#4ca8e8">field pulls back in</text>
+      </svg>
+      <p class="viz-note">The crowd inside wants to spill out; the negativity it leaves behind wants to pull it back. The resting voltage is precisely the value at which those two exactly cancel for potassium. Everything below is just putting a number on that balance.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The one law we need: population follows energy, exponentially</h2>
+
+  <p>I am going to borrow exactly one deep fact, and it is the cornerstone of all statistical physics. Put a pile of particles in contact with a warm bath at temperature T, let them settle, and the probability of finding a particle in a state of energy E is proportional to</p>
+
+  <span class="eqn">probability(E) &prop; exp( &minus;E / kT )</span>
+
+  <p>with k the Boltzmann constant and kT the thermal energy scale. In plain words: costlier states are less populated, and the population falls off <em>exponentially</em> as the cost climbs, with kT setting how steep the fall is. The intuition, if you want one: to sit in a pricier spot a particle has to have scrounged that much extra energy from random thermal kicks, and the odds of having scrounged a given surplus shrink exponentially with how much you need. A warm bath (large kT) is generous, so particles spill into expensive states easily; a cold bath (small kT) keeps them huddled in the cheap ones. Drag the temperature below and watch the curve breathe.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Boltzmann: why higher energy means fewer particles</span></div>
+    <div class="viz-body">
+      <svg id="bzSvg" class="bz-wrap" viewBox="0 0 680 240" role="img" aria-label="A decaying exponential curve showing particle population against energy. Raising the temperature flattens the curve so more particles reach high energies; lowering it steepens the curve so particles crowd at low energy."></svg>
+      <div class="ctl-row">
+        <span class="lbl">Temperature</span>
+        <input type="range" id="bzT" class="ctl-slider" min="120" max="450" value="300">
+        <span class="ctl-val" id="bzTv"></span>
+      </div>
+      <div class="bz-readout" id="bzOut"></div>
+      <p class="viz-note">The curve is the same shape that sets our concentrations: the amount of potassium that ends up on each side of the membrane is just how populated that side is, and population is governed by this exponential. That single connection is what turns a chemistry question into an equation we can solve.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>From the law to the voltage, in four steps</h2>
+
+  <p>Now the derivation. Each symbol enters only when the physics forces it.</p>
+
+  <h3>Step 1: concentration is just population</h3>
+  <p>Concentration is particles per unit volume, so the ratio of potassium inside to potassium outside is exactly the ratio of how populated the two sides are. Boltzmann hands us that ratio directly as a ratio of exponentials:</p>
+  <span class="eqn">c_in / c_out = exp( &minus;E_in / kT ) / exp( &minus;E_out / kT ) = exp( &minus;(E_in &minus; E_out) / kT )</span>
+  <p>That is most of the derivation. All that remains is to name the energy difference, then dig the voltage out of it.</p>
+
+  <h3>Step 2: the only energy difference is electrical</h3>
+  <p>At equilibrium both sides are the same salt water at the same temperature, so the only thing that makes a potassium ion's energy differ between inside and outside is the electricity. A charge q sitting at electrical potential &phi; has potential energy <code>E = q&phi;</code>, the most elementary fact in this whole course. For an ion of charge number z (that is +1 for potassium, +2 for calcium, &minus;1 for chloride) the charge is <code>q = ze</code> with e the elementary charge, so</p>
+  <span class="eqn">E_in &minus; E_out = ze(&phi;_in &minus; &phi;_out) = ze &middot; V_m</span>
+  <p>where I define the membrane voltage the way we always will, inside minus outside: <code>V_m = &phi;_in &minus; &phi;_out</code>. Notice there was no chemistry to invent. Charge times voltage equals energy did the work.</p>
+
+  <h3>Step 3: substitute, then take a logarithm</h3>
+  <p>Drop that energy difference into the population ratio from Step 1:</p>
+  <span class="eqn">c_in / c_out = exp( &minus;ze V_m / kT )</span>
+  <p>The voltage is trapped up in the exponent, and the natural way to free it is to take the log of both sides:</p>
+  <span class="eqn">ln( c_in / c_out ) = &minus;ze V_m / kT</span>
+
+  <h3>Step 4: solve for V_m</h3>
+  <span class="eqn">V_m = &minus;(kT / ze) ln( c_in / c_out ) = (kT / ze) ln( c_out / c_in )</span>
+
+  <p>That is the Nernst equation, and now look at where the logarithm came from. It is nothing but the inverse of Boltzmann's exponential. Population depends on energy exponentially, so when we run the relationship backwards to pull the energy (and therefore the voltage) out of a population ratio, the exponential inverts into a log. The log is not a quirk of biology; it is the fingerprint of thermal statistics. And kT rode along for the same reason: temperature set the scale of the exponential, so it sets the scale of the voltage.</p>
+
+  <p>One cosmetic step matches the textbooks. We worked per ion, with k and e. Physiologists count per mole, so multiply top and bottom of the prefactor by Avogadro's number: k times Avogadro is the gas constant R, and e times Avogadro is the Faraday constant F. Both scale together, so <code>kT/ze</code> becomes <code>RT/zF</code> unchanged:</p>
+
+  <div class="callout">V_m = (RT / zF) &middot; ln( c_out / c_in ). The equilibrium voltage is set by temperature and a ratio of concentrations, nothing else. Per ion or per mole is just a choice of counting unit.</div>
+
+  <hr class="sep">
+
+  <h2>Does the formula behave?</h2>
+
+  <p>Before trusting any equation I poke it at the edges, because a formula that misbehaves at the extremes is lying somewhere in the middle too. Equal concentrations: the ratio is 1, the log is 0, the voltage is 0. Good, no gradient means no battery. Steepen the gradient: the ratio runs further from 1, the log grows, and the voltage grows with it, exactly as a stronger concentration difference should need a stronger field to hold it. Warm it up: RT rises and so does the voltage, which fits, since hotter diffusion needs a bigger field to oppose it. Flip the charge from +1 to &minus;1: the voltage flips sign, as it must, because a negative ion feels the field the opposite way. Four checks, four passes. Now I believe it, and now we can compute.</p>
+
+  <hr class="sep">
+
+  <h2>Put numbers in: build any ion's battery yourself</h2>
+
+  <p>Start with the prefactor at body temperature, T = 310 kelvin, R = 8.314, F = 96485:</p>
+  <span class="eqn">RT / F = (8.314 &times; 310) / 96485 &asymp; 0.0267 V = 26.7 mV</span>
+  <p>Commit that 26.7 mV to memory; it is roughly the thermal voltage at body temperature and it turns up constantly. For potassium, z is +1, so the prefactor stays 26.7 mV, and with 5 outside over 140 inside:</p>
+  <span class="eqn">V_m = 26.7 mV &times; ln(5 / 140) = 26.7 mV &times; (&minus;3.33) &asymp; &minus;89 mV</span>
+  <p>A real physiological voltage, pulled from a temperature and a concentration ratio with no fitting. Now do it for every ion at once, and watch where each one's battery wants to sit. Pick an ion, then drag the concentrations or the temperature and see the Nernst potential move.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Build a Nernst battery: pick an ion, move the gradient</span></div>
+    <div class="viz-body">
+      <div class="preset-row" id="ncPre"></div>
+      <div class="ctl-row">
+        <span class="lbl">Inside conc.</span>
+        <input type="range" id="ncIn" class="ctl-slider" min="0" max="100" value="70">
+        <span class="ctl-val" id="ncInV"></span>
+      </div>
+      <div class="ctl-row">
+        <span class="lbl">Outside conc.</span>
+        <input type="range" id="ncOut" class="ctl-slider" min="0" max="100" value="20">
+        <span class="ctl-val" id="ncOutV"></span>
+      </div>
+      <div class="ctl-row">
+        <span class="lbl">Temperature</span>
+        <input type="range" id="ncT" class="ctl-slider" min="0" max="45" value="37">
+        <span class="ctl-val" id="ncTv"></span>
+      </div>
+      <div class="nc-card">
+        <div class="nc-big" id="ncBig"></div>
+        <div class="nc-stat" id="ncPrefix"></div>
+        <div class="nc-stat" id="ncRatio"></div>
+        <div class="nc-axis" id="ncAxis">
+          <div class="nc-track"></div>
+          <div class="nc-zero" style="left:50%"></div>
+          <div class="nc-zerotag" style="left:50%">0 mV</div>
+          <div class="nc-rest" id="ncRest"></div>
+          <div class="nc-resttag" id="ncRestTag">rest &asymp; &minus;70</div>
+          <div class="nc-mark" id="ncMark"></div>
+          <div class="nc-marktag" id="ncMarkTag"></div>
+        </div>
+      </div>
+      <p class="viz-note">The axis runs from &minus;150 to +150 mV. Potassium and chloride sit deep in negative territory, sodium and calcium swing strongly positive. The resting potential (green) lives close to potassium, and the next section explains why it parks there instead of on sodium.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The same answer from balancing two flows</h2>
+
+  <p>If the Boltzmann route felt too statistical, here is the same result from watching the two flows cancel directly. Diffusion drives a flux proportional to the concentration gradient (Fick's law). The field drives a drift flux proportional to concentration times the voltage gradient. Set the total flux to zero so they cancel at every point in the membrane, separate variables, and integrate across. The integral of <code>dc/c</code> is a logarithm, and you land on the identical <code>V_m = (RT/zF) ln(c_out/c_in)</code>. Both pictures, balance of populations and balance of currents, describe the same equilibrium, so it is no accident they give the same formula. The log shows up either way, once from inverting an exponential and once from integrating <code>dc/c</code>, which are the same fact reached from two directions.</p>
+
+  <hr class="sep">
+
+  <h2>Why minus 70 and not minus 89</h2>
+
+  <p>I opened quoting minus 70 and then derived minus 89. That gap is the price of the "mostly potassium" simplification. The membrane is not a perfect potassium filter; a trickle of sodium leaks in, and sodium's own Nernst potential is strongly positive because its gradient points the other way. That trickle tugs the resting voltage up from pure potassium's minus 89 toward zero, parking it near minus 70. The full version weights each ion by how permeable the membrane is to it, a permeability-weighted tug of war between the ions' individual Nernst potentials, and that weighted formula is the Goldman-Hodgkin-Katz equation. Potassium wins the rope only because its doors are the ones mostly open, so we sit close to its value but not on it.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The resting potential is a weighted tug of war</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 200" role="img" aria-label="A voltage axis from minus 100 to plus 140 millivolts. Potassium sits near minus 89 and chloride near minus 65, both negative. Sodium sits near plus 61 and calcium near plus 130, both positive. The resting potential, marked at about minus 70, sits very close to potassium because the membrane is mostly permeable to potassium.">
+        <line x1="40" y1="120" x2="650" y2="120" stroke="#7d766b" stroke-width="1"/>
+        <!-- axis maps -100..+140 over x 40..650 ; scale = 610/240 = 2.542 px/mV ; x(v)=40+(v+100)*2.542 -->
+        <g style="font:10px 'Courier New',monospace;fill:#9e968a">
+          <line x1="40"  y1="115" x2="40"  y2="125" stroke="#7d766b"/><text x="40"  y="140" text-anchor="middle">&minus;100</text>
+          <line x1="167" y1="115" x2="167" y2="125" stroke="#7d766b"/><text x="167" y="140" text-anchor="middle">&minus;50</text>
+          <line x1="294" y1="115" x2="294" y2="125" stroke="#7d766b"/><text x="294" y="140" text-anchor="middle">0</text>
+          <line x1="421" y1="115" x2="421" y2="125" stroke="#7d766b"/><text x="421" y="140" text-anchor="middle">+50</text>
+          <line x1="548" y1="115" x2="548" y2="125" stroke="#7d766b"/><text x="548" y="140" text-anchor="middle">+100</text>
+        </g>
+        <text x="345" y="165" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">each ion's Nernst potential (mV)</text>
+
+        <!-- E_K at -89 -> x=40+(11)*2.542=68 -->
+        <line x1="68" y1="70" x2="68" y2="120" stroke="#7fff6b" stroke-width="3"/>
+        <text x="68" y="62" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#7fff6b">E_K &minus;89</text>
+        <!-- E_Cl at -65 -> x=40+(35)*2.542=129 -->
+        <line x1="129" y1="86" x2="129" y2="120" stroke="#4ca8e8" stroke-width="2.4"/>
+        <text x="129" y="78" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#4ca8e8">E_Cl &minus;65</text>
+        <!-- E_Na at +61 -> x=40+(161)*2.542=449 -->
+        <line x1="449" y1="86" x2="449" y2="120" stroke="#ff6b6b" stroke-width="2.4"/>
+        <text x="449" y="78" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#ff6b6b">E_Na +61</text>
+        <!-- E_Ca at +130 -> x=40+(230)*2.542=625 -->
+        <line x1="625" y1="92" x2="625" y2="120" stroke="#ff9b6b" stroke-width="2"/>
+        <text x="618" y="84" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#ff9b6b">E_Ca +130</text>
+
+        <!-- V_rest at -70 -> x=40+(30)*2.542=116 -->
+        <line x1="116" y1="36" x2="116" y2="120" stroke="#e8a84c" stroke-width="3"/>
+        <circle cx="116" cy="36" r="4" fill="#e8a84c"/>
+        <text x="116" y="28" text-anchor="middle" style="font:12px 'Courier New',monospace;fill:#e8a84c">V_rest &minus;70</text>
+        <!-- pull arrow toward K -->
+        <line x1="150" y1="50" x2="80" y2="50" stroke="#e8a84c" stroke-width="1.4" stroke-dasharray="3 3"/>
+        <polygon points="74,50 84,45 84,55" fill="#e8a84c"/>
+        <text x="200" y="54" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">K+ doors mostly open, so rest is dragged near E_K</text>
+      </svg>
+      <p class="viz-note">Resting potential is not any single ion's number; it is a weighted average that lands wherever the most permeable ion drags it. At rest that is potassium. When we reach the action potential next class, sodium's doors fly open, the weighting flips, and the voltage lunges toward E_Na. That flip is the spike.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Why the battery does not drain itself</h2>
+
+  <p>This is where the capacitor earns its place, and it settles a worry the derivation may have planted. If potassium has to leave to build the voltage, does the cell slowly empty of potassium? Almost not at all. A membrane holds about 1 microfarad per square centimeter, and the charge needed to reach 90 millivolts is just <code>Q = CV</code>:</p>
+  <span class="eqn">Q = (1 &micro;F/cm&sup2;)(0.09 V) &asymp; 9 &times; 10&#8315;&#8312; C/cm&sup2;</span>
+  <p>Divide by Faraday's constant to turn coulombs into moles of potassium, and you get under <code>10&#8315;&sup1;&sup2;</code> moles per square centimeter that actually had to cross, about one ion in a hundred thousand against the 140 millimolar sitting inside. The voltage is genuine, but the charge that makes it is a vanishing skim off the top, so the bulk concentrations barely flinch. That is why our working electrical model of tissue, used all series long, is a battery (the Nernst potential) in parallel with a capacitor (the membrane): not a loose analogy, but a literal accounting of charge.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">What the chemistry literally is, as a circuit</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 220" role="img" aria-label="An equivalent circuit of a patch of membrane. A battery representing the Nernst potential sits in series with a resistor representing the open channels, and that branch sits in parallel with a capacitor representing the membrane itself, between the outside and inside nodes.">
+        <!-- nodes -->
+        <line x1="60" y1="40" x2="620" y2="40" stroke="#7d766b" stroke-width="1.4"/>
+        <line x1="60" y1="180" x2="620" y2="180" stroke="#7d766b" stroke-width="1.4"/>
+        <text x="60" y="28" style="font:12px 'Source Sans 3',sans-serif;fill:#4ca8e8">OUTSIDE</text>
+        <text x="60" y="200" style="font:12px 'Source Sans 3',sans-serif;fill:#e8a84c">INSIDE</text>
+
+        <!-- left branch: battery + resistor (channels) -->
+        <line x1="220" y1="40" x2="220" y2="70" stroke="#cbc4b9" stroke-width="1.6"/>
+        <!-- battery -->
+        <line x1="205" y1="74" x2="235" y2="74" stroke="#7fff6b" stroke-width="3"/>
+        <line x1="212" y1="84" x2="228" y2="84" stroke="#7fff6b" stroke-width="1.6"/>
+        <line x1="205" y1="94" x2="235" y2="94" stroke="#7fff6b" stroke-width="3"/>
+        <line x1="212" y1="104" x2="228" y2="104" stroke="#7fff6b" stroke-width="1.6"/>
+        <text x="250" y="92" style="font:12px 'Courier New',monospace;fill:#7fff6b">E_K (Nernst)</text>
+        <!-- resistor (channel conductance) -->
+        <line x1="220" y1="104" x2="220" y2="120" stroke="#cbc4b9" stroke-width="1.6"/>
+        <path d="M220 120 l-10 6 l20 8 l-20 8 l20 8 l-10 6" fill="none" stroke="#cbc4b9" stroke-width="1.6"/>
+        <text x="250" y="150" style="font:12px 'Courier New',monospace;fill:#cbc4b9">channel resistance</text>
+        <line x1="220" y1="162" x2="220" y2="180" stroke="#cbc4b9" stroke-width="1.6"/>
+
+        <!-- right branch: capacitor (membrane) -->
+        <line x1="470" y1="40" x2="470" y2="98" stroke="#cbc4b9" stroke-width="1.6"/>
+        <line x1="440" y1="98" x2="500" y2="98" stroke="#4ca8e8" stroke-width="3"/>
+        <line x1="440" y1="112" x2="500" y2="112" stroke="#4ca8e8" stroke-width="3"/>
+        <text x="512" y="109" style="font:12px 'Courier New',monospace;fill:#4ca8e8">C_membrane</text>
+        <line x1="470" y1="112" x2="470" y2="180" stroke="#cbc4b9" stroke-width="1.6"/>
+
+        <text x="345" y="212" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">a battery and a resistor (the open ion channels) in parallel with a capacitor (the membrane)</text>
+      </svg>
+      <p class="viz-note">This little cell is the brick we will build tissue from. Populations of these, charging and discharging together, are literally what your electrodes pick up. When we model the body electrically later, we are transcribing this picture, not approximating it.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>What this means at the bench</h2>
+
+  <p>Back at the workbench, this class pays off in three concrete ways.</p>
+
+  <p>First, the <strong>signal source is now concrete</strong>. Every EEG rhythm, every EMG burst, every heartbeat traces back to populations of these Nernst batteries charging and discharging their membrane capacitors. When we draw battery-and-capacitor circuits for tissue later, we are not reaching for an analogy; we are copying down the physics the chemistry already wrote.</p>
+
+  <p>Second, a warning about <strong>current</strong>. The whole thing runs on that tiny charge across a tiny capacitance, so there is almost nothing to spare. The source is delicate and effectively high impedance, which means if your measurement draws meaningful current, you load the source and distort the very thing you came to read. That is why "high input impedance" will be non-negotiable when we specify the front-end, and why Unit 2 cares so much about how the electrode's impedance stacks against the amplifier behind it.</p>
+
+  <p>Third, the second result I mentioned at the start. The Nernst equation you just derived for a cell membrane is the <em>same equation</em> that governs the junction where your metal electrode meets the gel and skin. That junction is also two phases with different ion concentrations across a selective boundary, so it too sits at a Nernst-style equilibrium voltage, and that voltage is precisely the hundreds-of-millivolts DC offset I called "the mess" last class. The physics that creates your signal also creates the single largest obstacle in front of it, so most of Unit 2 is this same idea applied to metal and skin instead of membrane.</p>
+
+  <div class="callout">A cell is a battery in parallel with a capacitor. Its voltage is a temperature times a log of a concentration ratio, built from a tiny charge, maintained by a pump. The same equation sets your electrode's offset, which is why understanding the signal and understanding its biggest enemy are one task, not two.</div>
+
+  <hr class="sep">
+
+  <h2>Check yourself before Class 3</h2>
+
+  <p>Seven questions, all answerable from this post. Tap an answer and it tells you straight away whether it holds, and why. The Nernst calculator above is there if you want to check the arithmetic.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A short, self-marking quiz</span></div>
+    <div class="viz-body">
+      <div class="quiz-progress" id="quizProgress"></div>
+      <div id="quizHost"></div>
+      <div class="quiz-final" id="quizFinal"></div>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Biosignal Acquisition for Embedded Engineers &middot; Unit 1: The Signals</h2>
+    <a class="sidebar-link" href="a-microvolt-of-meaning.html"><div class="sidebar-link-title">1.1 What a signal and a biopotential are</div><div class="sidebar-link-note">The 110 dB problem.</div></a>
+    <a class="sidebar-link active-topic" href="#"><div class="sidebar-link-title">1.2 The membrane as a battery</div><div class="sidebar-link-note">You are here</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.3 The action potential</div><div class="sidebar-link-note">When the weighting flips.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.4 From one cell to a population</div><div class="sidebar-link-note">N vs root-N.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.5 Volume conduction</div><div class="sidebar-link-note">1/r fall-off.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.6 Why we measure differences</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.7 EEG, the small-signal extreme</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.9 EMG, the wide-band extreme</div></a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A resting voltage is diffusion balanced against the field</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Population follows energy exponentially (Boltzmann)</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The log in Nernst is just the inverse of that exponential</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">V = (RT/zF) ln(c_out / c_in)</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">26.7 mV is the thermal voltage at body temperature</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Rest is a permeability-weighted tug of war</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Same equation sets the electrode DC offset</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+<script>
+document.getElementById('year').textContent=new Date().getFullYear();
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ── Boltzmann chart ──────────────────────────────────────────────────────────
+(function(){
+  const svg=document.getElementById('bzSvg'),Tin=document.getElementById('bzT'),Tv=document.getElementById('bzTv'),out=document.getElementById('bzOut');
+  const NS='http://www.w3.org/2000/svg';
+  const X0=55,X1=650,Y0=200,Y1=24;           // plot box
+  const EMAX=6;                               // energy axis in units of room-temp kT
+  function px(e){return X0+(e/EMAX)*(X1-X0);}
+  function py(p){return Y0-p*(Y0-Y1);}
+  // static axes + labels (drawn once)
+  function line(x1,y1,x2,y2,col,w){const l=document.createElementNS(NS,'line');l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('stroke',col);l.setAttribute('stroke-width',w);svg.appendChild(l);return l;}
+  function txt(x,y,s,col,anchor,size){const t=document.createElementNS(NS,'text');t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('fill',col);t.setAttribute('text-anchor',anchor||'start');t.setAttribute('style','font:'+(size||11)+"px 'Source Sans 3',sans-serif");t.textContent=s;svg.appendChild(t);return t;}
+  line(X0,Y0,X1,Y0,'#7d766b',1);
+  line(X0,Y0,X0,Y1,'#7d766b',1);
+  txt(X0,Y0+22,'low energy','#9e968a','start',11);
+  txt(X1,Y0+22,'high energy','#9e968a','end',11);
+  txt(X0-6,Y1+4,'more','#9e968a','end',10);
+  txt(X0-6,Y0,'fewer','#9e968a','end',10);
+  txt((X0+X1)/2,Y0+38,'energy of a state','#9e968a','middle',11);
+  const curve=document.createElementNS(NS,'polyline');curve.setAttribute('fill','none');curve.setAttribute('stroke','#e8a84c');curve.setAttribute('stroke-width','2.5');svg.appendChild(curve);
+  const ktLine=line(0,0,0,0,'#4ca8e8',1.4);ktLine.setAttribute('stroke-dasharray','4 4');
+  const ktTag=txt(0,0,'','#4ca8e8','middle',11);
+  function refresh(){
+    const T=+Tin.value, Troom=298, ratio=Troom/T;   // E/kT(T) = E_units * Troom/T
+    Tv.textContent=T+' K  ('+(T-273)+' \u00b0C)';
+    let pts='';
+    for(let i=0;i<=120;i++){const e=EMAX*i/120;const p=Math.exp(-e*ratio);pts+=px(e).toFixed(1)+','+py(p).toFixed(1)+' ';}
+    curve.setAttribute('points',pts);
+    // mark E = kT(T): in room-kT units that is e = T/Troom
+    const ekt=T/Troom; if(ekt<=EMAX){const x=px(ekt);ktLine.setAttribute('x1',x);ktLine.setAttribute('y1',py(Math.exp(-1)));ktLine.setAttribute('x2',x);ktLine.setAttribute('y2',Y0);ktTag.setAttribute('x',x);ktTag.setAttribute('y',py(Math.exp(-1))-6);ktTag.textContent='E = kT';}
+    const word = T<250?'steep: particles huddle low':(T>350?'flat: particles reach high':'body-temperature falloff');
+    out.innerHTML='at <b>'+T+' K</b>, the population at energy kT has dropped to 1/e \u2248 37% of its value at zero. '+word+'.';
+  }
+  Tin.addEventListener('input',refresh); refresh();
+})();
+
+// ── Nernst calculator ────────────────────────────────────────────────────────
+(function(){
+  const inS=document.getElementById('ncIn'),outS=document.getElementById('ncOut'),Tin=document.getElementById('ncT');
+  // concentration sliders 0..100 map logarithmically over 0.0001 .. 1000 mM
+  const C_LO=1e-4,C_HI=1e3;
+  function cval(s){return C_LO*Math.pow(C_HI/C_LO,s/100);}
+  function cset(c){return Math.round(Math.log(c/C_LO)/Math.log(C_HI/C_LO)*100);}
+  function fmtC(c){if(c>=1)return Number(c.toPrecision(3))+' mM';if(c>=1e-3)return Number(c.toPrecision(3))+' mM';return Number((c*1e3).toPrecision(3))+' \u00b5M';}
+  let z=1;
+  const IONS=[
+    ['K+ potassium', 1, 140, 5],
+    ['Na+ sodium',   1, 15, 145],
+    ['Cl\u2212 chloride', -1, 10, 110],
+    ['Ca2+ calcium', 2, 1e-4, 2]
+  ];
+  const VMIN=-150,VMAX=150;
+  function axX(v){return (v-VMIN)/(VMAX-VMIN)*100;}
+  // place resting marker once
+  document.getElementById('ncRest').style.left=axX(-70)+'%';
+  document.getElementById('ncRestTag').style.left=axX(-70)+'%';
+  function refresh(){
+    const cin=cval(+inS.value),cout=cval(+outS.value),Tc=+Tin.value,Tk=Tc+273.15;
+    const pref=8.314*Tk/(z*96485)*1000;        // mV, includes z
+    const V=pref*Math.log(cout/cin);
+    document.getElementById('ncInV').textContent=fmtC(cin);
+    document.getElementById('ncOutV').textContent=fmtC(cout);
+    document.getElementById('ncTv').textContent=Tc+' \u00b0C';
+    document.getElementById('ncBig').textContent='Nernst potential = '+V.toFixed(1)+' mV';
+    document.getElementById('ncPrefix').innerHTML='prefactor RT/zF = <b>'+pref.toFixed(1)+' mV</b>  (z = '+z+')';
+    document.getElementById('ncRatio').innerHTML='ln(out / in) = ln('+Number(cout.toPrecision(3))+' / '+Number(cin.toPrecision(3))+') = <b>'+Math.log(cout/cin).toFixed(2)+'</b>';
+    const vc=Math.max(VMIN,Math.min(VMAX,V)),p=axX(vc);
+    const mk=document.getElementById('ncMark'),mt=document.getElementById('ncMarkTag');
+    mk.style.left=p+'%'; mt.style.left=p+'%'; mt.textContent=V.toFixed(0)+' mV';
+  }
+  inS.addEventListener('input',refresh); outS.addEventListener('input',refresh); Tin.addEventListener('input',refresh);
+  const pr=document.getElementById('ncPre');
+  IONS.forEach(([lab,zz,ci,co],idx)=>{
+    const b=document.createElement('button');b.type='button';b.className='preset-btn'+(idx===0?' on':'');b.textContent=lab;
+    b.addEventListener('click',()=>{
+      z=zz; inS.value=cset(ci); outS.value=cset(co);
+      pr.querySelectorAll('.preset-btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+      refresh();
+    });
+    pr.appendChild(b);
+  });
+  // start on potassium
+  z=1; inS.value=cset(140); outS.value=cset(5); refresh();
+})();
+
+// ── quiz ─────────────────────────────────────────────────────────────────────
+(function(){
+  const QUIZ=[
+    {q:"At rest, the cell membrane holds a steady voltage mainly because:",
+     opts:[{t:"The cell is actively pumping current through the membrane the whole time"},{t:"Diffusion pushing potassium out is balanced by the electric field pulling it back",c:true},{t:"Sodium and potassium concentrations are equal on both sides"},{t:"The membrane generates charge by friction"}],
+     ex:"The resting potential is an equilibrium: the outward diffusive push on K+ exactly cancels the inward electrical pull from the negative interior. No net flow, a stable voltage."},
+    {q:"In V = (RT/zF) ln(c_out / c_in), the logarithm appears because:",
+     opts:[{t:"Concentrations are measured on a log scale by convention"},{t:"It is the inverse of the exponential in the Boltzmann population law",c:true},{t:"Voltage is defined as a logarithm of charge"},{t:"The membrane capacitance is nonlinear"}],
+     ex:"Population depends on energy as exp(\u2212E/kT). Extracting the voltage from a population (concentration) ratio runs that exponential backwards, and the inverse of an exponential is a log."},
+    {q:"If the inside and outside concentrations of an ion are equal, its Nernst potential is:",
+     opts:[{t:"+26.7 mV"},{t:"Undefined"},{t:"0 mV",c:true},{t:"Equal to the resting potential"}],
+     ex:"Equal concentrations make the ratio 1 and ln(1) = 0, so V = 0. No gradient means no battery, which is exactly the behaviour you want at the edge case."},
+    {q:"Sodium sits at 15 mM inside and 145 mM outside (z = +1). Using the 26.7 mV prefactor, its Nernst potential is closest to:",
+     opts:[{t:"\u221261 mV"},{t:"0 mV"},{t:"+61 mV",c:true},{t:"+130 mV"}],
+     ex:"V = 26.7 \u00d7 ln(145/15) = 26.7 \u00d7 ln(9.7) \u2248 26.7 \u00d7 2.27 \u2248 +61 mV. Sodium's gradient points inward, so its equilibrium voltage is strongly positive, the opposite of potassium."},
+    {q:"Pure-potassium Nernst gives about \u221289 mV, but the real resting potential is near \u221270 mV. Why the gap?",
+     opts:[{t:"The measurement is simply wrong"},{t:"A small sodium leak, with its strongly positive Nernst potential, tugs the weighted average up toward zero",c:true},{t:"Temperature is lower than assumed"},{t:"Chloride has no Nernst potential"}],
+     ex:"Resting potential is a permeability-weighted tug of war (Goldman-Hodgkin-Katz). A little Na+ permeability pulls the average from E_K toward E_Na, landing near \u221270 instead of \u221289."},
+    {q:"Only about one potassium ion in 100,000 needs to cross to set up the resting voltage. The reason is:",
+     opts:[{t:"Potassium channels are extremely slow"},{t:"The membrane capacitance is tiny, so very little charge is needed to reach 90 mV (Q = CV)",c:true},{t:"Most potassium is bound and cannot move"},{t:"The pump replaces ions instantly"}],
+     ex:"Q = CV with C \u2248 1 \u00b5F/cm\u00b2 and V \u2248 90 mV gives a minute charge, under 10\u207b\u00b9\u00b2 mol/cm\u00b2. The bulk concentrations barely change, which is why the battery-in-parallel-with-capacitor model holds."},
+    {q:"For someone building acquisition hardware, the most direct consequence of this class is:",
+     opts:[{t:"The amplifier needs enormous gain"},{t:"The source is delicate and effectively high impedance, so the front-end must have very high input impedance",c:true},{t:"The signal is a pure sine wave"},{t:"Electrodes add no offset of their own"}],
+     ex:"The voltage rides on a tiny charge with almost no current to spare. Drawing current loads and distorts it, so high input impedance is non-negotiable. And the same Nernst physics gives the electrode its large DC offset."}
+  ];
+  let answered=0,score=0;
+  const host=document.getElementById('quizHost'),prog=document.getElementById('quizProgress'),fin=document.getElementById('quizFinal');
+  function updateProg(){prog.textContent=answered+' / '+QUIZ.length+' answered   \u00b7   score '+score;}
+  QUIZ.forEach((item,qi)=>{
+    const card=document.createElement('div');card.className='quiz-q';
+    const qt=document.createElement('div');qt.className='quiz-q-text';qt.innerHTML='<span class="quiz-q-num">Q'+(qi+1)+'.</span>'+item.q;card.appendChild(qt);
+    const btns=[],correctIdx=item.opts.findIndex(z=>z.c);
+    item.opts.forEach(o=>{
+      const b=document.createElement('button');b.className='quiz-opt';b.type='button';b.innerHTML=o.t+'<span class="mk"></span>';
+      b.addEventListener('click',()=>{
+        if(card.dataset.done)return;card.dataset.done='1';answered++;btns.forEach(x=>x.disabled=true);
+        if(o.c){b.classList.add('correct');b.querySelector('.mk').textContent='\u2713';score++;}
+        else{b.classList.add('wrong');b.querySelector('.mk').textContent='\u2717';const r=btns[correctIdx];r.classList.add('correct');r.querySelector('.mk').textContent='\u2713';}
+        ex.classList.add('show');updateProg();if(answered===QUIZ.length)showFinal();
+      });
+      btns.push(b);card.appendChild(b);
+    });
+    const ex=document.createElement('div');ex.className='quiz-explain';ex.textContent=item.ex;card.appendChild(ex);
+    host.appendChild(card);
+  });
+  function showFinal(){let msg;
+    if(score===QUIZ.length)msg='A clean sweep. On to the action potential.';
+    else if(score>=QUIZ.length-1)msg=score+' out of '+QUIZ.length+'. Solidly done. On to Class 3.';
+    else if(score>=QUIZ.length-3)msg=score+' out of '+QUIZ.length+'. Good. Replay the Nernst calculator and you have it.';
+    else msg=score+' out of '+QUIZ.length+'. Worth another pass. Diffusion versus field, and a log that is just an inverted exponential.';
+    fin.textContent=msg;fin.classList.add('show');}
+  updateProg();
+})();
+</script>
+</body>
+</html>

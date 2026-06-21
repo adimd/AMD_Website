@@ -154,6 +154,8 @@
     .quiz-final{margin-top:1.3rem;padding:1.2rem 1.4rem;border-radius:10px;background:var(--bg-card);border:1px solid var(--accent);font-family:var(--display);font-size:1.4rem;color:var(--ink);text-align:center;display:none}
     .quiz-final.show{display:block;animation:rise .4s cubic-bezier(.22,1,.36,1) both}
   </style>
+  <script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},options:{ignoreHtmlClass:'codeblock|run-out|run-row|twocol|sig-list'}};</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
 </head>
 <body>
 <header class="site-header">
@@ -190,21 +192,30 @@
 
 <main class="blog-main anim d1"><article class="article">
 
+  <style>
+    .thread-box{margin:2rem 0;padding:1.2rem 1.5rem;border-radius:0 14px 14px 0;border-left:3px solid var(--blue);background:rgba(76,168,232,.10)}
+    .thread-label{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:.5rem}
+    .thread-text{font-size:1.08rem;color:var(--body);line-height:1.72}
+    .thread-text strong{color:var(--ink)}
+    .closing-statement{margin:2.5rem 0;padding:2rem 2.2rem;border-radius:14px;background:#232220;border:1px solid var(--border-hover);font-family:var(--display);font-size:1.22rem;color:var(--body);line-height:1.82;font-style:italic}
+    .closing-statement strong{color:var(--ink);font-style:normal}
+  </style>
+
   <span class="series-tag"><span class="series-dot"></span>The Mathematics ML Runs On &middot; Class 7</span>
   <h1>The Sum, the Product, and the Number That Vanishes</h1>
-  <p class="blog-subtitle">Two symbols, sigma and pi, do nothing more than fold a list of numbers into one, by adding or by multiplying. The adding runs almost the whole field. The multiplying hides a flaw that destroys training runs after a few dozen steps, and the way out is the single most important piece of arithmetic in machine learning, and the reason logarithms exist at all.</p>
+  <p class="blog-subtitle">Two symbols, sigma and pi, do nothing more than fold a list of numbers into one, by adding or by multiplying. The adding runs almost the whole field. The multiplying hides a flaw that kills a training run after a few dozen steps, and the way out is the single most important piece of arithmetic in machine learning, and the reason logarithms exist at all.</p>
 
-  <h2>From one output to one number</h2>
+  <h2>From a list to one number</h2>
 
-  <p>A function commits to one output for each input. So why is that not the end of the story?</p>
+  <p>Class 6 ended with a function: one definite output for each input. So why is that not the end of the story?</p>
 
   <p>Because we almost never ask a function for a single output. We sweep it across a whole collection of inputs and are left holding a list. A loss function returns an error for every example in the dataset: a thousand examples, a thousand errors. A language model returns a probability for every word it predicts: a ten-word sentence, ten probabilities. A vector is itself a list, one number per dimension. And a list is not an answer. What we want is one number drawn out of it: the total error, the score of the sentence, the length of the vector.</p>
 
-  <p class="lead-q">So the operation sitting underneath almost everything is this: take a list of numbers and collapse it into one. What are the ways to do that?</p>
+  <p class="lead-q">The operation sitting underneath almost everything is this: take a list of numbers and collapse it into one. What are the ways to do that?</p>
 
-  <p>There are two basic ones, and you have used both since long before you could name them. You can <strong>add</strong> the list, or you can <strong>multiply</strong> it. Add five prices and you have a bill. Multiply the chances of three coin flips and you have the chance they all land heads, <span class="m">0.5 &times; 0.5 &times; 0.5 = 0.125</span>. These two ways of folding a list are so common that each earned its own symbol: a capital <strong>sigma</strong>, <span class="m">&Sigma;</span>, for "add this list," and a capital <strong>pi</strong>, <span class="m">&Pi;</span>, for "multiply this list." That is the whole connection to Class 6: functions produce lists of values, and sigma and pi are how a list becomes a single number again.</p>
+  <p>There are two, and you have used both since long before you could name them. You can <strong>add</strong> the list, or you can <strong>multiply</strong> it. Add five prices and you have a bill. Multiply the chances of three coin flips and you have the chance they all land heads, \(0.5 \times 0.5 \times 0.5 = 0.125\). These two ways of folding a list are so common that each earned its own symbol: a capital <strong>sigma</strong>, \(\Sigma\), for &ldquo;add this list,&rdquo; and a capital <strong>pi</strong>, \(\Pi\), for &ldquo;multiply this list.&rdquo; That is the whole connection to Class 6: a function produces a list of values, and sigma and pi are how a list becomes a single number again.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">A function gives a list; sigma folds it into one number</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 170" role="img" aria-label="A function f evaluated at inputs 1 through 4 produces four outputs, and a sigma collapses those outputs into a single total.">
@@ -234,24 +245,29 @@
     </div>
   </div>
 
+  <div class="thread-box">
+    <div class="thread-label">the thread</div>
+    <div class="thread-text">One question runs the whole class: <strong>how do you fold a list into a single number?</strong> There are only two answers, add it or multiply it, and they are the same loop with one operation swapped. Adding (\(\Sigma\)) turns out to run almost the entire field. Multiplying (\(\Pi\)) gives the one number training cares about most, and that number <strong>collapses to zero on a real chip</strong>. The rescue is to turn the dangerous product back into a safe sum, which is the moment the pi becomes a sigma.</div>
+  </div>
+
   <hr class="sep">
 
-  <h2>Section 1 &middot; Sigma: add up a list</h2>
+  <h2>Sigma: add the list</h2>
 
   <p>To add a list of numbers in code, you write a loop with a running total:</p>
 
-  <div class="codeblock"><span class="cap">add up the list a = [2, 5, 3, 7, 1]</span>total = 0
+<div class="codeblock"><span class="cap">add up the list a = [2, 5, 3, 7, 1]</span>total = 0
 for i in range(len(a)):
     total = total + a[i]
 <span class="cmt"># total is now 18</span></div>
 
   <p>The sigma is that loop, written in one stroke:</p>
 
-  <div class="codeblock"><span class="cap">read aloud: "the sum, for i from 1 to n, of a-sub-i"</span>total = &Sigma; a&#8202;<sub>i</sub>   (i from 1 to n)</div>
+<div class="codeblock"><span class="cap">read aloud: "the sum, for i from 1 to n, of a-sub-i"</span>total = &Sigma; a&#8202;<sub>i</sub>   (i from 1 to n)</div>
 
   <p>Every part of the symbol matches a part of the loop, and nothing else is hidden in it.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">Reading the sigma, part by part</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 220" role="img" aria-label="The summation symbol broken into parts: the sigma means add every term, the number on top is where to stop, the i equals 1 below is where to start and the counter name, and a-sub-i is the term for each i.">
@@ -269,9 +285,9 @@ for i in range(len(a)):
     </div>
   </div>
 
-  <p>Expanding it just means writing the terms out: <span class="m">&Sigma; a<sub>i</sub></span> is <span class="m">a<sub>1</sub> + a<sub>2</sub> + a<sub>3</sub> + a<sub>4</sub> + a<sub>5</sub></span>, which for our list is <span class="m">2 + 5 + 3 + 7 + 1 = 18</span>. Build any sum or product below and the running value updates term by term, exactly as the loop would.</p>
+  <p>Expanding it just means writing the terms out: \(\Sigma\, a_i\) is \(a_1 + a_2 + a_3 + a_4 + a_5\), which for our list is \(2 + 5 + 3 + 7 + 1 = 18\). Build any sum or product below and the running value updates term by term, exactly as the loop would.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">Builder: watch the running total accumulate</span></div>
     <div class="viz-body">
       <div class="ctl-row"><span class="ctl-lbl">list</span>
@@ -288,17 +304,13 @@ for i in range(len(a)):
         <div class="run-steps" id="sbSteps"></div>
         <div class="big" id="sbResult"></div>
       </div>
-      <p class="viz-note">Flip to &Pi; and the same list is multiplied instead. For 0.5, 0.5, 0.5 under multiplication the running value shrinks, which is the seed of Section 3.</p>
+      <p class="viz-note">Flip to &Pi; and the same list is multiplied instead. For 0.5, 0.5, 0.5 under multiplication the running value shrinks, the seed of the product that vanishes later.</p>
     </div>
   </div>
 
-  <p class="ml-tag">why this matters for ML</p>
-  <p>Adding up a list is, quietly, most of what a model computes. It shows up in three places that hold up nearly everything later.</p>
+  <p>Three things you already rely on are nothing more than a list folded by adding. The first is the <strong>loss</strong>. Sweep a loss function across the dataset and you get one error per example; fold them by adding and divide by the count to get a typical value.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.5rem 0 .4rem">An average</h3>
-  <p>Your model has just made a thousand predictions, and you measured how far off each one was. How wrong is the model? You cannot answer from a thousand separate numbers; you need a single one. So you add the errors and divide by how many there are. The dividing makes it an average; the adding is a sum.</p>
-
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">Folding many errors into one number</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 165" role="img" aria-label="Four error bars of different heights are added and divided by their count to give one bar, the average error, which is the loss.">
@@ -321,12 +333,11 @@ for i in range(len(a)):
     </div>
   </div>
 
-  <p>Written out it is <span class="m">(1/n) &Sigma; error<sub>i</sub></span>: the <span class="m">&Sigma;</span> adds the errors, <span class="m">error<sub>i</sub></span> is the error on the <span class="m">i</span>-th example, and the <span class="m">(1/n)</span> turns the total into a typical value. That number is what everyone calls the <strong>loss</strong>, and the entire activity of training is moving it downward.</p>
+  <p>Written out it is \(\tfrac{1}{n}\sum \text{error}_i\): the \(\Sigma\) adds the errors, \(\text{error}_i\) is the error on the \(i\)-th example, and the \(\tfrac{1}{n}\) turns the total into a typical value. That number is the loss, and the entire activity of training is moving it downward.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">A dot product</h3>
-  <p>You have a list of inputs, and beside it a list of <strong>weights</strong> the model has learned, one per input, each saying how much that input should count toward the answer. How do you fold the two lists into a single score? You pair them up by position, multiply each pair, and add the products.</p>
+  <p>The second is the <strong>dot product</strong>. You have a list of inputs, and beside it a list of <strong>weights</strong> the model has learned, one per input, each saying how much that input should count. To fold the two lists into a single score you pair them by position, multiply each pair, and add the products.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">A dot product: pair up, multiply, then add</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 215" role="img" aria-label="Two aligned rows: the input 4, 5, 6 on top and the weights 1, 2, 3 below. Each column is multiplied to give 4, 10, 18, and the products are added to 32.">
@@ -348,13 +359,11 @@ for i in range(len(a)):
     </div>
   </div>
 
-  <p>In symbols this is <span class="m">&Sigma; w<sub>i</sub> x<sub>i</sub></span>. Now look closely at <em>when</em> the score comes out large. It is large precisely when big inputs line up with big weights, when the two lists point the same way; it is small when they pull in opposite directions. A dot product is a measure of how much two lists <strong>agree</strong>. That single idea is why it is everywhere: a <strong>neuron</strong> is one dot product, scoring an input against the weights it has learned to look for, a layer is many neurons side by side, and a deep network is layers of them, so "agreement, summed" is the innermost act of the entire machine, run billions of times. The same operation later measures how similar two vectors are, which is how models compare meanings.</p>
+  <p>In symbols this is \(\sum w_i x_i\). Look at <em>when</em> the score comes out large: precisely when big inputs line up with big weights, when the two lists point the same way; it is small when they pull in opposite directions. A dot product measures how much two lists <strong>agree</strong>. That single idea is why it is everywhere. A <strong>neuron</strong> is one dot product, scoring an input against the weights it has learned to look for; a layer is many neurons side by side; a deep network is layers of them. So &ldquo;agreement, summed&rdquo; is the innermost act of the entire machine, run billions of times, and the same operation later measures how similar two vectors are, which is how models compare meanings.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">An expected value</h3>
-  <p>Sometimes an outcome is uncertain and you want to know what to expect on average. Say a scratchcard pays nothing 70% of the time, pays <span class="m">&#36;5</span> 20% of the time, and pays <span class="m">&#36;50</span> the other 10%. What is one card worth?</p>
-  <p>A first guess might be to average the three prizes, <span class="m">(0 + 5 + 50) / 3 &asymp; &#36;18</span>. But that is too high, because <span class="m">&#36;0</span> happens far more often than <span class="m">&#36;50</span>, and a plain average treats them as equally common. The honest way is to imagine playing many times. Over 100 cards you would expect about 70 of them to pay nothing, 20 to pay <span class="m">&#36;5</span>, and 10 to pay <span class="m">&#36;50</span>.</p>
+  <p>The third is the <strong>expected value</strong>. Say a scratchcard pays nothing 70% of the time, pays $5 20% of the time, and pays $50 the other 10%. What is one card worth? Averaging the three prizes, \((0 + 5 + 50)/3 \approx \$18\), is too high, because $0 happens far more often than $50 and a plain average treats them as equally common. Imagine playing 100 times: about 70 cards pay nothing, 20 pay $5, 10 pay $50.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">What one scratchcard is worth</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 175" role="img" aria-label="A bar of 100 cards split into 70 paying zero dollars, 20 paying five dollars, and 10 paying fifty dollars. Over 100 cards the total is 600 dollars, which is 6 dollars per card.">
@@ -371,26 +380,26 @@ for i in range(len(a)):
     </div>
   </div>
 
-  <p>So a card is worth <span class="m">&#36;6</span> on average, and the way we found it was to weight each prize by how often it happens and add: <span class="m">0.7&times;0 + 0.2&times;5 + 0.1&times;50 = 6</span>. Each outcome multiplied by its probability, all summed. That is the <strong>expected value</strong>, written <span class="m">&Sigma; p<sub>i</sub> x<sub>i</sub></span>, and it is just the dot product of the outcomes with their probabilities. Weighting values by how likely they are, instead of treating them as equally common, is how you take an average when some things happen more than others, and it runs all through probability and learning.</p>
+  <p>A card is worth $6, found by weighting each prize by how often it happens and adding: \(0.7\times 0 + 0.2\times 5 + 0.1\times 50 = 6\). Each outcome multiplied by its probability, all summed. That is the expected value, \(\sum p_i x_i\), which is just the dot product of the outcomes with their probabilities. Weighting values by how likely they are, rather than treating them as equally common, is how you average when some things happen more than others, and it runs all through probability and learning.</p>
 
-  <p>Average, dot product, expected value: each is a list folded by adding. Read a <span class="m">&Sigma;</span> as a for-loop that adds, and most of the symbols in a paper turn back into code you already understand.</p>
+  <p>Average, dot product, expected value: each is a list folded by adding. Read a \(\Sigma\) as a for-loop that adds, and most of the symbols in a paper turn back into code you already understand. That is sigma. Now the other fold.</p>
 
   <hr class="sep">
 
-  <h2>Section 2 &middot; Pi: multiply a list</h2>
+  <h2>Pi: multiply the list</h2>
 
-  <p>Pi is the same machine as sigma with one part swapped. The running value starts at <span class="m">1</span> instead of <span class="m">0</span>, and each step multiplies instead of adds:</p>
+  <p>Pi is the same machine as sigma with one part swapped. The running value starts at \(1\) instead of \(0\), and each step multiplies instead of adds:</p>
 
-  <div class="codeblock"><span class="cap">multiply the list a = [2, 3, 4]</span>running = 1
+<div class="codeblock"><span class="cap">multiply the list a = [2, 3, 4]</span>running = 1
 for i in range(len(a)):
     running = running * a[i]
 <span class="cmt"># running is now 24</span></div>
 
-  <p>You read <span class="m">&Pi; a<sub>i</sub></span> exactly like the sigma, with one word changed: the big pi means "multiply everything to my right." The mechanics are that simple. The real question is why we would multiply a list rather than add it.</p>
+  <p>You read \(\Pi\, a_i\) exactly like the sigma, with one word changed: the big pi means &ldquo;multiply everything to my right.&rdquo; The mechanics are that simple. The real question is why we would multiply a list rather than add it.</p>
 
-  <p>In Section 1 we combined a list by adding. So why not always add? Probabilities are the clearest case where adding is simply the wrong tool. Take a fair coin and ask for the chance of heads three times in a row. Each flip is a <span class="m">0.5</span> chance. Add them and you get <span class="m">1.5</span>, which is impossible: nothing has a 150% chance. Adding has broken. The correct way to combine the chances of a sequence is to multiply them.</p>
+  <p>Probabilities are the clearest case where adding is the wrong tool. Take a fair coin and ask for the chance of heads three times in a row. Each flip is a \(0.5\) chance. Add them and you get \(1.5\), which is impossible, because nothing has a 150% chance. Adding has broken. The correct way to combine the chances of a sequence is to multiply them.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">For probabilities, adding breaks and multiplying is right</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 160" role="img" aria-label="Adding 0.5 plus 0.5 plus 0.5 gives 1.5, marked wrong because a chance cannot exceed 1. Multiplying 0.5 times 0.5 times 0.5 gives 0.125, marked correct, the chance of three heads in a row.">
@@ -403,33 +412,26 @@ for i in range(len(a)):
     </div>
   </div>
 
-  <p>So pi is the tool for combining probabilities, the way sigma was the tool for combining sizes. But that just moves the question: why does multiplying give the chance of a sequence? It is worth seeing exactly why, because the reason is the whole reason pi matters.</p>
+  <p>But why does multiplying give the chance of a sequence? Take a concrete pair of events. It rains on 30% of days, and on rainy days you forget your umbrella half the time. Out of 100 days, how many are both rainy and umbrella-less? First, 30 of the 100 are rainy. Then, of those 30, half, so 15, are the ones you also forgot the umbrella. That is 15 in 100, a chance of \(0.15\). We took 30% of the days, then 50% <em>of those</em>: a fraction of a fraction, which is exactly multiplying, \(0.3 \times 0.5 = 0.15\).</p>
 
-  <p class="ml-tag">why this matters for ML</p>
-
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.5rem 0 .4rem">Why "all of them happen" is a multiplication</h3>
-  <p>If two uncertain things might each happen, what is the chance they <em>both</em> do? Take a concrete pair. It rains on 30% of days. And on rainy days, half the time you forget your umbrella. Out of 100 days, how many are both rainy and umbrella-less?</p>
-  <p>Walk it in two steps. First, 30 of the 100 days are rainy. Then, of those 30 rainy days, half, so 15, are the ones you also forgot the umbrella. So it happens on 15 days in 100, a chance of <span class="m">0.15</span>. Notice exactly how we got 15: we took 30% of the days, and then 50% <em>of those</em>. A fraction of a fraction. And taking a fraction of a fraction is multiplying: <span class="m">0.3 &times; 0.5 = 0.15</span>.</p>
-
-  <div class="viz-block">
-    <div class="viz-header"><span class="viz-title">A fraction of a fraction is a multiplication</span></div>
+<div class="viz-block">
+    <div class="viz-header"><span class="viz-title">For probabilities, adding breaks and multiplying is right</span></div>
     <div class="viz-body">
-      <svg width="100%" viewBox="0 0 680 175" role="img" aria-label="Three bars: all 100 days, then the 30 percent that are rainy, then 50 percent of those, which is 15 days that are both rainy and umbrella-less. 0.3 times 0.5 is 0.15.">
-        <rect x="60" y="30" width="400" height="30" fill="#7d766b" opacity="0.5"/><text x="470" y="50" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">all 100 days</text>
-        <rect x="60" y="74" width="120" height="30" fill="#4ca8e8" opacity="0.55"/><text x="190" y="94" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">30 rainy days  (take 30% of all)</text>
-        <rect x="60" y="118" width="60" height="30" fill="#e8a84c" opacity="0.6"/><text x="130" y="138" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">15 of those, umbrella forgotten  (take 50% of the rainy days)</text>
-        <text x="60" y="168" style="font:13px 'Courier New',monospace;fill:#f4efe7">0.3 &times; 0.5 = <tspan fill="#e8a84c">0.15</tspan></text>
+      <svg width="100%" viewBox="0 0 680 160" role="img" aria-label="Adding 0.5 plus 0.5 plus 0.5 gives 1.5, marked wrong because a chance cannot exceed 1. Multiplying 0.5 times 0.5 times 0.5 gives 0.125, marked correct, the chance of three heads in a row.">
+        <text x="40" y="50" style="font:17px 'Courier New',monospace;fill:#cbc4b9">0.5 + 0.5 + 0.5 = <tspan fill="#ff6b6b">1.5</tspan></text>
+        <text x="40" y="76" style="font:12px 'Source Sans 3',sans-serif;fill:#ff6b6b">&#10007;&nbsp; impossible: a probability can never go above 1, so adding is the wrong tool here</text>
+        <line x1="40" y1="96" x2="640" y2="96" stroke="#3a3733" stroke-width="0.8"/>
+        <text x="40" y="124" style="font:17px 'Courier New',monospace;fill:#cbc4b9">0.5 &times; 0.5 &times; 0.5 = <tspan fill="#7fff6b">0.125</tspan></text>
+        <text x="40" y="150" style="font:12px 'Source Sans 3',sans-serif;fill:#7fff6b">&#10003;&nbsp; the chance of three heads in a row, exactly what we wanted</text>
       </svg>
     </div>
   </div>
 
-  <p>That is the rule. When events are <strong>independent</strong>, meaning one happening does not change the odds of another, the chance that they all happen is the product of their separate chances, one factor for each "and also." So for a list of probabilities, the product <span class="m">&Pi; p<sub>i</sub></span> finally has a clear meaning: it is the chance that all of them happen at once. And since every factor is below 1, the product shrinks with each new one, which becomes the seed of Section 3. First, though, this single meaning grows into the most important number in training.</p>
+  <p>That is the rule. When events are <strong>independent</strong>, meaning one happening does not change the odds of another, the chance that they all happen is the product of their separate chances, one factor for each &ldquo;and also.&rdquo; So a product of probabilities \(\Pi\, p_i\) has a clear meaning: it is the chance that all of them happen at once. And since every factor is below 1, the product shrinks with each new one, the seed of the next section. First, though, this one meaning grows into the most important number in training.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Step 1: a model assigns a probability to what happens</h3>
-  <p>Before we can judge a model, we have to be clear what a model even is here. A model is a guess about how the world behaves, and the simplest one imaginable is a single number: the chance of rain. Suppose a model claims rain has a 30% chance. That one number is a complete model, because it tells you the probability of either thing that can happen on a day: rain with probability <span class="m">0.3</span>, dry with probability <span class="m">0.7</span>.</p>
-  <p>With a model in hand, you can ask how probable any particular stretch of weather is. Take three days that went rain, then dry, then rain. The model gave rain a <span class="m">0.3</span> chance, dry a <span class="m">0.7</span> chance, and rain again <span class="m">0.3</span>, and by the multiplying rule the chance of that exact three-day run is their product:</p>
+  <p>A model is a guess about how the world behaves, and the simplest imaginable is a single number: the chance of rain. A model claiming rain has a 30% chance is already complete, because it gives the probability of either thing that can happen on a day, rain with probability \(0.3\), dry with probability \(0.7\). With a model in hand you can ask how probable any stretch of weather is. For three days that went rain, dry, rain, the model assigns \(0.3\), \(0.7\), \(0.3\), and the chance of that exact run is their product.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">One model, one stretch of weather</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 185" role="img" aria-label="A model with rain chance 0.3 and dry chance 0.7. For three days that went rain, dry, rain, it assigns 0.3, 0.7, 0.3, and their product is 0.063.">
@@ -450,23 +452,17 @@ for i in range(len(a)):
     </div>
   </div>
 
-  <p>So a model, plus a stretch of days, gives back one number: how probable the model thought that exact weather was. That is the model running in its natural direction, from a known model to the chance of an outcome. Hold onto that, because the whole idea of learning comes from turning it around.</p>
+  <p>That is the model running in its natural direction, from a known model to the chance of an outcome. Real life runs the other way. Nobody tells you a new city&rsquo;s true rain chance; the days already happened, you watched them, and the model is the unknown you are trying to find.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Step 2: in real life we have the days, not the model</h3>
-  <p>That example quietly cheated: it started by handing you the model, the 30% rain chance. Real life never does. Nobody tells you a new city's true rain chance. What you actually have is the opposite: the days already happened, you watched them, and the model is the unknown you are trying to find. The question you really face is the reverse of Step 1:</p>
   <p class="lead-q">Given the days we actually saw, which model should we believe?</p>
-  <p>This reversal is the heart of learning from data, so it is worth saying plainly. In Step 1 the model was known and the outcome was the question. Now the outcome is known, it is fixed, it happened, and the model is the question.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Step 3: score a candidate by how probable it makes what you saw</h3>
-  <p>We cannot look up the true model. But we can do something almost as good: take any candidate model we like and ask it the Step 1 question about the data we already have. If this candidate were the truth, how probable was the week we actually saw? A candidate under which the observed week comes out very probable is a believable explanation of it. A candidate under which the week was nearly impossible is not.</p>
-  <p>Make it concrete. Say the week you watched had two rainy days and three dry ones. Try a candidate that believes rain is rare, a 10% chance. Ask it how probable that week was, the Step 1 way, multiplying the chance it gave to each day:</p>
-  <div class="codeblock"><span class="cap">candidate: rain chance 10%, scoring the observed week (2 rainy, 3 dry)</span>0.1 &times; 0.1 &times; 0.9 &times; 0.9 &times; 0.9 = 0.0073</div>
-  <p>Almost nothing. This candidate is shocked that it rained twice, because it believed rain almost never comes. Under it, the week we saw looks like a fluke, so it is a poor explanation of the data.</p>
+  <p>We cannot look up the true model, but we can take any candidate and ask it the forward question about the data we already have: if this candidate were the truth, how probable was the week we saw? Say the week had two rainy days and three dry ones. A candidate that believes rain is rare, a 10% chance, scores it by multiplying the chance it gave to each day:</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Step 4: compare two candidates</h3>
-  <p>One score on its own means little; the score earns its keep when you compare. So try a second candidate that believes rain is much more common, a 40% chance, and score the same week the same way. Here are both, side by side on the identical five days:</p>
+<div class="codeblock"><span class="cap">candidate: rain chance 10%, scoring the observed week (2 rainy, 3 dry)</span>0.1 &times; 0.1 &times; 0.9 &times; 0.9 &times; 0.9 = 0.0073</div>
 
-  <div class="viz-block">
+  <p>Almost nothing. This candidate is shocked that it rained twice, so under it the observed week looks like a fluke, which makes it a poor explanation. A single score means little; it earns its keep in comparison. So try a second candidate that believes rain is more common, a 40% chance, and score the identical five days.</p>
+
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">The same week, scored by two candidate models</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 232" role="img" aria-label="The observed week rain, dry, dry, rain, dry. Candidate A with rain chance 0.4 gives the days 0.4, 0.6, 0.6, 0.4, 0.6 and a product of 0.0346, fitting well. Candidate B with rain chance 0.1 gives 0.1, 0.9, 0.9, 0.1, 0.9 and a product of 0.0073, fitting badly because it is shocked by the rainy days.">
@@ -500,18 +496,19 @@ for i in range(len(a)):
     </div>
   </div>
 
-  <p>The 40% candidate gives the week <span class="m">0.0346</span>, nearly five times the 10% candidate's <span class="m">0.0073</span>. It is barely surprised by what happened, so it explains the week far better. That score, the probability a candidate model assigns to the data you actually saw, has a name: the <strong>likelihood</strong>. The rule for using it is the one we just watched: the higher a model's likelihood, the better it fits the data.</p>
+  <p>The 40% candidate gives the week \(0.0346\), nearly five times the 10% candidate&rsquo;s \(0.0073\). It is barely surprised by what happened, so it explains the week far better. That score, the probability a candidate assigns to the data you actually saw, is the <strong>likelihood</strong>, and the rule for using it is the one we just watched: the higher a model&rsquo;s likelihood, the better it fits the data.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Step 5: test them all, and keep the best</h3>
-  <p>Two candidates were enough to see the idea. To actually learn the rain chance, do not stop at two, let the candidate take every value between 0 and 1, and score each one by the likelihood, the probability it gives the week you saw. A few of them:</p>
+  <p>Two candidates were enough to see the idea. To actually learn the rain chance, let the candidate take every value between 0 and 1 and score each by the likelihood it gives the observed week:</p>
+
   <ul style="color:var(--body);line-height:1.7;margin:1rem 0 1.2rem;padding-left:1.4rem">
-    <li><span class="m">p = 0.1</span>: <span class="m">0.1 &times; 0.1 &times; 0.9 &times; 0.9 &times; 0.9 = 0.0073</span>. Too low, shocked by the two rainy days.</li>
-    <li><span class="m">p = 0.4</span>: <span class="m">0.4 &times; 0.4 &times; 0.6 &times; 0.6 &times; 0.6 = 0.0346</span>. Comfortable with both the rain and the dry.</li>
-    <li><span class="m">p = 0.8</span>: <span class="m">0.8 &times; 0.8 &times; 0.2 &times; 0.2 &times; 0.2 = 0.0051</span>. Too high, shocked by the three dry days.</li>
+    <li>\(p = 0.1\): \(0.1 \times 0.1 \times 0.9 \times 0.9 \times 0.9 = 0.0073\). Too low, shocked by the two rainy days.</li>
+    <li>\(p = 0.4\): \(0.4 \times 0.4 \times 0.6 \times 0.6 \times 0.6 = 0.0346\). Comfortable with both the rain and the dry.</li>
+    <li>\(p = 0.8\): \(0.8 \times 0.8 \times 0.2 \times 0.2 \times 0.2 = 0.0051\). Too high, shocked by the three dry days.</li>
   </ul>
-  <p>Plot the likelihood for every value of <span class="m">p</span> and the scores rise to a single clear peak:</p>
 
-  <div class="viz-block">
+  <p>Plot the likelihood for every \(p\) and the scores rise to a single clear peak:</p>
+
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">Scoring every candidate by the probability it gives the observed week</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 235" role="img" aria-label="A bar chart over candidate rain chances from 0.1 to 0.8. The bars are low at the extremes, rise toward the middle, and peak at p equals 0.4, the candidate that makes the observed two-rainy, three-dry week most probable.">
@@ -538,24 +535,21 @@ for i in range(len(a)):
     </div>
   </div>
 
-  <p>The peak sits exactly at <span class="m">p = 0.4</span>, which is just two rainy days out of five, the answer you would have guessed without any of this. That agreement is the reassurance that the method is sane. The real prize is the recipe it followed, choose the model that makes the observed data most probable, because that recipe does not care how complicated the model is. It works the same when the model is a single rain chance and when it is the billions of numbers inside a neural network. Choosing a model this way is called <strong>maximum likelihood</strong>, and most of training is a version of it.</p>
+  <p>The peak sits exactly at \(p = 0.4\), which is just two rainy days out of five, the answer you would have guessed without any of this. That agreement is the reassurance that the method is sane. The real prize is the recipe it followed: choose the model that makes the observed data most probable. That recipe does not care how complicated the model is. It works the same when the model is a single rain chance and when it is the billions of numbers inside a neural network. Choosing a model this way is called <strong>maximum likelihood</strong>, and most of training is a version of it. The feeling to carry out: the likelihood measures how <em>unsurprised</em> a model is by reality, and training is the search for the model that finds the world least surprising.</p>
 
-  <p>One feeling to carry out of all five steps: the likelihood measures how unsurprised a model is by reality. A model that fits the world expects what happens and gives it a high probability; a poor one is caught off guard and gives it a low one. Training is the search for the model that finds the world least surprising.</p>
-
-  <p>A language model is this exact idea with words in place of weather. Its model is not one rain chance but billions of weights, and at each position it gives a probability to the word that actually came next. The likelihood of a whole sentence is the product of those per-word probabilities, <span class="m">&Pi; p<sub>i</sub></span>, and training adjusts the billions of weights to make the real text as probable as it can, the product as large as it can. A three-word sentence the model rated <span class="m">0.2</span>, then <span class="m">0.1</span>, then <span class="m">0.5</span> has likelihood <span class="m">0.2 &times; 0.1 &times; 0.5 = 0.01</span>. So this product is the exact quantity training works to push upward, which is what turns the next section into a genuine problem.</p>
+  <p>A language model is this exact idea with words in place of weather. Its model is not one rain chance but billions of weights, and at each position it gives a probability to the word that actually came next. The likelihood of a whole sentence is the product of those per-word probabilities, \(\Pi\, p_i\), and training adjusts the weights to make the real text as probable as it can, the product as large as it can. A three-word sentence the model rated \(0.2\), then \(0.1\), then \(0.5\) has likelihood \(0.2 \times 0.1 \times 0.5 = 0.01\). So this product is the exact quantity training works to push upward, which turns the next section into a genuine problem.</p>
 
   <hr class="sep">
 
-  <h2>Section 3 &middot; The product that vanishes</h2>
+  <h2>The product that vanishes</h2>
 
-  <p>Section 2 left us with the likelihood, a product of probabilities that training works to make as large as it can. A real dataset pours hundreds or thousands of probabilities into that product. Before any maximizing can happen, a computer has to actually compute it, and that is where a quiet disaster is waiting.</p>
+  <p>The likelihood is a product of probabilities that training works to make as large as it can, and a real dataset pours hundreds or thousands of probabilities into it. Before any maximizing can happen, a computer has to compute that product, and that is where a quiet disaster waits.</p>
 
   <p class="lead-q">A product of hundreds of probabilities, each a number between 0 and 1. What does a real computer actually hold at the end?</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.6rem 0 .4rem">The true value shrinks fast, but never to zero</h3>
-  <p>Start with the friendliest product there is, coin flips. The chance of heads <span class="m">n</span> times in a row is <span class="m">0.5</span> multiplied by itself <span class="m">n</span> times, and every extra flip halves the result. Ten flips in a row is about one in a thousand; twenty is about one in a million. The number drops with astonishing speed. But notice the one thing that stays true the whole way down: it is never zero. Halving a positive number leaves a positive number, always. On paper the product keeps shrinking forever and never actually reaches zero.</p>
+  <p>Start with the friendliest product there is, coin flips. The chance of heads \(n\) times in a row is \(0.5\) multiplied by itself \(n\) times, and every extra flip halves the result. Ten flips is about one in a thousand; twenty about one in a million. It drops with astonishing speed. But one thing stays true the whole way down: it is never zero. Halving a positive number leaves a positive number, always. On paper the product shrinks forever and never reaches zero.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">Halving over and over: tiny, but never zero</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 180" role="img" aria-label="A curve falling from 0.5 toward the horizontal axis as the number of flips grows, getting ever closer to zero but never touching it. Ten flips is about 0.001, twenty about 0.0000009.">
@@ -571,21 +565,19 @@ for i in range(len(a)):
     </div>
   </div>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">On a real chip, it hits exactly zero</h3>
-  <p>Now stop doing it on paper and do it on the chip from Unit 1, which stores numbers as a <code>float</code>. Keep halving and count the flips:</p>
+  <p>Now do it on the chip from Unit 1, which stores numbers as a <code>float</code>. Keep halving and count the flips:</p>
 
-  <div class="codeblock"><span class="cap">on the bench: probability of n heads in a row, in float</span>float p = 1.0f;
+<div class="codeblock"><span class="cap">on the bench: probability of n heads in a row, in float</span>float p = 1.0f;
 for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, again and again</span>
 
 <span class="cmt">// p becomes EXACTLY 0.0 after only 150 flips,</span>
 <span class="cmt">// even though the true value 0.5^150 is about 7e-46: tiny, but NOT zero</span></div>
 
-  <p>Not a small number. A flat, exact <span class="m">0</span>. And not after thousands of steps, after about <strong>150</strong>. A real likelihood is worse still, because word and data probabilities sit well below one-half and there are hundreds of them. With each probability around <span class="m">0.1</span>, the product underflows to zero after only <strong>46</strong> of them. The paper math says positive forever; the chip says zero within a paragraph.</p>
+  <p>Not a small number. A flat, exact \(0\), and not after thousands of steps, after about <strong>150</strong>. A real likelihood is worse, because word and data probabilities sit well below one-half and there are hundreds of them. With each probability around \(0.1\), the product underflows to zero after only <strong>46</strong> of them. The paper math says positive forever; the chip says zero within a paragraph.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Why exactly zero, and not just very small?</h3>
-  <p>The reason is the single most useful idea in this section, and it is the hinge that the fix in Section 4 turns on. Recall from Unit 1 how a <code>float</code> actually stores a number. It does not keep a long string of digits. It keeps a few significant digits and, separately, an exponent that says where the decimal point sits, a value times a power of two. Those are two different budgets, one for the digits and one for the exponent.</p>
+  <p>The reason it lands on exactly zero is the hinge the whole fix turns on. A <code>float</code> does not keep a long string of digits. It keeps a few significant digits and, separately, an exponent that says where the decimal point sits, a value times a power of two. Those are two different budgets, one for the digits and one for the exponent.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">A float is digits times a power, and only the exponent runs out</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 150" role="img" aria-label="A float stores a number as digits times a power of two. The digits, about seven significant figures, have plenty of room. The exponent has limited room and bottoms out near ten to the minus forty-five.">
@@ -600,9 +592,9 @@ for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, ag
     </div>
   </div>
 
-  <p>In our shrinking product, the digits were never in trouble. The exponent was. A float's exponent reaches down only to about <span class="m">10<sup>-38</sup></span>, and a little further, to roughly <span class="m">10<sup>-45</sup></span>, through some special small values. But our product needed an exponent near <span class="m">10<sup>-46</sup></span>, then <span class="m">10<sup>-150</sup></span>, then beyond. It did not run out of digits; it ran out of exponent. Once a step lands past the smallest exponent the float can write, there is no number left for it to be, so it snaps to <span class="m">0</span>. This is the bottom cliff from Class 4, underflow, and a product of small numbers runs off it within a few dozen steps.</p>
+  <p>In our shrinking product the digits were never in trouble; the exponent was. A float&rsquo;s exponent reaches down only to about \(10^{-38}\), and a little further, to roughly \(10^{-45}\), through some special small values. But our product needed an exponent near \(10^{-46}\), then \(10^{-150}\), then beyond. It did not run out of digits; it ran out of exponent. Once a step lands past the smallest exponent the float can write, there is no number left for it to be, so it snaps to \(0\). This is the bottom cliff from Class 4, underflow, and a product of small numbers runs off it within a few dozen steps.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">The product walks off the bottom of what a float can hold</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 280" role="img" aria-label="A chart with the number of probabilities multiplied on the horizontal axis and the size of the number, in powers of ten, on the vertical axis. The product falls one decade per factor, crosses the float floor near ten to the minus forty-five at about 45 factors, and then drops to zero.">
@@ -626,15 +618,13 @@ for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, ag
     </div>
   </div>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Why a zero here is a catastrophe, not a rounding slip</h3>
-  <p>A tiny number rounded to zero sounds harmless. It is not, and the reason reaches back to what learning actually does. From Section 2, training compares candidate models by their likelihoods and climbs toward the ones that score higher. The <em>differences</em> between those scores are the entire signal it follows. Underflow erases that signal. A decent model might give the data a likelihood near <span class="m">10<sup>-50</sup></span> and a slightly better one near <span class="m">10<sup>-48</sup></span>, but both fall past the floor and are stored as the same flat <span class="m">0</span>. A genuinely good model and a hopeless one, <span class="m">10<sup>-50</sup></span> against <span class="m">10<sup>-300</sup></span>, also both read as <span class="m">0</span>. The numbers that told these models apart are gone, and once every likelihood is pinned at zero there is no "higher" left to climb toward. Training goes blind: no direction looks any better than another, so the model cannot tell how to improve, and so it does not.</p>
-  <p>There is an obvious thing to try, and it is worth following because it leads exactly where the next section goes. The number is too small to store, so do not store the number, store its <strong>logarithm</strong> instead. The log of a tiny positive value is a manageable negative one, with no underflow anywhere in sight. That instinct is the right one. But done naively it arrives one step too late. If you let the probabilities multiply all the way down to a stored <span class="m">0</span> and only <em>then</em> take the log, you are computing <span class="m">log(0)</span>, which is <span class="m">-&infin;</span>, the infinity from Class 4. That is worse than the zero it replaced: it pours into the loss and turns the gradients to <span class="m">NaN</span>, killing the run outright rather than merely starving it of signal.</p>
-  <p>So the lesson is sharp, and it sets the whole task of Section 4. Taking the log is the answer, but only if you take it <em>before</em> the product is ever formed, so the doomed multiplication never happens in the first place. The trick will be to turn the product into something the log can ride through safely from the start.</p>
+  <p>A tiny number rounded to zero sounds harmless. It is not. Training compares candidate models by their likelihoods and climbs toward the higher ones, and the <em>differences</em> between those scores are the entire signal it follows. Underflow erases that signal. A decent model near \(10^{-50}\) and a slightly better one near \(10^{-48}\) both fall past the floor and store as the same flat \(0\); a good model and a hopeless one, \(10^{-50}\) against \(10^{-300}\), also both read as \(0\). The numbers that told these models apart are gone, and once every likelihood is pinned at zero there is no &ldquo;higher&rdquo; left to climb toward. Training goes blind.</p>
 
-  <p class="ml-tag">why this matters for ML</p>
-  <p>This is not a rare corner you can dodge with care. A likelihood multiplies one probability for every example in the data, and any real dataset has far more than the few dozen factors it takes to underflow, so the naive product is all but guaranteed to collapse to zero. The single most important quantity in training cannot be computed the way its definition reads. That is a real wall, and the rest of the class is about getting over it. Pick a probability and a count and watch the wall arrive:</p>
+  <p>There is an obvious thing to try, and it leads exactly where the next section goes: the number is too small to store, so do not store the number, store its <strong>logarithm</strong>. The log of a tiny positive value is a manageable negative one, with no underflow in sight. The instinct is right, but done naively it arrives one step too late. If you let the probabilities multiply all the way down to a stored \(0\) and only <em>then</em> take the log, you are computing \(\log(0) = -\infty\), the infinity from Class 4, which is worse than the zero it replaced: it pours into the loss and turns the gradients to <code>NaN</code>, killing the run outright rather than merely starving it.</p>
 
-  <div class="viz-block">
+  <p>This is not a rare corner you can dodge with care. A likelihood multiplies one probability for every example in the data, and any real dataset has far more than the few dozen factors it takes to underflow, so the naive product is all but guaranteed to collapse to zero. The single most important quantity in training cannot be computed the way its definition reads. Pick a probability and a count and watch the wall arrive.</p>
+
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">Find the cliff yourself</span></div>
     <div class="viz-body">
       <div class="dim-row"><span class="lbl">each probability</span><input type="range" id="ufP" class="dim-slider" min="5" max="95" step="5" value="50"><span id="ufPlab" style="font-family:'Courier New',monospace;color:var(--accent)"></span></div>
@@ -650,19 +640,15 @@ for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, ag
 
   <hr class="sep">
 
-  <h2>Section 4 &middot; The fix: turn the product into a sum</h2>
+  <h2>The fix: turn the product into a sum</h2>
 
-  <p>Section 3 ended with a sharp demand: take the log before the product is ever formed, so the doomed multiplication never happens. At first that sounds impossible. The likelihood <em>is</em> a product, and the log seems to come afterward, once the product already exists.</p>
+  <p>The demand from the last section is sharp: take the log <em>before</em> the product is ever formed, so the doomed multiplication never happens. At first that sounds impossible. The likelihood <em>is</em> a product, and the log seems to come afterward.</p>
 
   <p class="lead-q">How can you take the log of a product without first building the product?</p>
 
-  <p>The entire fix rests on one property of logarithms. Once it is in view, the impossible-sounding demand turns routine.</p>
+  <p>The entire fix rests on one property of logarithms. A logarithm answers a plain question: what power is this number? In powers of ten, \(\log 1000 = 3\), because \(1000 = 10^{3}\). The log of a number is its exponent, loosely the count of its zeros. Now watch what multiplication does to exponents: \(10^{2} \times 10^{3} = 10^{5}\), and the exponent \(5\) is simply \(2 + 3\). Multiplying the numbers <em>added</em> their exponents. And since a log just is the exponent, the log of a product equals the sum of the logs.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.6rem 0 .4rem">The one property of logarithms</h3>
-  <p>A logarithm answers a plain question: what power is this number? Working in powers of ten, <span class="m">log 1000 = 3</span>, because <span class="m">1000 = 10<sup>3</sup></span>. The log of a number is its exponent, loosely the count of its zeros.</p>
-  <p>Now watch what multiplication does to exponents. <span class="m">10<sup>2</sup> &times; 10<sup>3</sup> = 10<sup>5</sup></span>, and the exponent <span class="m">5</span> is simply <span class="m">2 + 3</span>: multiplying the two numbers <em>added</em> their exponents. And since a log just is the exponent, that is the same as saying the log of a product equals the sum of the logs.</p>
-
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">A log is an exponent, and multiplying adds exponents</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 150" role="img" aria-label="Ten squared times ten cubed equals ten to the fifth, and the exponents two plus three equal five, showing that multiplying numbers adds their logs.">
@@ -676,12 +662,11 @@ for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, ag
     </div>
   </div>
 
-  <p>So <span class="m">log(a &times; b) = log a + log b</span>. It is not a rule to memorize; it is only "exponents add when you multiply," stated for any two numbers instead of round powers of ten. And there is something almost uncanny about it. We were hunting for a function that turns multiplication into addition, and the logarithm is essentially the only continuous function that does. That is exactly why logs were invented four centuries ago, to turn the punishing multiplications of astronomy and navigation into additions a person could carry out by hand. Our underflow is the same old problem in modern dress, and it has the same answer.</p>
+  <p>So \(\log(a \times b) = \log a + \log b\). It is not a rule to memorize; it is only &ldquo;exponents add when you multiply,&rdquo; stated for any two numbers instead of round powers of ten. And there is something almost uncanny about it: the logarithm is essentially the only continuous function that turns multiplication into addition. That is exactly why logs were invented four centuries ago, to turn the punishing multiplications of astronomy and navigation into additions a person could do by hand. Our underflow is the same old problem in modern dress, and it has the same answer.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">The product becomes a sum</h3>
-  <p>Apply that property across the whole likelihood, every probability at once, and the product collapses into a sum:</p>
+  <p>Apply that property across the whole likelihood, every probability at once, and the product collapses into a sum.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">The log turns the product into a sum</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 175" role="img" aria-label="The log of a product p1 times p2 times p3 and so on equals the sum log p1 plus log p2 plus log p3 and so on. The product, a pi, becomes a sum, a sigma.">
@@ -694,12 +679,11 @@ for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, ag
     </div>
   </div>
 
-  <p>A product of <span class="m">n</span> probabilities, a pi, becomes a sum of <span class="m">n</span> logs, a sigma. This is the moment Sections 1 and 2 were quietly building toward: the fix literally turns the one symbol into the other. And here is how it meets Section 3's demand exactly. You do not multiply the probabilities and then take a log. You take the log of each probability first, getting a modest number from each, and add those up. The product is never formed, so it can never underflow. The log is applied <em>before</em> the multiplication that would have sunk it, which was the whole requirement.</p>
+  <p>A product of \(n\) probabilities, a pi, becomes a sum of \(n\) logs, a sigma. This is the moment the first two sections were quietly building toward: the fix literally turns the one symbol into the other. And it meets the demand exactly. You do not multiply the probabilities and then take a log. You take the log of each probability first, getting a modest number from each, and add those up. The product is never formed, so it can never underflow.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Why the sum cannot underflow</h3>
-  <p>Look at the size of the numbers you now carry. <span class="m">log(0.1)</span> is about <span class="m">-2.3</span>; <span class="m">log(0.5)</span> about <span class="m">-0.69</span>. Add a few hundred of them and you land somewhere around <span class="m">-200</span> to <span class="m">-700</span>, a number a float holds without a flicker. There is no tiny value anywhere to lose, because we only ever add ordinary ones. Here is the same three-probability likelihood from Section 2, done both ways:</p>
+  <p>Look at the size of the numbers you now carry. \(\log(0.1)\) is about \(-2.3\); \(\log(0.5)\) about \(-0.69\). Add a few hundred of them and you land around \(-200\) to \(-700\), a number a float holds without a flicker. There is no tiny value anywhere to lose, because we only ever add ordinary ones. Here is the same three-probability likelihood from before, done both ways:</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">The same likelihood, multiplied vs added as logs</span></div>
     <div class="viz-body">
       <div class="twocol">
@@ -722,14 +706,11 @@ for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, ag
     </div>
   </div>
 
-  <p>There is a deeper way to see why this buys so much room, straight from Section 3. A float spends only about eight of its bits on the exponent, which is why its reach stops near <span class="m">10<sup>-38</sup></span> and a product runs out of exponent so fast. Taking the log moves that exponent out of the cramped exponent field and into the float's full value, the whole significant-digits budget, a vastly larger space. We trade a little precision we do not need for an enormous range we very much do. The log-likelihood is the product's exponent, finally given enough room to breathe.</p>
+  <p>There is a deeper way to see why this buys so much room. A float spends only about eight of its bits on the exponent, which is why its reach stops near \(10^{-38}\) and a product runs out of exponent so fast. Taking the log moves that exponent out of the cramped exponent field and into the float&rsquo;s full value, the whole significant-digits budget, a vastly larger space. We trade a little precision we do not need for an enormous range we very much do. The log-likelihood is the product&rsquo;s exponent, finally given room to breathe.</p>
 
-  <h3 style="font-family:var(--display);font-size:1.5rem;color:var(--ink);margin:1.8rem 0 .4rem">Does it crown a different winner?</h3>
-  <p>It is worth pausing on what we have quietly done, because it should make you uneasy. We set out to make the likelihood as large as possible. Now we are making the sum of its logs as large as possible instead, and those are not the same number. A decent model might give the data a likelihood of <span class="m">0.01</span>, but its log-likelihood is <span class="m">log(0.01) = -4.6</span>, a <em>negative</em> number. We have swapped the target we chase. So the fair question is whether the swap is harmless: when we climb toward the largest sum of logs, are we still climbing toward the best model, or could it quietly hand the prize to a worse one?</p>
-  <p>Test it on two models before trusting it on a billion. Model A gives the observed data a likelihood of <span class="m">0.01</span>; model B gives it <span class="m">0.0001</span>. A is clearly the better fit, a hundred times more likely. Now compare them the new way, by their logs: <span class="m">log(0.01) = -4.6</span> and <span class="m">log(0.0001) = -9.2</span>. Both are negative, and the better model's log, <span class="m">-4.6</span>, is the larger of the two because it sits closer to zero. A is still ahead. The swap did not reorder them.</p>
-  <p>One case is not a proof, but the reason it worked is general. The logarithm has a single feature that settles every case at once: it only ever climbs.</p>
+  <p>One thing should make you uneasy, though. We set out to make the likelihood as large as possible, and now we are making the sum of its logs as large as possible instead, which is not the same number: a likelihood of \(0.01\) has log-likelihood \(\log(0.01) = -4.6\), a negative number. We swapped the target. Is the swap harmless? Two models settle it before trusting it on a billion. Model A gives the data a likelihood of \(0.01\); model B gives \(0.0001\). A is clearly the better fit, a hundred times more likely. By their logs, \(\log(0.01) = -4.6\) and \(\log(0.0001) = -9.2\): the better model&rsquo;s log is the larger because it sits closer to zero. A is still ahead. The swap did not reorder them, and the reason is general: the log only ever climbs.</p>
 
-  <div class="viz-block">
+<div class="viz-block">
     <div class="viz-header"><span class="viz-title">The log only ever climbs, so it never changes the winner</span></div>
     <div class="viz-body">
       <svg width="100%" viewBox="0 0 680 200" role="img" aria-label="A rising logarithm curve: as the input grows the log grows and never turns back, so a bigger input always has a bigger log.">
@@ -747,18 +728,20 @@ for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, ag
     </div>
   </div>
 
-  <p>Feed the log a bigger input and you always get a bigger output; its graph rises from left to right and never once turns back down. So whenever one likelihood is larger than another, its log is larger too, with no exceptions. Taking logs stretches and shifts the numbers, but it never swaps their order. The model sitting at the top of the likelihood ranking is still at the top of the log-likelihood ranking. Maximizing the sum of logs therefore lands on the exact same model as maximizing the likelihood would have, except by a route that never goes near the underflow cliff. We get the right winner and a number the machine can actually hold.</p>
+  <p>Feed the log a bigger input and you always get a bigger output; its graph rises from left to right and never turns back down. So whenever one likelihood is larger than another, its log is larger too, with no exceptions. Taking logs stretches and shifts the numbers but never swaps their order, so the model at the top of the likelihood ranking is still at the top of the log-likelihood ranking. Maximizing the sum of logs lands on the exact same model as maximizing the likelihood would have, by a route that never goes near the underflow cliff.</p>
 
-  <p class="ml-tag">why this matters for ML</p>
-  <p>The quantity <span class="m">&Sigma; log(p<sub>i</sub>)</span> is the <strong>log-likelihood</strong>, and training maximizes it. Flip its sign and average it and you have the <strong>cross-entropy</strong>, also called the <strong>negative log-likelihood loss</strong>, <span class="m">-(1/n) &Sigma; log(p<sub>i</sub>)</span>, the loss behind essentially every classifier and language model. That formula is not arbitrary. It is a sum of logs precisely so the product it stands for cannot underflow to zero and take the run with it. The two quiet symbols from the opening, sigma and pi, joined by a logarithm, are the difference between a model that learns and one that dies on its first batch.</p>
+  <p>That quantity \(\sum \log(p_i)\) is the <strong>log-likelihood</strong>, and training maximizes it. Flip its sign and average it and you have the <strong>cross-entropy</strong>, also called the <strong>negative log-likelihood loss</strong>, \(-\tfrac{1}{n}\sum \log(p_i)\), the loss behind essentially every classifier and language model. That formula is not arbitrary. It is a sum of logs precisely so the product it stands for cannot underflow to zero and take the run with it. The two quiet symbols from the opening, sigma and pi, joined by a logarithm, are the difference between a model that learns and one that dies on its first batch.</p>
 
   <hr class="sep">
 
   <h2>What to carry out of Class 7</h2>
 
-  <p>Functions hand us lists of values, and we constantly need to fold a list into one number. Sigma does it by adding, pi by multiplying, and each symbol only records where to start, where to stop, and the term to combine, the loops you already write. Adding runs the field: a loss is an average, a neuron is a dot product measuring how much an input agrees with its weights, an expectation is a weighted sum. Multiplying gives the likelihood, the probability a model assigns to the data actually seen, a measure of how unsurprised it is by reality, which training pushes upward. But a product of many probabilities underflows to a hard zero on real hardware, because a float runs out of room in its exponent, the bottom cliff from Class 4, and that zero poisons training through <span class="m">log(0) = -&infin;</span>. The escape is to carry the exponent rather than the value, which is what a logarithm is, turning <span class="m">log(a &times; b) = log a + log b</span> into <span class="m">log(&Pi; p<sub>i</sub>) = &Sigma; log p<sub>i</sub></span>: the dangerous product becomes a safe sum of modest numbers that preserves every comparison. That sum is the log-likelihood every loss function is quietly built from.</p>
+  <p>A function hands us a list of values, and we constantly need to fold that list into one number. Sigma does it by adding, pi by multiplying, and each symbol only records where to start, where to stop, and the term to combine, the loops you already write. Adding runs the field: a loss is an average, a neuron is a dot product measuring how much an input agrees with its weights, an expectation is a weighted sum. Multiplying gives the likelihood, the probability a model assigns to the data actually seen, a measure of how unsurprised it is by reality, which training pushes upward. But a product of many probabilities underflows to a hard zero on real hardware, because a float runs out of room in its exponent, the bottom cliff from Class 4, and that zero poisons training through \(\log(0) = -\infty\).</p>
 
-  <div class="callout">A product of probabilities is the right idea and the wrong computation. A float runs out of exponent and the product collapses to zero. Carry its exponent instead, which is exactly what taking a logarithm does, and the pi becomes a sigma, the tiny number becomes a sum of ordinary ones, and the likelihood at the heart of machine learning becomes something a finite machine can hold.</div>
+  <div class="closing-statement">A product of probabilities is the right idea and the wrong computation. A float runs out of exponent and the product collapses to zero. Carry its exponent instead, which is exactly what taking a logarithm does, and \(\log(a \times b) = \log a + \log b\) becomes \(\log(\Pi\, p_i) = \sum \log p_i\): <strong>the pi becomes a sigma</strong>, the tiny number becomes a sum of ordinary ones, and the likelihood at the heart of machine learning becomes something a finite machine can hold.</div>
+
+  <p>The next class stays with this language and asks a question hiding under every probability we just multiplied: where does a number like &ldquo;30% chance of rain&rdquo; come from in the first place? That is <strong>counting and the sample space</strong>, and it is the floor the whole tower of probability stands on.</p>
+
   <hr class="sep">
 
   <h2>See if it stuck</h2>
@@ -792,18 +775,18 @@ for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, ag
   <div class="sidebar-card">
     <h2 class="sidebar-title">The Mathematics ML Runs On &middot; Unit 2</h2>
     <a class="sidebar-link" href="sets-and-functions.html">
-      <div class="sidebar-link-title">Class 6: Sets, and a Function as a Map</div>
-      <div class="sidebar-link-note">Done</div>
+      <div class="sidebar-link-title">Class 6: The Function That Has No Formula</div>
+      <div class="sidebar-link-note">&larr; Previous</div>
     </a>
     <a class="sidebar-link active-topic" href="summation-and-products.html">
-      <div class="sidebar-link-title">Class 7: Summation, Products, and Underflow</div>
+      <div class="sidebar-link-title">Class 7: The Sum, the Product, and the Number That Vanishes</div>
       <div class="sidebar-link-note">You are here</div>
     </a>
-    <a class="sidebar-link" href="#">
+    <a class="sidebar-link" href="counting-and-the-sample-space.html">
       <div class="sidebar-link-title">Class 8: Counting and the Sample Space</div>
       <div class="sidebar-link-note">Coming next</div>
     </a>
-    <a class="sidebar-link" href="#">
+    <a class="sidebar-link" href="sequences-limits-and-convergence.html">
       <div class="sidebar-link-title">Class 9: Sequences, Limits, Convergence</div>
       <div class="sidebar-link-note">Upcoming</div>
     </a>
@@ -816,12 +799,8 @@ for (int n = 1; n &lt;= 400; n++) p *= 0.5f;   <span class="cmt">// halve it, ag
     </a>
   </div>
   <div class="sidebar-card">
-    <h2 class="sidebar-title">Key ideas</h2>
-    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Functions give lists; sigma and pi fold them to one number</div></a>
-    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A dot product is a sum of products</div></a>
-    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A likelihood is a product of probabilities</div></a>
-    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Many sub-one factors underflow to zero</div></a>
-    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Logs turn the product into a safe sum</div></a>
+    <h2 class="sidebar-title">The thread</h2>
+    <p style="font-size:.92rem;color:var(--muted);line-height:1.6">Fold a list into one number, two ways: add it (sigma) or multiply it (pi). Adding runs the field, loss, dot product, expectation. Multiplying gives the likelihood, which underflows to zero on a real float. The logarithm turns the dangerous product back into a safe sum: the pi becomes a sigma.</p>
   </div>
 </aside>
 

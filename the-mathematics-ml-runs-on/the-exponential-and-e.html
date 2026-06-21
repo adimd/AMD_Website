@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Number That Keeps Turning Up | The Mathematics ML Runs On</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#f4efe7;--body:#cbc4b9;--muted:#9e968a;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.016;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.22rem;color:var(--body);font-weight:400;margin-bottom:2.2rem;line-height:1.62}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.19rem;font-weight:400;margin-bottom:1.35rem;line-height:1.8}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.93em;background:rgba(232,168,76,.15);padding:.2rem .48rem;border-radius:4px;color:#f1dcb2;font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.15rem;font-weight:400;margin:.4rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:1rem;color:#bcb5a8;margin-top:1.1rem;font-style:italic;line-height:1.72}
+
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+  <style>
+    .m{font-family:Georgia,'Times New Roman',serif;font-style:italic;color:var(--ink)}
+    .m sub,.m sup{font-style:normal}
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.5rem 0;overflow-x:auto;font-family:'Courier New',monospace;font-size:.9rem;line-height:1.7;color:var(--body);white-space:pre}
+    .codeblock .cmt{color:var(--muted)} .codeblock .out{color:var(--green)} .codeblock .kw{color:var(--blue)} .codeblock .red{color:var(--red)} .codeblock .str{color:var(--accent)}
+    .codeblock .cap{display:block;color:var(--muted);font-size:.78rem;margin-bottom:.5rem;font-family:var(--sans);font-style:italic}
+    .lead-q{font-family:var(--display);font-size:1.5rem;font-style:italic;color:var(--ink);line-height:1.42;margin:1.7rem 0;padding-left:1.1rem;border-left:3px solid var(--accent)}
+    .ml-tag{display:inline-block;font-family:'Courier New',monospace;font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);background:var(--blue-dim);border:1px solid rgba(76,168,232,.3);border-radius:4px;padding:.12rem .5rem;margin-bottom:.4rem}
+
+    .lab-btn{padding:.5rem 1rem;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);cursor:pointer;font-size:.88rem;font-family:'Courier New',monospace}
+    .lab-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .lab-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+    .ctl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:.6rem}
+    .ctl-lbl{font-size:.74rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-right:.2rem}
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;margin-top:1rem}
+    .stat{font-size:1rem;color:var(--muted);margin:7px 0;line-height:1.55}
+    .stat b{color:var(--ink);font-weight:500;font-family:'Courier New',monospace}
+    .big{font-size:1.35rem;font-weight:500;font-family:'Courier New',monospace;color:var(--ink);margin:6px 0}
+    .note-line{font-size:1rem;color:var(--muted);line-height:1.6;min-height:2.4em;margin-top:.6rem}
+    .run-steps{font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);line-height:1.85;margin:.4rem 0}
+    .run-steps .k{color:var(--muted)} .run-steps b{color:var(--ink)}
+    .dim-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.7rem}
+    .dim-row .lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);min-width:130px}
+    .dim-slider{flex:1;min-width:170px;accent-color:var(--accent)}
+
+    .twocol{display:flex;gap:1rem;flex-wrap:wrap}
+    .twocol .pane{flex:1;min-width:250px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem}
+    .pane h4{font-family:var(--sans);font-size:.95rem;color:var(--ink);margin-bottom:.6rem;font-weight:600}
+    .pane .prow{font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);margin:3px 0}
+    .pane .tot{margin-top:.55rem;padding-top:.55rem;border-top:1px dashed var(--border);font-family:'Courier New',monospace;font-size:1rem;color:var(--ink)}
+    .pane.bad{border-color:rgba(255,107,107,.4)} .pane.bad .tot{color:var(--red)}
+    .pane.good{border-color:rgba(127,255,107,.4)} .pane.good .tot{color:var(--green)}
+
+    .quiz-progress{font-family:'Courier New',monospace;font-size:.95rem;color:var(--accent);margin-bottom:1.2rem;letter-spacing:.02em}
+    .quiz-q{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.3rem 1.4rem;margin-bottom:1.1rem}
+    .quiz-q-text{font-size:1.12rem;color:var(--ink);font-weight:500;margin-bottom:1rem;line-height:1.5}
+    .quiz-q-num{color:var(--accent);font-family:'Courier New',monospace;margin-right:.5rem}
+    .quiz-opt{display:block;width:100%;text-align:left;padding:.75rem 1rem;margin:.5rem 0;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);font-family:inherit;font-size:1.04rem;cursor:pointer;transition:all .18s;line-height:1.45}
+    .quiz-opt:hover:not(:disabled){border-color:var(--accent);color:var(--ink)}
+    .quiz-opt:disabled{cursor:default}
+    .quiz-opt.correct{background:var(--green-dim);border-color:rgba(127,255,107,.5);color:var(--ink)}
+    .quiz-opt.wrong{background:var(--red-dim);border-color:rgba(255,107,107,.5);color:var(--ink)}
+    .quiz-opt .mk{float:right;font-weight:700;margin-left:.6rem}
+    .quiz-opt.correct .mk{color:var(--green)} .quiz-opt.wrong .mk{color:var(--red)}
+    .quiz-explain{margin-top:.8rem;padding:.85rem 1.1rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.62;display:none}
+    .quiz-explain.show{display:block;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .quiz-final{margin-top:1.3rem;padding:1.2rem 1.4rem;border-radius:10px;background:var(--bg-card);border:1px solid var(--accent);font-family:var(--display);font-size:1.4rem;color:var(--ink);text-align:center;display:none}
+    .quiz-final.show{display:block;animation:rise .4s cubic-bezier(.22,1,.36,1) both}
+  </style>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+      options: { ignoreHtmlClass: 'codeblock|run-out|run-row' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk &#9662;</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <style>
+    .run-row{display:flex;align-items:center;gap:.7rem;margin:.45rem 0 .2rem;flex-wrap:wrap}
+    .run-out{font-family:'Courier New',monospace;font-size:.84rem;line-height:1.55;color:var(--green);background:#14130f;border:1px solid var(--border);border-radius:8px;padding:.65rem .85rem;white-space:pre-wrap;margin:.35rem 0 0;min-height:1.1rem;overflow-x:auto}
+    .run-out.empty{color:var(--muted)}
+    .run-hint{font-size:.78rem;color:var(--muted)}
+    .thread-box{margin:2rem 0;padding:1.2rem 1.5rem;border-radius:0 14px 14px 0;border-left:3px solid var(--blue);background:var(--blue-dim)}
+    .thread-label{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:.5rem}
+    .thread-text{font-size:1.08rem;color:var(--body);line-height:1.72}
+    .thread-text strong{color:var(--ink)}
+    .closing-statement{margin:2.5rem 0;padding:2rem 2.2rem;border-radius:14px;background:var(--bg-elevated);border:1px solid var(--border-hover);font-family:var(--display);font-size:1.22rem;color:var(--body);line-height:1.82;font-style:italic}
+    .closing-statement strong{color:var(--ink);font-style:normal}
+  </style>
+
+  <span class="series-tag"><span class="series-dot"></span>The Mathematics ML Runs On &middot; Class 10</span>
+  <h1>What Happens If You Just Keep Multiplying?</h1>
+  <p class="blog-subtitle">Almost everything a model does, underneath, is one small act repeated: multiply, then multiply again. Do it forty-six times to a probability and it vanishes. Do it without end and a single number falls out, one that no 32-bit chip can hold.</p>
+
+  <p>There is an old story about a king and a sage. The sage does the king a favour and is offered any reward he likes. He asks for something that sounds humble. One grain of rice on the first square of a chessboard, two on the second, four on the third, and so on, doubling, all the way to the sixty-fourth square. The king agrees, relieved to be let off so lightly.</p>
+
+  <p>He should not have been relieved. The doubling starts gently, a few grains, a handful, a bowl. Halfway across the board it is a field of rice. By the sixty-fourth square the sage is owed more than eighteen quintillion grains, more rice than the world has grown in all of history.</p>
+
+  <p>Nothing in that story is really about rice. It is about one move, repeated. Double, and double again, and the total does not climb, it erupts. That move, multiplying by a fixed amount over and over, is the whole of this class.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">one grain, doubled across a chessboard</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 210" role="img" aria-label="A curve of grains per square. It is nearly flat for the first forty squares, then erupts almost vertically, reaching over nine quintillion grains on the sixty-fourth square.">
+        <line x1="58" y1="180" x2="640" y2="180" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="58" y1="20" x2="58" y2="180" stroke="#3a3733" stroke-width="0.8"/>
+        <path d="M 58 179 C 360 178, 470 176, 540 168 C 580 160, 600 130, 612 80 C 618 52, 622 34, 626 24" fill="none" stroke="#e8a84c" stroke-width="2.6"/>
+        <g style="font:10px 'Courier New',monospace;fill:#9e968a" text-anchor="middle">
+          <text x="58" y="196">1</text><text x="200" y="196">16</text><text x="380" y="196">32</text><text x="540" y="196">48</text><text x="626" y="196">64</text>
+        </g>
+        <text x="350" y="208" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">square number &rarr;</text>
+        <text x="120" y="170" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">a few grains&hellip;</text>
+        <text x="560" y="60" text-anchor="end" style="font:11px 'Courier New',monospace;fill:#e8a84c">square 64: 9.2 &times; 10&#185;&#8312; grains</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>Follow the move in one direction and numbers explode past anything a machine can hold. Follow it in the other and they collapse to nothing. Take it to its smooth limit and a single constant falls out, written \(e\), and a single curve, \(e^{x}\), that turns out to be hiding inside nearly every probability a model ever computes. At every step, the move fights the hardware it runs on.</p>
+
+  <p class="lead-q">One move, multiply and multiply again, builds the most common function in machine learning, and breaks it on contact with a real chip.</p>
+
+  <p>This class follows that one move through five rooms: the two directions it can travel, the number it settles on, the function it becomes, the place it hides, and the wall it hits.</p>
+
+  <hr class="sep">
+
+  <h2>Two directions</h2>
+
+  <p>Start with the difference between adding and multiplying, because a model lives on the second.</p>
+
+  <p>Add a fixed amount each step and you get a tame, straight climb: 100, 110, 120, 130. The increase never changes, because it never depends on what you already have. This is the growth of a coin tin, and it is the growth nobody needs to fear.</p>
+
+  <p>Multiply by a fixed amount each step and everything changes. Now each step acts on the whole pile, so the bigger the pile, the bigger the jump. 100 becomes 110, then 121, then 133, and the increases themselves grow. This is the chessboard. Give it enough steps and it overtakes any straight line, then leaves it so far behind that the comparison stops meaning anything.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">adding a fixed amount, versus multiplying by a fixed factor</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 210" role="img" aria-label="Two curves from the same start. The added one rises as a straight line. The multiplied one starts beside it, curves upward, and pulls far away.">
+        <line x1="60" y1="30" x2="60" y2="180" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="180" x2="640" y2="180" stroke="#7d766b" stroke-width="0.8"/>
+        <polyline points="60,176 130,170 200,164 270,158 340,152 410,146 480,140 550,134 620,128" fill="none" stroke="#9e968a" stroke-width="2.2"/>
+        <text x="470" y="124" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">add a fixed amount</text>
+        <polyline points="60,176 130,173 200,167 270,157 340,142 410,120 480,90 550,55 605,28" fill="none" stroke="#e8a84c" stroke-width="2.5"/>
+        <text x="300" y="60" style="font:12px 'Source Sans 3',sans-serif;fill:#e8a84c">multiply by a fixed factor &nearr;</text>
+        <text x="350" y="200" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">step &rarr;</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>A model is built almost entirely on the multiplying kind, and not always upward. The probability it assigns to a whole sentence is the product of the probabilities of its parts, hundreds of small numbers multiplied together. Each is below 1, so this is the same move run the other way: multiply by a fraction, again and again, and the result does not drift toward zero, it dives.</p>
+
+  <p>Here the machine is already in trouble. Multiply 0.1 by itself in a 32-bit float and after just forty-six steps the answer is not tiny, it is exactly zero. The number slipped below the smallest value the chip can store, so it rounded to nothing. The move a model leans on hardest is the one that wipes out its own numbers fastest.</p>
+
+  <div class="codeblock"><span class="cap">two_directions.js</span><span class="cmt">// the same move, both ways, on a 32-bit float</span>
+let up = 1;
+for (let i = 0; i &lt; 63; i++) up *= 2;          <span class="cmt">// double 63 times: the chessboard</span>
+
+let down = Math.fround(1);
+for (let i = 0; i &lt; 46; i++)
+  down = Math.fround(down * Math.fround(0.1));   <span class="cmt">// multiply by 0.1, 46 times</span>
+
+console.log("up  :", up);
+console.log("down:", down);</div>
+  <div class="run-row"><button class="lab-btn" id="runGrow">&#9654; Run</button><span class="run-hint">one move, opposite fates</span></div>
+  <pre class="run-out empty" id="outGrow">output appears here</pre>
+
+  <p>The escape from that collapse, taking logarithms to turn the runaway product back into a sum, is the next class. For now, just hold the picture: one move, two directions. Upward it erupts, downward it vanishes. Everything left here is what happens when you stop taking discrete steps and let the move run smooth.</p>
+
+  <hr class="sep">
+
+  <h2>The number at the end of the move</h2>
+
+  <p>Steps are jagged. Real growth is usually smooth, happening every instant, and a machine has no instruction for every instant. The only thing it can do is the move: take a small step, multiply, repeat. So it fakes smoothness by making the steps tiny and many.</p>
+
+  <p>Take the cleanest case, growing by 100%. Do it in one step and you multiply by 2. Do it in two steps of 50% and you multiply by 1.5 twice, landing on 2.25, more than 2, because the second step grows what the first already added. Do it in \(n\) steps and you multiply by \(\left(1+\tfrac1n\right)\), \(n\) times over, which is \(\left(1+\tfrac1n\right)^{n}\).</p>
+
+  <p>Now make the steps infinite. The move is upward, and the chessboard says this should erupt. It does not. It climbs, slower and slower, and parks on one number: 2.71828. Multiply by a hair above 1 infinitely often and you do not get infinity, you get 2.71828. That number is called \(e\).</p>
+
+  <p class="lead-q">\( e \;=\; \lim_{n\to\infty}\left(1+\dfrac{1}{n}\right)^{n} \;=\; 2.718281828\ldots \)</p>
+
+  <p>Why it parks instead of erupting is the chessboard in reverse: each finer step multiplies by less, so each one buys less than the last. The first split added 0.25, the next 0.12, then 0.07, the gains dying fast enough to sum to a ceiling. The ceiling is \(e\), about 36% above plain doubling and not a fraction more.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">more steps, but the value flattens at e</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 230" role="img" aria-label="Bars for the loop result at 1, 2, 4, 12, 365 steps and infinitely many: 2.00, 2.25, 2.44, 2.61, 2.71, 2.718. They rise quickly then flatten against a dashed line at e.">
+        <line x1="60" y1="185" x2="630" y2="185" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="44" x2="630" y2="44" stroke="#e8a84c" stroke-width="1.1" stroke-dasharray="5 4"/>
+        <text x="636" y="48" style="font:11px 'Courier New',monospace;fill:#e8a84c">e</text>
+        <g style="font:10px 'Courier New',monospace;fill:#9e968a" text-anchor="end"><text x="54" y="188">2.00</text><text x="54" y="48">2.72</text></g>
+        <rect x="78"  y="183" width="56" height="2"   fill="#4ca8e8"/>
+        <rect x="166" y="137" width="56" height="48"  fill="#4ca8e8"/>
+        <rect x="254" y="100" width="56" height="85"  fill="#4ca8e8"/>
+        <rect x="342" y="66"  width="56" height="119" fill="#4ca8e8"/>
+        <rect x="430" y="46"  width="56" height="139" fill="#4ca8e8"/>
+        <rect x="540" y="45"  width="56" height="140" fill="#e8a84c"/>
+        <g style="font:11px 'Courier New',monospace;fill:#f4efe7" text-anchor="middle"><text x="106" y="177">2.00</text><text x="194" y="131">2.25</text><text x="282" y="94">2.44</text><text x="370" y="60">2.61</text><text x="458" y="40">2.71</text><text x="568" y="39">2.718</text></g>
+        <g style="font:10px 'Courier New',monospace;fill:#9e968a" text-anchor="middle"><text x="106" y="201">1</text><text x="194" y="201">2</text><text x="282" y="201">4</text><text x="370" y="201">12</text><text x="458" y="201">365</text><text x="568" y="201">&infin;</text></g>
+        <text x="350" y="222" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">number of steps n &rarr;</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>Then try to actually compute \(e\) this way on the ESP32-C3, and the move turns on you. In full 64-bit precision the loop closes in on 2.71828, as it should. In the chip&rsquo;s 32-bit float it does something stranger: it wanders, 2.59, then 3.29, never settling, and then at one exact value of \(n\) it drops to 1 and stays there.</p>
+
+  <div class="codeblock"><span class="cap">compute_e_float32.js</span><span class="cmt">// (1 + 1/n)^n in double vs single precision, as n climbs</span>
+function e64(n) { return Math.pow(1 + 1/n, n); }
+function e32(n) { return Math.pow(Math.fround(1 + 1/n), n); }
+for (let n of [1e3, 1e6, 1e7, 2**24, 1e8]) {
+  console.log(n, e64(n).toFixed(4), e32(n).toFixed(4));
+}</div>
+  <div class="run-row"><button class="lab-btn" id="runCollapse">&#9654; Run</button><span class="run-hint">double holds; float32 wanders, then dies at 2&#179;&#8308;</span></div>
+  <pre class="run-out empty" id="outCollapse">output appears here</pre>
+
+  <p>That exact value is \(n = 2^{24} = 16{,}777{,}216\), and it is no accident. A 32-bit float keeps 24 bits of precision, the mantissa width from Class 2, so the smallest amount it can add to 1 is \(2^{-24}\). Once the step \(\tfrac1n\) drops below that, \(1+\tfrac1n\) rounds to exactly 1, and 1 multiplied by itself any number of times is 1. The move that defines \(e\) erases itself, at a value you can read straight off the width of the float. Brute force does not just fail here, it fails worse the harder you push. No real library computes \(e\) this way.</p>
+
+  <p>So the move, run smooth, hands us a number. Now we let the amount of growth vary, and the number becomes a function.</p>
+
+  <hr class="sep">
+
+  <h2>The move as a dial</h2>
+
+  <p>\(e\) is one number, the result of one unit of smooth growth. Turn the amount of growth into a dial, call it \(x\), and you get \(e^{x}\), the move applied as much or as little as you ask.</p>
+
+  <p>Read a few settings off the dial. No growth, \(e^{0} = 1\). One unit, \(e^{1} = 2.718\). Two units run the move twice, \(e^{2} = 7.39\). Turn the dial negative and the move runs downward into shrinking: \(e^{-1} = 0.37\), \(e^{-2} = 0.14\), sinking toward zero but never touching it. That last part is the one to keep: \(e^{x}\) is positive for every input there is. You cannot multiply your way to zero or below.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">\(e^{x}\): never zero, through (0, 1), steep on the right</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 220" role="img" aria-label="The curve of e to the x. It hugs just above zero on the left, passes through 0,1 in the middle, and rises steeply on the right.">
+        <line x1="345" y1="24" x2="345" y2="190" stroke="#3a3733" stroke-width="0.8"/>
+        <line x1="70" y1="184" x2="630" y2="184" stroke="#7d766b" stroke-width="0.8"/>
+        <text x="350" y="204" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">x = 0</text>
+        <polyline points="70,182 125,181 180,179 235,176 290,170 345,162 400,148 455,124 510,86 560,30" fill="none" stroke="#e8a84c" stroke-width="2.6"/>
+        <circle cx="345" cy="162" r="4" fill="#f4efe7"/><text x="352" y="159" style="font:11px 'Courier New',monospace;fill:#f4efe7">(0, 1)</text>
+        <text x="120" y="172" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">toward 0, never reaching it&hellip;</text>
+        <text x="500" y="70" style="font:11px 'Source Sans 3',sans-serif;fill:#e8a84c">&hellip;then erupts &nearr;</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>And it carries one property that is the reason it survives the rest of this course. Growing for a time \(a\) and then for a further time \(b\) is the same as growing for \(a+b\) at once. But the first way is \(e^{a}\) then \(e^{b}\), multiplied; the second is \(e^{a+b}\). The two must agree:</p>
+
+  <p class="lead-q">\( e^{a+b} \;=\; e^{a} \times e^{b} \)</p>
+
+  <p>Adding on the dial becomes multiplying in the value. The move turns sums into products. Run it backwards and it turns products into sums, which is exactly the escape from the forty-six-step collapse: take logarithms, and a runaway product of probabilities becomes a safe sum. That backwards move is the whole of the next class. \(e^{x}\) is the door; the logarithm is the same door swinging the other way.</p>
+
+  <p>Positive everywhere, and it trades sums for products. Those two facts are the entire reason the move is waiting inside every probability a model builds.</p>
+
+  <hr class="sep">
+
+  <h2>Where the move hides</h2>
+
+  <p>A model spends its life producing raw scores, any number at all, and needing to turn them into probabilities, which must be positive and must behave. There is one natural tool for that job, and it is the function we just built.</p>
+
+  <p>A single score becomes a probability through the <strong>sigmoid</strong>, \(1/(1+e^{-x})\). Feed it a large positive score and \(e^{-x}\) vanishes, so the value approaches 1. A large negative score and \(e^{-x}\) erupts, so the value approaches 0. A score of 0 gives exactly one half. The whole infinite number line is folded smoothly into the range a probability is allowed to live in, and it is the always-positive move that does the folding.</p>
+
+  <p>A whole list of scores becomes a distribution through the <strong>softmax</strong>: raise \(e\) to each score, then divide by the total, \(p_i = e^{z_i} / \sum_j e^{z_j}\). Every \(e^{z}\) is positive, so every result is positive, and dividing by the sum forces them to add to 1. A list of arbitrary numbers becomes a set of probabilities, and again it is the move doing the work.</p>
+
+  <p>And the <strong>bell curve</strong>, the shape that fits almost every measurement ever taken, is \(e^{-x^{2}/2}\): the move running downward, faster the further you go from the centre, symmetric because of the square, positive everywhere because that is simply what the move is.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">the same \(e^{x}\), hiding in three different jobs</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 180" role="img" aria-label="Three small panels: a bell curve, an S-shaped sigmoid, and three softmax probability bars, each labelled with the exponential it is built from.">
+        <g>
+          <rect x="20" y="18" width="200" height="112" rx="8" fill="#2a2826" stroke="#3a3733"/>
+          <text x="120" y="38" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#cbc4b9">the bell curve</text>
+          <polyline points="40,104 60,102 78,96 95,82 110,62 120,52 130,62 145,82 162,96 180,102 200,104" fill="none" stroke="#9e968a" stroke-width="2"/>
+          <text x="120" y="124" text-anchor="middle" style="font:13px 'Courier New',monospace;fill:#e8a84c">e<tspan dy="-5" font-size="9">&minus;x&#178;/2</tspan></text>
+        </g>
+        <g>
+          <rect x="240" y="18" width="200" height="112" rx="8" fill="#2a2826" stroke="#3a3733"/>
+          <text x="340" y="38" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#cbc4b9">the sigmoid</text>
+          <polyline points="258,108 285,105 305,99 322,88 338,68 350,58 362,48 378,38 398,32 418,29 422,28" fill="none" stroke="#9e968a" stroke-width="2"/>
+          <text x="340" y="124" text-anchor="middle" style="font:13px 'Courier New',monospace;fill:#9e968a">1 / (1 + <tspan fill="#e8a84c">e<tspan dy="-5" font-size="9">&minus;x</tspan></tspan><tspan dy="5">)</tspan></text>
+        </g>
+        <g>
+          <rect x="460" y="18" width="200" height="112" rx="8" fill="#2a2826" stroke="#3a3733"/>
+          <text x="560" y="38" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#cbc4b9">the softmax</text>
+          <rect x="492" y="58" width="22" height="52" fill="#4ca8e8"/><rect x="524" y="82" width="22" height="28" fill="#4ca8e8"/><rect x="556" y="96" width="22" height="14" fill="#4ca8e8"/>
+          <line x1="486" y1="110" x2="624" y2="110" stroke="#7d766b" stroke-width="0.8"/>
+          <text x="560" y="124" text-anchor="middle" style="font:13px 'Courier New',monospace;fill:#e8a84c">e<tspan dy="-5" font-size="9">z</tspan><tspan dy="5"> / &Sigma; </tspan>e<tspan dy="-5" font-size="9">z</tspan></text>
+        </g>
+        <text x="340" y="160" text-anchor="middle" style="font:13px 'Instrument Serif',serif;fill:#f4efe7;font-style:italic">three jobs, one move underneath</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="thread-box">
+    <div class="thread-label">the same move, three coats</div>
+    <div class="thread-text">Three different jobs, one function in all of them, for one reason. Each needs a quantity that is <strong>positive everywhere</strong> and <strong>bends smoothly</strong>, and multiplying-without-end is the only natural source of both at once. The sigmoid, the softmax, and the bell curve were never arbitrary choices. They are the same move wearing three coats.</div>
+  </div>
+
+  <p>Everywhere a model meets a probability, the move is already there. Which would be a tidy ending, except the move does not run for free.</p>
+
+  <hr class="sep">
+
+  <h2>Where the move breaks</h2>
+
+  <p>Go back to the chessboard one last time. The move, run upward, erupts, and \(e^{x}\) is that eruption made into a function. On a 32-bit float, which tops out near \(3.4 \times 10^{38}\), it erupts straight through the ceiling almost at once. \(e^{88}\) still fits. \(e^{89}\) does not, and the chip returns infinity.</p>
+
+  <p>A score of 89 is nothing unusual inside a model, so the softmax, coded the obvious way, breaks: feed it large scores and every \(e^{z}\) overflows to infinity, and infinity over infinity is gibberish. The fix is small and rests entirely on the identity from the last section. Subtract the largest score from all of them first. This multiplies top and bottom by the same amount, so the probabilities are untouched, but now the biggest exponent is \(e^{0} = 1\) and nothing can overflow. Every serious softmax on Earth does this.</p>
+
+  <div class="codeblock"><span class="cap">softmax_overflow.js</span><span class="cmt">// e^x overflows float32 just past x = 88</span>
+[88, 89, 90].forEach(x =&gt; console.log("e^" + x + " =", Math.fround(Math.exp(x))));
+
+let z = [90, 89, 88];
+let naive = z.map(s =&gt; Math.fround(Math.exp(s)));      <span class="cmt">// all Infinity</span>
+let m = Math.max(...z);                                <span class="cmt">// subtract the largest</span>
+let safe = z.map(s =&gt; Math.exp(s - m));
+let tot = safe.reduce((a, b) =&gt; a + b, 0);
+console.log("naive:", naive.join(", "));
+console.log("safe :", z.map((s, i) =&gt; (safe[i] / tot).toFixed(3)).join(", "));</div>
+  <div class="run-row"><button class="lab-btn" id="runOf">&#9654; Run</button><span class="run-hint">naive overflows; the max-subtraction fix does not</span></div>
+  <pre class="run-out empty" id="outOf">output appears here</pre>
+
+  <p>And even when it does not overflow, the move is expensive. A processor has an instruction for adding and one for multiplying, but none for \(e^{x}\). It has to build the value from a long polynomial, many multiplies and adds for a single result, and on the ESP32-C3, which has no floating-point unit at all, even those multiplies are faked in software. The most common function in machine learning is also one of the most expensive things the chip ever does. Class 13 puts a cycle count on it.</p>
+
+  <hr class="sep">
+
+  <div class="closing-statement">One move. Multiply, then multiply again. Run it upward and it is the chessboard&rsquo;s eruption; run it downward and it sinks a probability to zero in forty-six steps. Let it run smooth and it settles on \(e\). Put the amount of growth on a dial and it becomes \(e^{x}\), the one function that is <strong>positive everywhere</strong> and <strong>trades sums for products</strong>. That is why it hides inside every sigmoid, every softmax, every bell curve a model draws, and why those models overflow and burn cycles on the smallest chips. The exponential is not one topic among many. It is a single act of arithmetic, repeated until something remarkable, and something dangerous, falls out.</div>
+
+  <p>The next class takes the move backwards. The logarithm undoes the exponential, turns its runaway products back into sums, and is, quietly, the single most useful line of arithmetic in the whole field.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">a short, self-marking quiz</span></div>
+    <div class="viz-body">
+      <div class="quiz-progress" id="quizProgress"></div>
+      <div id="quizHost"></div>
+      <div class="quiz-final" id="quizFinal"></div>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website" data-repo-id="R_kgDOQlniOw"
+            data-category="General" data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname" data-strict="0" data-reactions-enabled="1"
+            data-emit-metadata="0" data-input-position="bottom" data-theme="dark"
+            data-lang="en" crossorigin="anonymous" async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The Mathematics ML Runs On &middot; Unit 3</h2>
+    <a class="sidebar-link active-topic" href="the-exponential-and-e.html">
+      <div class="sidebar-link-title">Class 10: The Exponential and e</div>
+      <div class="sidebar-link-note">You are here &middot; starts Unit 3</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Class 11: The Logarithm and Product-to-Sum</div>
+      <div class="sidebar-link-note">The move, backwards &middot; coming next</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Class 12: Log-Space as Plain Arithmetic</div>
+      <div class="sidebar-link-note">Coming soon</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Class 13: Lab &middot; The Cost of exp() and log()</div>
+      <div class="sidebar-link-note">Coming soon</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The series</h2>
+    <a class="sidebar-link" href="the-mathematics-ml-runs-on.html">
+      <div class="sidebar-link-title">All units and classes</div>
+      <div class="sidebar-link-note">Units 1 and 2 complete</div>
+    </a>
+    <a class="sidebar-link" href="sequences-limits-and-convergence.html">
+      <div class="sidebar-link-title">&larr; Class 9: Sequences, Limits, Convergence</div>
+      <div class="sidebar-link-note">The limit e is built from</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The thread</h2>
+    <p style="font-size:.92rem;color:var(--muted);line-height:1.6">One move: multiply, then multiply again. Upward it erupts, downward it vanishes, and run smooth it settles on e. That single act of arithmetic becomes e to the x, hides inside every sigmoid and softmax, and breaks on contact with a 32-bit float.</p>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+<script>
+document.getElementById('year').textContent=new Date().getFullYear();
+var hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',function(){hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(function(l){l.addEventListener('click',function(){hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';});});
+
+function show(id,lines){var el=document.getElementById(id);el.textContent=lines.join('\n');el.className='run-out';}
+
+/* runnable: the move, both directions */
+document.getElementById('runGrow').addEventListener('click',function(){
+  var up=1; for(var i=0;i<63;i++) up*=2;
+  var down=Math.fround(1); for(var j=0;j<46;j++) down=Math.fround(down*Math.fround(0.1));
+  show('outGrow',[
+    'up   (x2,   63 steps): '+up.toExponential(2)+'   (the chessboard)',
+    'down (x0.1, 46 steps): '+down+'   <- underflowed to nothing']);
+});
+
+/* runnable: float32 collapse at 2^24 */
+document.getElementById('runCollapse').addEventListener('click',function(){
+  function e64(n){return Math.pow(1+1/n,n);}
+  function e32(n){return Math.pow(Math.fround(1+1/n),n);}
+  var T=Math.pow(2,24); var ns=[1e3,1e6,1e7,T,1e8];
+  var L=['n'.padEnd(16)+'double'.padEnd(11)+'float32'];
+  ns.forEach(function(n){
+    var tag=Math.fround(1+1/n)===1?(n===T?'   <- 2^24, collapses':'   collapsed'):'';
+    L.push(n.toLocaleString().padEnd(16)+e64(n).toFixed(4).padEnd(11)+e32(n).toFixed(4)+tag);
+  });
+  show('outCollapse',L);
+});
+
+/* runnable: overflow + safe softmax */
+document.getElementById('runOf').addEventListener('click',function(){
+  var L=[];
+  [88,89,90].forEach(function(x){ L.push('e^'+x+' = '+Math.fround(Math.exp(x))); });
+  var z=[90,89,88];
+  var naive=z.map(function(s){return Math.fround(Math.exp(s));});
+  var m=Math.max.apply(null,z);
+  var safe=z.map(function(s){return Math.exp(s-m);});
+  var tot=safe.reduce(function(a,b){return a+b;},0);
+  L.push('naive: '+naive.join(', '));
+  L.push('safe : '+z.map(function(s,i){return (safe[i]/tot).toFixed(3);}).join(', '));
+  show('outOf',L);
+});
+
+/* quiz */
+(function(){
+  var QUIZ=[
+    {q:"The single move this whole class is built on is:",
+     opts:["adding a fixed amount over and over","multiplying by a fixed factor over and over","sorting numbers","rounding to the nearest integer"],c:1,
+     ex:"Multiply by a fixed factor, repeated. Upward it erupts (the chessboard), downward it vanishes (a product of probabilities). Everything in the class is that one move."},
+    {q:"Multiplying 0.1 by itself in a 32-bit float reaches exactly 0 after about 46 steps because:",
+     opts:["0.1 is not representable","the running product slips below the smallest value a float32 can store, and rounds to nothing","the loop stops early","floats cannot multiply"],c:1,
+     ex:"Each step shrinks the number tenfold. After about 46 steps it is smaller than any float32 can hold, so it underflows to exactly 0. This is why products of probabilities get moved into log-space."},
+    {q:"Multiplying by (1 + 1/n), n times, and letting n grow without bound gives:",
+     opts:["infinity","e, about 2.718","exactly 2","zero"],c:1,
+     ex:"The move is upward, so eruption seems likely, but the value climbs ever more slowly and parks on e = 2.71828. That limit is the definition of e."},
+    {q:"Why does (1 + 1/n)^n settle instead of running to infinity?",
+     opts:["the exponent stops growing","each finer step multiplies by less, so the gains shrink to a ceiling","floats round it down","it does run to infinity"],c:1,
+     ex:"Finer steps mean smaller factors, so each adds less than the last: 0.25, then 0.12, then 0.07. The shrinking gains sum to a ceiling, which is e, about 36% above plain doubling."},
+    {q:"Computing (1 + 1/n)^n in 32-bit float collapses to exactly 1 at n = 2^24 because:",
+     opts:["the loop overflows","1/n drops below 2^-24, so 1 + 1/n rounds to exactly 1, and 1 to any power is 1","e equals 1 in float32","the chip has no multiply"],c:1,
+     ex:"A float32 keeps 24 mantissa bits, so the smallest step it can add to 1 is 2^-24. Past n = 2^24 the step vanishes, 1 + 1/n becomes 1, and the whole product is 1."},
+    {q:"e^(a + b) equals:",
+     opts:["e^a + e^b","e^a * e^b","e^(a*b)","a + b"],c:1,
+     ex:"Growing for a then b is growing for a + b, so the multipliers combine. The move turns adding in the exponent into multiplying in the value, and run backwards, products into sums."},
+    {q:"The sigmoid and softmax are built from e^x because e^x is:",
+     opts:["always an integer","positive everywhere and smoothly bending, so it folds scores into probabilities","always below 1","the fastest function to compute"],c:1,
+     ex:"A probability must be positive and well-behaved. e^x is positive for any score and smooth, so it is the natural tool for turning raw scores into probabilities, in both the sigmoid and the softmax."},
+    {q:"Why subtract the largest score before computing a softmax on a machine?",
+     opts:["it makes the answer more accurate","it stops e^z overflowing past e^89, and leaves the probabilities unchanged","the definition requires it","it makes the code shorter"],c:1,
+     ex:"Subtracting a constant multiplies top and bottom by the same factor, so the probabilities are identical, but it pulls the largest exponent down to e^0 = 1 so nothing overflows."}
+  ];
+  var answered=0,score=0;
+  var host=document.getElementById('quizHost'),prog=document.getElementById('quizProgress'),fin=document.getElementById('quizFinal');
+  function up(){prog.textContent=answered+' / '+QUIZ.length+' answered   \u00b7   score '+score;}
+  QUIZ.forEach(function(item,qi){
+    var card=document.createElement('div');card.className='quiz-q';
+    var qt=document.createElement('div');qt.className='quiz-q-text';qt.innerHTML='<span class="quiz-q-num">Q'+(qi+1)+'.</span>'+item.q;card.appendChild(qt);
+    var btns=[];
+    item.opts.forEach(function(text,oi){
+      var b=document.createElement('button');b.className='quiz-opt';b.type='button';b.innerHTML=text+'<span class="mk"></span>';
+      b.addEventListener('click',function(){
+        if(card.dataset.done)return;card.dataset.done='1';answered++;btns.forEach(function(x){x.disabled=true;});
+        if(oi===item.c){b.classList.add('correct');b.querySelector('.mk').textContent='\u2713';score++;}
+        else{b.classList.add('wrong');b.querySelector('.mk').textContent='\u2717';var rr=btns[item.c];rr.classList.add('correct');rr.querySelector('.mk').textContent='\u2713';}
+        ex.classList.add('show');up();if(answered===QUIZ.length)done();
+      });
+      btns.push(b);card.appendChild(b);
+    });
+    var ex=document.createElement('div');ex.className='quiz-explain';ex.textContent=item.ex;card.appendChild(ex);
+    host.appendChild(card);
+  });
+  function done(){var m;
+    if(score===QUIZ.length)m='Every one. The move, e, the identity, and the three coats are all yours.';
+    else if(score>=QUIZ.length-1)m=score+' out of '+QUIZ.length+'. Strong start to Unit 3.';
+    else if(score>=QUIZ.length-3)m=score+' out of '+QUIZ.length+'. Solid. Replay the two demos and the rest will lock in.';
+    else m=score+' out of '+QUIZ.length+'. Worth another pass: one move, multiplied without end, builds e, becomes e^x, and turns sums into products.';
+    fin.textContent=m;fin.classList.add('show');}
+  up();
+})();
+</script>
+</body>
+</html>

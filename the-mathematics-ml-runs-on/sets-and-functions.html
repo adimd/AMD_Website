@@ -159,6 +159,8 @@
     .quiz-final{margin-top:1.3rem;padding:1.2rem 1.4rem;border-radius:10px;background:var(--bg-card);border:1px solid var(--accent);font-family:var(--display);font-size:1.4rem;color:var(--ink);text-align:center;display:none}
     .quiz-final.show{display:block;animation:rise .4s cubic-bezier(.22,1,.36,1) both}
   </style>
+  <script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},options:{ignoreHtmlClass:'codeblock|run-out|run-row|sig-list'}};</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
 </head>
 <body>
 <header class="site-header">
@@ -195,49 +197,61 @@
 
 <main class="blog-main anim d1"><article class="article">
 
+  <style>
+    .thread-box{margin:2rem 0;padding:1.2rem 1.5rem;border-radius:0 14px 14px 0;border-left:3px solid var(--blue);background:rgba(76,168,232,.10)}
+    .thread-label{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:.5rem}
+    .thread-text{font-size:1.08rem;color:var(--body);line-height:1.72}
+    .thread-text strong{color:var(--ink)}
+    .closing-statement{margin:2.5rem 0;padding:2rem 2.2rem;border-radius:14px;background:#232220;border:1px solid var(--border-hover);font-family:var(--display);font-size:1.22rem;color:var(--body);line-height:1.82;font-style:italic}
+    .closing-statement strong{color:var(--ink);font-style:normal}
+  </style>
+
   <span class="series-tag"><span class="series-dot"></span>The Mathematics ML Runs On &middot; Class 6</span>
   <h1>The Function That Has No Formula</h1>
-  <p class="blog-subtitle">Unit 2 builds the language the rest of the course speaks. Its very first word is "function," and almost everyone arrives carrying a version of it that is too small. This class trades it for the right one, the version that a lookup table, a trained neural network, and a coin flip all turn out to share. We get there by asking, at each step, one plain question: what does a function actually have to give you?</p>
+  <p class="blog-subtitle">Unit 2 builds the language the rest of the course speaks, and its very first word is &ldquo;function.&rdquo; Almost everyone arrives with a version that is too small: a formula, a rule with an \(x\) in it. This class trades it for the one a lookup table, a trained network, and a coin flip all share. Underneath, a function is a single promise, and the recipe that keeps it does not matter.</p>
 
   <h2>A task you have already done</h2>
 
-  <p>Let me start with something concrete, because the whole idea of this class hides inside it.</p>
-
-  <p>You have a brightness value, an integer from 0 to 255, and you need to correct it for the way human eyes perceive light. This is gamma correction, and the standard recipe is a formula: scale the value into the range 0 to 1, raise it to a power, scale back.</p>
+  <p>You have a brightness value, an integer from 0 to 255, and you need to correct it for the way eyes perceive light. This is gamma correction, and the textbook way is a formula: scale into the range 0 to 1, raise to a power, scale back.</p>
 
   <div class="codeblock"><span class="cap">the formula way</span>corrected = powf(raw / 255.0f, 2.2f) * 255.0f;</div>
 
-  <p>On a laptop, fine. On the ESP32-C3 from Unit 1, this is a problem, and you already know why: that chip has no floating-point unit, so <code>powf</code> is not one instruction, it is a slow software routine. Run it on every pixel of a stream and you fall behind. So you do the thing embedded programmers always do. You notice there are only 256 possible inputs in the first place. You compute the answer for all 256 of them once, before the program ever runs, and you store them in an array:</p>
+  <p>On a laptop, fine. On the ESP32-C3 from Unit 1 it is a problem, for a reason you already know: that chip has no floating-point unit, so <code>powf</code> is not one instruction but a slow software routine. Run it on every pixel of a stream and you fall behind. So you do what embedded programmers always do. There are only 256 possible inputs, so you compute all 256 answers once, before the program ever runs, and store them.</p>
 
   <div class="codeblock"><span class="cap">the table way: compute all 256 answers once, then never again</span><span class="kw">uint8_t</span> gamma[256] = { 0, 0, 0, 1, 1, 2, 2, 3, /* ... */ 255 };
 
 corrected = gamma[raw];   <span class="cmt">// just a memory read now. no math at runtime.</span></div>
 
-  <p>Two ways to land on the same corrected brightness. One <em>computes</em> the answer when asked. The other <em>looks it up</em> from a table you filled in ahead of time. Sit with that pair for a second, because I am going to ask one question about it, and the answer quietly reorganizes how you read a great deal of code and, later, a great deal of machine learning.</p>
+  <p>Two ways to the same corrected brightness. One computes the answer when asked; the other looks it up from a table filled in ahead of time. One question separates them, and the answer quietly reorganizes how you read a great deal of code, and later a great deal of machine learning.</p>
 
-  <p class="lead-q">The <code>powf</code> version is obviously a function. Is the table a function too, or is it "just data"?</p>
+  <p class="lead-q">The <code>powf</code> version is obviously a function. Is the table a function too, or is it &ldquo;just data&rdquo;?</p>
 
-  <p>Most people's gut says the table is just data. A function, surely, is something with an <span class="m">x</span> in it, a rule you carry out. The table has no rule anywhere; it is a frozen list of answers. Hold that instinct up to the light, because we are about to find it is wrong, and the wrongness is exactly what makes a neural network look mysterious when it should not.</p>
+  <p>Most people&rsquo;s gut says the table is just data. A function, surely, has an \(x\) in it, a rule you carry out, and the table has no rule anywhere, only a frozen list of answers. That instinct is wrong, and its wrongness is exactly what makes a neural network look like sorcery when it should not. The fix is one idea, and the whole class is that idea pressed from five sides.</p>
+
+  <div class="thread-box">
+    <div class="thread-label">the thread</div>
+    <div class="thread-text">A function is a <strong>promise, not a recipe</strong>. Give it an input, it hands back exactly one output, the same one every time. Whether it <strong>computes</strong> that output, <strong>stores</strong> it, or <strong>learned</strong> it changes the cost, never the fact. Everything ahead, the one rule, the sets, the signature, the chain, is that single promise seen from one more angle.</div>
+  </div>
 
   <hr class="sep">
 
-  <h2>Section 1 &middot; A function is a commitment, not a formula</h2>
+  <h2>The promise underneath</h2>
 
-  <p>Drop the definitions for a moment and ask the only question that matters to whoever <em>calls</em> these two things: what do you actually get back?</p>
+  <p>Drop the definitions and ask the only question that matters to whoever <em>calls</em> these two things: what do you get back?</p>
 
-  <p>You call <code>powf(...)</code> with <code>raw = 100</code>. You get one specific number. Call it again tomorrow with <code>100</code>, you get the same number, never "it depends." Now you read <code>gamma[100]</code>. You get one specific number, the same one every single time. Stand at the call site and squint: the two are indistinguishable. Same input in, same single answer out, every time. The only difference is <em>when</em> and <em>how</em> the answer was produced, computed on the spot versus computed in advance and remembered. That is a question about speed and memory, which is a Unit 1 question. It says nothing about what kind of object you are dealing with.</p>
+  <p>Call <code>powf(...)</code> with <code>raw = 100</code> and you get one specific number, the same one tomorrow, never &ldquo;it depends.&rdquo; Read <code>gamma[100]</code> and you get one specific number, the same one every time. From the call site the two are indistinguishable: same input in, same single answer out. The only difference is <em>when</em> and <em>how</em> the answer was produced, computed on the spot or computed in advance and remembered. That is a question about speed and memory, a Unit 1 question. It says nothing about what kind of object you are holding.</p>
 
-  <p>So strip away the recipe, and the thing both versions truly provide is this:</p>
+  <p>So strip away the recipe, and what both versions truly provide is this:</p>
 
   <div class="callout">A function is a promise: give it an input, and it hands back exactly one definite output, the same one every time. How it keeps that promise, by a formula, by a stored table, or later by learned weights, is a separate matter entirely.</div>
 
-  <p>Look again at <span class="m">f(x) = x<sup>2</sup></span> with this in mind. The squaring is a <em>recipe</em>: it is the method this particular function uses to work out which output goes with a given input. But the recipe is not the function. The function is the full set of pairings, every input tied to its one output, and <span class="m">x<sup>2</sup></span> is merely a compact way to describe those pairings. Replace the recipe with a giant table of precomputed squares and you have thrown away the formula while keeping every pairing intact. The function is exactly as real as before. It never lived in the formula; it lived in the pairings, and the formula was just one convenient way to write them down.</p>
+  <p>Look at \(f(x) = x^{2}\) again. The squaring is a recipe, the method this function uses to work out which output goes with an input. But the recipe is not the function. The function is the full set of pairings, every input tied to its one output, and \(x^{2}\) is just a compact way to write them down. Replace the recipe with a giant table of precomputed squares and you have thrown away the formula while keeping every pairing intact. The function is exactly as real as before. It never lived in the formula; it lived in the pairings.</p>
 
-  <p>Once you believe that, the useful mental picture stops being a little machine grinding <span class="m">x</span> into <span class="m">x<sup>2</sup></span> and becomes two collections of things with <strong>arrows</strong> between them. On the left, every input the function is responsible for. On the right, every output it can produce. The function <em>is</em> the bundle of arrows: exactly one leaving each input on the left, landing on its committed output on the right. We name the two collections and write the whole thing compactly:</p>
+  <p>So the picture to carry is not a little machine grinding \(x\) into \(x^{2}\). It is two collections of things with <strong>arrows</strong> between them: on the left every input, on the right every output, and exactly one arrow leaving each input. The function <em>is</em> that bundle of arrows. We name the two collections and write it compactly:</p>
 
   <div class="codeblock"><span class="cap">read aloud: "f, from A to B"</span>f : A &rarr; B</div>
 
-  <p><span class="m">A</span> is the <strong>domain</strong>, the set of inputs the function must handle. <span class="m">B</span> is the <strong>codomain</strong>, the set its outputs are drawn from. For our gamma function, both happen to be the bytes 0 to 255, so its signature is <span class="m">gamma : {0, &hellip;, 255} &rarr; {0, &hellip;, 255}</span>. The <code>powf</code> version draws those 256 arrows by computing them; the table draws the identical arrows by storing them.</p>
+  <p>\(A\) is the <strong>domain</strong>, the set of inputs the function must handle. \(B\) is the <strong>codomain</strong>, the set its outputs are drawn from. For our gamma function both are the bytes 0 to 255, so its signature is \(\text{gamma} : \{0,\ldots,255\} \to \{0,\ldots,255\}\). The <code>powf</code> version draws those 256 arrows by computing them; the table draws the identical arrows by storing them.</p>
 
   <div class="viz-block">
     <div class="viz-header"><span class="viz-title">Same arrows, two ways to keep the promise</span></div>
@@ -262,14 +276,13 @@ corrected = gamma[raw];   <span class="cmt">// just a memory read now. no math a
     </div>
   </div>
 
-  <p class="ml-tag">why this matters for ML</p>
-  <p>This is the picture every machine-learning object is built on, and the gamma table is the doorway. The <strong>embedding layer</strong> that begins almost every language model is, literally, a lookup table: hand it a token's id, it returns the stored row of numbers for that token, <code>embedding[id]</code>, no formula in sight. It is <code>gamma[ ]</code> wearing a different hat. And a whole trained <strong>network</strong> is a function too, taking an input vector to an output vector, with no formula a human could write; it is defined by a pile of learned numbers, exactly the way the gamma table is defined by stored numbers. Insist that a function must be a formula and all of this looks like sorcery. Accept that a function is a committed map from inputs to outputs and it becomes readable: some maps are computed, some stored, some learned, and they are all the same kind of thing.</p>
+  <p>This is the picture every machine-learning object is built on, and the gamma table is the doorway to it. The <strong>embedding layer</strong> that begins almost every language model is, literally, a lookup table: hand it a token&rsquo;s id and it returns the stored row of numbers, <code>embedding[id]</code>, no formula in sight. It is <code>gamma[ ]</code> wearing a different hat. And a whole trained <strong>network</strong> is a function too, taking an input vector to an output vector with no formula a human could write, defined entirely by a pile of learned numbers, exactly as the gamma table is defined by stored ones. Insist that a function must be a formula and all of this looks mysterious. Accept that it is a committed map and it becomes readable: some maps are computed, some stored, some learned, and they are all the same kind of thing.</p>
 
   <hr class="sep">
 
-  <h2>Section 2 &middot; The one rule, and the one freedom</h2>
+  <h2>The one rule, and the one freedom</h2>
 
-  <p>We said "exactly one definite output per input." Those words quietly grant one freedom and forbid one thing, and people routinely mix up which is which. Rather than assert the rules, let me show them to you in the most literal function-as-a-table a programmer has: a dictionary.</p>
+  <p>&ldquo;Exactly one output per input&rdquo; quietly grants one freedom and forbids one thing, and people routinely swap which is which. The most literal function a programmer owns shows both at a glance: a dictionary.</p>
 
   <p>Here is a tiny image classifier, written by hand as a dictionary from filename to label:</p>
 
@@ -282,13 +295,13 @@ corrected = gamma[raw];   <span class="cmt">// just a memory read now. no math a
 
 label[<span class="str">"img1.jpg"</span>]   <span class="cmt"># -> "cat"</span></div>
 
-  <p>This dictionary is a function: its domain is the four filenames, its codomain is the two labels. Now read two facts straight off it, because the dictionary makes both unmissable.</p>
+  <p>Its domain is the four filenames, its codomain the two labels. Two facts read straight off it.</p>
 
-  <p><strong>The freedom: many inputs may share one output.</strong> Two different keys, <code>"img1.jpg"</code> and <code>"img2.jpg"</code>, both map to <code>"cat"</code>. Nobody bats an eye; that is just an ordinary dictionary. This pattern has a name we will need, <strong>many-to-one</strong>, and you have seen it all over Unit 1 too: in a gamma table <code>gamma[0]</code>, <code>gamma[1]</code>, and <code>gamma[2]</code> are often all 0, and <code>sign(x)</code> sends every negative number to the single value -1.</p>
+  <p><strong>The freedom: many inputs may share one output.</strong> Both <code>"img1.jpg"</code> and <code>"img2.jpg"</code> map to <code>"cat"</code>, and nobody blinks. This pattern is <strong>many-to-one</strong>, and you have seen it all over Unit 1: <code>gamma[0]</code>, <code>gamma[1]</code>, and <code>gamma[2]</code> are often all 0, and <code>sign(x)</code> sends every negative number to the single value \(-1\).</p>
 
-  <p><strong>The prohibition: one input may never have two outputs.</strong> Try to express the opposite and the language stops you. You cannot list <code>"img1.jpg"</code> twice with two different values; a dictionary key holds exactly one value, and a second assignment just overwrites the first. There is no way to say "img1 is both cat and dog," and there is no such thing as a function that does it either. That is the single rule a function cannot break, and your data structures enforce it for free.</p>
+  <p><strong>The prohibition: one input may never have two outputs.</strong> Try to write the opposite and the language refuses. You cannot list <code>"img1.jpg"</code> twice with two values; a key holds exactly one value, and a second assignment just overwrites the first. There is no way to say &ldquo;img1 is both cat and dog,&rdquo; and there is no such function either. That is the single rule a function cannot break, and your data structures enforce it for free.</p>
 
-  <p>So the test for "is this a function" is never "does it have a formula" and never "is each output unique." It is only this: does every input land on exactly one output. Here is that exact dictionary as a map; click a key to see its one arrow, and use the button to try to break the rule.</p>
+  <p>So the test for &ldquo;is this a function&rdquo; is never &ldquo;does it have a formula&rdquo; and never &ldquo;is each output unique.&rdquo; It is only this: does every input land on exactly one output. Here is that dictionary as a map; click a key to see its one arrow, and use the button to try to break the rule.</p>
 
   <div class="viz-block">
     <div class="viz-header"><span class="viz-title">The dictionary, drawn as a map</span></div>
@@ -312,14 +325,13 @@ label[<span class="str">"img1.jpg"</span>]   <span class="cmt"># -> "cat"</span>
     </div>
   </div>
 
-  <p class="ml-tag">why this matters for ML</p>
-  <p>Many-to-one is not a flaw to put up with. It is the job. A real classifier takes millions of different cat photos, each one a distinct input, and sends them all to the single output "cat." That collapse, dropping the pose and the lighting and the background while keeping only the label, is exactly what you want it to do. The <code>argmax</code> at the end of a network works the same way: many different score vectors, one winning class. And the prohibition is why a trained model is <strong>deterministic</strong> at inference: feed it the same input and you get the same answer every time, because a single input pointing at two outputs would not be a function at all. At this level, "a model generalizes" is just many-to-one said in plainer words.</p>
+  <p>Many-to-one is not a flaw to tolerate. It is the job. A classifier takes millions of distinct cat photos, each a separate input, and sends them all to the single output <code>"cat"</code>, and that collapse, dropping the pose and the lighting and the background while keeping only the label, is exactly what you want. The <code>argmax</code> at the end of a network does the same: many score vectors, one winning class. The prohibition, meanwhile, is why a trained model is <strong>deterministic</strong> at inference: feed it the same input and you get the same answer every time, because one input aimed at two outputs would not be a function at all. At this level, &ldquo;a model generalizes&rdquo; is many-to-one said in plainer words.</p>
 
   <hr class="sep">
 
-  <h2>Section 3 &middot; Sets: pinning down what is even possible</h2>
+  <h2>Sets: what is even possible</h2>
 
-  <p>Every arrow we have drawn starts in a collection on the left and lands in a collection on the right. We have been waving at those collections loosely, "the inputs," "the labels." Let me show you why loose is dangerous, with a bug you could ship this week.</p>
+  <p>Every arrow starts in a collection on the left and lands in one on the right. We have named those collections loosely, &ldquo;the inputs,&rdquo; &ldquo;the labels.&rdquo; Loose is dangerous, and here is a bug you could ship this week to prove it.</p>
 
   <p>You read a sensor that reports a status, and the datasheet lists the possible values. You write the handler:</p>
 
@@ -329,38 +341,33 @@ label[<span class="str">"img1.jpg"</span>]   <span class="cmt"># -> "cat"</span>
     case OVERTEMP: /* ... */ break;
 }   <span class="red">// you forgot FAULT. one day it arrives, nothing matches, and the code falls through.</span></div>
 
-  <p>This bug is not in your logic. It is that you never wrote down, exactly and completely, the collection of values <code>status</code> is allowed to be. You kept a fuzzy copy in your head, it was missing one, and nothing checked you. The fix is to name that collection precisely, every value, no duplicates, nothing left out. That precise collection is a <strong>set</strong>:</p>
+  <p>This bug is not in your logic. It is that you never wrote down, exactly and completely, the collection of values <code>status</code> is allowed to take. You kept a fuzzy copy in your head, it was missing one, and nothing checked you. The fix is to name that collection precisely, every value, no duplicates, nothing left out. That precise collection is a <strong>set</strong>:</p>
 
   <div class="codeblock">S = { OK, STALE, OVERTEMP, FAULT }</div>
 
-  <p>And here is the one idea to take from this section, the thing a set actually <em>is</em> for our purposes:</p>
+  <div class="lead-q">A set is the exact answer to &ldquo;what values are even possible here?&rdquo; That is precisely what a domain and a codomain are: the set of possible inputs, and the set of possible outputs.</div>
 
-  <div class="lead-q">A set is the exact answer to "what values are even possible here?" That is precisely what a domain and a codomain are: the set of possible inputs, and the set of possible outputs.</div>
+  <p>Once the possibilities are nailed down as a set, three questions you ask constantly stop being guesses.</p>
 
-  <p>Once the possibilities are nailed down as a set, three questions you ask constantly stop being guesses and become exact. Let me take them one at a time.</p>
+  <p><strong>Membership: is a value in the set, or not?</strong> Strictly yes or no, written \(\text{FAULT} \in S\) and \(99 \notin S\). That is exactly what your <code>switch</code> is meant to answer for every element, and the bug was one membership case you never handled. A good compiler warns you on a non-exhaustive <code>switch</code> over an <code>enum</code> for this reason: the <code>enum</code> is the set, and the compiler is checking that your function covers all of it.</p>
 
-  <p><strong>1. Is a given value in the set?</strong> Membership is strictly yes or no: a value is in the set or it is not, written <span class="m">FAULT &isin; S</span> and <span class="m">99 &notin; S</span>. That yes-or-no test is exactly what your <code>switch</code> is meant to answer for every element, and the bug was simply one membership case you never handled. A good compiler will warn you on a non-exhaustive <code>switch</code> over an <code>enum</code> for this reason: the <code>enum</code> is the set, and the compiler is checking that your function covers all of it.</p>
+  <p><strong>Cardinality: how many values are in it?</strong> The count of distinct elements is written \(|S|\), and here \(|S| = 4\). This sounds trivial until it reaches back and grabs Unit 1: a <code>uint8</code>, as a set, is the values 0 to 255, so \(|\text{uint8}| = 2^{8} = 256\). That is not a new fact; it is the same 256 patterns from the wrap-around clock of Class 5, now named as the size of a set. A 12-bit ADC reading is a set of size \(2^{12} = 4096\).</p>
 
-  <p><strong>2. How many values are in it?</strong> The count of distinct elements is the set's <strong>cardinality</strong>, written <span class="m">|S|</span>. Here <span class="m">|S|</span> = 4. This sounds trivial until it reaches back and grabs Unit 1: a <code>uint8_t</code> is, as a set, the values from 0 to 255, so <span class="m">|uint8|</span> = <span class="m">2<sup>8</sup></span> = 256. That is not a new fact; it is the same 256 patterns from the wrap-around clock of Class 5, now named as the size of a set. A 12-bit ADC reading is a set of size <span class="m">2<sup>12</sup></span> = 4096.</p>
+  <p><strong>Subset: does one set sit inside another?</strong> This is the useful one. The <em>small</em> set is your four valid statuses; the <em>big</em> set is every value a byte can physically hold, all 256. Every valid status is a byte, so the small set sits entirely inside the big one. We call that a <strong>subset</strong> and write \(S \subseteq \{0,\ldots,255\}\). Now the danger is precise: the hardware can hand you any value from the big set, but your code handled only some of them. A bug strikes whenever a value arrives from the big set that your small handled-set left out, whether that is the legitimate <code>FAULT</code> you forgot or a garbage byte off a glitchy wire. Every &ldquo;unhandled value&rdquo; bug has this one shape.</p>
 
-  <p><strong>3. Does one set sit inside another?</strong> This is the one I want to slow down on, because it is the most useful. There are two different sets in play, and the gap between them is the whole point. The <em>small</em> set is your four valid statuses. The <em>big</em> set is every value a byte can physically hold, all 256 of them. Every valid status is a byte, so the small set sits entirely inside the big set. We call that a <strong>subset</strong> and write <span class="m">S &sube; {0, &hellip;, 255}</span>.</p>
-
-  <p>Now the danger becomes precise. The hardware can hand you any value from the <em>big</em> set, any of the 256 bytes. Your code only handled some of them. A bug happens whenever a value arrives from the big set that your small handled-set left out, whether that is the legitimate <code>FAULT</code> you forgot or a garbage byte from a glitchy wire. "Unhandled value" bugs are, every single time, this exact shape: you handled a subset of what could actually show up.</p>
-
-  <p class="ml-tag">why this matters for ML</p>
-  <p>That subset gap is the deepest idea in all of learning, under a different name. Your training data is a tiny <strong>subset</strong> of every input the world could ever present to the model. Training teaches the model to behave on that subset. But in production, inputs arrive from the <em>big</em> set, almost all of which the model never saw. Performing well on the part of the big set you never trained on is exactly what <strong>generalization</strong> means. It is the <code>FAULT</code>-fell-through gap again, promoted to the central problem of the field. And cardinality is on the first slide of every model too: MNIST has a label set of size 10, ImageNet 1000, and a language model's vocabulary <span class="m">V</span> is a set whose size <span class="m">|V|</span>, often above fifty thousand, fixes how big the embedding table and the output layer must be.</p>
+  <p>That subset gap is the deepest idea in all of learning, under a different name. Your training data is a tiny <strong>subset</strong> of every input the world could ever present. Training teaches the model to behave on that subset; in production, inputs arrive from the big set, almost none of which it ever saw. Performing well on the part of the big set you never trained on is exactly what <strong>generalization</strong> means. It is the <code>FAULT</code>-fell-through gap, promoted to the central problem of the field. And cardinality is on the first slide too: MNIST has a label set of size 10, ImageNet 1000, and a language model&rsquo;s vocabulary \(V\) is a set whose size \(|V|\), often above fifty thousand, fixes how big the embedding table and the output layer must be.</p>
 
   <hr class="sep">
 
-  <h2>Section 4 &middot; Reading a function by its signature</h2>
+  <h2>Reading a function by its signature</h2>
 
-  <p>Here is a habit question. You open an unfamiliar codebase and land on a function you have never seen. Before you read a single line of its body, what do you look at to know how to use it?</p>
+  <p>Open an unfamiliar codebase and land on a function you have never seen. Before you read a single line of its body, what tells you how to use it?</p>
 
-  <p>Its signature: what it takes in, and what it gives back. <code>int parse(const char *)</code> already tells you the input set and the output set, and you can wire it into your code correctly before understanding one thing about how it works inside. A mathematical function carries the very same label, and we have already been writing it:</p>
+  <p>Its signature: what it takes in, and what it gives back. <code>int parse(const char *)</code> already names the input set and the output set, and you can wire it in correctly before understanding one thing about how it works inside. A mathematical function carries the very same label, the one we have been writing:</p>
 
   <div class="codeblock"><span class="cap">domain in, codomain out: a type signature</span>f : A &rarr; B</div>
 
-  <p>Reading a component by its signature, domain to codomain, is the fastest way to navigate machine learning, because the signature tells you what plugs into what. Here are the pieces you will meet constantly, each one just a map from one set to another:</p>
+  <p>Reading a component by its signature, domain to codomain, is the fastest way to navigate machine learning, because the signature tells you what plugs into what. The pieces you meet constantly are each just a map from one set to another:</p>
 
   <div class="viz-block">
     <div class="viz-header"><span class="viz-title">The signatures worth memorizing</span></div>
@@ -391,8 +398,7 @@ label[<span class="str">"img1.jpg"</span>]   <span class="cmt"># -> "cat"</span>
     </div>
   </div>
 
-  <p class="ml-tag">why this matters for ML</p>
-  <p>That last signature, the embedding <span class="m">V &rarr; &#8477;<sup>d</sup></span>, is worth seeing run, because it closes the loop of this whole class: a function with no formula, mapping a member of a set to a vector, by pure lookup. Pick a word below. Watch it become an index, which is just a position in the vocabulary set shown as a one-hot vector, and then the stored row of numbers that index points at.</p>
+  <p>That last signature, the embedding \(V \to \mathbb{R}^{d}\), is worth watching run, because it closes the loop of the whole class: a function with no formula, mapping a member of a set to a vector by pure lookup. Pick a word. Watch it become an index, which is just a position in the vocabulary set shown as a one-hot vector, and then the stored row of numbers that index points at.</p>
 
   <div class="viz-block">
     <div class="viz-header"><span class="viz-title">An embedding is a function V &rarr; &#8477;<sup>4</sup>, stored as a table</span></div>
@@ -413,18 +419,18 @@ label[<span class="str">"img1.jpg"</span>]   <span class="cmt"># -> "cat"</span>
 
   <hr class="sep">
 
-  <h2>Section 5 &middot; Chaining maps, and why the shapes must line up</h2>
+  <h2>Chaining maps, and why the shapes must line up</h2>
 
-  <p>One function is rarely the whole story. You feed the output of one straight into the next. In code you have written this a thousand times:</p>
+  <p>One function is rarely the whole story; you feed the output of one straight into the next. In code you have written this a thousand times:</p>
 
   <div class="codeblock"><span class="cap">do f, then feed the result to g</span>h = f(x);
 y = g(h);     <span class="cmt">// the same as y = g(f(x))</span></div>
 
-  <p>That is <strong>composition</strong>, written <span class="m">g &compfn; f</span> and read "g after f." It is the move a neural network is built from. But it only works under one condition, and that condition is the leading question of this section:</p>
+  <p>That is <strong>composition</strong>, written \(g \circ f\) and read &ldquo;g after f.&rdquo; It is the move a neural network is built from. But it holds under exactly one condition, and that condition is this section&rsquo;s question:</p>
 
   <p class="lead-q">When is chaining two functions even allowed?</p>
 
-  <p>Exactly when the output of the first lands in the set the second takes as input. The arrows coming out of <span class="m">f</span> have to arrive in the set that <span class="m">g</span>'s arrows start from, or <span class="m">g</span> has nothing to act on. Said with signatures: if <span class="m">f : A &rarr; B</span> and <span class="m">g : B &rarr; C</span>, then the chain is <span class="m">g &compfn; f : A &rarr; C</span>, and the shared <span class="m">B</span> sitting in the middle, the codomain of the first <em>equal to</em> the domain of the second, is the entire reason it holds together.</p>
+  <p>Exactly when the output of the first lands in the set the second takes as input. The arrows leaving \(f\) must arrive in the set that \(g\)&rsquo;s arrows start from, or \(g\) has nothing to act on. Said with signatures: if \(f : A \to B\) and \(g : B \to C\), then the chain is \(g \circ f : A \to C\), and the shared \(B\) sitting in the middle, the codomain of the first <em>equal to</em> the domain of the second, is the entire reason it holds together.</p>
 
   <div class="viz-block">
     <div class="viz-header"><span class="viz-title">Composition needs a shared set in the middle</span></div>
@@ -458,8 +464,7 @@ y = g(h);     <span class="cmt">// the same as y = g(f(x))</span></div>
     </div>
   </div>
 
-  <p class="ml-tag">why this matters for ML</p>
-  <p>A neural network <em>is</em> a composition of functions. Each layer is a map, and the network is layers chained nose to tail, <code>out = f3(f2(f1(x)))</code>. That one line is the architecture. And the shared-set rule is the very first error every practitioner meets: a <strong>shape mismatch</strong>. If layer one outputs a vector in <span class="m">&#8477;<sup>128</sup></span> but layer two expects <span class="m">&#8477;<sup>256</sup></span>, the middle set does not match, the codomain of one is not the domain of the next, and the framework refuses to run. Drag the two dials and watch the seam meet and break:</p>
+  <p>A neural network <em>is</em> a composition of functions. Each layer is a map, and the network is layers chained nose to tail, <code>out = f3(f2(f1(x)))</code>. That one line is the architecture. And the shared-set rule is the very first error every practitioner meets: a <strong>shape mismatch</strong>. If layer one outputs a vector in \(\mathbb{R}^{128}\) but layer two expects \(\mathbb{R}^{256}\), the middle set does not match, the codomain of one is not the domain of the next, and the framework refuses to run. Drag the two dials and watch the seam meet and break.</p>
 
   <div class="viz-block">
     <div class="viz-header"><span class="viz-title">Composition: do the shapes meet in the middle?</span></div>
@@ -474,7 +479,7 @@ y = g(h);     <span class="cmt">// the same as y = g(f(x))</span></div>
     </div>
   </div>
 
-  <p>Zoom all the way out and the payoff of the class is one picture: a real model is just a row of maps, each with a clean signature, each handing its codomain to the next one's domain.</p>
+  <p>Zoom all the way out and the payoff of the class is one picture: a real model is just a row of maps, each with a clean signature, each handing its codomain to the next one&rsquo;s domain.</p>
 
   <div class="viz-block">
     <div class="viz-header"><span class="viz-title">A model is a composition of maps</span></div>
@@ -501,9 +506,11 @@ y = g(h);     <span class="cmt">// the same as y = g(f(x))</span></div>
 
   <h2>What to carry out of Class 6</h2>
 
-  <p>We started with one honest question, is a lookup table a function, and the answer reorganized everything. A function is a promise of exactly one definite output per input, and the recipe that keeps the promise, a formula, a stored table, or learned weights, is a separate and lesser thing. Picture it as arrows from a domain to a codomain, where many inputs may share an output but no input may have two. The collections it connects are sets, which pin down what is even possible and let you ask precisely whether a value belongs, how many there are, and whether one set sits inside another, the same gap that separates a handled status from a stray <code>FAULT</code> and a training set from the world. Read every component by its signature, <span class="m">f : A &rarr; B</span>, and remember that a model is just such maps composed, which is the entire reason the shapes have to meet in the middle.</p>
+  <p>We started with one honest question, is a lookup table a function, and the answer reorganized everything else.</p>
 
-  <div class="callout">The formula was never the function. The map is. Once a lookup table, a trained network, and a coin flip read as the same kind of object, an assignment of one definite output to each input, the rest of this course stops asking you to memorize and starts asking you to read.</div>
+  <div class="closing-statement">A function is a promise of exactly one definite output per input, and the recipe that keeps it, a formula, a stored table, or learned weights, is a separate and lesser thing. Picture arrows from a <strong>domain</strong> to a <strong>codomain</strong>, where many inputs may share an output but no input may have two. The collections it joins are <strong>sets</strong>, which pin down what is possible and let you ask precisely whether a value belongs, how many there are, and whether one set sits inside another, the same gap that separates a handled status from a stray <code>FAULT</code>, and a training set from the world. Read every component by its signature, \(f : A \to B\), and remember that a model is just such maps composed, which is the entire reason the shapes must meet in the middle. The formula was never the function. The map is.</div>
+
+  <p>The next class keeps the language going: <strong>summation and products</strong>, the notation for adding and multiplying a whole set at once, and the first place a long product quietly underflows to zero on the chip.</p>
 
   <hr class="sep">
 
@@ -538,18 +545,18 @@ y = g(h);     <span class="cmt">// the same as y = g(f(x))</span></div>
   <div class="sidebar-card">
     <h2 class="sidebar-title">The Mathematics ML Runs On &middot; Unit 2</h2>
     <a class="sidebar-link active-topic" href="sets-and-functions.html">
-      <div class="sidebar-link-title">Class 6: Sets, and a Function as a Map</div>
+      <div class="sidebar-link-title">Class 6: The Function That Has No Formula</div>
       <div class="sidebar-link-note">You are here</div>
     </a>
-    <a class="sidebar-link" href="#">
+    <a class="sidebar-link" href="summation-and-products.html">
       <div class="sidebar-link-title">Class 7: Summation, Products, and Underflow</div>
       <div class="sidebar-link-note">Coming next</div>
     </a>
-    <a class="sidebar-link" href="#">
+    <a class="sidebar-link" href="counting-and-the-sample-space.html">
       <div class="sidebar-link-title">Class 8: Counting and the Sample Space</div>
       <div class="sidebar-link-note">Upcoming</div>
     </a>
-    <a class="sidebar-link" href="#">
+    <a class="sidebar-link" href="sequences-limits-and-convergence.html">
       <div class="sidebar-link-title">Class 9: Sequences, Limits, Convergence</div>
       <div class="sidebar-link-note">Upcoming</div>
     </a>
@@ -562,12 +569,8 @@ y = g(h);     <span class="cmt">// the same as y = g(f(x))</span></div>
     </a>
   </div>
   <div class="sidebar-card">
-    <h2 class="sidebar-title">Key ideas</h2>
-    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A function is a commitment, not a formula</div></a>
-    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A lookup table and an embedding are functions</div></a>
-    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Many-to-one is allowed; one-to-many is not</div></a>
-    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A set pins down what is possible</div></a>
-    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A model is maps composed; shapes must line up</div></a>
+    <h2 class="sidebar-title">The thread</h2>
+    <p style="font-size:.92rem;color:var(--muted);line-height:1.6">A function is a promise, not a recipe: one definite output per input, the same every time. Computed, stored, or learned, it is the same kind of object, a map from one set to another. The one rule, the sets, the signature, and the chain are all that promise seen from one more angle.</p>
   </div>
 </aside>
 

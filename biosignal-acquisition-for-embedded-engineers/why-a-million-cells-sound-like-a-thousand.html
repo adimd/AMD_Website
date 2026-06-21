@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Why a Million Cells Sound Like a Thousand | Biosignal Acquisition for Embedded Engineers</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#f4efe7;--body:#cbc4b9;--muted:#9e968a;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.016;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.22rem;color:var(--body);font-weight:400;margin-bottom:2.2rem;line-height:1.62}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.19rem;font-weight:400;margin-bottom:1.35rem;line-height:1.8}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.93em;background:rgba(232,168,76,.15);padding:.2rem .48rem;border-radius:4px;color:#f1dcb2;font-family:'Courier New',monospace}
+    .eqn{display:block;text-align:center;font-family:'Courier New',monospace;font-size:1.1rem;color:#f1dcb2;background:rgba(232,168,76,.08);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1.5rem 0;line-height:1.7;overflow-x:auto}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.15rem;font-weight:400;margin:.5rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .deeper-box{border:1px dashed var(--border-hover);border-radius:var(--radius);padding:1.5rem 1.7rem;margin:2rem 0;background:rgba(76,168,232,.05)}
+    .deeper-tag{display:inline-block;font-family:'Courier New',monospace;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);border:1px solid rgba(76,168,232,.4);border-radius:999px;padding:.22rem .7rem;margin-bottom:.9rem}
+    .deeper-box p{font-size:1.08rem;margin-bottom:1rem}
+    .deeper-box p:last-child{margin-bottom:0}
+    .deeper-box h3{margin-top:1.2rem}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:1rem;color:#bcb5a8;margin-top:1.1rem;font-style:italic;line-height:1.72}
+
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+  <style>
+    .ctl-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin:.7rem 0}
+    .ctl-row .lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);min-width:150px}
+    .ctl-slider{flex:1;min-width:170px;accent-color:var(--accent)}
+    .ctl-val{font-family:'Courier New',monospace;font-size:.95rem;color:var(--ink);min-width:130px;text-align:right}
+    .btn-add{padding:.5rem 1rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);cursor:pointer;font-size:.92rem;font-family:inherit;font-weight:500;transition:all .2s}
+    .btn-add:hover{background:rgba(232,168,76,.2)}
+    .btn-ghost{padding:.5rem 1rem;background:transparent;border:1px solid var(--border-hover);border-radius:8px;color:var(--body);cursor:pointer;font-size:.92rem;font-family:inherit;transition:all .2s}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+    .seg{display:inline-flex;border:1px solid var(--border-hover);border-radius:8px;overflow:hidden}
+    .seg-btn{padding:.45rem 1rem;background:var(--bg-card);border:none;color:var(--body);font-family:inherit;font-size:.9rem;cursor:pointer;transition:all .18s}
+    .seg-btn.on{background:var(--accent-dim);color:var(--accent)}
+    .seg-btn+.seg-btn{border-left:1px solid var(--border-hover)}
+
+    .rc-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.3rem;margin-top:1.1rem}
+    .rc-row{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.42rem 0;border-bottom:1px solid var(--border)}
+    .rc-row:last-child{border-bottom:none}
+    .rc-key{font-size:1rem;color:var(--muted)}
+    .rc-val{font-family:'Courier New',monospace;font-size:1.12rem;color:var(--ink);font-weight:500}
+    .rc-val.step{color:var(--green)}.rc-val.rand{color:var(--blue)}.rc-val.ratio{color:var(--accent)}
+
+    /* spine build table */
+    .sb-table{width:100%;border-collapse:collapse;margin-top:.4rem;font-family:'Courier New',monospace;font-size:.9rem}
+    .sb-table th{color:var(--muted);font-weight:500;text-align:right;padding:.45rem .6rem;border-bottom:1px solid var(--border-hover)}
+    .sb-table th:first-child{text-align:center}
+    .sb-table td{padding:.34rem .6rem;text-align:right;border-bottom:1px solid var(--border)}
+    .sb-table td:first-child{text-align:center;color:var(--muted)}
+    .sb-out{color:#9fd0f2}.sb-in{color:#a9f29a}
+    .sb-inc{color:var(--muted);font-size:.8rem}
+    .sb-summary{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.1rem}
+    .sb-sum{flex:1;min-width:200px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.1rem}
+    .sb-sum .k{font-size:.85rem;color:var(--muted)}
+    .sb-sum .v{font-family:'Courier New',monospace;font-size:1.15rem;font-weight:500;margin-top:.25rem}
+    .sb-sum.out .v{color:#9fd0f2}.sb-sum.in .v{color:#a9f29a}
+
+    /* expand-the-square grid */
+    .esq-wrap{display:flex;gap:1.4rem;flex-wrap:wrap;align-items:flex-start}
+    .esq-left{flex:1;min-width:230px}
+    .esq-grid{display:grid;gap:3px;margin-top:.3rem}
+    .esq-cell{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:.72rem;color:rgba(244,239,231,.55)}
+    .esq-cell.pos{background:rgba(127,255,107,.22)}
+    .esq-cell.neg{background:rgba(255,107,107,.22)}
+    .esq-cell.diag{outline:2px solid var(--accent);outline-offset:-2px;color:var(--accent)}
+    .esq-signs{display:grid;gap:3px;margin-bottom:3px}
+    .esq-sign{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:.85rem;font-weight:600}
+    .esq-sign.p{color:var(--green)}.esq-sign.m{color:var(--red)}
+
+    .sy-axis{position:relative;height:60px;margin:1.6rem 0 .4rem}
+    .sy-track{position:absolute;top:30px;left:0;right:0;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--green))}
+    .sy-end{position:absolute;top:14px;font-family:'Courier New',monospace;font-size:.78rem;transform:translateX(-50%)}
+    .sy-mark{position:absolute;top:18px;width:3px;height:28px;background:var(--accent);border-radius:2px;transition:left .12s}
+    .sy-marktag{position:absolute;top:-4px;font-family:'Courier New',monospace;font-size:.8rem;color:var(--accent);transform:translateX(-50%);white-space:nowrap;transition:left .12s}
+
+    .quiz-progress{font-family:'Courier New',monospace;font-size:.95rem;color:var(--accent);margin-bottom:1.2rem;letter-spacing:.02em}
+    .quiz-q{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.3rem 1.4rem;margin-bottom:1.1rem}
+    .quiz-q-text{font-size:1.12rem;color:var(--ink);font-weight:500;margin-bottom:1rem;line-height:1.5}
+    .quiz-q-num{color:var(--accent);font-family:'Courier New',monospace;margin-right:.5rem}
+    .quiz-opt{display:block;width:100%;text-align:left;padding:.75rem 1rem;margin:.5rem 0;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);font-family:inherit;font-size:1.04rem;cursor:pointer;transition:all .18s;line-height:1.45}
+    .quiz-opt:hover:not(:disabled){border-color:var(--accent);color:var(--ink)}
+    .quiz-opt:disabled{cursor:default}
+    .quiz-opt.correct{background:var(--green-dim);border-color:rgba(127,255,107,.5);color:var(--ink)}
+    .quiz-opt.wrong{background:var(--red-dim);border-color:rgba(255,107,107,.5);color:var(--ink)}
+    .quiz-opt .mk{float:right;font-weight:700;margin-left:.6rem}
+    .quiz-opt.correct .mk{color:var(--green)}
+    .quiz-opt.wrong .mk{color:var(--red)}
+    .quiz-explain{margin-top:.8rem;padding:.85rem 1.1rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.62;display:none}
+    .quiz-explain.show{display:block;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .quiz-final{margin-top:1.3rem;padding:1.2rem 1.4rem;border-radius:10px;background:var(--bg-card);border:1px solid var(--accent);font-family:var(--display);font-size:1.4rem;color:var(--ink);text-align:center;display:none}
+    .quiz-final.show{display:block;animation:rise .4s cubic-bezier(.22,1,.36,1) both}
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk &#9662;</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+  <span class="series-tag"><span class="series-dot"></span>Biosignal Acquisition for Embedded Engineers &middot; Class 4</span>
+  <h1>Why a Million Cells Sound Like a Thousand</h1>
+  <p class="blog-subtitle">A scalp electrode never hears one cell. It hears a crowd. So the only thing we really need to understand is how a sum of many small pushes grows as you add more of them. We will add them one at a time, watch what each new cell does, and let the pattern hand us the answer.</p>
+
+  <h2>The whole class, in one question</h2>
+
+  <p>One cell swings about 100 millivolts across its membrane. By the time anything reaches a scalp electrode it is a few microvolts. Part of that shrinking is distance, which is next class. But part of it is that the electrode is never listening to one cell. It is adding up the contributions of an enormous number of cells at once.</p>
+
+  <p>So everything reduces to one question, and the rest of this post is just answering it carefully: when you add up many small pushes, how big does the total get? The lazy answer is that <code>N</code> cells give <code>N</code> times one cell. That is true in one special case and badly wrong in another, and we cannot tell them apart by guessing. So we will not guess. We will add the cells one at a time, watch exactly what each new one does to the total, and let the pattern force the formula on us.</p>
+
+  <hr class="sep">
+
+  <h2>One cell, then two</h2>
+
+  <p>One cell contributes some small voltage. Call its size <code>a</code>. Nothing to add up yet, so the total is just <code>a</code>. That is the whole of <code>N = 1</code>.</p>
+
+  <p>Add a second cell, and right away we hit something we have to settle before we can go any further: each cell's push has a sign. Sometimes it pushes the total up, sometimes down, depending on what the cell is doing at that instant. With two cells there are exactly four equally likely combinations, and it is worth seeing all of them.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Two cells: every possible outcome</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 200" role="img" aria-label="The four equally likely outcomes of two random pushes. Both up gives plus 2a. Up then down gives zero. Down then up gives zero. Both down gives minus 2a. So half the time they cancel to zero and half the time they reach 2a.">
+        <g font-family="'Courier New',monospace" font-size="11" text-anchor="middle">
+          <text x="90" y="28" fill="#9e968a">both up</text>
+          <line x1="70" y1="120" x2="70" y2="60" stroke="#7fff6b" stroke-width="6"/>
+          <line x1="110" y1="120" x2="110" y2="60" stroke="#7fff6b" stroke-width="6"/>
+          <line x1="55" y1="120" x2="125" y2="120" stroke="#7d766b" stroke-width="1"/>
+          <text x="90" y="150" fill="#7fff6b">total = +2a</text>
+          <text x="260" y="28" fill="#9e968a">up, down</text>
+          <line x1="240" y1="120" x2="240" y2="60" stroke="#7fff6b" stroke-width="6"/>
+          <line x1="280" y1="120" x2="280" y2="180" stroke="#ff6b6b" stroke-width="6"/>
+          <line x1="225" y1="120" x2="295" y2="120" stroke="#7d766b" stroke-width="1"/>
+          <text x="260" y="150" fill="#9e968a">total = 0</text>
+          <text x="430" y="28" fill="#9e968a">down, up</text>
+          <line x1="410" y1="120" x2="410" y2="180" stroke="#ff6b6b" stroke-width="6"/>
+          <line x1="450" y1="120" x2="450" y2="60" stroke="#7fff6b" stroke-width="6"/>
+          <line x1="395" y1="120" x2="465" y2="120" stroke="#7d766b" stroke-width="1"/>
+          <text x="430" y="150" fill="#9e968a">total = 0</text>
+          <text x="600" y="28" fill="#9e968a">both down</text>
+          <line x1="580" y1="120" x2="580" y2="180" stroke="#ff6b6b" stroke-width="6"/>
+          <line x1="620" y1="120" x2="620" y2="180" stroke="#ff6b6b" stroke-width="6"/>
+          <line x1="565" y1="120" x2="635" y2="120" stroke="#7d766b" stroke-width="1"/>
+          <text x="600" y="194" fill="#ff6b6b">total = &minus;2a</text>
+        </g>
+      </svg>
+      <p class="viz-note">Half the time the two cells disagree and the total is zero. Only when they agree do you reach the full 2a. So the second cell does not reliably add its full size; on average a lot of it is cancelled.</p>
+    </div>
+  </div>
+
+  <p>That picture already tells us the lazy answer is wrong, and it also tells us we have a measurement problem. If we try to describe the size of the two-cell total by its plain average, we get zero, because the <code>+2a</code> and the <code>&minus;2a</code> cancel. Zero is obviously the wrong description of a thing that is usually not zero. So before we can add a third cell, we have to fix how we measure size.</p>
+
+  <hr class="sep">
+
+  <h2>The one honest way to measure a thing that can be positive or negative</h2>
+
+  <p>The fix is forced, and it is the move the whole class turns on. To measure the size of something that is randomly positive or negative, you cannot average it directly, because signs cancel. So you <strong>square it first</strong>, which makes every value positive, then you <strong>average the squares</strong>, then you <strong>take the square root</strong> at the end to get back to the original units. Square, average, root. You have met the result on a multimeter: it is the root-mean-square, the RMS.</p>
+
+  <p>Let us run it on the two-cell total. Square each of the four outcomes: <code>(+2a)&sup2; = 4a&sup2;</code>, then <code>0</code>, then <code>0</code>, then <code>(&minus;2a)&sup2; = 4a&sup2;</code>. Average them: <code>(4a&sup2; + 0 + 0 + 4a&sup2;)/4 = 2a&sup2;</code>. So the average of the squared total is <code>2a&sup2;</code>. We will track that quantity, the average squared total, all the way up, because it is the one that adds cleanly. For one cell it was <code>a&sup2;</code> (the square of <code>&plusmn;a</code> is always <code>a&sup2;</code>). For two it is <code>2a&sup2;</code>.</p>
+
+  <p>Stop and notice the jump: it went from <code>a&sup2;</code> to <code>2a&sup2;</code>. It went up by exactly <code>a&sup2;</code>, which is one cell's worth. It did <em>not</em> go up to <code>(2a)&sup2; = 4a&sup2;</code>, which is what it would be if the second cell added its full size. The second cell contributed only its own square and none of the cross effect with the first. Hold that, because the next cell is going to do the same thing, and once we see why, we are done.</p>
+
+  <hr class="sep">
+
+  <h2>The third cell tells us the rule</h2>
+
+  <p>Add a third cell, <code>x&#8323;</code>, to the running total of the first two, which we will call <code>S&#8322;</code>. The new total is <code>S&#8322; + x&#8323;</code>. Square it, since the squared total is what we track:</p>
+
+  <span class="eqn">(S&#8322; + x&#8323;)&sup2; = S&#8322;&sup2; + 2&middot;S&#8322;&middot;x&#8323; + x&#8323;&sup2;</span>
+
+  <p>Now average each piece. The average of <code>S&#8322;&sup2;</code> we already have: <code>2a&sup2;</code>. The average of <code>x&#8323;&sup2;</code> is <code>a&sup2;</code>, as always. The interesting one is the middle, <code>2&middot;S&#8322;&middot;x&#8323;</code>. The new cell <code>x&#8323;</code> is independent of the first two and is equally likely to be <code>+a</code> or <code>&minus;a</code>, so whatever <code>S&#8322;</code> happens to be, multiplying it by <code>x&#8323;</code> is equally likely to flip it positive or negative. Over many tries that averages to <strong>zero</strong>. So the cross term vanishes, and</p>
+
+  <span class="eqn">average squared total for 3 cells = 2a&sup2; + 0 + a&sup2; = 3a&sup2;</span>
+
+  <p>The third cell added <code>a&sup2;</code>, exactly like the second. And look at why: the only thing a new cell can add beyond its own square is its cross term with everything already there, and for an independent random push that cross term always averages to zero. There is nothing special about the third cell. Every new out-of-step cell adds exactly its own <code>a&sup2;</code> to the average squared total, because its cross term with the existing pile cancels itself out.</p>
+
+  <p>That is the rule, and the pattern is now forced. Add the cells yourself below and watch the average squared total climb by exactly one each time.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Add cells one at a time. Watch the squared total climb.</span></div>
+    <div class="viz-body">
+      <div class="ctl-row" style="gap:.7rem">
+        <button class="btn-add" id="sbAdd">add a cell</button>
+        <button class="btn-ghost" id="sbReset">reset</button>
+        <span style="font-size:.92rem;color:var(--muted)">(in units where one cell's square is 1)</span>
+      </div>
+      <table class="sb-table">
+        <thead><tr><th>cell</th><th>out of step: avg squared total</th><th>in step: squared total</th></tr></thead>
+        <tbody id="sbBody"></tbody>
+      </table>
+      <div class="sb-summary">
+        <div class="sb-sum out"><div class="k">out of step, after N cells</div><div class="v" id="sbOut">add a cell to begin</div></div>
+        <div class="sb-sum in"><div class="k">in step, after N cells</div><div class="v" id="sbIn">&nbsp;</div></div>
+      </div>
+      <p class="viz-note">Out of step, every cell adds exactly 1 to the squared total, so after N cells it is N, and the typical size (its square root) is &#8730;N. In step, shown alongside, each new cell also brings a cross term, but now the cross term reinforces instead of cancelling, so the squared total runs up as 1, 4, 9, 16, which is N&sup2;, and the typical size is N. Same cells. The only difference is what the cross term does.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The formula, and where the second case comes from</h2>
+
+  <p>For out-of-step cells the squared total is the running sum of <code>a&sup2;</code> taken <code>N</code> times, so it is <code>N a&sup2;</code>, and the typical size is its square root:</p>
+
+  <span class="eqn">typical total, out of step = &#8730;(N a&sup2;) = a&#8730;N</span>
+
+  <p>The whole derivation rested on one assumption, and it is worth saying out loud: the cross term of each new cell with the existing pile averaged to zero <em>because the cells were independent</em>, each doing its own thing. That is the out-of-step case. So the natural next question is the only one left: what happens if they are not independent, if they are all doing the same thing at the same instant?</p>
+
+  <p>Then the cross term no longer cancels. If every cell is the same <code>+a</code>, then when you add the third cell its cross term with the running total <code>S&#8322; = +2a</code> is <code>2&middot;(2a)&middot;a = 4a&sup2;</code>, a large positive number, not zero. Every cell reinforces every other one. You can watch this in the "in step" column above: the squared total runs up as <code>1, 4, 9, 16</code>, which is <code>N&sup2;</code>, so the typical size is</p>
+
+  <span class="eqn">typical total, in step = &#8730;(N&sup2; a&sup2;) = N a</span>
+
+  <p>So the two cases are not two separate facts. They are the same calculation with the cross term either cancelling or reinforcing, and which one happens depends only on whether the cells are in step.</p>
+
+  <div class="callout">Out of step, each cell adds only its own square, so the total grows like the square root of N. In step, the cross terms reinforce, so the total grows like N. Timing is the only difference.</div>
+
+  <div class="deeper-box">
+    <span class="deeper-tag">going deeper: the all-at-once version</span>
+    <p>The one-cell-at-a-time argument is a proof by itself, but here is the same thing done in a single step, which some people find cleaner. Squaring the whole total at once means multiplying the sum by itself, and that pairs every cell with every cell, producing a grid of products <code>x_i &middot; x_j</code>. Toggle the two cases and watch the grid.</p>
+
+    <div class="esq-wrap">
+      <div class="esq-left" style="max-width:300px">
+        <div class="ctl-row" style="margin:0 0 .7rem">
+          <div class="seg">
+            <button class="seg-btn on" id="esqStep">in step</button>
+            <button class="seg-btn" id="esqRand">out of step</button>
+          </div>
+          <button class="btn-ghost" id="esqShuffle" style="display:none;padding:.4rem .8rem">shuffle</button>
+        </div>
+        <div class="esq-signs" id="esqSignRow"></div>
+        <div class="esq-grid" id="esqGrid"></div>
+      </div>
+      <div class="esq-left">
+        <div class="rc-card" style="margin-top:0">
+          <div class="rc-row"><span class="rc-key">diagonal (always +a&sup2;, N of them)</span><span class="rc-val" id="esqDiag"></span></div>
+          <div class="rc-row"><span class="rc-key">off-diagonal cross terms</span><span class="rc-val" id="esqOff"></span></div>
+          <div class="rc-row"><span class="rc-key">whole grid = (total)&sup2;</span><span class="rc-val" id="esqTotal"></span></div>
+          <div class="rc-row"><span class="rc-key">typical size = &#8730;(grid)</span><span class="rc-val ratio" id="esqRms"></span></div>
+        </div>
+        <p style="font-size:.96rem;color:#bcb5a8;line-height:1.55;margin-top:.9rem" id="esqWords"></p>
+      </div>
+    </div>
+    <p>The diagonal of the grid is the cells multiplied by themselves: always <code>+a&sup2;</code>, always there, <code>N</code> of them. That is the part that gave us the running sum of squares. The off-diagonal is the cross terms. Out of step they are equally often plus and minus and cancel, leaving just the diagonal, so the grid totals <code>N a&sup2;</code> and the root is <code>a&#8730;N</code>. In step they are all <code>+a&sup2;</code> and fill the whole grid, so it totals <code>N&sup2; a&sup2;</code> and the root is <code>Na</code>. Same conclusion as the step-by-step build, seen whole.</p>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Two quick confirmations</h2>
+
+  <p>We have the result. Before spending it, here are two places you may already have met it, so it feels less like algebra and more like something true about the world.</p>
+
+  <p><strong>Coins.</strong> Out-of-step cells are exactly coin flips: each a push of <code>+1</code> or <code>&minus;1</code> at random. Flip 100 coins and count heads minus tails, and you do not get anywhere near 100; you get a leftover imbalance of about 10. Flip 10,000 and the imbalance is about 100. A hundred times the flips, only ten times the imbalance. That is <code>&#8730;N</code>, the same formula we just built, showing up in your hand.</p>
+
+  <p><strong>Applause.</strong> A full auditorium clapping at random is a steady wash of sound with no punch to it, the small <code>&#8730;N</code> total. The instant the room falls into a rhythm and claps together, it becomes a loud thud you feel in your chest, the <code>N</code> total, from the very same hands. The loudness of a crowd was never the number of hands. It was their togetherness.</p>
+
+  <hr class="sep">
+
+  <h2>How big the gap gets</h2>
+
+  <p>Now spend the result. The two totals are <code>N a</code> in step and <code>a&#8730;N</code> out of step, so the ratio between them, the price of being out of step, is</p>
+
+  <span class="eqn">(N a) / (a&#8730;N) = &#8730;N</span>
+
+  <p>For real populations that lever is huge. Take one cell up to a million on the slider and watch the in-step total and the typical out-of-step total separate. The honest random draw, a real sum of that many coin flips, always lands near the <code>&#8730;N</code> line and never near the <code>N</code> line.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A million in step is a million. A million out of step is about a thousand.</span></div>
+    <div class="viz-body">
+      <div class="ctl-row">
+        <span class="lbl">Number of cells N</span>
+        <input type="range" id="pnN" class="ctl-slider" min="0" max="100" value="50">
+        <span class="ctl-val" id="pnNv"></span>
+      </div>
+      <div class="rc-card">
+        <div class="rc-row"><span class="rc-key">in step: total = N</span><span class="rc-val step" id="pnStep"></span></div>
+        <div class="rc-row"><span class="rc-key">out of step, typical: &#8730;N</span><span class="rc-val rand" id="pnRand"></span></div>
+        <div class="rc-row"><span class="rc-key">out of step, one honest random draw</span><span class="rc-val rand" id="pnDraw"></span></div>
+        <div class="rc-row"><span class="rc-key">in step is bigger by &#8730;N</span><span class="rc-val ratio" id="pnRatio"></span></div>
+      </div>
+      <div class="ctl-row" style="justify-content:flex-end">
+        <button class="btn-add" id="pnAgain">draw the random case again</button>
+      </div>
+      <p class="viz-note">The random draw jumps a little each redraw, because it is a real random sum, but it stays near &#8730;N. That gap, &#8730;N, is the difference between a signal you can record and one lost in the background, and nothing physical changed between the two cases except whether the cells acted together.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Nobody is perfectly in step, and that is the interesting part</h2>
+
+  <p>Real cells are neither perfectly together nor perfectly independent. They are partly correlated, a little shared rhythm mixed with their own activity. So where does the total sit in between, and how quickly does a little togetherness start to count? This is the same calculation once more, with the cross terms allowed to be partly aligned instead of fully cancelling or fully adding. Measure togetherness with one number <code>&rho;</code> from 0 (independent) to 1 (perfectly together), and the total is</p>
+
+  <span class="eqn">total = a &times; &#8730;( N (1 + (N &minus; 1)&rho;) )</span>
+
+  <p>The ends check out: <code>&rho; = 0</code> gives <code>a&#8730;N</code> and <code>&rho; = 1</code> gives <code>aN</code>, our two cases. The surprise is in the <code>(N &minus; 1)&rho;</code> term. Move the synchrony knob, especially at large <code>N</code>, and watch how little togetherness it takes to leave the random floor behind.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A little synchrony goes a very long way</span></div>
+    <div class="viz-body">
+      <div class="ctl-row">
+        <span class="lbl">Number of cells N</span>
+        <input type="range" id="syN" class="ctl-slider" min="0" max="100" value="67">
+        <span class="ctl-val" id="syNv"></span>
+      </div>
+      <div class="ctl-row">
+        <span class="lbl">Synchrony &rho;</span>
+        <input type="range" id="syR" class="ctl-slider" min="0" max="1000" value="0">
+        <span class="ctl-val" id="syRv"></span>
+      </div>
+      <div class="sy-axis">
+        <div class="sy-track"></div>
+        <div class="sy-end" style="left:0;color:var(--blue)">&#8730;N (random floor)</div>
+        <div class="sy-end" style="left:100%;transform:translateX(-100%);color:var(--green)">N (in step)</div>
+        <div class="sy-mark" id="syMark"></div>
+        <div class="sy-marktag" id="syMarkTag"></div>
+      </div>
+      <div class="rc-card">
+        <div class="rc-row"><span class="rc-key">random floor &#8730;N</span><span class="rc-val rand" id="syFloor"></span></div>
+        <div class="rc-row"><span class="rc-key">total at this synchrony</span><span class="rc-val ratio" id="syTotal"></span></div>
+        <div class="rc-row"><span class="rc-key">in-step ceiling N</span><span class="rc-val step" id="syCeil"></span></div>
+      </div>
+      <p style="font-size:.98rem;color:#bcb5a8;line-height:1.6;margin-top:1rem" id="syWords"></p>
+      <p class="viz-note">At a million cells, a synchrony of 0.1 percent already lifts the total from a thousand past thirty thousand, because when N is huge the (N&minus;1)&rho; term dwarfs the 1 beside it. So for a large population the recording is set by whatever faint shared rhythm runs through it, not by how busy it is. Desynchronizing a region, which is what happens when it gets to work, can therefore make its surface signal smaller. We meet that as the alpha block in Class 1.8.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>What you are actually measuring</h2>
+
+  <p>Now the payoff, and it follows directly from everything above. A surface biopotential is not a measure of how much activity is happening underneath. It is mostly a measure of how synchronized that activity is. A busy patch of cortex whose cells are out of step gives the small <code>&#8730;N</code> signal; the same patch loosely locked together gives something hundreds or thousands of times larger, from the same work. The applause again: loudness is togetherness.</p>
+
+  <p>That is why scalp EEG looks the way it does. Slow synaptic potentials wash across many neurons at nearly the same time, so they are in step and add like <code>N</code>, and they dominate the recording. The fast spikes from Class 1.3 fire out of step, so they add like <code>&#8730;N</code> and nearly vanish beside them. EEG is a low-frequency picture not because the fast activity is missing, but because it cancels itself down to the floor while the slow synchronized activity rides up on the full gain.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Why the slow, together part wins at the scalp</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 280" role="img" aria-label="Top: several slow waves that line up in time add into one large slow wave. Bottom: many fast spikes at random times mostly cancel into a small ragged trace. The scalp sees mostly the large slow wave.">
+        <text x="40" y="26" style="font:12px 'Source Sans 3',sans-serif;fill:#7fff6b">slow potentials, in step: they add up</text>
+        <g stroke="#7fff6b" stroke-width="1" fill="none" opacity="0.45">
+          <path d="M40,70 Q120,46 200,70 T360,70 T520,70 T640,70"/>
+          <path d="M40,74 Q120,52 200,74 T360,74 T520,74 T640,74"/>
+          <path d="M40,66 Q120,42 200,66 T360,66 T520,66 T640,66"/>
+        </g>
+        <text x="40" y="108" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">sum at the electrode:</text>
+        <path d="M40,150 Q120,96 200,150 T360,150 T520,150 T640,150" fill="none" stroke="#7fff6b" stroke-width="3"/>
+        <text x="655" y="138" text-anchor="end" style="font:10px 'Courier New',monospace;fill:#7fff6b">large (adds like N)</text>
+        <line x1="40" y1="178" x2="640" y2="178" stroke="var(--border-hover)" stroke-width="0.5"/>
+        <text x="40" y="204" style="font:12px 'Source Sans 3',sans-serif;fill:#ff6b6b">fast spikes, out of step: they cancel</text>
+        <g stroke="#ff6b6b" stroke-width="1" opacity="0.4">
+          <line x1="70" y1="230" x2="70" y2="214"/><line x1="150" y1="230" x2="150" y2="214"/>
+          <line x1="120" y1="230" x2="120" y2="220"/><line x1="240" y1="230" x2="240" y2="214"/>
+          <line x1="300" y1="230" x2="300" y2="220"/><line x1="210" y1="230" x2="210" y2="216"/>
+          <line x1="380" y1="230" x2="380" y2="214"/><line x1="450" y1="230" x2="450" y2="220"/>
+          <line x1="500" y1="230" x2="500" y2="214"/><line x1="560" y1="230" x2="560" y2="218"/>
+          <line x1="600" y1="230" x2="600" y2="214"/><line x1="340" y1="230" x2="340" y2="216"/>
+        </g>
+        <text x="40" y="252" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">sum at the electrode:</text>
+        <path d="M40,268 L120,266 L180,270 L240,265 L300,269 L380,266 L460,270 L540,266 L640,268" fill="none" stroke="#ff6b6b" stroke-width="2"/>
+        <text x="655" y="258" text-anchor="end" style="font:10px 'Courier New',monospace;fill:#ff6b6b">small (adds like &#8730;N)</text>
+      </svg>
+      <p class="viz-note">The slow waves line up into a big smooth signal; the spikes land at random times and cancel into a small ragged remainder. A scalp electrode sees mostly the top one, and a single neuron, a population of one, is invisible.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The same square root when you average (a peek at Unit 3)</h2>
+
+  <p>One more place the same rule lives, because we will lean on it hard later. Record the same event <code>N</code> times and average the repeats. The real signal is identical on every trial, so across trials it is in step and grows like <code>N</code>. The noise is different each time, so across trials it is out of step and grows like <code>&#8730;N</code>. The signal outgrows the noise, and the ratio improves by</p>
+
+  <span class="eqn">SNR gain from averaging N trials = N / &#8730;N = &#8730;N</span>
+
+  <p>It is the identical calculation, with repeats in time in place of cells in space. Average 100 trials, clean up the signal by 10. Synchrony across space and repetition across time are the same square root.</p>
+
+  <hr class="sep">
+
+  <h2>What this means at the bench</h2>
+
+  <p><strong>Recording rests on synchrony.</strong> You never amplify one cell; you rely on a population firing together so its signal climbs by the <code>N</code> factor rather than the <code>&#8730;N</code> one. When a datasheet says scalp EEG is a few microvolts, that microvolt is already the synchronized sum. The raw activity underneath is far larger but cancels, so you are building for the part that survived, which sets how sensitive and quiet the front-end has to be.</p>
+
+  <p><strong>Timing smear is expensive.</strong> Because the signal is a synchrony measure, anything that blurs timing across your sources does more than add noise. It can drag a signal from the <code>N</code> regime toward the <code>&#8730;N</code> regime and cost a whole factor of <code>&#8730;N</code>. That is part of why electrode placement and the choice of reference, later in this unit, matter so much: they decide which sources line up at your two contacts.</p>
+
+  <p><strong>Keep the square root in your pocket.</strong> It returns throughout the noise budget in Unit 3. Cells, noise sources, or trials, the first question is always the same: in step or independent? In step they add like <code>N</code>; independent, like <code>&#8730;N</code>. Almost every signal-against-noise argument left in the course is that one question in a new setting.</p>
+
+  <div class="callout">A surface biopotential is a synchrony meter. In-step sources add like N, independent ones like the square root of N, and because even a little synchrony tips a large population toward N, the recording is set by the faint shared rhythm in the crowd, not by how busy it is.</div>
+
+  <hr class="sep">
+
+  <h2>Check yourself before Class 5</h2>
+
+  <p>Eight questions, all answerable from this post. Tap an answer and it marks itself and explains.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A short, self-marking quiz</span></div>
+    <div class="viz-body">
+      <div class="quiz-progress" id="quizProgress"></div>
+      <div id="quizHost"></div>
+      <div class="quiz-final" id="quizFinal"></div>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Biosignal Acquisition for Embedded Engineers &middot; Unit 1: The Signals</h2>
+    <a class="sidebar-link" href="a-microvolt-of-meaning.html"><div class="sidebar-link-title">1.1 What a signal and a biopotential are</div><div class="sidebar-link-note">The 110 dB problem.</div></a>
+    <a class="sidebar-link" href="a-battery-made-of-salt-water.html"><div class="sidebar-link-title">1.2 The membrane as a battery</div><div class="sidebar-link-note">Nernst, resting potential.</div></a>
+    <a class="sidebar-link" href="the-spike-that-builds-itself.html"><div class="sidebar-link-title">1.3 The action potential</div><div class="sidebar-link-note">A runaway loop.</div></a>
+    <a class="sidebar-link active-topic" href="#"><div class="sidebar-link-title">1.4 From one cell to a population</div><div class="sidebar-link-note">You are here</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.5 Volume conduction</div><div class="sidebar-link-note">1/r fall-off.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.6 Why we measure differences</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.7 EEG, the small-signal extreme</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.8 EEG rhythms and the alpha block</div></a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The argument in one line</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Each new out-of-step cell adds only its own square</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">So the squared total is N, and the size is &#8730;N</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">In step, the cross term reinforces, so it is N</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">The gap between them is &#8730;N</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">A little synchrony already tips a big crowd toward N</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">So the scalp measures synchrony, not activity</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+<script>
+document.getElementById('year').textContent=new Date().getFullYear();
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ── spine build: add cells one at a time ─────────────────────────────────────
+(function(){
+  const body=document.getElementById('sbBody'), addB=document.getElementById('sbAdd'), resetB=document.getElementById('sbReset');
+  const sumOut=document.getElementById('sbOut'), sumIn=document.getElementById('sbIn');
+  let k=0;
+  function render(){
+    if(k===0){ sumOut.textContent='add a cell to begin'; sumIn.innerHTML='&nbsp;'; return; }
+    sumOut.innerHTML='squared total = '+k+',  so size = &#8730;'+k+' &asymp; '+Math.sqrt(k).toFixed(2);
+    sumIn.innerHTML='squared total = '+(k*k)+',  so size = '+k;
+  }
+  function add(){
+    if(k>=12) return;
+    k++;
+    const outMS=k, inMS=k*k, inInc=2*k-1;
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td>'+k+'</td>'
+      +'<td><span class="sb-out">'+outMS+'</span> <span class="sb-inc">(+1)</span></td>'
+      +'<td><span class="sb-in">'+inMS+'</span> <span class="sb-inc">(+'+inInc+')</span></td>';
+    body.appendChild(tr);
+    render();
+  }
+  function reset(){ k=0; body.innerHTML=''; render(); }
+  addB.addEventListener('click',add);
+  resetB.addEventListener('click',reset);
+  // start with the first three already filled in, matching the prose
+  add(); add(); add();
+})();
+
+// ── expand-the-square grid (deeper box) ──────────────────────────────────────
+(function(){
+  const N=6;
+  const gridEl=document.getElementById('esqGrid'), signRow=document.getElementById('esqSignRow');
+  const bStep=document.getElementById('esqStep'), bRand=document.getElementById('esqRand'), bShuf=document.getElementById('esqShuffle');
+  let mode='step', signs=new Array(N).fill(1);
+  gridEl.style.gridTemplateColumns='repeat('+N+',1fr)';
+  signRow.style.gridTemplateColumns='repeat('+N+',1fr)';
+  function build(){
+    signRow.innerHTML=''; gridEl.innerHTML='';
+    for(let j=0;j<N;j++){const s=document.createElement('div');s.className='esq-sign '+(signs[j]>0?'p':'m');s.textContent=signs[j]>0?'+':'\u2212';signRow.appendChild(s);}
+    for(let i=0;i<N;i++)for(let j=0;j<N;j++){
+      const v=signs[i]*signs[j];
+      const c=document.createElement('div');
+      c.className='esq-cell '+(v>0?'pos':'neg')+(i===j?' diag':'');
+      c.textContent=(v>0?'+':'\u2212');
+      gridEl.appendChild(c);
+    }
+    const total=signs.reduce((a,b)=>a+b,0)**2, diag=N, off=total-diag;
+    document.getElementById('esqDiag').textContent='+'+diag;
+    document.getElementById('esqOff').textContent=(off>=0?'+':'')+off;
+    document.getElementById('esqTotal').textContent=total;
+    document.getElementById('esqRms').textContent='\u2248 '+Math.sqrt(total).toFixed(2);
+    document.getElementById('esqWords').innerHTML = mode==='step'
+      ? 'Every cell agrees, so every cross term is green and the grid fills to N&sup2; = 36. Root is 6, which is N.'
+      : 'Off-diagonal greens and reds cancel, leaving roughly the diagonal, so the grid is around N = 6 and its root around &#8730;6 &asymp; 2.4. Shuffle: it bounces near N, never near N&sup2;.';
+  }
+  function setMode(m){
+    mode=m;
+    bStep.classList.toggle('on',m==='step'); bRand.classList.toggle('on',m==='rand');
+    bShuf.style.display = m==='rand' ? '' : 'none';
+    signs = (m==='step') ? new Array(N).fill(1) : Array.from({length:N},()=>Math.random()<0.5?1:-1);
+    build();
+  }
+  bStep.addEventListener('click',()=>setMode('step'));
+  bRand.addEventListener('click',()=>setMode('rand'));
+  bShuf.addEventListener('click',()=>{signs=Array.from({length:N},()=>Math.random()<0.5?1:-1);build();});
+  setMode('step');
+})();
+
+// ── population magnitude: N vs root-N ────────────────────────────────────────
+(function(){
+  const slider=document.getElementById('pnN'), Nv=document.getElementById('pnNv');
+  const elStep=document.getElementById('pnStep'), elRand=document.getElementById('pnRand'), elDraw=document.getElementById('pnDraw'), elRatio=document.getElementById('pnRatio');
+  const MAXLOG=6;
+  function curN(){const e=(+slider.value/100)*MAXLOG;return Math.max(1,Math.round(Math.pow(10,e)));}
+  function fmt(x){return Math.round(x).toLocaleString();}
+  function draw(N){
+    if(N<=200000){let s=0;for(let i=0;i<N;i++)s+=(Math.random()<0.5?1:-1);return Math.abs(s);}
+    let u=0;for(let i=0;i<12;i++)u+=Math.random();u-=6;return Math.abs(Math.round(u*Math.sqrt(N)));
+  }
+  function refresh(){
+    const N=curN(), root=Math.sqrt(N);
+    Nv.textContent=fmt(N)+(N===1?' cell':' cells');
+    elStep.textContent=fmt(N);
+    elRand.textContent='\u2248 '+fmt(root);
+    elDraw.textContent=fmt(draw(N));
+    elRatio.textContent='\u00d7 '+fmt(root);
+  }
+  slider.addEventListener('input',refresh);
+  document.getElementById('pnAgain').addEventListener('click',refresh);
+  refresh();
+})();
+
+// ── partial synchrony ────────────────────────────────────────────────────────
+(function(){
+  const sN=document.getElementById('syN'), sR=document.getElementById('syR'), Nv=document.getElementById('syNv'), Rv=document.getElementById('syRv');
+  const mark=document.getElementById('syMark'), markTag=document.getElementById('syMarkTag');
+  const elFloor=document.getElementById('syFloor'), elTotal=document.getElementById('syTotal'), elCeil=document.getElementById('syCeil'), words=document.getElementById('syWords');
+  const MAXLOG=6;
+  function curN(){const e=(+sN.value/100)*MAXLOG;return Math.max(2,Math.round(Math.pow(10,e)));}
+  function fmt(x){return Math.round(x).toLocaleString();}
+  function refresh(){
+    const N=curN(), rho=+sR.value/1000, root=Math.sqrt(N);
+    const total=Math.sqrt(N*(1+(N-1)*rho));
+    Nv.textContent=fmt(N)+' cells';
+    Rv.textContent='\u03c1 = '+rho.toFixed(3);
+    elFloor.textContent=fmt(root);
+    elTotal.textContent=fmt(total);
+    elCeil.textContent=fmt(N);
+    const lo=Math.log10(root), hi=Math.log10(N), cur=Math.log10(total);
+    const frac = hi>lo ? (cur-lo)/(hi-lo) : 0;
+    const pct=Math.max(0,Math.min(100,frac*100));
+    mark.style.left=pct+'%'; markTag.style.left=pct+'%'; markTag.textContent=fmt(total);
+    const climbed=total/root;
+    words.innerHTML = rho===0
+      ? 'With &rho; = 0 the cells are independent and you sit on the random floor, &#8730;N.'
+      : 'A synchrony of just '+rho.toFixed(3)+' already makes the total about <b>'+climbed.toFixed(0)+' times</b> the random floor. With '+fmt(N)+' cells, the (N&minus;1)&rho; term dominates: a faint shared rhythm beats the independent bulk.';
+  }
+  sN.addEventListener('input',refresh); sR.addEventListener('input',refresh);
+  refresh();
+})();
+
+// ── quiz ─────────────────────────────────────────────────────────────────────
+(function(){
+  const QUIZ=[
+    {q:"Adding a second random cell takes the average squared total from a\u00b2 to 2a\u00b2, not to 4a\u00b2. Why only 2a\u00b2?",
+     opts:[{t:"Because a is small"},{t:"The second cell adds its own square a\u00b2, but its cross term with the first averages to zero",c:true},{t:"Because squares are negative"},{t:"Because the cells are identical"}],
+     ex:"Squaring (x\u2081+x\u2082) gives x\u2081\u00b2 + x\u2082\u00b2 + 2x\u2081x\u2082. The squares each average to a\u00b2; the cross term has random sign and averages to zero. So the total rises by exactly one cell's square."},
+    {q:"Every new out-of-step cell adds exactly a\u00b2 to the average squared total. After N cells the squared total is therefore:",
+     opts:[{t:"N\u00b2 a\u00b2"},{t:"N a\u00b2",c:true},{t:"a\u00b2"},{t:"2N a\u00b2"}],
+     ex:"It is a\u00b2 added N times, so N a\u00b2. The typical size is the square root, a\u221aN. That is the whole out-of-step result."},
+    {q:"For cells that are all in step, the squared total runs as 1, 4, 9, 16. That is N\u00b2, so the typical size is N. What makes it grow faster than the random case?",
+     opts:[{t:"There are more cells"},{t:"The cross terms reinforce instead of cancelling",c:true},{t:"The squares are bigger"},{t:"Nothing, it is the same"}],
+     ex:"In step, a new cell's cross term with the running total is large and positive, not zero, so each cell adds more than its own square. That extra is exactly what turns N into N\u00b2 under the square."},
+    {q:"You flip 10,000 fair coins. The typical leftover imbalance between heads and tails is closest to:",
+     opts:[{t:"about 10"},{t:"about 100",c:true},{t:"about 1,000"},{t:"about 5,000"}],
+     ex:"Coins are out-of-step cells, so the imbalance grows like \u221aN, and \u221a10,000 = 100. The same formula we built by adding cells."},
+    {q:"For a million cells, the in-step total is bigger than the out-of-step total by about:",
+     opts:[{t:"about 1,000\u00d7",c:true},{t:"about 1,000,000\u00d7"},{t:"about 2\u00d7"},{t:"the same"}],
+     ex:"The ratio is \u221aN = \u221a1,000,000 = 1,000. In step gives a million; out of step about a thousand."},
+    {q:"Using total = a\u221a(N(1+(N\u22121)\u03c1)), why does even a tiny synchrony \u03c1 dominate a large population?",
+     opts:[{t:"Because a is large"},{t:"Because (N\u22121)\u03c1 becomes huge when N is huge, even for small \u03c1",c:true},{t:"Because \u03c1 is always near 1"},{t:"It does not matter"}],
+     ex:"With N in the millions, (N\u22121)\u03c1 can dwarf the 1 beside it even at \u03c1 = 0.001. The faint shared rhythm sets the signal, not the independent bulk."},
+    {q:"A surface biopotential like EEG is best understood as a measure of:",
+     opts:[{t:"the total amount of activity underneath"},{t:"how synchronized the activity is",c:true},{t:"the exact number of cells"},{t:"a single neuron's spike"}],
+     ex:"In-step sources add like N and out-of-step like \u221aN, so the recording's size is set by alignment in time, not by how much work is happening."},
+    {q:"You average 100 noisy repeats of the same event. The signal-to-noise ratio improves by about:",
+     opts:[{t:"100\u00d7"},{t:"10\u00d7",c:true},{t:"2\u00d7"},{t:"no change"}],
+     ex:"Across trials the signal is in step (like N) and the noise independent (like \u221aN), so SNR improves by N/\u221aN = \u221aN = \u221a100 = 10. The same square root, in time."}
+  ];
+  let answered=0,score=0;
+  const host=document.getElementById('quizHost'),prog=document.getElementById('quizProgress'),fin=document.getElementById('quizFinal');
+  function updateProg(){prog.textContent=answered+' / '+QUIZ.length+' answered   \u00b7   score '+score;}
+  QUIZ.forEach((item,qi)=>{
+    const card=document.createElement('div');card.className='quiz-q';
+    const qt=document.createElement('div');qt.className='quiz-q-text';qt.innerHTML='<span class="quiz-q-num">Q'+(qi+1)+'.</span>'+item.q;card.appendChild(qt);
+    const btns=[],correctIdx=item.opts.findIndex(z=>z.c);
+    item.opts.forEach(o=>{
+      const b=document.createElement('button');b.className='quiz-opt';b.type='button';b.innerHTML=o.t+'<span class="mk"></span>';
+      b.addEventListener('click',()=>{
+        if(card.dataset.done)return;card.dataset.done='1';answered++;btns.forEach(x=>x.disabled=true);
+        if(o.c){b.classList.add('correct');b.querySelector('.mk').textContent='\u2713';score++;}
+        else{b.classList.add('wrong');b.querySelector('.mk').textContent='\u2717';const r=btns[correctIdx];r.classList.add('correct');r.querySelector('.mk').textContent='\u2713';}
+        ex.classList.add('show');updateProg();if(answered===QUIZ.length)showFinal();
+      });
+      btns.push(b);card.appendChild(b);
+    });
+    const ex=document.createElement('div');ex.className='quiz-explain';ex.textContent=item.ex;card.appendChild(ex);
+    host.appendChild(card);
+  });
+  function showFinal(){let msg;
+    if(score===QUIZ.length)msg='A clean sweep. On to volume conduction.';
+    else if(score>=QUIZ.length-1)msg=score+' out of '+QUIZ.length+'. Solidly done. On to Class 5.';
+    else if(score>=QUIZ.length-2)msg=score+' out of '+QUIZ.length+'. Good. Replay the build and you have it.';
+    else msg=score+' out of '+QUIZ.length+'. Worth another pass. Each out-of-step cell adds only its own square, so the total grows like the square root of N.';
+    fin.textContent=msg;fin.classList.add('show');}
+  updateProg();
+})();
+</script>
+</body>
+</html>

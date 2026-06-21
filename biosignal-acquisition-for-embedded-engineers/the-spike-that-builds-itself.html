@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Spike That Builds Itself | Biosignal Acquisition for Embedded Engineers</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#f4efe7;--body:#cbc4b9;--muted:#9e968a;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.016;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.22rem;color:var(--body);font-weight:400;margin-bottom:2.2rem;line-height:1.62}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.19rem;font-weight:400;margin-bottom:1.35rem;line-height:1.8}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.93em;background:rgba(232,168,76,.15);padding:.2rem .48rem;border-radius:4px;color:#f1dcb2;font-family:'Courier New',monospace}
+    .eqn{display:block;text-align:center;font-family:'Courier New',monospace;font-size:1.1rem;color:#f1dcb2;background:rgba(232,168,76,.08);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin:1.5rem 0;line-height:1.7;overflow-x:auto}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.15rem;font-weight:400;margin:.4rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:1rem;color:#bcb5a8;margin-top:1.1rem;font-style:italic;line-height:1.72}
+
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+  <style>
+    .ctl-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin:.7rem 0}
+    .ctl-row .lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);min-width:140px}
+    .ctl-slider{flex:1;min-width:180px;accent-color:var(--accent)}
+    .ctl-val{font-family:'Courier New',monospace;font-size:.95rem;color:var(--ink);min-width:120px;text-align:right}
+    .preset-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.9rem}
+    .preset-btn{padding:.45rem .9rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.85rem;cursor:pointer;transition:all .2s;font-family:'Courier New',monospace}
+    .preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .preset-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+    .chk{display:inline-flex;align-items:center;gap:.45rem;font-size:.9rem;color:var(--body);cursor:pointer}
+    .chk input{accent-color:var(--accent);width:16px;height:16px}
+    .hh-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;margin-top:1rem}
+    .hh-verdict{font-family:'Courier New',monospace;font-size:1.15rem;font-weight:500;margin-bottom:6px}
+    .hh-verdict.fire{color:var(--green)}
+    .hh-verdict.fizzle{color:var(--red)}
+    .hh-sub{font-family:'Courier New',monospace;font-size:.92rem;color:var(--muted);line-height:1.6}
+    .hh-legend{display:flex;gap:1.2rem;flex-wrap:wrap;font-family:'Courier New',monospace;font-size:.82rem;color:var(--muted);margin-top:.5rem}
+    .hh-legend span{display:inline-flex;align-items:center;gap:.4rem}
+    .hh-swatch{width:14px;height:3px;border-radius:2px;display:inline-block}
+
+    .quiz-progress{font-family:'Courier New',monospace;font-size:.95rem;color:var(--accent);margin-bottom:1.2rem;letter-spacing:.02em}
+    .quiz-q{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.3rem 1.4rem;margin-bottom:1.1rem}
+    .quiz-q-text{font-size:1.12rem;color:var(--ink);font-weight:500;margin-bottom:1rem;line-height:1.5}
+    .quiz-q-num{color:var(--accent);font-family:'Courier New',monospace;margin-right:.5rem}
+    .quiz-opt{display:block;width:100%;text-align:left;padding:.75rem 1rem;margin:.5rem 0;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);font-family:inherit;font-size:1.04rem;cursor:pointer;transition:all .18s;line-height:1.45}
+    .quiz-opt:hover:not(:disabled){border-color:var(--accent);color:var(--ink)}
+    .quiz-opt:disabled{cursor:default}
+    .quiz-opt.correct{background:var(--green-dim);border-color:rgba(127,255,107,.5);color:var(--ink)}
+    .quiz-opt.wrong{background:var(--red-dim);border-color:rgba(255,107,107,.5);color:var(--ink)}
+    .quiz-opt .mk{float:right;font-weight:700;margin-left:.6rem}
+    .quiz-opt.correct .mk{color:var(--green)}
+    .quiz-opt.wrong .mk{color:var(--red)}
+    .quiz-explain{margin-top:.8rem;padding:.85rem 1.1rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.62;display:none}
+    .quiz-explain.show{display:block;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .quiz-final{margin-top:1.3rem;padding:1.2rem 1.4rem;border-radius:10px;background:var(--bg-card);border:1px solid var(--accent);font-family:var(--display);font-size:1.4rem;color:var(--ink);text-align:center;display:none}
+    .quiz-final.show{display:block;animation:rise .4s cubic-bezier(.22,1,.36,1) both}
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk &#9662;</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+  <span class="series-tag"><span class="series-dot"></span>Biosignal Acquisition for Embedded Engineers &middot; Class 3</span>
+  <h1>The Spike That Builds Itself</h1>
+  <p class="blog-subtitle">A resting cell just holds a steady voltage. Add one kind of channel, the kind that opens when the voltage changes, and the cell can fire a spike: a quick jump that is the same size every time and travels without shrinking. The spike lasts about a millisecond, and that millisecond is why EMG and EEG need different settings on the same recorder.</p>
+
+  <h2>A stable battery has a problem</h2>
+
+  <p>Last class we left the membrane sitting at about minus 70 millivolts. It stays there because at rest the only channels much open are potassium channels, so potassium sets the voltage, and it ends up near potassium's own equilibrium of about minus 89 millivolts. That resting state is stable, and that is a problem.</p>
+
+  <p>Stable means it corrects itself. Push the voltage up a little and potassium flows out, taking positive charge with it, which pulls the voltage back down. Push it down and the opposite happens. It works like a thermostat: small changes get cancelled. And a thermostat does not suddenly swing on its own.</p>
+
+  <p>But cells do fire. A nerve or muscle cell can jump by about 100 millivolts for roughly a millisecond and then drop back. It either happens all the way or not at all, and once it starts it runs down the whole cell without getting smaller. None of that is in the resting picture, so something is missing. The rest of this post is about what.</p>
+
+  <hr class="sep">
+
+  <h2>The missing piece: channels that open with voltage</h2>
+
+  <p>In Class 1.2 I treated the open channels as fixed doors: at rest, mostly potassium doors are open. That was a simplification, and the part I left out is the whole story here. Some channels are not fixed. Whether they are open depends on the voltage across the membrane. These are the <strong>voltage-gated</strong> channels, and two of them matter, one for sodium and one for potassium.</p>
+
+  <p>Here is why that one change matters so much. A fixed channel just sits there. But a channel that opens in response to the voltage, and that by opening also changes the voltage, is wired into a loop: it reacts to the very thing it affects. Loops like that do one of two things.</p>
+
+  <p>If opening the channel pushes the voltage back the way it came, the loop is calming. That is the resting potassium leak from a moment ago: nudge the voltage up, more potassium leaves, the voltage comes back down. Small disturbances die out. Same steadying behavior as a thermostat.</p>
+
+  <p>If instead opening the channel pushes the voltage further in the direction it was already heading, the loop runs away. A small push gets amplified into a bigger one, which gets amplified again. You have heard this happen: a microphone held too close to its own speaker. The speaker puts out a faint sound, the mic picks it up, the speaker makes it louder, the mic picks up the louder version, and within a second it is a screech. Nobody added energy on purpose. The loop just fed itself.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Two loops: one settles, one takes off</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 380" role="img" aria-label="Two feedback loops side by side. On the left, a calming loop: a small push raises the voltage, potassium leaves, and the voltage drops back, cancelling the push, so the result settles back to baseline. On the right, a runaway loop: a small push raises the voltage, sodium enters, the voltage rises more, which adds to the push, so the result takes off like the start of a spike.">
+        <line x1="340" y1="22" x2="340" y2="360" stroke="#7d766b" stroke-width="0.5" stroke-dasharray="4 5" opacity="0.5"/>
+
+        <!-- LEFT: calming -->
+        <text x="195" y="34" text-anchor="middle" style="font:13px 'Source Sans 3',sans-serif;fill:#7fff6b">CALMING LOOP</text>
+        <text x="195" y="50" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">like a thermostat</text>
+        <rect x="95" y="64" width="200" height="32" rx="7" fill="#2a2826" stroke="#7d766b" stroke-width="1"/>
+        <text x="195" y="84" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#cbc4b9">voltage nudged up</text>
+        <line x1="195" y1="96" x2="195" y2="122" stroke="#7d766b" stroke-width="1.4"/><polygon points="195,128 190,118 200,118" fill="#7d766b"/>
+        <rect x="95" y="128" width="200" height="32" rx="7" fill="#2a2826" stroke="#4ca8e8" stroke-width="1"/>
+        <text x="195" y="148" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#9fd0f2">K+ leaves</text>
+        <line x1="195" y1="160" x2="195" y2="186" stroke="#7d766b" stroke-width="1.4"/><polygon points="195,192 190,182 200,182" fill="#7d766b"/>
+        <rect x="95" y="192" width="200" height="32" rx="7" fill="#2a2826" stroke="#7fff6b" stroke-width="1"/>
+        <text x="195" y="212" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#a9f29a">voltage drops back</text>
+        <!-- return arrow (cancels) -->
+        <path d="M95,208 C45,208 45,80 95,80" fill="none" stroke="#7fff6b" stroke-width="1.6"/>
+        <polygon points="95,80 84,75 86,86" fill="#7fff6b"/>
+        <circle cx="47" cy="144" r="13" fill="#1a1917" stroke="#7fff6b" stroke-width="1.4"/>
+        <text x="47" y="149" text-anchor="middle" style="font:15px 'Courier New',monospace;fill:#7fff6b">&minus;</text>
+        <text x="47" y="244" text-anchor="middle" style="font:9px 'Source Sans 3',sans-serif;fill:#7fff6b">cancels the push</text>
+        <!-- outcome -->
+        <text x="195" y="276" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">result: settles back to rest</text>
+        <line x1="95" y1="330" x2="295" y2="330" stroke="#7d766b" stroke-width="0.8"/>
+        <path d="M95,330 Q118,306 138,330 Q156,348 176,330 Q196,322 214,330 Q235,333 295,330" fill="none" stroke="#7fff6b" stroke-width="2"/>
+
+        <!-- RIGHT: runaway -->
+        <text x="500" y="34" text-anchor="middle" style="font:13px 'Source Sans 3',sans-serif;fill:#ff6b6b">RUNAWAY LOOP</text>
+        <text x="500" y="50" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">like a mic near its speaker</text>
+        <rect x="400" y="64" width="200" height="32" rx="7" fill="#2a2826" stroke="#7d766b" stroke-width="1"/>
+        <text x="500" y="84" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#cbc4b9">voltage nudged up</text>
+        <line x1="500" y1="96" x2="500" y2="122" stroke="#7d766b" stroke-width="1.4"/><polygon points="500,128 495,118 505,118" fill="#7d766b"/>
+        <rect x="400" y="128" width="200" height="32" rx="7" fill="#2a2826" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="500" y="148" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#f7b0b0">Na+ enters</text>
+        <line x1="500" y1="160" x2="500" y2="186" stroke="#7d766b" stroke-width="1.4"/><polygon points="500,192 495,182 505,182" fill="#7d766b"/>
+        <rect x="400" y="192" width="200" height="32" rx="7" fill="#2a2826" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="500" y="212" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#f7b0b0">voltage rises more</text>
+        <!-- return arrow (adds) -->
+        <path d="M600,208 C650,208 650,80 600,80" fill="none" stroke="#ff6b6b" stroke-width="1.6"/>
+        <polygon points="600,80 611,75 609,86" fill="#ff6b6b"/>
+        <circle cx="648" cy="144" r="13" fill="#1a1917" stroke="#ff6b6b" stroke-width="1.4"/>
+        <text x="648" y="149" text-anchor="middle" style="font:15px 'Courier New',monospace;fill:#ff6b6b">+</text>
+        <text x="648" y="244" text-anchor="middle" style="font:9px 'Source Sans 3',sans-serif;fill:#ff6b6b">adds to the push</text>
+        <!-- outcome -->
+        <text x="500" y="276" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">result: takes off (a spike)</text>
+        <line x1="400" y1="330" x2="600" y2="330" stroke="#7d766b" stroke-width="0.8"/>
+        <path d="M400,330 C440,329 466,326 488,318 C512,309 526,290 536,258 C545,228 552,196 558,166" fill="none" stroke="#ff6b6b" stroke-width="2"/>
+        <polygon points="558,166 551,176 563,177" fill="#ff6b6b"/>
+      </svg>
+      <p class="viz-note">Same idea, two wirings. On the left the response undoes the push, so a nudge fades and the voltage returns to rest. On the right the response feeds the push, so a nudge grows on its own. The sodium channel is the right-hand kind, which is why a big enough push does not fade but launches.</p>
+    </div>
+  </div>
+
+  <p>The voltage-gated sodium channel is wired the second way, and we will see exactly how in the next section. For now the shape of the answer is enough: put a runaway loop next to a stable resting state and you get a trigger. The cell ignores small pushes and stays quiet, until one push is big enough to start the loop feeding itself. After that it fires on its own, all the way, no matter what set it off.</p>
+
+  <hr class="sep">
+
+  <h2>Sodium is under a lot of pressure</h2>
+
+  <p>Before anything fires, it helps to see how much is built up and waiting. At rest the sodium channels are shut, but there is a lot of sodium outside the cell and very little inside. From last class, sodium's equilibrium voltage is about plus 60 millivolts. So at rest both forces on sodium point inward: the concentration difference pushes it in, and the negative inside pulls the positive sodium in as well.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Two forces pushing sodium in, one shut gate holding it out</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 250" role="img" aria-label="A membrane cross section. Outside is crowded with sodium ions; inside has very few, and is negative. Two forces push sodium inward, the concentration difference and the pull from the negative interior. A shut channel gate blocks them, so nothing crosses yet.">
+        <rect x="0" y="0" width="680" height="84" fill="rgba(76,168,232,.05)"/>
+        <rect x="0" y="156" width="680" height="94" fill="rgba(232,168,76,.05)"/>
+        <rect x="0" y="84" width="680" height="72" fill="rgba(237,232,224,.04)"/>
+        <line x1="0" y1="84" x2="680" y2="84" stroke="#7d766b" stroke-width="1"/>
+        <line x1="0" y1="156" x2="680" y2="156" stroke="#7d766b" stroke-width="1"/>
+        <text x="14" y="24" style="font:13px 'Source Sans 3',sans-serif;fill:#4ca8e8">OUTSIDE &middot; lots of Na+</text>
+        <text x="14" y="182" style="font:13px 'Source Sans 3',sans-serif;fill:#e8a84c">INSIDE &middot; little Na+, and negative</text>
+
+        <!-- crowded outside Na+ -->
+        <g fill="#4ca8e8" font-family="'Courier New',monospace" font-size="11" text-anchor="middle">
+          <circle cx="60" cy="50" r="8"/><text x="60" y="54" fill="#1a1917">+</text>
+          <circle cx="110" cy="38" r="8"/><text x="110" y="42" fill="#1a1917">+</text>
+          <circle cx="165" cy="56" r="8"/><text x="165" y="60" fill="#1a1917">+</text>
+          <circle cx="225" cy="40" r="8"/><text x="225" y="44" fill="#1a1917">+</text>
+          <circle cx="430" cy="52" r="8"/><text x="430" y="56" fill="#1a1917">+</text>
+          <circle cx="490" cy="38" r="8"/><text x="490" y="42" fill="#1a1917">+</text>
+          <circle cx="550" cy="55" r="8"/><text x="550" y="59" fill="#1a1917">+</text>
+          <circle cx="610" cy="40" r="8"/><text x="610" y="44" fill="#1a1917">+</text>
+          <circle cx="395" cy="44" r="8"/><text x="395" y="48" fill="#1a1917">+</text>
+        </g>
+        <!-- sparse inside Na+ -->
+        <g fill="#4ca8e8" font-family="'Courier New',monospace" font-size="11" text-anchor="middle">
+          <circle cx="140" cy="210" r="8"/><text x="140" y="214" fill="#1a1917">+</text>
+          <circle cx="560" cy="214" r="8"/><text x="560" y="218" fill="#1a1917">+</text>
+        </g>
+
+        <!-- shut channel -->
+        <rect x="318" y="84" width="8" height="72" fill="#7d766b"/>
+        <rect x="354" y="84" width="8" height="72" fill="#7d766b"/>
+        <rect x="318" y="114" width="44" height="9" fill="#ff6b6b"/>
+        <text x="340" y="78" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#ff6b6b">channel shut</text>
+
+        <!-- two inward force arrows, blocked at the gate -->
+        <line x1="305" y1="30" x2="332" y2="80" stroke="#4ca8e8" stroke-width="2"/>
+        <polygon points="334,84 324,79 332,72" fill="#4ca8e8"/>
+        <text x="250" y="34" text-anchor="end" style="font:11px 'Source Sans 3',sans-serif;fill:#4ca8e8">more outside, so it pushes in</text>
+        <line x1="375" y1="30" x2="348" y2="80" stroke="#4ca8e8" stroke-width="2"/>
+        <polygon points="346,84 348,72 356,79" fill="#4ca8e8"/>
+        <text x="430" y="34" text-anchor="start" style="font:11px 'Source Sans 3',sans-serif;fill:#4ca8e8">inside is negative, so it pulls + in</text>
+
+        <!-- what happens if it opens -->
+        <line x1="340" y1="128" x2="340" y2="200" stroke="#e8a84c" stroke-width="1.6" stroke-dasharray="4 4"/>
+        <polygon points="340,206 335,194 345,194" fill="#e8a84c"/>
+        <text x="340" y="232" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#e8a84c">open the gate and Na+ floods in</text>
+      </svg>
+      <p class="viz-note">Both arrows point the same way, inward, and they are strong because sodium is crowded outside and the inside is negative. The only thing stopping a flood is the shut gate. The whole spike begins the instant that gate opens.</p>
+    </div>
+  </div>
+
+  <p>We can measure how hard it is pushing with one number, the <strong>driving force</strong>. That is the membrane voltage minus the ion's own equilibrium voltage, which is what is left after diffusion and the field are accounted for. An ion's current is its conductance times that leftover:</p>
+
+  <span class="eqn">I_ion = g_ion &times; (V_m &minus; E_ion)</span>
+
+  <p>For sodium at rest:</p>
+
+  <span class="eqn">V_m &minus; E_Na = (&minus;70) &minus; (+60) = &minus;130 mV</span>
+
+  <p>That is a big push. Potassium, by comparison, has only <code>(&minus;70) &minus; (&minus;89) = +19 mV</code>. Sodium is pressing on its shut doors almost seven times harder than potassium presses on its open ones. Nothing happens only because the sodium conductance <code>g_Na</code> is almost zero while the doors are closed. Open them, and that push is suddenly free to act.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">How hard each ion is pushing at rest</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 190" role="img" aria-label="A voltage axis. The membrane sits at minus 70 millivolts. Potassium's equilibrium is at minus 89, a short distance away, so its driving force is small. Sodium's equilibrium is at plus 60, far away, so its driving force of minus 130 millivolts is large, shown as a long arrow.">
+        <line x1="40" y1="110" x2="650" y2="110" stroke="#7d766b" stroke-width="1"/>
+        <!-- map -100..+70 over x40..650 ; scale=610/170=3.588 ; x(v)=40+(v+100)*3.588 -->
+        <g style="font:10px 'Courier New',monospace;fill:#9e968a">
+          <line x1="40"  y1="105" x2="40"  y2="115" stroke="#7d766b"/><text x="40"  y="130" text-anchor="middle">&minus;100</text>
+          <line x1="219" y1="105" x2="219" y2="115" stroke="#7d766b"/><text x="219" y="130" text-anchor="middle">&minus;50</text>
+          <line x1="399" y1="105" x2="399" y2="115" stroke="#7d766b"/><text x="399" y="130" text-anchor="middle">0</text>
+          <line x1="578" y1="105" x2="578" y2="115" stroke="#7d766b"/><text x="578" y="130" text-anchor="middle">+50</text>
+        </g>
+        <text x="345" y="152" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">membrane voltage (mV)</text>
+        <!-- E_K at -89 -> x=79 -->
+        <line x1="79" y1="74" x2="79" y2="110" stroke="#7fff6b" stroke-width="2.4"/>
+        <text x="79" y="66" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#7fff6b">E_K &minus;89</text>
+        <!-- V_rest at -70 -> x=148 -->
+        <line x1="148" y1="50" x2="148" y2="110" stroke="#e8a84c" stroke-width="3"/>
+        <text x="148" y="42" text-anchor="middle" style="font:12px 'Courier New',monospace;fill:#e8a84c">V_rest &minus;70</text>
+        <!-- E_Na at +60 -> x=614 -->
+        <line x1="614" y1="74" x2="614" y2="110" stroke="#ff6b6b" stroke-width="2.4"/>
+        <text x="614" y="66" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#ff6b6b">E_Na +60</text>
+        <!-- small K driving force arrow -->
+        <line x1="148" y1="92" x2="84" y2="92" stroke="#7fff6b" stroke-width="1.6"/>
+        <polygon points="78,92 88,87 88,97" fill="#7fff6b"/>
+        <text x="116" y="84" text-anchor="middle" style="font:9px 'Source Sans 3',sans-serif;fill:#7fff6b">+19</text>
+        <!-- large Na driving force arrow -->
+        <line x1="148" y1="92" x2="608" y2="92" stroke="#ff6b6b" stroke-width="1.6"/>
+        <polygon points="614,92 604,87 604,97" fill="#ff6b6b"/>
+        <text x="400" y="84" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#ff6b6b">&minus;130 mV of driving force, waiting behind a closed door</text>
+      </svg>
+      <p class="viz-note">The resting voltage sits close to potassium, so potassium has little push left. Sodium sits far away with a large push that nothing is using yet. The whole spike is what happens when the sodium door opens briefly and that push is released.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The upstroke: a loop that runs away</h2>
+
+  <p>Now push the membrane a little less negative, from minus 70 up toward minus 55. The sodium channels open with voltage, so that small push opens a few of them. Sodium flows in. Sodium is positive, so it makes the inside more positive, which is a bigger push in the same direction, which opens more sodium channels, which lets in more sodium.</p>
+
+  <p>That feedback speeds itself up. The voltage does not drift up, it shoots up, going from rest toward sodium's equilibrium in well under a millisecond. The inside, negative a moment ago, passes zero and goes briefly positive, peaking around plus 30 millivolts. It does not quite reach the full plus 60 of sodium's equilibrium, for reasons in the reset section below, but the jump past zero is real and shows up on every recording.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Why the rise speeds up as it climbs</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 290" role="img" aria-label="A plot of voltage against time during the upstroke. The voltage starts flat at rest, reaches threshold, then climbs faster and faster to a peak above zero. Along the rising edge, more and more sodium flows in at each step, shown by an increasing number of inward arrows, which is why the rise accelerates.">
+        <!-- reference lines -->
+        <line x1="70" y1="55"  x2="650" y2="55"  stroke="rgba(255,107,107,.25)" stroke-dasharray="3 4"/>
+        <text x="655" y="59" style="font:10px 'Courier New',monospace;fill:#ff6b6b">+30 peak</text>
+        <line x1="70" y1="150" x2="650" y2="150" stroke="rgba(237,232,224,.12)" stroke-dasharray="3 4"/>
+        <text x="655" y="154" style="font:10px 'Courier New',monospace;fill:#9e968a">0</text>
+        <line x1="70" y1="210" x2="650" y2="210" stroke="rgba(232,168,76,.3)" stroke-dasharray="3 4"/>
+        <text x="655" y="214" style="font:10px 'Courier New',monospace;fill:#e8a84c">&minus;55 threshold</text>
+        <line x1="70" y1="235" x2="650" y2="235" stroke="rgba(127,255,107,.3)" stroke-dasharray="3 4"/>
+        <text x="655" y="239" style="font:10px 'Courier New',monospace;fill:#7fff6b">&minus;70 rest</text>
+
+        <line x1="70" y1="262" x2="650" y2="262" stroke="#7d766b" stroke-width="1"/>
+        <text x="360" y="284" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">time (under a millisecond)</text>
+
+        <!-- accelerating upstroke curve -->
+        <path d="M70,235 L150,235 Q172,232 185,210 C212,204 236,168 262,134 C292,96 332,70 386,58 L470,57"
+              fill="none" stroke="#e8a84c" stroke-width="3"/>
+
+        <!-- step 1: a few Na+ in (near threshold) -->
+        <line x1="205" y1="178" x2="205" y2="196" stroke="#4ca8e8" stroke-width="1.6"/><polygon points="205,200 201,190 209,190" fill="#4ca8e8"/>
+        <text x="214" y="186" style="font:10px 'Source Sans 3',sans-serif;fill:#4ca8e8">a few Na+ in</text>
+
+        <!-- step 2: more (mid rise) -->
+        <line x1="270" y1="104" x2="270" y2="122" stroke="#4ca8e8" stroke-width="1.6"/><polygon points="270,126 266,116 274,116" fill="#4ca8e8"/>
+        <line x1="284" y1="104" x2="284" y2="122" stroke="#4ca8e8" stroke-width="1.6"/><polygon points="284,126 280,116 288,116" fill="#4ca8e8"/>
+        <text x="296" y="112" style="font:10px 'Source Sans 3',sans-serif;fill:#4ca8e8">which opens more</text>
+
+        <!-- step 3: many (high rise) -->
+        <line x1="330" y1="74" x2="330" y2="92" stroke="#4ca8e8" stroke-width="1.6"/><polygon points="330,96 326,86 334,86" fill="#4ca8e8"/>
+        <line x1="344" y1="74" x2="344" y2="92" stroke="#4ca8e8" stroke-width="1.6"/><polygon points="344,96 340,86 348,86" fill="#4ca8e8"/>
+        <line x1="358" y1="74" x2="358" y2="92" stroke="#4ca8e8" stroke-width="1.6"/><polygon points="358,96 354,86 362,86" fill="#4ca8e8"/>
+        <text x="372" y="82" style="font:10px 'Source Sans 3',sans-serif;fill:#4ca8e8">which opens more still</text>
+
+        <text x="150" y="226" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">a small push to start</text>
+      </svg>
+      <p class="viz-note">Each bit of rise opens more sodium channels, which lets in more sodium, which raises the voltage faster. That is why the curve is gentle near threshold and almost vertical higher up. The loop is feeding itself, and the steepening slope is what that looks like.</p>
+    </div>
+  </div>
+
+  <div class="callout">A spike is not a signal forced through the membrane. It is the membrane tipping over: a stable resting state sitting next to a strong feedback loop, set off once the voltage crosses a threshold.</div>
+
+  <hr class="sep">
+
+  <h2>Threshold, and why the spike is all-or-nothing</h2>
+
+  <p>The same feedback explains the most important thing about the spike. At any moment two currents are fighting on the membrane. Sodium flowing in pushes the voltage up. The potassium leak pulls it back down. Whether a push turns into a spike depends on which one is winning.</p>
+
+  <p>For a small push, potassium wins. Only a few sodium channels opened, not much sodium comes in, and the potassium current pulls the voltage back to rest. Nothing happens. This is a push below threshold. But there is a tipping point, the <strong>threshold</strong>, usually around minus 55 millivolts. Past it, sodium coming in opens new channels faster than potassium can pull back. Now the loop keeps itself going, and the spike finishes on its own no matter what started it.</p>
+
+  <p>So it is basically all-or-nothing. Just past threshold, you get a full spike. Far past threshold, you get the same full spike, the same size. The size tells you nothing about how hard you pushed. Only whether you crossed threshold matters. What carries information is when spikes happen and how often, not how big they are. The simulator below runs the real equations. Set a stimulus and watch the membrane either settle back to rest or make a full spike that looks the same whether you barely crossed threshold or went way past it.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Inject a current. Watch it fire or fizzle.</span></div>
+    <div class="viz-body">
+      <svg id="hhSvg" viewBox="0 0 680 300" style="width:100%" role="img" aria-label="A plot of membrane voltage against time. A stimulus is injected at 5 milliseconds. Below threshold the trace bumps up a little and returns to rest. Above threshold it launches a full action potential, overshooting zero to about plus 30 millivolts before repolarising and dipping below rest."></svg>
+      <div class="hh-card">
+        <div class="hh-verdict" id="hhVerdict"></div>
+        <div class="hh-sub" id="hhSub"></div>
+        <div class="hh-legend" id="hhLegend" style="display:none">
+          <span><span class="hh-swatch" style="background:#e8a84c"></span>membrane voltage</span>
+          <span><span class="hh-swatch" style="background:#ff6b6b"></span>sodium conductance</span>
+          <span><span class="hh-swatch" style="background:#4ca8e8"></span>potassium conductance</span>
+        </div>
+      </div>
+      <div class="ctl-row">
+        <span class="lbl">Stimulus strength</span>
+        <input type="range" id="hhStim" class="ctl-slider" min="0" max="40" step="0.5" value="8">
+        <span class="ctl-val" id="hhStimV"></span>
+      </div>
+      <div class="ctl-row" style="gap:1.6rem">
+        <label class="chk"><input type="checkbox" id="hhSustain"> hold the current on (make it spike repeatedly)</label>
+        <label class="chk"><input type="checkbox" id="hhShowG"> show the sodium and potassium conductances (explained in the next section)</label>
+      </div>
+      <div class="preset-row" id="hhPre"></div>
+      <p class="viz-note">Two things are worth trying. First, move the stimulus from just below threshold to just above, and watch the response jump from a small bump to a full spike with nothing in between. Then push far past threshold and check that the spike is no bigger: that is all-or-nothing. There is a toggle for the sodium and potassium conductances too, but those curves only make sense after the next section, so come back to them once you have read it.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The conductance picture, from Hodgkin and Huxley</h2>
+
+  <p>We have been saying the sodium conductance and the potassium conductance change during the spike. Now let us pin down what sets them, because that is what the simulator is really computing.</p>
+
+  <p>Start with the simplest part. The conductance of a patch of membrane to an ion is set by how many of that ion's channels are open right now. All of them open gives the maximum conductance; all shut gives zero; half open gives half. So if we call the maximum <code>&#x1E21;</code> (g with a bar over it), then at any moment</p>
+
+  <span class="eqn">g = &#x1E21; &times; (fraction of channels open)</span>
+
+  <p>The whole job is now one question: what fraction of the channels is open at this instant? Everything else is working that fraction out.</p>
+
+  <h3>Why a channel needs more than one gate to be open</h3>
+
+  <p>A single channel does not just flip fully open or fully shut. Inside it are a few small gates, and the channel only lets ions through when all of its gates happen to be open at the same time. Each gate flutters open and shut on its own, and we track it with a number between 0 and 1: the fraction of the time that gate is open, which you can also read as the chance it is open at any instant. Hodgkin and Huxley named these numbers <code>m</code>, <code>h</code>, and <code>n</code>.</p>
+
+  <p>Here is where the exponents come from, and it is not deep. If a channel needs several gates open at once, and each gate is open with some chance, then the chance they are all open together is those chances multiplied. So if a sodium channel has three gates of the same kind, each open with chance <code>m</code>, the chance all three are open is <code>m &times; m &times; m = m&sup3;</code>. The exponent is just how many gates of that kind have to line up. Nothing more.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The exponents are just gates multiplied together</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 270" role="img" aria-label="A sodium channel drawn with three fast activation gates labelled m and one slow inactivation gate labelled h. Ions pass only when all four are open, so the open fraction is m times m times m times h, which is m cubed h. A potassium channel has four gates labelled n, so its open fraction is n to the fourth.">
+        <line x1="340" y1="20" x2="340" y2="250" stroke="#7d766b" stroke-width="0.5" stroke-dasharray="4 5" opacity="0.5"/>
+
+        <!-- SODIUM -->
+        <text x="170" y="34" text-anchor="middle" style="font:13px 'Source Sans 3',sans-serif;fill:#ff6b6b">sodium channel</text>
+        <rect x="150" y="48" width="40" height="150" rx="8" fill="#1a1917" stroke="#7d766b" stroke-width="1.5"/>
+        <!-- 3 m gates -->
+        <line x1="150" y1="74" x2="190" y2="74" stroke="#ff6b6b" stroke-width="3"/>
+        <line x1="150" y1="100" x2="190" y2="100" stroke="#ff6b6b" stroke-width="3"/>
+        <line x1="150" y1="126" x2="190" y2="126" stroke="#ff6b6b" stroke-width="3"/>
+        <!-- 1 h gate -->
+        <line x1="150" y1="170" x2="190" y2="170" stroke="#e8a84c" stroke-width="3"/>
+        <text x="206" y="78" style="font:11px 'Courier New',monospace;fill:#ff6b6b">m  (fast)</text>
+        <text x="206" y="104" style="font:11px 'Courier New',monospace;fill:#ff6b6b">m  (fast)</text>
+        <text x="206" y="130" style="font:11px 'Courier New',monospace;fill:#ff6b6b">m  (fast)</text>
+        <text x="206" y="174" style="font:11px 'Courier New',monospace;fill:#e8a84c">h  (slow)</text>
+        <text x="170" y="228" text-anchor="middle" style="font:13px 'Courier New',monospace;fill:#f1dcb2">m &times; m &times; m &times; h</text>
+        <text x="170" y="250" text-anchor="middle" style="font:14px 'Courier New',monospace;fill:#ff6b6b">= m&sup3;h</text>
+
+        <!-- POTASSIUM -->
+        <text x="500" y="34" text-anchor="middle" style="font:13px 'Source Sans 3',sans-serif;fill:#4ca8e8">potassium channel</text>
+        <rect x="480" y="48" width="40" height="150" rx="8" fill="#1a1917" stroke="#7d766b" stroke-width="1.5"/>
+        <line x1="480" y1="74" x2="520" y2="74" stroke="#4ca8e8" stroke-width="3"/>
+        <line x1="480" y1="100" x2="520" y2="100" stroke="#4ca8e8" stroke-width="3"/>
+        <line x1="480" y1="126" x2="520" y2="126" stroke="#4ca8e8" stroke-width="3"/>
+        <line x1="480" y1="152" x2="520" y2="152" stroke="#4ca8e8" stroke-width="3"/>
+        <text x="536" y="78" style="font:11px 'Courier New',monospace;fill:#4ca8e8">n  (slow)</text>
+        <text x="536" y="104" style="font:11px 'Courier New',monospace;fill:#4ca8e8">n  (slow)</text>
+        <text x="536" y="130" style="font:11px 'Courier New',monospace;fill:#4ca8e8">n  (slow)</text>
+        <text x="536" y="156" style="font:11px 'Courier New',monospace;fill:#4ca8e8">n  (slow)</text>
+        <text x="500" y="228" text-anchor="middle" style="font:13px 'Courier New',monospace;fill:#bfe0f7">n &times; n &times; n &times; n</text>
+        <text x="500" y="250" text-anchor="middle" style="font:14px 'Courier New',monospace;fill:#4ca8e8">= n&#x2074;</text>
+      </svg>
+      <p class="viz-note">Ions get through only when every gate is open at once, so you multiply the open-chances. Three sodium gates of type <code>m</code> and one of type <code>h</code> give an open fraction of <code>m&sup3;h</code>. Four potassium gates of type <code>n</code> give <code>n&#x2074;</code>. The exponent is a head count of gates, not anything mysterious.</p>
+    </div>
+  </div>
+
+  <h3>The two kinds of sodium gate, and why that builds a spike</h3>
+
+  <p>Put the maximum conductance and the open fraction together and you get the two lines Hodgkin and Huxley wrote:</p>
+
+  <span class="eqn">g_Na = &#x1E21;_Na &middot; m&sup3; &middot; h           g_K = &#x1E21;_K &middot; n&#x2074;</span>
+
+  <p>The sodium channel has two kinds of gate, and they react to voltage in opposite directions and at different speeds. The three <code>m</code> gates are <strong>fast</strong>, and they <em>open</em> when the voltage rises. The single <code>h</code> gate is <strong>slow</strong>, and it <em>closes</em> when the voltage rises. Sodium gets through only when all four are open at once.</p>
+
+  <p>Now watch what that does over the course of a spike. At rest <code>m</code> is near 0 (the fast gates are shut) and <code>h</code> is near 1 (the slow gate is open and ready). The voltage starts to climb:</p>
+
+  <ul>
+    <li>The fast <code>m</code> gates fly open, so <code>m&sup3;</code> shoots up while <code>h</code>, being slow, is still near 1. So <code>m&sup3;h</code> is briefly large, sodium pours in, and that is the upstroke.</li>
+    <li>A short time later the slow <code>h</code> gate finally swings shut. Now <code>m&sup3;h</code> collapses and sodium stops, even though the voltage is still high.</li>
+  </ul>
+
+  <p>That gap in timing, fast gates opening and a slow gate closing a beat later, is the whole reason the sodium current is a brief pulse rather than a permanent flood. The channel shuts itself off. Potassium is simpler: four <code>n</code> gates, all slow, all opening when the voltage rises. Because they are slow, the potassium conductance turns on late, after the peak, and that is what pulls the voltage back down.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Fast m, slow h, slow n, and the spike that results</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 320" role="img" aria-label="Two stacked plots over the same time axis. The top plot shows the three gates: m rises fast and falls, h starts high and slowly falls then recovers, n slowly rises and falls. The bottom plot shows the resulting conductances: sodium as a sharp early pulse and potassium as a later, broader rise, with the membrane voltage spike drawn faintly behind.">
+        <!-- TOP: gates -->
+        <text x="60" y="26" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">the gates over time (0 to 1)</text>
+        <line x1="60" y1="130" x2="650" y2="130" stroke="#7d766b" stroke-width="1"/>
+        <line x1="60" y1="40" x2="60" y2="130" stroke="#7d766b" stroke-width="1"/>
+        <!-- m fast up then down (red) -->
+        <path d="M60,124 L200,122 C214,96 226,48 240,46 C262,44 276,52 296,72 C322,100 350,120 380,124 L650,124" fill="none" stroke="#ff6b6b" stroke-width="2.4"/>
+        <text x="244" y="40" style="font:10px 'Courier New',monospace;fill:#ff6b6b">m (fast)</text>
+        <!-- h high, slow down then recover (amber) -->
+        <path d="M60,78 L205,76 C250,96 300,120 345,124 C430,122 540,98 650,84" fill="none" stroke="#e8a84c" stroke-width="2.4"/>
+        <text x="92" y="70" style="font:10px 'Courier New',monospace;fill:#e8a84c">h (slow)</text>
+        <!-- n slow rise then fall (blue) -->
+        <path d="M60,108 L205,106 C265,92 320,60 365,56 C450,60 545,86 650,100" fill="none" stroke="#4ca8e8" stroke-width="2.4"/>
+        <text x="372" y="50" style="font:10px 'Courier New',monospace;fill:#4ca8e8">n (slow)</text>
+
+        <!-- BOTTOM: conductances + faint voltage -->
+        <text x="60" y="190" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">the conductances that result</text>
+        <line x1="60" y1="300" x2="650" y2="300" stroke="#7d766b" stroke-width="1"/>
+        <line x1="60" y1="206" x2="60" y2="300" stroke="#7d766b" stroke-width="1"/>
+        <!-- faint voltage spike -->
+        <path d="M60,294 L210,292 C224,250 238,212 250,210 C266,212 285,250 300,292 C320,300 340,298 360,296 L650,296" fill="none" stroke="rgba(237,232,224,.18)" stroke-width="1.6"/>
+        <text x="250" y="206" text-anchor="middle" style="font:9px 'Source Sans 3',sans-serif;fill:#7d766b">voltage (faint)</text>
+        <!-- g_Na sharp early pulse (m3h) -->
+        <path d="M60,296 L208,294 C220,276 234,222 248,220 C266,224 282,260 300,288 C318,298 340,297 360,296 L650,296" fill="none" stroke="#ff6b6b" stroke-width="2.4"/>
+        <text x="206" y="234" text-anchor="end" style="font:10px 'Courier New',monospace;fill:#ff6b6b">g_Na = m&sup3;h</text>
+        <!-- g_K later broad hump (n4) -->
+        <path d="M60,296 L215,294 C275,288 320,250 365,246 C440,250 545,278 650,290" fill="none" stroke="#4ca8e8" stroke-width="2.4"/>
+        <text x="430" y="240" style="font:10px 'Courier New',monospace;fill:#4ca8e8">g_K = n&#x2074;</text>
+        <text x="345" y="318" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">time</text>
+      </svg>
+      <p class="viz-note">Top: <code>m</code> snaps up and back, <code>h</code> slides down and slowly recovers, <code>n</code> drifts up late. Bottom: multiply them as <code>m&sup3;h</code> and <code>n&#x2074;</code> and you get a sharp early sodium pulse (which drives the upstroke) followed by a slower potassium hump (which brings the voltage down). These are schematic shapes; the simulator computes the exact ones, and this is the moment to scroll up and switch its conductances on.</p>
+    </div>
+  </div>
+
+  <p>So the one thing to carry forward is the timing: <strong>m is fast, h and n are slow</strong>. The fast gate builds the spike, and the slow gates take it down. The exponents are only a count of how many gates have to agree.</p>
+
+  <hr class="sep">
+
+  <h2>The reset, the phases, and the dip below rest</h2>
+
+  <p>If the loop only ran forward, the membrane would stay stuck at the peak. Two slow effects bring it back, and both arrive a little late. The first is sodium <strong>inactivation</strong>, the slow fall of <code>h</code>, which shuts the sodium channels a fraction of a millisecond after they open. The sodium current stops. The second is the <strong>delayed potassium</strong> conductance, the slow rise of <code>n</code>, which opens extra potassium channels just as the peak arrives. With sodium shutting off and potassium opening, the balance swings hard toward potassium and the voltage falls back down toward potassium's equilibrium.</p>
+
+  <p>The potassium channels are slow to close, so they stay open slightly too long, and the voltage dips a little <em>below</em> the resting level before settling. That dip is the <strong>afterhyperpolarization</strong>, and it is a real part of the waveform, not an error. Here is the full shape with its phases labeled.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The action potential, phase by phase</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 330" role="img" aria-label="The action potential waveform. Starting at the resting potential of minus 70 millivolts, a stimulus brings it to threshold near minus 55, then a steep upstroke carries it to a peak of about plus 30, overshooting zero. It then repolarises back down, dips below rest to an afterhyperpolarization near minus 80, and recovers to rest.">
+        <!-- reference voltage lines -->
+        <!-- y(v)=290-(v+90)/130*260 -->
+        <line x1="60" y1="50"  x2="650" y2="50"  stroke="rgba(255,107,107,.25)" stroke-dasharray="3 4"/>
+        <text x="655" y="54" style="font:10px 'Courier New',monospace;fill:#ff6b6b">+30 peak</text>
+        <line x1="60" y1="110" x2="650" y2="110" stroke="rgba(237,232,224,.12)" stroke-dasharray="3 4"/>
+        <text x="655" y="114" style="font:10px 'Courier New',monospace;fill:#9e968a">0</text>
+        <line x1="60" y1="220" x2="650" y2="220" stroke="rgba(232,168,76,.3)" stroke-dasharray="3 4"/>
+        <text x="655" y="224" style="font:10px 'Courier New',monospace;fill:#e8a84c">&minus;55 thresh</text>
+        <line x1="60" y1="250" x2="650" y2="250" stroke="rgba(127,255,107,.3)" stroke-dasharray="3 4"/>
+        <text x="655" y="254" style="font:10px 'Courier New',monospace;fill:#7fff6b">&minus;70 rest</text>
+
+        <!-- axes -->
+        <line x1="60" y1="300" x2="650" y2="300" stroke="#7d766b" stroke-width="1"/>
+        <text x="345" y="322" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">time (about 5 milliseconds across)</text>
+
+        <!-- waveform -->
+        <path d="M60,250 L200,250 Q220,250 234,220 C250,196 270,80 288,50 C302,62 330,200 352,250 C376,278 408,272 432,270 C472,266 520,252 560,250 L650,250"
+              fill="none" stroke="#e8a84c" stroke-width="3"/>
+
+        <!-- phase labels -->
+        <text x="130" y="242" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">resting</text>
+        <text x="232" y="210" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#e8a84c">threshold</text>
+        <text x="262" y="120" text-anchor="end" style="font:10px 'Source Sans 3',sans-serif;fill:#ff6b6b">upstroke (Na in)</text>
+        <text x="300" y="44" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#ff6b6b">peak</text>
+        <text x="360" y="150" style="font:10px 'Source Sans 3',sans-serif;fill:#4ca8e8">repolarise (K out)</text>
+        <text x="430" y="292" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#7fff6b">afterhyperpolarization</text>
+      </svg>
+      <p class="viz-note">Resting, then a push to threshold, then the runaway upstroke, the overshoot past zero, the potassium-driven fall, the dip below rest, and recovery. The active part of the event is over in about a millisecond. That millisecond is what sets the bandwidth your hardware needs.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The two-gate channel and the refractory period</h2>
+
+  <p>The inactivation gate <code>h</code> does more than end one spike. It also sets when the next one is allowed, which gives the membrane a built-in dead time. Think of the sodium channel as a tube with two gates in a row, the fast activation gate and the slow inactivation gate, and both have to be open for sodium to get through. That gives three states.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">One channel, two gates, three states</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 220" role="img" aria-label="Three states of a voltage-gated sodium channel. At rest the fast activation gate is closed and the inactivation gate open, so no sodium passes. When open, both gates are open and sodium floods through. When inactivated, the activation gate is open but the slow inactivation gate has swung shut, blocking sodium even though the voltage is still high.">
+        <!-- three panels -->
+        <g>
+          <text x="120" y="30" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">RESTING</text>
+          <rect x="95" y="45" width="50" height="120" rx="6" fill="#1a1917" stroke="#7d766b" stroke-width="1.5"/>
+          <!-- activation gate closed (bottom) -->
+          <rect x="95" y="120" width="50" height="10" fill="#ff6b6b"/>
+          <!-- inactivation open (top, ball off to side) -->
+          <circle cx="170" cy="60" r="9" fill="#4ca8e8"/>
+          <text x="120" y="190" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#ff6b6b">m gate shut</text>
+          <text x="120" y="205" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#4ca8e8">h gate open</text>
+        </g>
+        <g>
+          <text x="340" y="30" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#7fff6b">OPEN</text>
+          <rect x="315" y="45" width="50" height="120" rx="6" fill="#1a1917" stroke="#7fff6b" stroke-width="1.5"/>
+          <!-- both open: arrow of Na down through -->
+          <circle cx="390" cy="60" r="9" fill="#4ca8e8"/>
+          <line x1="340" y1="52" x2="340" y2="158" stroke="#e8a84c" stroke-width="3"/>
+          <polygon points="340,166 334,152 346,152" fill="#e8a84c"/>
+          <text x="340" y="190" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#7fff6b">m open</text>
+          <text x="340" y="205" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#4ca8e8">h still open: Na+ floods</text>
+        </g>
+        <g>
+          <text x="560" y="30" text-anchor="middle" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">INACTIVATED</text>
+          <rect x="535" y="45" width="50" height="120" rx="6" fill="#1a1917" stroke="#7d766b" stroke-width="1.5"/>
+          <!-- activation open, inactivation ball plugging from top inside -->
+          <circle cx="560" cy="72" r="11" fill="#4ca8e8"/>
+          <text x="560" y="190" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#7fff6b">m open</text>
+          <text x="560" y="205" text-anchor="middle" style="font:10px 'Courier New',monospace;fill:#ff6b6b">h gate plugs it shut</text>
+        </g>
+      </svg>
+      <p class="viz-note">At rest, the fast gate blocks. During the spike both are open and sodium pours through. Then the slow inactivation gate swings in and plugs the channel, and it stays plugged until the voltage has been low again for long enough to reset it. That reset delay is the refractory period.</p>
+    </div>
+  </div>
+
+  <p>This gives two kinds of refractoriness. Right after a spike, in the <strong>absolute refractory period</strong>, so many inactivation gates are still shut that no stimulus, however strong, can fire another spike. A little later, in the <strong>relative refractory period</strong>, inactivation has partly recovered and the delayed potassium is still up, so a spike is possible but needs a stronger push. You can see the relative period in the simulator: hold the current on and the spikes settle into a steady train at a capped rate, because each spike has to wait for the channels behind it to recover.</p>
+
+  <p>The refractory period is not a flaw to design around. It does two useful jobs. It limits how fast the cell can fire, and it keeps the spike moving in one direction, which is the next section.</p>
+
+  <hr class="sep">
+
+  <h2>How the spike travels without shrinking</h2>
+
+  <p>A spike stuck in one patch of membrane would be no use. Here is how it moves. When a patch fires, the sodium that rushes in does not all stay put; some of that charge spreads sideways inside the cell and depolarizes the next patch. That patch is pushed past its own threshold, fires its own full-size spike, depolarizes the patch after it, and so on down the cell. The spike is not carried from one end to the other. It is <strong>made fresh</strong> at each step, every patch firing from its own ion gradients.</p>
+
+  <p>That is why the spike keeps its height. One that starts at full size arrives at full size a meter away, because every point along the way rebuilds it using local energy. And the patch just behind the moving front is refractory, so it cannot fire again, which means the wave cannot turn around or echo backward. It goes one way only.</p>
+
+  <p>This is different from the other way voltage moves through the body, the passive spread we cover in Class 1.5, where a voltage simply leaks outward through the resistance and capacitance of the tissue and gets <em>smaller</em> with distance. So two different things happen in the body at once: the spike is an active wave that rebuilds itself and does not shrink, while plain conduction through tissue is passive and fades. The difference matters, because what reaches a scalp electrode is the faded, passive version of these events, never the spikes themselves.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Active regeneration versus passive decay</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 210" role="img" aria-label="Top: an action potential travelling along an axon, redrawn at full height at each point with a refractory zone trailing behind it that prevents backward travel. Bottom: a passive voltage spreading from a source and shrinking with distance.">
+        <text x="40" y="28" style="font:12px 'Source Sans 3',sans-serif;fill:#7fff6b">ACTIVE: the spike rebuilds itself, full height everywhere</text>
+        <line x1="40" y1="70" x2="640" y2="70" stroke="#7d766b" stroke-width="1.4"/>
+        <!-- refractory trail -->
+        <rect x="120" y="56" width="180" height="14" fill="rgba(255,107,107,.12)"/>
+        <text x="210" y="98" text-anchor="middle" style="font:9px 'Source Sans 3',sans-serif;fill:#ff6b6b">refractory (cannot re-fire, so no backward travel)</text>
+        <!-- identical spikes -->
+        <path d="M300,70 q14,-46 28,0" fill="none" stroke="#e8a84c" stroke-width="2.5"/>
+        <path d="M430,70 q14,-46 28,0" fill="none" stroke="#e8a84c" stroke-width="2.5"/>
+        <path d="M560,70 q14,-46 28,0" fill="none" stroke="#e8a84c" stroke-width="2.5"/>
+        <polygon points="610,63 624,70 610,77" fill="#7fff6b"/>
+        <text x="600" y="52" style="font:9px 'Source Sans 3',sans-serif;fill:#7fff6b">travel</text>
+
+        <text x="40" y="150" style="font:12px 'Source Sans 3',sans-serif;fill:#4ca8e8">PASSIVE: the same push, shrinking with distance</text>
+        <line x1="40" y1="190" x2="640" y2="190" stroke="#7d766b" stroke-width="1.4"/>
+        <path d="M120,190 q12,-58 24,0" fill="none" stroke="#4ca8e8" stroke-width="2.5"/>
+        <path d="M240,190 q12,-34 24,0" fill="none" stroke="#4ca8e8" stroke-width="2.2"/>
+        <path d="M360,190 q12,-18 24,0" fill="none" stroke="#4ca8e8" stroke-width="1.8"/>
+        <path d="M480,190 q12,-8 24,0" fill="none" stroke="#4ca8e8" stroke-width="1.4"/>
+        <path d="M600,190 q12,-3 24,0" fill="none" stroke="#4ca8e8" stroke-width="1.1"/>
+      </svg>
+      <p class="viz-note">Top: the axon carrying a signal at full strength over a long distance. Bottom: what happens to a voltage that is only conducted through tissue. The signal at your electrode comes from the bottom case acting on many summed sources, which is why it is so small.</p>
+    </div>
+  </div>
+
+  <p>Two practical points. The body speeds this wave up in two ways: by making the fiber thicker, which lowers its internal resistance so charge spreads further per step, and by wrapping it in myelin insulation broken by gaps, so the spike jumps from gap to gap instead of crawling along continuously. Speeds range from under a meter per second in thin bare fibers to over a hundred meters per second in thick myelinated ones. None of this changes the spike's height, only how fast it arrives.</p>
+
+  <hr class="sep">
+
+  <h2>The charge still adds up</h2>
+
+  <p>It is worth checking that the spike, big as it looks, moves about the same small amount of charge as the quiet resting potential. The voltage swings by about 100 millivolts, and the membrane capacitance is still about 1 microfarad per square centimeter, so the charge needed to swing it is</p>
+
+  <span class="eqn">Q = C &middot; &Delta;V = (1 &micro;F/cm&sup2;)(0.1 V) = 1 &times; 10&#8315;&#8311; C/cm&sup2;</span>
+
+  <p>Divide by Faraday's constant and you get about <code>10&#8315;&sup1;&sup2;</code> moles of ions per square centimeter per spike, a thin layer next to all the ions in the cell. A cell can fire many times before its gradients drop much, and the pump restores them between spikes. So under the big fast event, only a little charge has moved across a small capacitance. That is why the battery-and-capacitor picture from last class still holds.</p>
+
+  <hr class="sep">
+
+  <h2>What this means at the bench</h2>
+
+  <p>Three things from this carry straight to the hardware, and the first is the one that drives the most decisions.</p>
+
+  <p><strong>The millisecond sets the bandwidth.</strong> Something that rises and falls in about a millisecond has frequency content reaching up into the high hundreds of hertz. Any signal made directly of these spikes, EMG from muscle most of all, is therefore wide-band, and needs sample rates in the kilohertz range with an analog bandwidth to match. When we get to sampling and Nyquist in Unit 3, this is the fact behind those chapters: you cannot pick a sample rate until you know whether your signal is fast spikes or slow waves. It is also why one configurable recorder needs an EMG mode and an EEG mode with very different filter and rate settings.</p>
+
+  <p><strong>You will never see 100 millivolts.</strong> That swing is across the membrane, measured inside the cell. A scalp or skin electrode sees only the faint, distant, summed remainder of huge numbers of these events, weakened by everything between the source and the surface. That is how a 100 millivolt event at the cell becomes a few microvolts at your amplifier. Working out how the signal shrinks from membrane to surface is what Classes 1.4 and 1.5 are for.</p>
+
+  <p><strong>What you mostly record is not the spike.</strong> Spikes are brief and tend to fire out of step, so when many of them add up across a population their sharp shapes partly cancel and the distant signal is small. Slower events, like the synaptic potentials that move across many neurons at roughly the same time, add up much better and dominate what a surface EEG electrode sees. That is why scalp EEG is mostly slow, synchronized activity rather than individual spikes, and why EEG sits at low frequencies while EMG, which rides the spikes directly, sits at high ones. We build that contrast over the next few classes. Here we just needed the single event that all of it is made from.</p>
+
+  <div class="callout">The action potential is a one millisecond, same-size-every-time pulse that rebuilds itself as it travels. Its speed sets your bandwidth, its drop from 100 millivolts to a few microvolts sets your sensitivity, and whether your signal is made of these fast spikes or of slower synchronized waves decides most of your hardware settings.</div>
+
+  <hr class="sep">
+
+  <h2>Check yourself before Class 4</h2>
+
+  <p>Eight questions, all answerable from this post. Tap an answer and it marks itself and explains. The membrane simulator above is there if you want to test a claim against the equations.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A short, self-marking quiz</span></div>
+    <div class="viz-body">
+      <div class="quiz-progress" id="quizProgress"></div>
+      <div id="quizHost"></div>
+      <div class="quiz-final" id="quizFinal"></div>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Biosignal Acquisition for Embedded Engineers &middot; Unit 1: The Signals</h2>
+    <a class="sidebar-link" href="a-microvolt-of-meaning.html"><div class="sidebar-link-title">1.1 What a signal and a biopotential are</div><div class="sidebar-link-note">The 110 dB problem.</div></a>
+    <a class="sidebar-link" href="a-battery-made-of-salt-water.html"><div class="sidebar-link-title">1.2 The membrane as a battery</div><div class="sidebar-link-note">Nernst, resting potential.</div></a>
+    <a class="sidebar-link active-topic" href="#"><div class="sidebar-link-title">1.3 The action potential</div><div class="sidebar-link-note">You are here</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.4 From one cell to a population</div><div class="sidebar-link-note">N vs root-N.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.5 Volume conduction</div><div class="sidebar-link-note">1/r fall-off.</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.6 Why we measure differences</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.7 EEG, the small-signal extreme</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">1.9 EMG, the wide-band extreme</div></a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Rest is a stable equilibrium; a spike is a triggered instability</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Driving force = V_m &minus; E_ion</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Sodium positive feedback drives the upstroke</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Threshold makes it all-or-nothing</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">m is fast, h and n are slow</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Inactivation gives the refractory period</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">Active wave does not decay; volume conduction does</div></a>
+    <a class="sidebar-link" href="#"><div class="sidebar-link-title">One millisecond sets the bandwidth</div></a>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+<script>
+document.getElementById('year').textContent=new Date().getFullYear();
+const hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',()=>{hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(l=>l.addEventListener('click',()=>{hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';}));
+
+// ── live Hodgkin-Huxley membrane ─────────────────────────────────────────────
+(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.getElementById('hhSvg');
+  const stim=document.getElementById('hhStim'),stimV=document.getElementById('hhStimV');
+  const sustain=document.getElementById('hhSustain'),showG=document.getElementById('hhShowG');
+  const verdict=document.getElementById('hhVerdict'),sub=document.getElementById('hhSub'),legend=document.getElementById('hhLegend');
+
+  // plot box
+  const X0=58,X1=655,Y0=270,Y1=24, T_TOTAL=30; // ms
+  const VMIN=-90,VMAX=50;
+  function tx(t){return X0+(t/T_TOTAL)*(X1-X0);}
+  function vy(v){return Y0-((v-VMIN)/(VMAX-VMIN))*(Y0-Y1);}
+  function gy(frac){return Y0-frac*(Y0-Y1);} // conductance 0..1 of its own scale
+
+  function el(tag,attrs){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+  // static frame
+  function frame(){
+    svg.appendChild(el('line',{x1:X0,y1:Y0,x2:X1,y2:Y0,stroke:'#7d766b','stroke-width':1}));
+    svg.appendChild(el('line',{x1:X0,y1:Y1,x2:X0,y2:Y0,stroke:'#7d766b','stroke-width':1}));
+    // voltage gridlines
+    [[0,'0'],[ -70,'rest'],[30,'+30']].forEach(([v,lab])=>{
+      const y=vy(v);
+      svg.appendChild(el('line',{x1:X0,y1:y,x2:X1,y2:y,stroke:'rgba(237,232,224,.10)','stroke-dasharray':'3 4'}));
+      const t=el('text',{x:X0-6,y:y+3,'text-anchor':'end',style:"font:10px 'Courier New',monospace;fill:#9e968a"});t.textContent=lab;svg.appendChild(t);
+    });
+    const xl=el('text',{x:(X0+X1)/2,y:Y0+26,'text-anchor':'middle',style:"font:11px 'Source Sans 3',sans-serif;fill:#9e968a"});xl.textContent='time (ms)  \u2192  stimulus injected at 5 ms';svg.appendChild(xl);
+  }
+  frame();
+  const vLine=el('polyline',{fill:'none',stroke:'#e8a84c','stroke-width':2.6});svg.appendChild(vLine);
+  const naLine=el('polyline',{fill:'none',stroke:'#ff6b6b','stroke-width':1.6,opacity:.85});svg.appendChild(naLine);
+  const kLine=el('polyline',{fill:'none',stroke:'#4ca8e8','stroke-width':1.6,opacity:.85});svg.appendChild(kLine);
+  const stimMark=el('line',{x1:tx(5),y1:Y1,x2:tx(5),y2:Y0,stroke:'rgba(127,255,107,.4)','stroke-dasharray':'2 4'});svg.appendChild(stimMark);
+
+  // HH rate functions (V in mV, classic, rest about -65)
+  function aM(V){const d=V+40;return Math.abs(d)<1e-6?1.0:0.1*d/(1-Math.exp(-d/10));}
+  function bM(V){return 4*Math.exp(-(V+65)/18);}
+  function aH(V){return 0.07*Math.exp(-(V+65)/20);}
+  function bH(V){return 1/(1+Math.exp(-(V+35)/10));}
+  function aN(V){const d=V+55;return Math.abs(d)<1e-6?0.1:0.01*d/(1-Math.exp(-d/10));}
+  function bN(V){return 0.125*Math.exp(-(V+65)/80);}
+
+  const gNaMax=120,gKMax=36,gL=0.3,ENa=50,EK=-77,EL=-54.4,Cm=1;
+
+  function simulate(Iamp,hold){
+    const dt=0.01, N=Math.round(T_TOTAL/dt);
+    let V=-65, m=0.0529, h=0.5961, n=0.3177;
+    const out=[];
+    for(let i=0;i<=N;i++){
+      const t=i*dt;
+      const I = (hold ? (t>=5?Iamp:0) : ((t>=5&&t<6)?Iamp:0));
+      const gNa=gNaMax*m*m*m*h, gK=gKMax*n*n*n*n;
+      const dV=(I - gNa*(V-ENa) - gK*(V-EK) - gL*(V-EL))/Cm;
+      const dm=aM(V)*(1-m)-bM(V)*m;
+      const dh=aH(V)*(1-h)-bH(V)*h;
+      const dn=aN(V)*(1-n)-bN(V)*n;
+      V+=dV*dt; m+=dm*dt; h+=dh*dt; n+=dn*dt;
+      if(m<0)m=0;if(m>1)m=1;if(h<0)h=0;if(h>1)h=1;if(n<0)n=0;if(n>1)n=1;
+      if(i%3===0) out.push({t,V,gNa,gK});
+    }
+    return out;
+  }
+
+  function poly(line,pts){line.setAttribute('points',pts.join(' '));}
+
+  function refresh(){
+    const Iamp=+stim.value, hold=sustain.checked;
+    stimV.textContent=Iamp.toFixed(1)+' \u00b5A/cm\u00b2';
+    const data=simulate(Iamp,hold);
+    // voltage trace
+    poly(vLine,data.map(p=>tx(p.t).toFixed(1)+','+vy(p.V).toFixed(1)));
+    // conductances scaled to their own maxima for visibility
+    if(showG.checked){
+      legend.style.display='flex'; naLine.style.display=''; kLine.style.display='';
+      poly(naLine,data.map(p=>tx(p.t).toFixed(1)+','+gy(Math.min(1,p.gNa/gNaMax)).toFixed(1)));
+      poly(kLine,data.map(p=>tx(p.t).toFixed(1)+','+gy(Math.min(1,p.gK/gKMax)).toFixed(1)));
+    } else { legend.style.display='none'; naLine.style.display='none'; kLine.style.display='none'; }
+    // count spikes: upward crossings of 0 mV
+    let spikes=0,peak=-100,prev=-65;
+    data.forEach(p=>{ if(prev<0&&p.V>=0)spikes++; if(p.V>peak)peak=p.V; prev=p.V; });
+    if(spikes>0){
+      verdict.className='hh-verdict fire';
+      verdict.textContent = spikes===1 ? 'FIRED: one full action potential' : ('FIRED: a train of '+spikes+' spikes');
+      sub.textContent='peak '+peak.toFixed(0)+' mV (overshoots zero). Note the height barely changes with stimulus strength: that is all-or-nothing.';
+    } else {
+      verdict.className='hh-verdict fizzle';
+      verdict.textContent='did not fire';
+      sub.textContent='peak '+peak.toFixed(0)+' mV. The nudge was subthreshold, so the potassium leak pulled the membrane back to rest.';
+    }
+  }
+  [stim,sustain,showG].forEach(c=>c.addEventListener('input',refresh));
+  const PRE=[['subthreshold (3)',3,false],['just over (8)',8,false],['slam it (28)',28,false],['hold for a train',12,true]];
+  const ph=document.getElementById('hhPre');
+  PRE.forEach(([lab,amp,hold])=>{const b=document.createElement('button');b.type='button';b.className='preset-btn';b.textContent=lab;
+    b.addEventListener('click',()=>{stim.value=amp;sustain.checked=hold;refresh();});ph.appendChild(b);});
+  refresh();
+})();
+
+// ── quiz ─────────────────────────────────────────────────────────────────────
+(function(){
+  const QUIZ=[
+    {q:"The resting potential is a stable equilibrium. Why does that make a spontaneous spike impossible without something extra?",
+     opts:[{t:"Stable means the voltage can never change at all"},{t:"A stable equilibrium self-corrects any nudge, so it resists the large fast change a spike requires",c:true},{t:"Stable means the membrane has no capacitance"},{t:"Because potassium channels are closed at rest"}],
+     ex:"At rest the membrane is negative feedback: any nudge is pulled back. A spike needs a destabilising element, the voltage-gated sodium channel wired as positive feedback, to overcome that."},
+    {q:"At rest, V_m is about \u221270 mV and E_Na about +60 mV. The driving force on sodium is:",
+     opts:[{t:"+19 mV"},{t:"\u221270 mV"},{t:"\u2212130 mV",c:true},{t:"0 mV"}],
+     ex:"Driving force is V_m \u2212 E_ion = (\u221270) \u2212 (+60) = \u2212130 mV. Its large size is why sodium floods in so violently the instant its channels open."},
+    {q:"What actually produces the explosive upstroke of the action potential?",
+     opts:[{t:"Potassium leaving the cell faster"},{t:"Sodium entering makes the inside more positive, which opens more sodium channels: positive feedback",c:true},{t:"The pump reversing direction"},{t:"The capacitance suddenly increasing"}],
+     ex:"Sodium entry depolarises, depolarisation opens more sodium channels, more sodium enters. That runaway positive-feedback loop is the steep upstroke."},
+    {q:"A stimulus just past threshold and a stimulus far past threshold produce spikes that are:",
+     opts:[{t:"Proportional in height to the stimulus"},{t:"Identical in height (all-or-nothing)",c:true},{t:"Larger for the weaker stimulus"},{t:"Only present for the stronger one"}],
+     ex:"Once threshold is crossed, the regenerative loop completes on its own. Amplitude is set by the ion gradients, not the stimulus, so both spikes are the same height. Information is in timing and rate, not size."},
+    {q:"In g_Na = g\u0304_Na &middot; m\u00b3h, what ends the sodium current even while the membrane is still depolarised?",
+     opts:[{t:"m rising further"},{t:"The slow inactivation gate h falling toward zero",c:true},{t:"E_Na changing sign"},{t:"The capacitance discharging"}],
+     ex:"m is the fast activation gate; h is the slow inactivation gate. Shortly after the channel opens, h falls and plugs it shut, cutting off sodium independent of the voltage."},
+    {q:"The afterhyperpolarization (the brief dip below rest) happens because:",
+     opts:[{t:"Sodium keeps entering after the peak"},{t:"The slow potassium channels stay open a little too long, pulling V toward E_K",c:true},{t:"The electrode saturates"},{t:"The pump overshoots"}],
+     ex:"The delayed potassium conductance (n\u2074) is sluggish to switch off, so just after repolarisation it briefly drives the membrane below rest toward pure E_K before settling."},
+    {q:"Why does an action potential travel down an axon without losing amplitude, unlike a passively conducted voltage?",
+     opts:[{t:"The axon has zero resistance"},{t:"Each patch regenerates a fresh full-height spike from its own ion gradients",c:true},{t:"The signal is amplified by the electrode"},{t:"Myelin adds energy to the signal"}],
+     ex:"Propagation is active re-creation, not passive transmission. Every patch fires anew, so height is restored at each step. Passive (volume) conduction has no such regeneration and decays with distance."},
+    {q:"Why does scalp EEG mostly reflect slow synchronized synaptic potentials rather than individual fast spikes?",
+     opts:[{t:"Spikes are too large to record"},{t:"Brief, unsynchronised spikes partly cancel when summed, while slow synchronized potentials add up far better in the far field",c:true},{t:"The skull blocks only high frequencies by mistake"},{t:"Neurons do not actually spike"}],
+     ex:"Far-field summation favours slow, synchronized sources. Fast spikes fire out of step and their sharp contributions cancel, so EEG sits at low frequencies. EMG, riding the spikes directly, sits at high ones, which is the core reason the two need different hardware settings."}
+  ];
+  let answered=0,score=0;
+  const host=document.getElementById('quizHost'),prog=document.getElementById('quizProgress'),fin=document.getElementById('quizFinal');
+  function updateProg(){prog.textContent=answered+' / '+QUIZ.length+' answered   \u00b7   score '+score;}
+  QUIZ.forEach((item,qi)=>{
+    const card=document.createElement('div');card.className='quiz-q';
+    const qt=document.createElement('div');qt.className='quiz-q-text';qt.innerHTML='<span class="quiz-q-num">Q'+(qi+1)+'.</span>'+item.q;card.appendChild(qt);
+    const btns=[],correctIdx=item.opts.findIndex(z=>z.c);
+    item.opts.forEach(o=>{
+      const b=document.createElement('button');b.className='quiz-opt';b.type='button';b.innerHTML=o.t+'<span class="mk"></span>';
+      b.addEventListener('click',()=>{
+        if(card.dataset.done)return;card.dataset.done='1';answered++;btns.forEach(x=>x.disabled=true);
+        if(o.c){b.classList.add('correct');b.querySelector('.mk').textContent='\u2713';score++;}
+        else{b.classList.add('wrong');b.querySelector('.mk').textContent='\u2717';const r=btns[correctIdx];r.classList.add('correct');r.querySelector('.mk').textContent='\u2713';}
+        ex.classList.add('show');updateProg();if(answered===QUIZ.length)showFinal();
+      });
+      btns.push(b);card.appendChild(b);
+    });
+    const ex=document.createElement('div');ex.className='quiz-explain';ex.textContent=item.ex;card.appendChild(ex);
+    host.appendChild(card);
+  });
+  function showFinal(){let msg;
+    if(score===QUIZ.length)msg='A clean sweep. On to the population.';
+    else if(score>=QUIZ.length-1)msg=score+' out of '+QUIZ.length+'. Solidly done. On to Class 4.';
+    else if(score>=QUIZ.length-3)msg=score+' out of '+QUIZ.length+'. Good. Replay the membrane simulator and you have it.';
+    else msg=score+' out of '+QUIZ.length+'. Worth another pass. Fast sodium up, slow potassium down, threshold makes it a bit.';
+    fin.textContent=msg;fin.classList.add('show');}
+  updateProg();
+})();
+</script>
+</body>
+</html>

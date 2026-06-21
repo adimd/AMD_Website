@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Endless Sum That Stops | The Mathematics ML Runs On</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#f4efe7;--body:#cbc4b9;--muted:#9e968a;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.016;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}.nav-links a:hover::after{width:100%}
+    .dropdown{position:relative}
+    .dropbtn{background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+    .dropbtn:hover{color:var(--ink)}
+    .dropdown-content{display:none;position:absolute;top:calc(100% + 8px);left:-12px;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:10px;padding:.5rem 0;min-width:180px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+    .dropdown:hover .dropdown-content{display:block}
+    .dropdown-content a{display:block;padding:.5rem 1.2rem;font-size:.9rem;color:var(--body)!important}
+    .dropdown-content a:hover{color:var(--ink)!important;background:var(--accent-dim)}
+    .dropdown-content a::after{display:none}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.22rem;color:var(--body);font-weight:400;margin-bottom:2.2rem;line-height:1.62}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+    .article p{font-size:1.19rem;font-weight:400;margin-bottom:1.35rem;line-height:1.8}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.93em;background:rgba(232,168,76,.15);padding:.2rem .48rem;border-radius:4px;color:#f1dcb2;font-family:'Courier New',monospace}
+    .article ul{padding-left:1.3rem;margin:.4rem 0 1.2rem}
+    .article li{font-size:1.15rem;font-weight:400;margin:.4rem 0}
+    .callout{margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+    .viz-note{font-size:1rem;color:#bcb5a8;margin-top:1.1rem;font-style:italic;line-height:1.72}
+
+    .comments-section{margin-top:2.5rem}
+    .comments-section h2{font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}}
+  </style>
+  <style>
+    .m{font-family:Georgia,'Times New Roman',serif;font-style:italic;color:var(--ink)}
+    .m sub,.m sup{font-style:normal}
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.5rem 0;overflow-x:auto;font-family:'Courier New',monospace;font-size:.9rem;line-height:1.7;color:var(--body);white-space:pre}
+    .codeblock .cmt{color:var(--muted)} .codeblock .out{color:var(--green)} .codeblock .kw{color:var(--blue)} .codeblock .red{color:var(--red)} .codeblock .str{color:var(--accent)}
+    .codeblock .cap{display:block;color:var(--muted);font-size:.78rem;margin-bottom:.5rem;font-family:var(--sans);font-style:italic}
+    .lead-q{font-family:var(--display);font-size:1.5rem;font-style:italic;color:var(--ink);line-height:1.42;margin:1.7rem 0;padding-left:1.1rem;border-left:3px solid var(--accent)}
+    .ml-tag{display:inline-block;font-family:'Courier New',monospace;font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);background:var(--blue-dim);border:1px solid rgba(76,168,232,.3);border-radius:4px;padding:.12rem .5rem;margin-bottom:.4rem}
+
+    .lab-btn{padding:.5rem 1rem;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);cursor:pointer;font-size:.88rem;font-family:'Courier New',monospace}
+    .lab-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .lab-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+    .ctl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:.6rem}
+    .ctl-lbl{font-size:.74rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-right:.2rem}
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;margin-top:1rem}
+    .stat{font-size:1rem;color:var(--muted);margin:7px 0;line-height:1.55}
+    .stat b{color:var(--ink);font-weight:500;font-family:'Courier New',monospace}
+    .big{font-size:1.35rem;font-weight:500;font-family:'Courier New',monospace;color:var(--ink);margin:6px 0}
+    .note-line{font-size:1rem;color:var(--muted);line-height:1.6;min-height:2.4em;margin-top:.6rem}
+    .run-steps{font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);line-height:1.85;margin:.4rem 0}
+    .run-steps .k{color:var(--muted)} .run-steps b{color:var(--ink)}
+    .dim-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.7rem}
+    .dim-row .lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);min-width:130px}
+    .dim-slider{flex:1;min-width:170px;accent-color:var(--accent)}
+
+    .twocol{display:flex;gap:1rem;flex-wrap:wrap}
+    .twocol .pane{flex:1;min-width:250px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem}
+    .pane h4{font-family:var(--sans);font-size:.95rem;color:var(--ink);margin-bottom:.6rem;font-weight:600}
+    .pane .prow{font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);margin:3px 0}
+    .pane .tot{margin-top:.55rem;padding-top:.55rem;border-top:1px dashed var(--border);font-family:'Courier New',monospace;font-size:1rem;color:var(--ink)}
+    .pane.bad{border-color:rgba(255,107,107,.4)} .pane.bad .tot{color:var(--red)}
+    .pane.good{border-color:rgba(127,255,107,.4)} .pane.good .tot{color:var(--green)}
+
+    .quiz-progress{font-family:'Courier New',monospace;font-size:.95rem;color:var(--accent);margin-bottom:1.2rem;letter-spacing:.02em}
+    .quiz-q{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.3rem 1.4rem;margin-bottom:1.1rem}
+    .quiz-q-text{font-size:1.12rem;color:var(--ink);font-weight:500;margin-bottom:1rem;line-height:1.5}
+    .quiz-q-num{color:var(--accent);font-family:'Courier New',monospace;margin-right:.5rem}
+    .quiz-opt{display:block;width:100%;text-align:left;padding:.75rem 1rem;margin:.5rem 0;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);font-family:inherit;font-size:1.04rem;cursor:pointer;transition:all .18s;line-height:1.45}
+    .quiz-opt:hover:not(:disabled){border-color:var(--accent);color:var(--ink)}
+    .quiz-opt:disabled{cursor:default}
+    .quiz-opt.correct{background:var(--green-dim);border-color:rgba(127,255,107,.5);color:var(--ink)}
+    .quiz-opt.wrong{background:var(--red-dim);border-color:rgba(255,107,107,.5);color:var(--ink)}
+    .quiz-opt .mk{float:right;font-weight:700;margin-left:.6rem}
+    .quiz-opt.correct .mk{color:var(--green)} .quiz-opt.wrong .mk{color:var(--red)}
+    .quiz-explain{margin-top:.8rem;padding:.85rem 1.1rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.62;display:none}
+    .quiz-explain.show{display:block;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+    .quiz-final{margin-top:1.3rem;padding:1.2rem 1.4rem;border-radius:10px;background:var(--bg-card);border:1px solid var(--accent);font-family:var(--display);font-size:1.4rem;color:var(--ink);text-align:center;display:none}
+    .quiz-final.show{display:block;animation:rise .4s cubic-bezier(.22,1,.36,1) both}
+  </style>
+  <script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},options:{ignoreHtmlClass:'codeblock|run-out|run-row|dim-row|sig-list'}};</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a><a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+      <a href="../startup.html">Moisture Meter</a>
+      <div class="dropdown"><button class="dropbtn">Beyond the Desk &#9662;</button>
+        <div class="dropdown-content">
+          <a href="../teaching.html">Teaching Roles</a>
+          <a href="../workshops.html">Workshops</a>
+          <a href="../talks.html">Talks</a>
+        </div>
+      </div>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a><a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a><a href="../projects.html">Projects</a>
+  <a href="../startup.html">Moisture Meter</a>
+  <a href="../teaching.html">Teaching Roles</a>
+  <a href="../workshops.html">Workshops</a>
+  <a href="../talks.html">Talks</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <style>
+    .thread-box{margin:2rem 0;padding:1.2rem 1.5rem;border-radius:0 14px 14px 0;border-left:3px solid var(--blue);background:rgba(76,168,232,.10)}
+    .thread-label{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:.5rem}
+    .thread-text{font-size:1.08rem;color:var(--body);line-height:1.72}
+    .thread-text strong{color:var(--ink)}
+    .closing-statement{margin:2.5rem 0;padding:2rem 2.2rem;border-radius:14px;background:#232220;border:1px solid var(--border-hover);font-family:var(--display);font-size:1.22rem;color:var(--body);line-height:1.82;font-style:italic}
+    .closing-statement strong{color:var(--ink);font-style:normal}
+  </style>
+
+  <span class="series-tag"><span class="series-dot"></span>The Mathematics ML Runs On &middot; Class 9</span>
+  <h1>The Endless Sum That Stops</h1>
+  <p class="blog-subtitle">When a computer trains a model, sharpens an estimate, or works through an unfinished sum, it repeats one step over and over and produces a long run of numbers, one after each step. This class is about the single question hanging over every such process: does that run of numbers settle down to an answer, or not? Answering it takes three ideas, sequences, limits, and convergence, and you can run each one right here in the page as we build it.</p>
+
+  <h2>A sum that should be infinite, and isn&rsquo;t</h2>
+
+  <p>Start by adding fractions: \(1 + \tfrac12 + \tfrac13 + \tfrac14 + \tfrac15 + \cdots\), one over each whole number, going on forever. The pieces you add keep shrinking, a hundredth, a thousandth, a millionth, so it is natural to expect the running total to slow down and level off somewhere finite, the way many sums do.</p>
+
+  <p>It does not. This is the harmonic series, and one of the first results you meet in calculus is that its total grows without any bound at all: keep going and it passes 10, then 100, then any number you care to name. The pieces shrink toward nothing, and the sum is still infinite. That ought to feel strange, and the convergence section will show exactly why it happens. For now, take it as a settled fact: added in full, this series is infinite.</p>
+
+  <p>Now give the same sum to a computer. You might expect it to confirm the mathematics, climbing higher the longer it runs. It does not, and that disagreement, between what the mathematics says and what the machine does, is what we are about to understand. The program below adds the terms first in the computer&rsquo;s normal precision, then again in the lower-precision <code>float32</code> the ESP32 uses, where every step is rounded with <code>Math.fround</code>. Press Run and watch where the two totals end up.</p>
+
+<div class="codeblock"><span class="cap">harmonic.js</span><span class="cmt">// normal precision (float64): add two million terms</span>
+let s = 0;
+for (let n = 1; n &lt;= 2000000; n++) s += 1 / n;
+console.log("float64, 2,000,000 terms:", s);   <span class="cmt">// still climbing</span>
+
+<span class="cmt">// low precision (float32): add until the total stops moving</span>
+let f = Math.fround(0);
+for (let n = 1; ; n++) {
+  let next = Math.fround(f + Math.fround(1 / n));
+  if (next === f) { console.log("float32 froze at n =", n, "sum =", f); break; }
+  f = next;
+}</div>
+  <div class="run-row"><button class="lab-btn" id="runHarm">&#9654; Run</button><span class="run-hint">runs live in your browser</span></div>
+  <pre class="run-out empty" id="outHarm">output appears here</pre>
+
+  <p>The two totals set off together and finish in completely different places. In normal precision the sum is still climbing past 15 after two million terms, exactly as the mathematics promised, with no end in sight. The <code>float32</code> sum does something else: it climbs, slows, and then stops. After 2,097,152 terms it reaches \(15.4037\), and from there every further term leaves it exactly where it was. A sum the mathematics calls infinite has come to rest, on this machine, at a small finite number.</p>
+
+  <p>Why should adding a positive number leave the total unchanged? The answer is the machine epsilon from Unit 1. A <code>float</code> can only land on certain spaced-out numbers, and that spacing grows as the numbers get larger. By the time the running sum is near 15, the nearest <code>float32</code> values are about \(15 \times 10^{-7} \approx 0.0000018\) apart. So once a term \(1/n\) has shrunk below half of that spacing, adding it gives a result that rounds straight back to the total you already had. The addition still runs; it just makes no difference, and every later term is smaller still. The whole infinite tail adds up to nothing the machine can record. The series has not reached a limit in any mathematical sense; the machine has run out of the resolution it would need to feel the terms that remain.</p>
+
+  <p class="lead-q">When does an endless process settle, what does it settle to, and how do you tell a real stop from a machine that has just run out of resolution?</p>
+
+  <p>Each of those questions has a name. The run of numbers a process produces is a <strong>sequence</strong>. The value it heads toward is its <strong>limit</strong>. Whether it actually arrives is <strong>convergence</strong>. And these are not academic curiosities: Class 8 showed that a model cannot be found by trying every possible setting, so the only way forward is to start somewhere and improve one step at a time, which is exactly what produces a long run of numbers like the one above. Whether that run settles is whether the training ever finishes.</p>
+
+  <div class="thread-box">
+    <div class="thread-label">the thread</div>
+    <div class="thread-text">One question hangs over every repeated process: <strong>does the run of numbers it produces settle on an answer?</strong> The harmonic sum shows how slippery that question is, the mathematics calls it infinite while the <code>float32</code> machine freezes it at 15.4037. Three ideas pin the question down, a <strong>sequence</strong>, its <strong>limit</strong>, and whether it <strong>converges</strong>, and the sting is that &ldquo;stopped moving&rdquo; on a real chip can mean the process arrived, or only that its steps fell below what the numbers can hold. Training is exactly this sequence, and the learning rate decides whether it settles, oscillates, or explodes.</div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Sequences: one number per step</h2>
+
+  <p>We already built a sequence without naming it. Each time the program added a term, it produced a fresh running total: one number after the first term, another after the second, another after the third. Stand those totals in a line, in the order they appeared, and that line is a <strong>sequence</strong>, an ordered list \(a_1, a_2, a_3, \ldots\) with one term \(a_n\) for each step \(n\).</p>
+
+  <p>The order is what separates a sequence from a set. The set \(\{2, 5, 9\}\) is the same collection as \(\{9, 5, 2\}\); nothing about it cares which number you write first. In a sequence the position is the point: the fifth term comes after the fourth, and that word, <em>after</em>, is what lets us ask the one question we care about, where the numbers are heading as the steps go on.</p>
+
+  <p>Three kinds of sequence will keep coming back, and we have met all three. The plainest is the list of terms \(1/n\) on its own, \(1, \tfrac12, \tfrac13, \tfrac14, \ldots\), the very numbers we were adding in the opening. Drawn against the step number, it simply steps downward toward zero.</p>
+
+<div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A sequence is one value per step, read in order</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 200" role="img" aria-label="Dots for the sequence a-n equals 1 over n, plotted against the step number, starting at 1 and dropping toward 0 as n grows.">
+        <line x1="60" y1="40" x2="60" y2="170" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="170" x2="640" y2="170" stroke="#7d766b" stroke-width="0.8"/>
+        <text x="52" y="46" text-anchor="end" style="font:11px 'Courier New',monospace;fill:#9e968a">1</text>
+        <text x="52" y="173" text-anchor="end" style="font:11px 'Courier New',monospace;fill:#9e968a">0</text>
+        <text x="30" y="108" text-anchor="middle" transform="rotate(-90 30 108)" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">value a&#8345;</text>
+        <g fill="#4ca8e8">
+          <circle cx="60" cy="40" r="4.5"/><circle cx="111" cy="105" r="4.5"/><circle cx="162" cy="127" r="4.5"/><circle cx="213" cy="138" r="4.5"/><circle cx="264" cy="144" r="4.5"/><circle cx="315" cy="148" r="4"/><circle cx="366" cy="151" r="4"/><circle cx="417" cy="154" r="4"/><circle cx="468" cy="155" r="3.5"/><circle cx="519" cy="157" r="3.5"/><circle cx="570" cy="158" r="3.5"/><circle cx="621" cy="159" r="3.5"/>
+        </g>
+        <g style="font:10px 'Courier New',monospace;fill:#cbc4b9" text-anchor="middle"><text x="60" y="187">1</text><text x="162" y="187">3</text><text x="264" y="187">5</text><text x="417" y="187">8</text><text x="621" y="187">12</text></g>
+        <text x="350" y="199" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">step n &rarr;</text>
+        <text x="300" y="62" style="font:13px 'Courier New',monospace;fill:#e8a84c">a&#8345; = 1/n</text>
+        <text x="300" y="80" style="font:12px 'Source Sans 3',sans-serif;fill:#9e968a">each step gives one number, and they head downward</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>The running totals of those terms make a second sequence, the <strong>partial sums</strong>: \(1\), then \(1 + \tfrac12\), then \(1 + \tfrac12 + \tfrac13\), and so on. That sequence of totals is the one we watched climb in the opening. The third is a training run, where the loss after each update, \(a_1, a_2, a_3, \ldots\), gives one number per step. That is the loss curve you watch while a model trains, and it is a sequence and nothing more exotic: the optimiser starts somewhere, takes a step, reports a loss, takes another step, reports another. Every question you ask about training, is it improving, has it settled, did it blow up, is a question about how this one sequence behaves as the steps pile up.</p>
+
+  <hr class="sep">
+
+  <h2>Limits: where a sequence is heading</h2>
+
+  <p>With a sequence in front of us, the useful question is not what any single term equals, but where the terms are going as we read further along. If they crowd in around one particular value and settle there, that value is the sequence&rsquo;s <strong>limit</strong>: the number it is trying to reach.</p>
+
+  <p>What does it mean for the terms to head toward a value \(L\)? Not that any term equals \(L\); many sequences never land on their limit exactly. It means the terms get arbitrarily close to \(L\) and, just as important, do not wander off again. Closeness on its own is not enough, because a sequence could pass near \(L\) once and then drift away. The closeness has to last.</p>
+
+  <p>Here is the test that captures both halves at once. Draw a band around \(L\), as narrow as you like. The sequence has limit \(L\) if, however narrow the band is, there is some step beyond which every later term lies inside it and stays there. A tighter band may force you to read further along before that holds, but for a genuine limit such a step always exists. This is the working definition of a limit; the fully formal version waits for a later analysis course.</p>
+
+  <p>A concrete example makes the test tangible. Add \(\tfrac12 + \tfrac14 + \tfrac18 + \cdots\), each term half the one before, and follow the running total: \(0.5, 0.75, 0.875, 0.9375, \ldots\). Watch what each step does to the gap between the total and 1. The first term leaves a gap of \(\tfrac12\). The next, \(\tfrac14\), closes half of that gap, leaving \(\tfrac14\). The one after closes half again, leaving \(\tfrac18\). Every term halves whatever gap is left, so the total can be brought as close to 1 as you like, yet never reaches it or passes it. Its limit is 1.</p>
+
+<div class="codeblock"><span class="cap">zeno.js</span><span class="cmt">// partial sums of 1/2 + 1/4 + 1/8 + ...</span>
+let s = 0;
+for (let n = 1; n &lt;= 12; n++) {
+  s += 1 / 2**n;
+  console.log(n + " terms  ->  " + s);
+}</div>
+  <div class="run-row"><button class="lab-btn" id="runZeno">&#9654; Run</button><span class="run-hint">each step closes half the gap to 1</span></div>
+  <pre class="run-out empty" id="outZeno">output appears here</pre>
+
+<div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A limit L: from some step on, every term stays inside any band you draw</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 210" role="img" aria-label="A sequence of dots wandering at first, then entering a shaded tolerance band around the limit line L and staying inside it from a certain step onward.">
+        <line x1="60" y1="40" x2="60" y2="180" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="180" x2="640" y2="180" stroke="#7d766b" stroke-width="0.8"/>
+        <rect x="60" y="98" width="580" height="34" fill="#e8a84c" opacity="0.12"/>
+        <line x1="60" y1="115" x2="640" y2="115" stroke="#e8a84c" stroke-width="1.2" stroke-dasharray="5 4"/>
+        <text x="646" y="119" style="font:12px 'Courier New',monospace;fill:#e8a84c">L</text>
+        <text x="646" y="103" style="font:9px 'Courier New',monospace;fill:#9e968a">L+band</text>
+        <text x="646" y="138" style="font:9px 'Courier New',monospace;fill:#9e968a">L-band</text>
+        <g fill="#4ca8e8">
+          <circle cx="90" cy="55" r="4.5"/><circle cx="150" cy="168" r="4.5"/><circle cx="210" cy="78" r="4.5"/><circle cx="270" cy="150" r="4.5"/><circle cx="330" cy="100" r="4.5"/>
+          <circle cx="390" cy="126" r="4"/><circle cx="450" cy="110" r="4"/><circle cx="510" cy="119" r="4"/><circle cx="570" cy="113" r="4"/><circle cx="620" cy="116" r="4"/>
+        </g>
+        <line x1="360" y1="40" x2="360" y2="180" stroke="#7fff6b" stroke-width="0.8" stroke-dasharray="3 3"/>
+        <text x="364" y="52" style="font:11px 'Source Sans 3',sans-serif;fill:#7fff6b">from here on, every term stays in the band</text>
+        <text x="350" y="202" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">step n &rarr;</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>The limit of the loss sequence is the value training is trying to reach, the bottom of the valley it is heading into. When people say a model has &ldquo;converged,&rdquo; they mean its loss sequence has reached a limit and stopped improving. Knowing what a limit is, and what it would take to actually be at one, is what lets you tell a model that has finished learning from one that has merely slowed down.</p>
+
+  <hr class="sep">
+
+  <h2>Convergence: does the sequence arrive?</h2>
+
+  <p>The limit is the value a sequence heads toward, but that quietly assumes there is one to head toward. Not every sequence has a limit. A sequence that does settle on a finite limit is said to <strong>converge</strong>; one that never settles is said to <strong>diverge</strong>. Divergence happens in two ways: a sequence can grow without bound, like \(1, 2, 3, \ldots\), running off to infinity, or it can stay within a fixed range yet never approach a single value, like \(+1, -1, +1, -1, \ldots\), flipping between two numbers forever. Convergence is the case we want, because only then does running longer buy a definite answer.</p>
+
+  <p>There is one belief about convergence that feels obviously true and is not: that a sum must converge as long as its terms shrink to zero, because eventually you are adding almost nothing. The harmonic series is the counterexample, and you can see exactly where the belief breaks. Its terms, \(1/n\), do shrink to zero. But shrinking to zero is not the same as shrinking fast enough.</p>
+
+  <p>Group the terms into blocks. After the first term, take the next two, \(\tfrac13 + \tfrac14\): both are at least \(\tfrac14\), so the pair beats \(\tfrac14 + \tfrac14 = \tfrac12\). Take the next four, \(\tfrac15\) through \(\tfrac18\): each is at least \(\tfrac18\), so the four together beat \(4 \times \tfrac18 = \tfrac12\). The next eight are each at least \(\tfrac{1}{16}\), so they beat \(8 \times \tfrac{1}{16} = \tfrac12\). The pattern never stops: each block is twice as long as the one before, and each adds more than \(\tfrac12\). There are infinitely many blocks, each adding more than \(\tfrac12\), so the running sum climbs past \(\tfrac12\), then 1, then \(1\tfrac12\), then 2, past any number you pick. The terms shrank to zero and the sum grew to infinity anyway. What decides convergence is not whether the terms shrink, but whether they shrink quickly enough, and the harmonic terms simply do not.</p>
+
+<div class="viz-block">
+    <div class="viz-header"><span class="viz-title">One settles, one never does</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 220" role="img" aria-label="Two partial-sum curves. The geometric sum one half plus one quarter and so on rises and flattens at 1. The harmonic sum rises past 1 and keeps climbing with no ceiling.">
+        <line x1="60" y1="30" x2="60" y2="185" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="185" x2="640" y2="185" stroke="#7d766b" stroke-width="0.8"/>
+        <g style="font:10px 'Courier New',monospace;fill:#9e968a" text-anchor="end"><text x="54" y="142">1</text><text x="54" y="98">2</text><text x="54" y="55">3</text></g>
+        <line x1="60" y1="138" x2="640" y2="138" stroke="#3a3733" stroke-width="0.6" stroke-dasharray="2 3"/>
+        <polyline points="76,162 132,150 188,144 244,141 300,139 356,138 412,138 468,138 524,138 580,138" fill="none" stroke="#7fff6b" stroke-width="2.2"/>
+        <text x="470" y="132" style="font:11px 'Source Sans 3',sans-serif;fill:#7fff6b">&frac12;+&frac14;+&hellip; settles at 1</text>
+        <polyline points="76,138 132,115 188,99 244,88 300,79 356,71 412,65 468,59 524,54 580,49" fill="none" stroke="#ff6b6b" stroke-width="2.2"/>
+        <text x="376" y="40" style="font:11px 'Source Sans 3',sans-serif;fill:#ff6b6b">1+&frac12;+&frac13;+&hellip; keeps climbing &nearr;</text>
+        <text x="350" y="205" text-anchor="middle" style="font:11px 'Source Sans 3',sans-serif;fill:#9e968a">number of terms added &rarr;</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>Every sequence so far has been tidy, each term fixed by a rule. The sequence that matters most in machine learning is not tidy at all: its terms are random, with no formula behind them, so it is fair to ask whether something that jumps around at random can converge to anything. Take the simplest case. You want the chance a coin lands heads, and the only way to find out is to flip it many times and track the running fraction of heads. That fraction is a sequence, one term per flip, and a noisy one: after 3 flips it might read \(0.67\), after 10 it might read \(0.40\), because a handful of lucky flips still dominate. But as the flips accumulate, no single flip can move the fraction much, so the swings shrink and the value settles toward the true \(0.5\). A random sequence can converge after all, as long as the noise averages out. This is a <strong>Monte Carlo estimate</strong>: approximate a quantity by drawing random samples and averaging them, trusting that average to converge as the sample grows. Drag the slider to add flips, and press <em>flip again</em> for a fresh run.</p>
+
+<div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A running estimate converging to 0.5 (noisily)</span></div>
+    <div class="viz-body">
+      <div class="dim-row"><span class="lbl">number of flips</span><input type="range" id="mcN" class="dim-slider" min="10" max="50000" step="10" value="500"><span id="mcNlab" style="font-family:'Courier New',monospace;color:var(--accent)"></span></div>
+      <svg width="100%" viewBox="0 0 680 200" id="mcSvg" role="img" aria-label="The running fraction of heads plotted against the number of flips, jittering near one half and tightening toward the 0.5 line as flips increase.">
+        <line x1="60" y1="20" x2="60" y2="170" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="170" x2="650" y2="170" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="95" x2="650" y2="95" stroke="#e8a84c" stroke-width="1" stroke-dasharray="5 4"/>
+        <text x="655" y="99" style="font:10px 'Courier New',monospace;fill:#e8a84c">0.5</text>
+        <text x="46" y="25" text-anchor="end" style="font:10px 'Courier New',monospace;fill:#9e968a">1</text>
+        <text x="46" y="173" text-anchor="end" style="font:10px 'Courier New',monospace;fill:#9e968a">0</text>
+        <polyline id="mcLine" points="" fill="none" stroke="#4ca8e8" stroke-width="1.6"/>
+        <text x="355" y="192" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">flips so far (log scale) &rarr;</text>
+      </svg>
+      <div class="run-row"><button class="lab-btn" id="mcShuffle">flip again</button><span id="mcEst" style="font-family:'Courier New',monospace;color:var(--ink)"></span></div>
+      <div class="note-line" id="mcNote"></div>
+    </div>
+  </div>
+
+  <p>Both cases are everyday training. A run that converges is one whose loss sequence settles toward the bottom of its valley; a run that diverges is one whose loss climbs without bound or swings back and forth and never settles, which is what a too-large learning rate produces. And Monte Carlo convergence is why more data and more samples help at all: an estimate built from random samples, the average loss over a batch, a sampled reward, an approximate integral, is a running average converging to its true value, and drawing more samples is walking further along that sequence toward its limit.</p>
+
+  <hr class="sep">
+
+  <h2>The machine&rsquo;s limit: when to stop</h2>
+
+  <p>Everything so far has been about infinitely many terms, but a machine only ever computes finitely many. At some point it has to stop, which means choosing a rule for when, and there are two. The first is to fix a <strong>tolerance</strong> ahead of time: decide that once a new term changes the total by less than, say, \(0.001\), the total is close enough and you stop. The second is to keep going until the total stops changing on its own. The second sounds safer, since the machine makes the call for you, but it is the one that can mislead you.</p>
+
+  <p>Start with the rule you control. Below is the geometric sum from the limits section, set to stop as soon as a term drops below a tolerance you choose. A loose tolerance quits early, well short of the true limit of 1; a tight one runs longer and lands closer.</p>
+
+<div class="codeblock"><span class="cap">tolerance.js</span><span class="cmt">// add 1/2 + 1/4 + 1/8 + ... but stop once a term is below tol</span>
+function sumUntil(tol) {
+  let s = 0, n = 1, term = 1;
+  while (term &gt; tol) { term = 1 / 2**n; s += term; n++; }
+  return "tol " + tol + "  ->  " + (n-1) + " terms, sum = " + s.toFixed(6);
+}
+console.log(sumUntil(0.1));
+console.log(sumUntil(0.001));
+console.log(sumUntil(0.000001));</div>
+  <div class="run-row"><button class="lab-btn" id="runTol">&#9654; Run</button><span class="run-hint">tighter tolerance, more terms, closer to 1</span></div>
+  <pre class="run-out empty" id="outTol">output appears here</pre>
+
+  <p>That program keeps you honest: you decided how close was close enough, and you can read off exactly how many terms it cost. The second rule, stop when the total stops changing, is where the harmonic series catches you out. Run its partial sums in <code>float32</code> and the total does stop changing, but not for the reason the rule assumes. It is not that the series reached a limit; it has none. It is that each new \(1/n\) has shrunk below the spacing between the <code>float32</code> values near the running total, so adding it rounds straight back and the total freezes at 15.4037.</p>
+
+  <p>So a total that has stopped changing carries two opposite meanings, and nothing on the screen tells them apart. It can mean the sequence genuinely reached its limit. Or it can mean the steps fell below the machine&rsquo;s resolution and the total froze short of the truth, here resting at a finite 15.4037 when the real answer is infinite. The honest sum and the <code>float32</code> sum agree term for term right up until the terms get too small, and only then do they part.</p>
+
+<div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The true sum keeps climbing; the float32 sum freezes</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 680 215" role="img" aria-label="Partial sums against the number of terms on a log scale. The true sum keeps rising slowly. The float32 sum tracks it, then flattens into a horizontal line frozen at 15.4 once the terms fall below the float resolution.">
+        <line x1="60" y1="25" x2="60" y2="180" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="180" x2="650" y2="180" stroke="#7d766b" stroke-width="0.8"/>
+        <g style="font:10px 'Courier New',monospace;fill:#9e968a" text-anchor="end"><text x="54" y="172">0</text><text x="54" y="113">10</text><text x="54" y="55">18</text></g>
+        <polyline points="70,171 151,156 233,137 314,118 396,99 477,80 559,60 640,41" fill="none" stroke="#4ca8e8" stroke-width="2.2"/>
+        <text x="455" y="74" style="font:11px 'Source Sans 3',sans-serif;fill:#4ca8e8">true sum, still rising &nearr;</text>
+        <polyline points="70,171 151,156 233,137 314,118 396,99 477,80 559,60 585,52 640,52" fill="none" stroke="#ff6b6b" stroke-width="2.2" stroke-dasharray="1 0"/>
+        <circle cx="585" cy="52" r="4" fill="#ff6b6b"/>
+        <text x="582" y="44" text-anchor="end" style="font:10px 'Source Sans 3',sans-serif;fill:#ff6b6b">float32 frozen at 15.40</text>
+        <g style="font:10px 'Courier New',monospace;fill:#cbc4b9" text-anchor="middle"><text x="151" y="196">10</text><text x="314" y="196">10&#8308;</text><text x="477" y="196">10&#8310;</text><text x="640" y="196">10&#8311;</text></g>
+        <text x="355" y="212" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">number of terms (log scale) &rarr;</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>Training stops in exactly these two ways: after a fixed number of steps, or once the loss changes by less than a set tolerance. So the phrase &ldquo;the model converged&rdquo; inherits the same ambiguity as the frozen sum. The model may be resting at a genuine minimum, or its updates may have shrunk below what the numbers can hold, the gradients underflowing toward zero just as in Class 7, leaving it stranded well short of a good answer. A flat loss curve is not proof on its own: you check whether the mathematics could converge at all, and whether the precision is fine enough to register the steps that remain.</p>
+
+  <hr class="sep">
+
+  <h2>The optimiser is a sequence</h2>
+
+  <p>Now close the loop back to Class 8. That class showed a model cannot be found by trying every possible setting; the alternative is to start at one setting and improve it a little at a time, and each improvement produces a new value, then another, then another. That is a sequence, the same object this whole class has studied, so the question of whether training succeeds is just the question of whether this particular sequence converges.</p>
+
+  <p>To watch convergence happen, shrink the model to the smallest thing that still moves: a single number \(x\), with a loss that measures how bad that number is. Take \(f(x) = x^{2}\). It equals 0 when \(x = 0\) and grows as \(x\) moves away in either direction, so \(x = 0\) is the target, the bottom of the valley, and training&rsquo;s whole job is to get \(x\) there. Training cannot see the whole valley at once. Standing at a single value \(x\), all it can sense is the local <strong>slope</strong>, how steeply the loss rises or falls right at that point. The slope points uphill, toward larger loss, so to move downhill you step the opposite way, against the slope, by a fixed fraction called the <strong>learning rate</strong>, \(\text{lr}\). One step is therefore \(x \leftarrow x - \text{lr} \times (\text{slope at } x)\).</p>
+
+  <p>For \(f(x) = x^{2}\) the slope at \(x\) is \(2x\). (Saying exactly what &ldquo;slope&rdquo; means is the work of Unit 4, calculus; for now take \(2x\) as given.) It behaves the way a valley should: at the bottom, \(x = 0\), the slope is 0, so there is nothing left to step; far from the bottom the slope is large, so the steps are large. The optimiser takes big strides when it is far from the target and gentler ones as it closes in. Putting this slope into the step rule,</p>
+
+  <p class="lead-q">\( x_{\text{next}} = x - \text{lr}\times 2x = (1 - 2\,\text{lr})\,x \)</p>
+
+  <p>so every step multiplies the current \(x\) by the same fixed number, \((1 - 2\,\text{lr})\). After \(n\) steps \(x\) is just its starting value times that factor raised to the \(n\). This is exactly the kind of sequence the convergence section looked at, a number multiplied by a fixed factor over and over, and there we found the one thing that settles its fate: the size of the factor.</p>
+
+  <p>If the factor&rsquo;s size, \(|1 - 2\,\text{lr}|\), is below 1, then multiplying by it again and again shrinks \(x\) toward 0, and the loss settles at its minimum. That is convergence, and it holds for every learning rate between 0 and 1. Inside that range the approach comes in two flavours. When \(\text{lr}\) is small, the factor is positive and below 1, so \(x\) slides smoothly toward 0, each step a little nearer than the last. When \(\text{lr}\) is larger, above 0.5, the factor turns negative, and \(x\) flips sign at every step: it overshoots the minimum, lands on the far side, overshoots back, and so on, but because the factor&rsquo;s size is still under 1 each overshoot is smaller than the last, so it still converges, spiralling in rather than sliding in.</p>
+
+  <p>Two learning rates sit on the edges. At \(\text{lr} = 0.5\) the factor is exactly 0, so a single step lands on the minimum. At \(\text{lr} = 1\) the factor is \(-1\), so \(x\) bounces between the same two values forever and never settles. Once \(\text{lr}\) climbs past 1, the factor&rsquo;s size rises above 1, so every step makes \(x\) larger instead of smaller, and the loss runs away to infinity. Run the sequence at one learning rate to see the numbers, then sweep the slider to watch each outcome in turn.</p>
+
+<div class="codeblock"><span class="cap">gradient_descent.js</span>let x = 1, lr = 0.3;          <span class="cmt">// change lr and re-run</span>
+for (let step = 0; step &lt;= 10; step++) {
+  console.log("step " + step + ":  x = " + x.toFixed(5) + ",  loss = " + (x*x).toFixed(5));
+  x = x - lr * (2 * x);       <span class="cmt">// downhill; slope of x^2 is 2x</span>
+}</div>
+  <div class="run-row"><button class="lab-btn" id="runGrad">&#9654; Run</button><span class="run-hint">lr = 0.3, so loss falls toward 0</span></div>
+  <pre class="run-out empty" id="outGrad">output appears here</pre>
+
+<div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Gradient descent on x&#178;: the learning rate sets convergence</span></div>
+    <div class="viz-body">
+      <div class="dim-row"><span class="lbl">learning rate (lr)</span><input type="range" id="gdLr" class="dim-slider" min="0.05" max="1.30" step="0.05" value="0.30"><span id="gdLrlab" style="font-family:'Courier New',monospace;color:var(--accent)"></span></div>
+      <svg width="100%" viewBox="0 0 680 210" id="gdSvg" role="img" aria-label="The loss x squared plotted against the step number, showing whether it converges to zero, bounces, or explodes as the learning rate changes.">
+        <line x1="60" y1="25" x2="60" y2="180" stroke="#7d766b" stroke-width="0.8"/>
+        <line x1="60" y1="180" x2="650" y2="180" stroke="#7d766b" stroke-width="0.8"/>
+        <text x="46" y="30" text-anchor="end" style="font:10px 'Courier New',monospace;fill:#9e968a">1</text>
+        <text x="46" y="183" text-anchor="end" style="font:10px 'Courier New',monospace;fill:#9e968a">0</text>
+        <text x="30" y="105" text-anchor="middle" transform="rotate(-90 30 105)" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">loss x&#178;</text>
+        <polyline id="gdLine" points="" fill="none" stroke="#4ca8e8" stroke-width="1.8"/>
+        <g id="gdDots"></g>
+        <text x="355" y="202" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">training step &rarr;</text>
+      </svg>
+      <div class="note-line" id="gdNote"></div>
+    </div>
+  </div>
+
+  <p>This one-number toy is why the learning rate is the first thing anyone tunes. A real model replaces the single \(x\) with billions of numbers and the plain slope with a gradient, but the behaviour is the same: too small a rate and training converges so slowly it never finishes, too large and the loss oscillates or explodes, and a band of rates in between settles quickly. The warning from the last section still applies: even a converging run can freeze early if its steps shrink below what the numbers can represent, so a flat loss is where the questions start, not where they end.</p>
+
+  <hr class="sep">
+
+  <h2>What to carry out of Class 9</h2>
+
+  <p>A <strong>sequence</strong> is the ordered list of numbers a repeated process gives off, one per step. Its <strong>limit</strong> is the value the terms get close to and stay close to. <strong>Convergence</strong> is whether that ever happens, and the catch is that terms shrinking to zero is not enough; they must shrink fast enough, which is why \(\tfrac12 + \tfrac14 + \cdots\) settles at 1 while \(1 + \tfrac12 + \tfrac13 + \cdots\) climbs without bound. On a real machine every limit is truncated to finitely many steps, so you stop at a <strong>tolerance</strong>, and a value that has stopped moving may have reached its true limit or may have only fallen below the machine&rsquo;s resolution, the false finish that freezes the <code>float32</code> harmonic sum at 15.4037. The iterative optimiser this unit forced on us lives entirely on this question: the learning rate decides whether the loss sequence converges, oscillates, or explodes.</p>
+
+  <div class="closing-statement">A repeated process is a <strong>sequence</strong>; the whole game is whether it <strong>converges</strong> to a <strong>limit</strong>, and the trap is that &ldquo;stopped moving&rdquo; on a real machine can mean it arrived or only that the steps fell below the resolution, the same false finish that freezes an infinite sum at 15.4037. Training is that sequence, and the learning rate decides its fate.</div>
+
+  <p>That completes the language of Unit 2, functions, sums, counting, and limits. Unit 3 turns next to <strong>exponentials and logarithms</strong>, beginning with the number that falls out of multiplying without end. And further on, in Unit 4, the very slope each optimiser step follows is defined as the <strong>derivative</strong>, which turns out to be itself a limit, the idea from this class returning as the engine of calculus.</p>
+
+  <hr class="sep">
+
+  <h2>See if it stuck</h2>
+  <p>Eight questions, all answerable from this post. Tap an answer for an immediate verdict and the reason.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A short, self-marking quiz</span></div>
+    <div class="viz-body">
+      <div class="quiz-progress" id="quizProgress"></div>
+      <div id="quizHost"></div>
+      <div class="quiz-final" id="quizFinal"></div>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website" data-repo-id="R_kgDOQlniOw"
+            data-category="General" data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname" data-strict="0" data-reactions-enabled="1"
+            data-emit-metadata="0" data-input-position="bottom" data-theme="dark"
+            data-lang="en" crossorigin="anonymous" async>
+    </script>
+  </section>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The Mathematics ML Runs On &middot; Unit 2</h2>
+    <a class="sidebar-link" href="sets-and-functions.html">
+      <div class="sidebar-link-title">Class 6: The Function That Has No Formula</div>
+      <div class="sidebar-link-note">Done</div>
+    </a>
+    <a class="sidebar-link" href="summation-and-products.html">
+      <div class="sidebar-link-title">Class 7: The Sum, the Product, and the Number That Vanishes</div>
+      <div class="sidebar-link-note">Done</div>
+    </a>
+    <a class="sidebar-link" href="counting-and-the-sample-space.html">
+      <div class="sidebar-link-title">Class 8: The Space Too Big to Search</div>
+      <div class="sidebar-link-note">Done</div>
+    </a>
+    <a class="sidebar-link active-topic" href="sequences-limits-and-convergence.html">
+      <div class="sidebar-link-title">Class 9: The Endless Sum That Stops</div>
+      <div class="sidebar-link-note">You are here &middot; ends Unit 2</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Unit 3: Exponentials and Logarithms</h2>
+    <a class="sidebar-link" href="the-exponential-and-e.html">
+      <div class="sidebar-link-title">Class 10: What Happens If You Just Keep Multiplying?</div>
+      <div class="sidebar-link-note">Coming next &middot; the exponential and e</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The series</h2>
+    <a class="sidebar-link" href="the-mathematics-ml-runs-on.html">
+      <div class="sidebar-link-title">All units and classes</div>
+      <div class="sidebar-link-note">Units 1 and 2 complete</div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The thread</h2>
+    <p style="font-size:.92rem;color:var(--muted);line-height:1.6">A repeated process is a sequence; the whole question is whether it converges to a limit. On a real machine "stopped moving" is ambiguous: it may have arrived, or only fallen below the resolution, the false finish that freezes the infinite harmonic sum at 15.4037. Training is that sequence, and the learning rate decides its fate.</p>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+<script>
+document.getElementById('year').textContent=new Date().getFullYear();
+var hb=document.getElementById('hamburger'),mo=document.getElementById('mobileMenu');
+hb.addEventListener('click',function(){hb.classList.toggle('active');mo.classList.toggle('active');document.body.style.overflow=mo.classList.contains('active')?'hidden':'';});
+mo.querySelectorAll('a').forEach(function(l){l.addEventListener('click',function(){hb.classList.remove('active');mo.classList.remove('active');document.body.style.overflow='';});});
+
+function show(id,lines){var el=document.getElementById(id);el.textContent=lines.join('\n');el.className='run-out';}
+
+/* ---- runnable: harmonic ---- */
+document.getElementById('runHarm').addEventListener('click',function(){
+  var L=[];
+  var s=0; for(var n=1;n<=2000000;n++) s+=1/n;
+  L.push('float64, 2,000,000 terms: '+s);
+  L.push('  (still climbing, nowhere near done)');
+  var f=Math.fround(0),k=1;
+  while(k<=6000000){var nx=Math.fround(f+Math.fround(1/k)); if(nx===f){L.push('float32 froze at n = '+k+' sum = '+f);break;} f=nx;k++;}
+  L.push('  (every term after this changes nothing)');
+  show('outHarm',L);
+});
+
+/* ---- runnable: zeno ---- */
+document.getElementById('runZeno').addEventListener('click',function(){
+  var L=[],s=0;
+  for(var n=1;n<=12;n++){ s+=1/Math.pow(2,n); L.push(n+' terms  ->  '+s); }
+  show('outZeno',L);
+});
+
+/* ---- runnable: tolerance ---- */
+document.getElementById('runTol').addEventListener('click',function(){
+  function sumUntil(tol){var s=0,n=1,term=1;while(term>tol){term=1/Math.pow(2,n);s+=term;n++;}return 'tol '+tol+'  ->  '+(n-1)+' terms, sum = '+s.toFixed(6);}
+  show('outTol',[sumUntil(0.1),sumUntil(0.001),sumUntil(0.000001)]);
+});
+
+/* ---- runnable: gradient descent ---- */
+document.getElementById('runGrad').addEventListener('click',function(){
+  var L=[],x=1,lr=0.3;
+  for(var step=0;step<=10;step++){ L.push('step '+step+':  x = '+x.toFixed(5)+',  loss = '+(x*x).toFixed(5)); x=x-lr*(2*x); }
+  show('outGrad',L);
+});
+
+/* ---- Monte Carlo running average ---- */
+(function(){
+  var nEl=document.getElementById('mcN'), line=document.getElementById('mcLine');
+  var est=document.getElementById('mcEst'), note=document.getElementById('mcNote'), nlab=document.getElementById('mcNlab');
+  function run(){
+    var n=+nEl.value; nlab.textContent=n.toLocaleString();
+    var L=Math.log10(n), samples=160, thresh=new Set();
+    for(var i=0;i<samples;i++){ thresh.add(Math.max(1,Math.round(Math.pow(10,(i/(samples-1))*L)))); }
+    var heads=0, pts=[];
+    for(var k=1;k<=n;k++){ if(Math.random()<0.5) heads++; if(thresh.has(k)) pts.push([k,heads/k]); }
+    pts.push([n,heads/n]);
+    var x0=60,x1=650;
+    var str=pts.map(function(p){ var x=x0+(Math.log10(p[0])/L)*(x1-x0); var y=170-p[1]*150; return x.toFixed(1)+','+y.toFixed(1); }).join(' ');
+    line.setAttribute('points',str);
+    est.innerHTML='estimate after '+n.toLocaleString()+' flips: <b>'+(heads/n).toFixed(3)+'</b>';
+    note.textContent='The true value is 0.5. The wild swings are all near the start; as the flips pile up the running fraction tightens toward 0.5 and stays there.';
+  }
+  nEl.addEventListener('input',run);
+  document.getElementById('mcShuffle').addEventListener('click',run);
+  run();
+})();
+
+/* ---- gradient descent interactive ---- */
+(function(){
+  var lrEl=document.getElementById('gdLr'), line=document.getElementById('gdLine'), dots=document.getElementById('gdDots');
+  var note=document.getElementById('gdNote'), lab=document.getElementById('gdLrlab');
+  function run(){
+    var lr=+lrEl.value; lab.textContent=lr.toFixed(2);
+    var factor=1-2*lr, af=Math.abs(factor), x=1.0, N=20, pts=[];
+    for(var n=0;n<=N;n++){ pts.push([n,x*x]); x=x*factor; }
+    var col = af<1 ? '#7fff6b' : (af>1 ? '#ff6b6b' : '#e8a84c');
+    var str='', dstr='';
+    pts.forEach(function(p){
+      var px=70+(p[0]/N)*(580); var ly=p[1]>1?30:(180-Math.min(p[1],1)*150);
+      str+=px.toFixed(1)+','+ly.toFixed(1)+' ';
+      dstr+='<circle cx="'+px.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="2.6" fill="'+col+'"/>';
+    });
+    line.setAttribute('points',str); line.setAttribute('stroke',col); dots.innerHTML=dstr;
+    var msg;
+    if(af>1) msg='Diverging. Each step multiplies x by '+factor.toFixed(2)+', whose size is above 1, so the loss grows without bound and the run blows up.';
+    else if(af===1) msg='On the edge. The factor is '+factor.toFixed(2)+', so x flips between +1 and -1 forever and the loss is stuck at 1, never settling.';
+    else if(factor>=0) msg='Converging smoothly. Each step multiplies x by '+factor.toFixed(2)+', so the loss slides down to 0 without overshooting.';
+    else msg='Converging with overshoot. The factor '+factor.toFixed(2)+' is negative, so x flips sign each step, but its size is below 1, so the swings shrink and the loss still settles at 0.';
+    note.textContent=msg;
+  }
+  lrEl.addEventListener('input',run); run();
+})();
+
+/* ---- quiz ---- */
+(function(){
+  var QUIZ=[
+    {q:"A sequence is:",
+     opts:["a set of numbers with no particular order","an ordered list of numbers, one per step","the largest number a process reaches","a single limiting value"],c:1,
+     ex:"It is an ordered list a1, a2, a3, ..., one term per step number. The order matters, which is what makes it a sequence rather than a set."},
+    {q:"A sequence converges when:",
+     opts:["its terms keep growing","its terms get and stay arbitrarily close to a finite limit","every term is the same","it has finitely many terms"],c:1,
+     ex:"Convergence means there is a finite value L such that, from some step onward, every term stays inside any band you draw around L."},
+    {q:"The harmonic series 1 + 1/2 + 1/3 + 1/4 + ... :",
+     opts:["converges to about 2","converges to 1","diverges, growing without bound","oscillates forever"],c:2,
+     ex:"Grouping terms into blocks 1/3+1/4, 1/5+...+1/8, and so on, each block adds more than 1/2, and there are infinitely many blocks, so the sum grows without bound."},
+    {q:"Why does the float32 harmonic sum freeze near 15.4?",
+     opts:["the loop reaches its maximum count","each new 1/n falls below the gap between float values near the sum, so adding it rounds to no change","the processor overheats","15.4 is the true value of the series"],c:1,
+     ex:"Near 15.4 a float32 can only land on values about 0.0000018 apart. Once 1/n is smaller than that, the addition rounds back to the same number, so the sum stops moving."},
+    {q:"A training loss that has stopped changing means the model has reached its minimum.",
+     opts:["True, a flat loss always means convergence","False, it may have only fallen below the machine resolution and frozen short of the minimum","True, but only for small models","False, losses never stop changing"],c:1,
+     ex:"A frozen value can mean a real limit or a false finish, where the steps shrank below what the numbers can register (gradients underflowing). A flat loss is the start of the question, not the end."},
+    {q:"A Monte Carlo estimate, the running average of random samples:",
+     opts:["never settles","converges to the true value as the number of samples grows","diverges like the harmonic series","is exact after one sample"],c:1,
+     ex:"The running average is a sequence that converges to the quantity being estimated, which is why more samples improve the estimate, jittery at first and tighter later."},
+    {q:"In gradient descent on x squared, x_next = (1 - 2*lr) * x. A learning rate that is too large:",
+     opts:["makes training converge faster with no downside","makes the factor size exceed 1, so the loss oscillates or diverges","has no effect on convergence","guarantees the true minimum"],c:1,
+     ex:"Convergence depends on the size of the factor 1 - 2*lr. Below 1 the loss settles; at lr = 1 it bounces forever; above that it explodes. The rate has to sit in a band."},
+    {q:"For a series to converge, its terms shrinking to zero is:",
+     opts:["enough on its own","necessary but not sufficient, they must shrink fast enough","irrelevant","a sign it will diverge"],c:1,
+     ex:"The harmonic series has terms going to zero yet diverges. The terms must shrink quickly enough; 1/2 + 1/4 + ... does and converges, while 1 + 1/2 + 1/3 + ... does not."}
+  ];
+  var answered=0,score=0;
+  var host=document.getElementById('quizHost'),prog=document.getElementById('quizProgress'),fin=document.getElementById('quizFinal');
+  function up(){prog.textContent=answered+' / '+QUIZ.length+' answered   \u00b7   score '+score;}
+  QUIZ.forEach(function(item,qi){
+    var card=document.createElement('div');card.className='quiz-q';
+    var qt=document.createElement('div');qt.className='quiz-q-text';qt.innerHTML='<span class="quiz-q-num">Q'+(qi+1)+'.</span>'+item.q;card.appendChild(qt);
+    var btns=[];
+    item.opts.forEach(function(text,oi){
+      var b=document.createElement('button');b.className='quiz-opt';b.type='button';b.innerHTML=text+'<span class="mk"></span>';
+      b.addEventListener('click',function(){
+        if(card.dataset.done)return;card.dataset.done='1';answered++;btns.forEach(function(x){x.disabled=true;});
+        if(oi===item.c){b.classList.add('correct');b.querySelector('.mk').textContent='\u2713';score++;}
+        else{b.classList.add('wrong');b.querySelector('.mk').textContent='\u2717';var rr=btns[item.c];rr.classList.add('correct');rr.querySelector('.mk').textContent='\u2713';}
+        ex.classList.add('show');up();if(answered===QUIZ.length)done();
+      });
+      btns.push(b);card.appendChild(b);
+    });
+    var ex=document.createElement('div');ex.className='quiz-explain';ex.textContent=item.ex;card.appendChild(ex);
+    host.appendChild(card);
+  });
+  function done(){var m;
+    if(score===QUIZ.length)m='Every one. Sequences, limits, convergence, and the false finish are all yours, and Unit 2 is complete.';
+    else if(score>=QUIZ.length-1)m=score+' out of '+QUIZ.length+'. Strong finish to the unit.';
+    else if(score>=QUIZ.length-3)m=score+' out of '+QUIZ.length+'. Solid. Replay the harmonic and gradient-descent demos and the rest will lock in.';
+    else m=score+' out of '+QUIZ.length+'. Worth another pass: a sequence settles or it does not, terms must shrink fast enough, and a frozen value can be a false finish.';
+    fin.textContent=m;fin.classList.add('show');}
+  up();
+})();
+</script>
+</body>
+</html>
