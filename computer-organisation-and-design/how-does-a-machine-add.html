@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>How Does a Machine Add? | Computer Organisation &amp; Design</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#1a1917;--bg-elevated:#232220;--bg-card:#2a2826;
+      --ink:#f4efe7;--body:#cbc4b9;--muted:#9e968a;
+      --accent:#e8a84c;--accent-dim:rgba(232,168,76,.12);
+      --blue:#4ca8e8;--blue-dim:rgba(76,168,232,.12);
+      --green:#7fff6b;--green-dim:rgba(127,255,107,.1);
+      --red:#ff6b6b;--red-dim:rgba(255,107,107,.12);
+      --border:rgba(237,232,224,.08);--border-hover:rgba(237,232,224,.15);
+      --display:'Instrument Serif',Georgia,serif;
+      --sans:'Source Sans 3',sans-serif;
+      --hand:'Caveat',cursive;
+      --radius:14px
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--body);line-height:1.82;font-size:20px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.016;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px}
+    body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:radial-gradient(rgba(237,232,224,.04) 1px,transparent 1px);background-size:28px 28px}
+    a{color:var(--accent);text-decoration:none;transition:all .25s}
+    a:hover{color:#f0be6e}
+    @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+    .anim{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+    .d1{animation-delay:.08s}.d2{animation-delay:.18s}
+
+    .site-header{position:sticky;top:0;z-index:200;background:rgba(26,25,23,.88);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-container{max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .brand-mark{font-family:var(--hand);font-size:1.85rem;font-weight:600;color:var(--accent);line-height:1}
+    .brand-text{font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+    .nav-links a{color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover{color:var(--ink)}
+    .nav-links a:hover::after{width:100%}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;padding:.5rem;z-index:310}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:all .3s}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(26,25,23,.96);backdrop-filter:blur(20px);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:.3rem}
+    .mobile-overlay.active{display:flex}
+    .mobile-overlay a{font-family:var(--display);font-size:1.5rem;color:var(--body);padding:.7rem 1.5rem;transition:color .25s;text-decoration:none}
+    .mobile-overlay a:hover{color:var(--accent)}
+
+    .page-wrap{max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+    .blog-layout{display:flex;gap:2.5rem;align-items:flex-start}
+    .blog-main{flex:3.5;min-width:0}
+    .blog-sidebar{flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+
+    .article{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+    .article::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+    .series-tag{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+    .series-dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+    .article h1{font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+    .blog-subtitle{font-size:1.22rem;color:var(--body);font-weight:400;margin-bottom:2.2rem;line-height:1.62}
+    .article h2{font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+    .article h3{font-family:var(--display);font-weight:400;font-size:1.3rem;color:var(--ink);margin:2rem 0 .6rem}
+    .article p{font-size:1.19rem;font-weight:400;margin-bottom:1.35rem;line-height:1.8}
+    .article strong{color:var(--ink);font-weight:500}
+    .article em{color:var(--ink)}
+    .article code{font-size:.93em;background:rgba(232,168,76,.15);padding:.2rem .48rem;border-radius:4px;color:#f1dcb2;font-family:'Courier New',monospace}
+    .sep{border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+    .lead-q{font-family:var(--display);font-size:1.5rem;font-style:italic;color:var(--ink);line-height:1.42;margin:1.7rem 0;padding-left:1.1rem;border-left:3px solid var(--accent)}
+
+    .sidebar-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+    .sidebar-title{font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+    .sidebar-link{display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+    .sidebar-link+.sidebar-link{margin-top:.15rem}
+    .sidebar-link:hover{background:var(--accent-dim);transform:translateX(2px)}
+    .sidebar-link-title{font-size:.88rem;font-weight:500;color:var(--ink)}
+    .sidebar-link-note{font-size:.73rem;color:var(--muted);margin-top:.12rem}
+    .sidebar-link.active-topic{background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+
+    .site-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border)}
+    .footer-tagline{font-family:var(--hand);font-size:1.3rem;color:var(--accent);margin-bottom:.3rem}
+    .footer-copy{font-size:.88rem;color:var(--muted)}
+
+    .viz-block{margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .viz-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+    .viz-title{font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+    .viz-body{padding:1.6rem}
+
+    .thread-box{margin:2rem 0;padding:1.2rem 1.5rem;border-radius:0 var(--radius) var(--radius) 0;border-left:3px solid var(--blue);background:var(--blue-dim)}
+    .thread-label{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:.5rem}
+    .thread-text{font-size:1.08rem;color:var(--body);line-height:1.72}
+    .thread-text strong{color:var(--ink)}
+
+    .codeblock{background:#14130f;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.5rem 0;overflow-x:auto;font-family:'Courier New',monospace;font-size:.9rem;line-height:1.7;color:var(--body);white-space:pre}
+    .codeblock .cmt{color:var(--muted)}
+    .codeblock .kw{color:var(--blue)}
+
+    .closing-statement{margin:2.5rem 0;padding:2rem 2.2rem;border-radius:var(--radius);background:var(--bg-elevated);border:1px solid var(--border-hover);font-family:var(--display);font-size:1.22rem;color:var(--body);line-height:1.82;font-style:italic}
+    .closing-statement strong{color:var(--ink);font-style:normal}
+
+    .ctrl-btn{padding:.5rem 1.4rem;border-radius:8px;border:1px solid var(--border-hover);background:var(--bg-card);color:var(--body);cursor:pointer;font-size:.9rem;font-family:'Courier New',monospace;transition:all .15s}
+    .ctrl-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .ctrl-btn.primary{background:rgba(232,168,76,.1);border-color:rgba(232,168,76,.4);color:var(--accent)}
+    .ctrl-btn.primary:hover{background:rgba(232,168,76,.2)}
+    .ctrl-btn:disabled{opacity:.4;cursor:default}
+
+    .tt-wrap{overflow-x:auto;margin:1.4rem 0}
+    .tt{border-collapse:collapse;width:100%;font-family:'Courier New',monospace;font-size:.95rem}
+    .tt th{background:var(--bg);color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;padding:.5rem .9rem;border-bottom:1px solid var(--border-hover);text-align:center;font-family:var(--sans)}
+    .tt td{padding:.45rem .9rem;text-align:center;border-bottom:1px solid var(--border);color:var(--body)}
+    .tt tr:last-child td{border-bottom:none}
+    .tt .t1{color:var(--accent);font-weight:700}
+    .tt .t0{color:var(--muted)}
+    .tt .highlight td{background:rgba(232,168,76,.06)}
+    .tt tr.row-active td{background:rgba(232,168,76,.09)}
+
+    .person-card{display:flex;gap:1.4rem;align-items:flex-start;margin:1.8rem 0;padding:1.4rem 1.6rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius)}
+    .person-avatar{width:92px;height:92px;border-radius:12px;object-fit:cover;flex-shrink:0;border:1px solid var(--border-hover);background:var(--bg-card)}
+    .person-avatar.mono{display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:1.9rem;color:var(--ink);letter-spacing:.02em}
+    .person-name{font-family:var(--display);font-size:1.4rem;color:var(--ink);line-height:1.15}
+    .person-dates{font-size:.8rem;color:var(--accent);font-family:'Courier New',monospace;margin:.25rem 0 .6rem}
+    .person-bio{font-size:1rem;color:var(--body);line-height:1.7}
+
+    /* toggle bit buttons */
+    .bitbtn{width:52px;height:52px;border-radius:9px;border:1px solid rgba(237,232,224,.2);background:var(--bg);font:700 1.4rem 'Courier New',monospace;color:#9e968a;cursor:pointer;transition:all .18s}
+    .bitbtn.on{background:rgba(232,168,76,.15);border-color:rgba(232,168,76,.5);color:#e8a84c}
+    .bitbtn:disabled{cursor:default;opacity:.7}
+
+    /* current flow animation */
+    .flow{stroke-dasharray:5 5;animation:aflow .55s linear infinite}
+    @keyframes aflow{to{stroke-dashoffset:-20}}
+
+    /* ripple adder columns */
+    #ra-cols{display:flex;justify-content:center;gap:0;flex-wrap:nowrap;overflow-x:auto;padding-bottom:.4rem}
+    .ra-col{display:flex;flex-direction:column;align-items:center;gap:.55rem;padding:0 .55rem;min-width:96px}
+    .ra-lbl{font:.66rem var(--sans);color:#5a5550;text-transform:uppercase;letter-spacing:.06em}
+    .ra-fa{width:78px;height:58px;border-radius:10px;border:1px solid rgba(237,232,224,.14);background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .25s}
+    .ra-fa .fa-name{font:700 .8rem 'Courier New',monospace;color:#9e968a}
+    .ra-fa .fa-cin{font:.62rem 'Courier New',monospace;color:#5a5550;margin-top:2px}
+    .ra-fa.active{border-color:rgba(232,168,76,.7);background:rgba(232,168,76,.1);box-shadow:0 0 16px rgba(232,168,76,.2)}
+    .ra-fa.done{border-color:rgba(127,255,107,.35)}
+    .ra-sum{width:52px;height:52px;border-radius:9px;border:1px solid rgba(237,232,224,.12);background:var(--bg);display:flex;align-items:center;justify-content:center;font:700 1.4rem 'Courier New',monospace;color:#5a5550;transition:all .25s}
+    .ra-sum.set{border-color:rgba(76,168,232,.5);background:rgba(76,168,232,.1);color:#4ca8e8}
+    .ra-carry{height:20px;display:flex;align-items:center;font:700 .8rem 'Courier New',monospace;color:#5a5550;transition:all .25s}
+    .ra-carry.hot{color:#ff6b6b}
+
+    @media(max-width:960px){.blog-layout{flex-direction:column}.blog-sidebar{position:static}}
+    @media(max-width:640px){.nav-links{display:none}.hamburger{display:block}.page-wrap{padding:2rem 1.2rem 3rem}.article{padding:2rem 1.4rem}.article h1{font-size:1.9rem}.person-card{flex-direction:column}.person-avatar{width:72px;height:72px}.bitbtn{width:44px;height:44px;font-size:1.2rem}}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-container">
+    <a href="../index.html" class="brand"><span class="brand-mark">AM</span><span class="brand-text">Adithya MD</span></a>
+    <nav class="nav-links">
+      <a href="../index.html">Home</a>
+      <a href="../about.html">About</a>
+      <a href="../blogs.html">Blogs</a>
+      <a href="../projects.html">Projects</a>
+      <a href="../teaching.html">Teaching</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<div class="mobile-overlay" id="mobileMenu">
+  <a href="../index.html">Home</a>
+  <a href="../about.html">About</a>
+  <a href="../blogs.html">Blogs</a>
+  <a href="../projects.html">Projects</a>
+  <a href="../teaching.html">Teaching</a>
+  <a href="../contact.html">Contact</a>
+</div>
+
+<div class="page-wrap">
+<div class="blog-layout">
+
+<main class="blog-main anim d1"><article class="article">
+
+  <span class="series-tag"><span class="series-dot"></span>Computer Organisation &amp; Design &middot; Class 4</span>
+  <h1>How Does a Machine Add?</h1>
+  <p class="blog-subtitle">Class 3 ended on a confession. We have gates that do logic, but logic is not arithmetic, and the gap between them is one stubborn detail: the carry. This class closes that gap. By the end of it you will have built, gate by gate, the exact circuit that every processor on earth uses to add, and you will know precisely why it is slower than it looks.</p>
+
+  <p>Here is where we stand. Binary can represent any whole number. Gates can compute any truth table. XOR looked suspiciously like the sum digit of one-bit addition, and AND looked exactly like the carry. But a suspicion is not a circuit. A carry born in the rightmost column can ripple all the way across a number, flipping bits as it goes, and nothing we built in Class 3 knows how to pass anything sideways.</p>
+
+  <p>Before we build it, I want to introduce the man who built it first, because his story makes a point I do not want you to miss.</p>
+
+  <hr class="sep">
+
+  <h2>The adder in the living room</h2>
+
+  <div class="person-card">
+    <div class="person-avatar mono" style="background:linear-gradient(135deg,rgba(232,168,76,.28),rgba(76,168,232,.2))">KZ</div>
+    <div>
+      <div class="person-name">Konrad Zuse</div>
+      <div class="person-dates">1910 &ndash; 1995 &nbsp;&middot;&nbsp; Berlin, Germany</div>
+      <div class="person-bio">Civil engineer who hated the endless, repetitive structural calculations his job demanded, so he decided a machine should do them. Between 1936 and 1938 he built the Z1, a mechanical binary computer, in his parents' living room. His Z3 of 1941 is widely regarded as the first working programmable computer. He worked in near-total isolation, unaware of Shannon's thesis or Turing's papers, and arrived at binary, floating point, and the adder circuit on his own. He also designed what may be the first high-level programming language, Plankalk&uuml;l, before anyone had a machine that could run one.</div>
+    </div>
+  </div>
+
+  <p>Zuse's starting complaint should sound familiar by now. It is the shepherd's complaint from Class 2 and the table-makers' complaint from the 17th century: humans doing repetitive arithmetic make errors, and the errors matter. His answer was to build a machine, and the very first thing that machine needed, before memory, before programs, before anything else, was a circuit that could add two binary numbers.</p>
+
+  <p>He built it from sliding metal plates. Later versions used telephone relays, the same two-state switches Shannon was analysing an ocean away at the same moment, neither man knowing of the other. Two people, working independently, forced to the same design by the same logic. That is usually a sign the design is not an invention so much as a discovery. The adder we are about to build is the thing they both found.</p>
+
+  <p class="lead-q">And the strangest part is that you already know the algorithm. You have known it since you were seven years old.</p>
+
+  <hr class="sep">
+
+  <h2>The answer was in your pencil</h2>
+
+  <p>Add 47 and 38 on paper. You line the numbers up in columns. You add the rightmost column: 7 plus 8 is 15. That does not fit in one digit, so you write down the 5 and carry the 1, a small pencil mark above the next column. Then the next column: 4 plus 3 is 7, plus the carried 1 makes 8. Write 8. Answer: 85.</p>
+
+  <p>Look at the structure of what you did, not the numbers. You processed one column at a time, right to left. Each column took in two digits plus a possible carry from the column before, and produced one digit plus a possible carry to the column after. Every column ran the identical procedure. The only thing connecting the columns was that thin pencil mark.</p>
+
+  <p>That is the entire algorithm. It works in any base, because carrying is a property of positional notation, not of base ten. In binary the columns overflow sooner, at 2 instead of 10, but the procedure does not change at all.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The same algorithm in two bases &mdash; the pencil carry is the only thing moving sideways</span></div>
+    <div class="viz-body">
+      <svg width="100%" viewBox="0 0 600 190" role="img" aria-label="Side by side column addition: 47 plus 38 in decimal with a carry, and 0110 plus 0011 in binary with carries, showing the identical structure">
+
+        <text x="150" y="22" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#e8a84c;text-transform:uppercase;letter-spacing:.06em">Decimal &middot; 47 + 38</text>
+
+        <text x="150" y="52" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#ff6b6b">&nbsp;1&nbsp;&nbsp;&nbsp;</text>
+        <text x="150" y="78" text-anchor="middle" style="font:700 20px 'Courier New',monospace;fill:#cbc4b9">&nbsp;4 7</text>
+        <text x="150" y="104" text-anchor="middle" style="font:700 20px 'Courier New',monospace;fill:#cbc4b9">+ 3 8</text>
+        <line x1="95" y1="116" x2="205" y2="116" stroke="rgba(237,232,224,.25)" stroke-width="1.5"/>
+        <text x="150" y="140" text-anchor="middle" style="font:700 20px 'Courier New',monospace;fill:#7fff6b">&nbsp;8 5</text>
+        <text x="150" y="170" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">7+8=15. Write 5, carry 1. Then 4+3+1=8.</text>
+
+        <line x1="300" y1="14" x2="300" y2="176" stroke="rgba(237,232,224,.07)" stroke-width="1"/>
+
+        <text x="450" y="22" text-anchor="middle" style="font:700 11px 'Source Sans 3',sans-serif;fill:#4ca8e8;text-transform:uppercase;letter-spacing:.06em">Binary &middot; 6 + 3</text>
+
+        <text x="450" y="52" text-anchor="middle" style="font:11px 'Courier New',monospace;fill:#ff6b6b">1 1 &nbsp;&nbsp;&nbsp;&nbsp;</text>
+        <text x="450" y="78" text-anchor="middle" style="font:700 20px 'Courier New',monospace;fill:#cbc4b9">&nbsp;0 1 1 0</text>
+        <text x="450" y="104" text-anchor="middle" style="font:700 20px 'Courier New',monospace;fill:#cbc4b9">+0 0 1 1</text>
+        <line x1="378" y1="116" x2="522" y2="116" stroke="rgba(237,232,224,.25)" stroke-width="1.5"/>
+        <text x="450" y="140" text-anchor="middle" style="font:700 20px 'Courier New',monospace;fill:#7fff6b">&nbsp;1 0 0 1</text>
+        <text x="450" y="170" text-anchor="middle" style="font:10px 'Source Sans 3',sans-serif;fill:#9e968a">1+1=10. Write 0, carry 1. It happens twice. Result 1001 = 9. Correct.</text>
+
+      </svg>
+    </div>
+  </div>
+
+  <p>So the plan for this class writes itself. Build a circuit that does one column. Then chain copies of it, one per bit, connected by a wire that plays the role of the pencil mark. If one column works and the chaining works, addition works, at any width.</p>
+
+  <hr class="sep">
+
+  <h2>One column of binary</h2>
+
+  <p>Start with the simplest possible column, the rightmost one, which has no carry coming in. Two bits enter. What comes out?</p>
+
+  <p>There are only four cases, so write them all. 0 plus 0 is 0. 0 plus 1 is 1. 1 plus 0 is 1. And 1 plus 1 is 2, which in binary is 10: a sum digit of 0 and a carry of 1. So the column has two outputs, a sum bit and a carry bit, and its complete behaviour is a truth table with four rows.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Adding two bits &mdash; the sum column is XOR, the carry column is AND</span></div>
+    <div class="viz-body" style="padding:1.2rem">
+      <table class="tt" style="max-width:420px;margin:0 auto">
+        <tr><th>A</th><th>B</th><th>A + B</th><th>sum bit</th><th>carry bit</th></tr>
+        <tr><td class="t0">0</td><td class="t0">0</td><td style="color:#9e968a">0</td><td class="t0">0</td><td class="t0">0</td></tr>
+        <tr><td class="t0">0</td><td class="t1">1</td><td style="color:#9e968a">1</td><td class="t1">1</td><td class="t0">0</td></tr>
+        <tr><td class="t1">1</td><td class="t0">0</td><td style="color:#9e968a">1</td><td class="t1">1</td><td class="t0">0</td></tr>
+        <tr class="highlight"><td class="t1">1</td><td class="t1">1</td><td style="color:#9e968a">10</td><td class="t0">0</td><td class="t1">1</td></tr>
+      </table>
+      <p style="font:.85rem var(--sans);color:#9e968a;text-align:center;margin:1rem 0 0;line-height:1.6">Cover the last two columns and read them against Class 3. The sum column is the XOR truth table, digit for digit. The carry column is AND.</p>
+    </div>
+  </div>
+
+  <p>This is the payoff of the Class 3 preview, and it is worth saying plainly. The sum bit is not similar to XOR. It is XOR, the identical truth table. The carry bit is AND, the identical truth table. Which means the circuit for one carry-free column is two gates. Feed A and B into an XOR for the sum. Feed the same A and B into an AND for the carry. Done. This little two-gate circuit has a name: the half adder.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The half adder &mdash; toggle A and B, watch two gates do addition</span></div>
+    <div class="viz-body" style="padding:1.4rem">
+      <div style="display:flex;justify-content:center;gap:1.4rem;margin-bottom:1.1rem;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div class="ra-lbl" style="margin-bottom:.35rem">A</div>
+          <button id="ha-a" class="bitbtn">0</button>
+        </div>
+        <div style="text-align:center">
+          <div class="ra-lbl" style="margin-bottom:.35rem">B</div>
+          <button id="ha-b" class="bitbtn">0</button>
+        </div>
+      </div>
+      <svg id="ha-svg" width="100%" viewBox="0 0 560 200" role="img" aria-label="Half adder circuit: A and B feed both an XOR gate producing the sum and an AND gate producing the carry"></svg>
+      <p id="ha-note" style="text-align:center;font:.9rem var(--sans);color:var(--muted);font-style:italic;margin:.8rem 0 0;min-height:1.4em"></p>
+    </div>
+  </div>
+
+  <p>Play with all four combinations and watch the fourth one. When both inputs are 1, the sum goes to 0 and the carry lights up. That carry is the pencil mark, now a voltage on a wire. The half adder has produced it. The question is what receives it.</p>
+
+  <hr class="sep">
+
+  <h2>Why it is only half an adder</h2>
+
+  <p>The name is honest. The half adder handles the rightmost column and no other, because every other column receives three things: the two bits being added and the carry arriving from the column to its right. Three inputs, not two. The half adder has no third input. It is half of what a real column needs.</p>
+
+  <p>So write the truth table a real column obeys. Three input bits, A, B, and the carry-in, each 0 or 1. Their arithmetic sum can be 0, 1, 2, or 3, which in binary is 00, 01, 10, or 11. Two output bits again: a sum bit and a carry-out. Eight rows, all of them below.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">A full column &mdash; three bits in, sum and carry out</span></div>
+    <div class="viz-body" style="padding:1.2rem">
+      <table class="tt" style="max-width:470px;margin:0 auto">
+        <tr><th>A</th><th>B</th><th>Cin</th><th>A+B+Cin</th><th>sum</th><th>Cout</th></tr>
+        <tr><td class="t0">0</td><td class="t0">0</td><td class="t0">0</td><td style="color:#9e968a">0</td><td class="t0">0</td><td class="t0">0</td></tr>
+        <tr><td class="t0">0</td><td class="t0">0</td><td class="t1">1</td><td style="color:#9e968a">1</td><td class="t1">1</td><td class="t0">0</td></tr>
+        <tr><td class="t0">0</td><td class="t1">1</td><td class="t0">0</td><td style="color:#9e968a">1</td><td class="t1">1</td><td class="t0">0</td></tr>
+        <tr class="highlight"><td class="t0">0</td><td class="t1">1</td><td class="t1">1</td><td style="color:#9e968a">2</td><td class="t0">0</td><td class="t1">1</td></tr>
+        <tr><td class="t1">1</td><td class="t0">0</td><td class="t0">0</td><td style="color:#9e968a">1</td><td class="t1">1</td><td class="t0">0</td></tr>
+        <tr class="highlight"><td class="t1">1</td><td class="t0">0</td><td class="t1">1</td><td style="color:#9e968a">2</td><td class="t0">0</td><td class="t1">1</td></tr>
+        <tr class="highlight"><td class="t1">1</td><td class="t1">1</td><td class="t0">0</td><td style="color:#9e968a">2</td><td class="t0">0</td><td class="t1">1</td></tr>
+        <tr class="highlight"><td class="t1">1</td><td class="t1">1</td><td class="t1">1</td><td style="color:#9e968a">3</td><td class="t1">1</td><td class="t1">1</td></tr>
+      </table>
+      <p style="font:.85rem var(--sans);color:#9e968a;text-align:center;margin:1rem 0 0;line-height:1.6">Read the patterns. The sum bit is 1 when an odd number of inputs are 1. The carry-out is 1 when two or more inputs are 1, which is the majority function you built from minterms in Class 3.</p>
+    </div>
+  </div>
+
+  <p>You could build this straight from the table with the sum of products recipe, and it would work. Class 3 guarantees it. But there is a construction that is smaller and far more instructive, because it reuses the piece we already have. A column is really two little additions in a row: first add A and B, then add the carry-in to that result. Each of those is a two-bit addition, and we own a circuit for two-bit addition. Use two half adders.</p>
+
+  <p>The first half adder takes A and B, producing a partial sum s1 and a carry c1. The second half adder takes s1 and Cin, producing the final sum bit and a second carry c2. Then one question remains: what is the carry-out of the whole column? A carry happened if either little addition overflowed, so Cout is c1 OR c2. Two half adders and one OR gate. This is the full adder, and it is the single most-replicated circuit in your processor.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The full adder &mdash; two half adders and an OR. Toggle all three inputs.</span></div>
+    <div class="viz-body" style="padding:1.4rem">
+      <div style="display:flex;justify-content:center;gap:1.4rem;margin-bottom:1.1rem;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div class="ra-lbl" style="margin-bottom:.35rem">A</div>
+          <button id="fa-a" class="bitbtn">0</button>
+        </div>
+        <div style="text-align:center">
+          <div class="ra-lbl" style="margin-bottom:.35rem">B</div>
+          <button id="fa-b" class="bitbtn">0</button>
+        </div>
+        <div style="text-align:center">
+          <div class="ra-lbl" style="margin-bottom:.35rem">Cin</div>
+          <button id="fa-c" class="bitbtn">0</button>
+        </div>
+      </div>
+      <svg id="fa-svg" width="100%" viewBox="0 0 640 300" role="img" aria-label="Full adder block diagram: half adder one takes A and B, half adder two takes the partial sum and carry-in, an OR gate combines the two carries"></svg>
+      <p id="fa-note" style="text-align:center;font:.9rem var(--sans);color:var(--muted);font-style:italic;margin:.8rem 0 0;min-height:2.6em;line-height:1.6"></p>
+    </div>
+  </div>
+
+  <p>Set all three inputs to 1 and trace it. The first half adder sees 1 and 1, so s1 is 0 and c1 is 1. The second sees s1=0 and Cin=1, so the sum is 1 and c2 is 0. The OR of the carries gives Cout=1. Sum 1, carry 1, which is binary 11, which is 3. Three ones in, three out. The circuit agrees with arithmetic on this row and, if you work the toggles, on all eight.</p>
+
+  <p>One subtlety deserves a paragraph, because it looks like luck and is not. The OR gate merges c1 and c2 as if they could never both be 1 at once, and they never can. If c1 is 1, then A and B were both 1, which forces s1 to 0. And if s1 is 0, the second half adder's carry, s1 AND Cin, is 0 no matter what Cin is. So c1 being 1 guarantees c2 is 0. The two carries are mutually exclusive by construction, which is exactly why a plain OR is enough to combine them. Nothing in a well-designed circuit is an accident.</p>
+
+  <hr class="sep">
+
+  <h2>Chaining the columns</h2>
+
+  <p>Now the pencil mark becomes a wire. Take one full adder per bit position. Connect the carry-out of each column to the carry-in of the column to its left, exactly the way your pencil carried the 1 leftward on paper. The rightmost column has no carry arriving, so tie its carry-in to 0. The leftmost column's carry-out pokes out of the top of the whole circuit, and we will have words about it shortly.</p>
+
+  <p>This arrangement is called a ripple carry adder, and the name describes its behaviour honestly. Set two numbers on the inputs and the answer does not appear all at once. The rightmost column settles first. Its carry ripples into the next column, which can only then settle, and its carry ripples onward. The answer flows across the circuit right to left like a wave. Watch it happen.</p>
+
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The 4-bit ripple carry adder &mdash; set the bits, press Add, watch the carry travel</span></div>
+    <div class="viz-body" style="padding:1.4rem 1rem">
+
+      <div style="display:flex;justify-content:center;gap:.8rem;margin-bottom:1rem;flex-wrap:wrap">
+        <button id="ra-add" class="ctrl-btn primary">Add</button>
+        <button id="ra-worst" class="ctrl-btn">Worst case: 1111 + 0001</button>
+        <button id="ra-none" class="ctrl-btn">No carries: 0101 + 1010</button>
+        <button id="ra-reset" class="ctrl-btn">Reset</button>
+      </div>
+
+      <div id="ra-cols"></div>
+
+      <div style="display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;margin-top:1rem">
+        <div style="text-align:center">
+          <div class="ra-lbl">A in decimal</div>
+          <div id="ra-adec" style="font:700 1.3rem 'Courier New',monospace;color:#e8a84c;margin-top:2px">0</div>
+        </div>
+        <div style="text-align:center">
+          <div class="ra-lbl">B in decimal</div>
+          <div id="ra-bdec" style="font:700 1.3rem 'Courier New',monospace;color:#e8a84c;margin-top:2px">0</div>
+        </div>
+        <div style="text-align:center">
+          <div class="ra-lbl">Result</div>
+          <div id="ra-rdec" style="font:700 1.3rem 'Courier New',monospace;color:#4ca8e8;margin-top:2px">&mdash;</div>
+        </div>
+        <div style="text-align:center">
+          <div class="ra-lbl">Columns settled</div>
+          <div id="ra-delay" style="font:700 1.3rem 'Courier New',monospace;color:#9e968a;margin-top:2px">0 / 4</div>
+        </div>
+      </div>
+
+      <p id="ra-note" style="text-align:center;font:.9rem var(--sans);color:var(--muted);font-style:italic;margin:1rem 0 0;min-height:2.6em;line-height:1.6">Toggle the A and B bits in any column, then press Add. Each column is one full adder. The red carry values are the pencil marks.</p>
+
+    </div>
+  </div>
+
+  <p>Run the worst case and pay attention to the order of events. 1111 plus 0001. The only 1 in the second number sits in the rightmost column, yet every single column changes. The rightmost adds 1+1, writes 0, carries. The next column adds 1+0 plus that carry, writes 0, carries again. The carry marches through every position and finally falls out of the left end. Fifteen plus one is sixteen, 10000, five bits.</p>
+
+  <p>Then run the no-carries case, 0101 plus 1010. Every column adds a 0 and a 1, no carry is ever generated, and each column's answer never depended on its neighbour. In that case the columns could all have settled simultaneously. The wave only exists when carries exist.</p>
+
+  <hr class="sep">
+
+  <h2>The price of the ripple</h2>
+
+  <p>That last observation is the door to something important. In Class 3 I made a point of saying that bitwise AND on a 64-bit register costs the same as AND on one bit, because all 64 gate pairs work in parallel with nothing passing between them. Now you can see exactly what addition loses. Column 5 cannot produce its correct answer until it knows its carry-in, which comes from column 4, which is waiting on column 3, all the way down. In the worst case, the leftmost column of a 64-bit adder is sitting idle until a carry born in column 0 has physically travelled through 63 stages of gates.</p>
+
+  <p>Gates are not instant. Each one takes a small but real time to respond to its inputs, a gate delay, and delays in a chain add up. A 64-bit ripple adder in the worst case is a chain of roughly a hundred and thirty gate delays, against the single gate delay of a bitwise AND. Both are fast in human terms. But a processor executing billions of additions per second lives and dies by exactly this kind of accounting, and the ripple adder's carry chain is the slowest path through it.</p>
+
+  <p>Engineers did not accept this. There is a family of designs, carry-lookahead adders, that compute the carries directly from the inputs, in advance, instead of waiting for them to ripple. The idea is that you can tell whether a column will generate a carry or propagate one just by looking at its own two bits, and clever circuitry can combine those signals across the whole word in a few gate delays. Real processors use these. The ripple adder remains the design to learn first, because it is the honest one: it is your pencil algorithm, wired.</p>
+
+  <p class="lead-q">Bitwise logic is a crowd working in parallel. Addition is a bucket brigade. The bucket is the carry.</p>
+
+  <hr class="sep">
+
+  <h2>The bit with nowhere to go</h2>
+
+  <p>One loose wire is still dangling. The leftmost full adder produces a carry-out, and in a fixed-width machine there is no column to its left. What happens to that bit?</p>
+
+  <p>Nothing happens to it. That is the problem. The register is 8 bits, or 32, or 64, and the carry out of the top column simply has no home. Watch it in the widget: 1111 plus 0001 produces a fifth bit. In our toy adder I display it. In a real 4-bit register it would be gone, and the register would read 0000. Fifteen plus one, in a 4-bit machine, is zero.</p>
+
+  <p>Now connect this to Class 1, because two of the four stories just became mechanical rather than mysterious. The wallpaper pixel arithmetic produced 271 in an 8-bit channel. 271 needs nine bits. The ninth bit is precisely the top carry-out of an 8-bit adder, and it had nowhere to land. Whether the surrounding code then wraps the value, clamps it, or, as Android found, marches off and crashes on it, the birth of the error is this exact wire. And the 2038 timestamp is not an abstraction either. Somewhere in the machine, once per second, a 32-bit adder computes time plus one. It has been running that same circuit since 1970, and it is carrying its way steadily toward the top of the register.</p>
+
+  <p>But notice I said the timestamp will land in 1901, not zero. A wrapped adder should give zero, or something near it. Negative 1901-ness is stranger than a wraparound. The explanation is that the top bit of that register is not an ordinary column at all. It carries a meaning we have not built yet.</p>
+
+  <div class="thread-box">
+    <div class="thread-label">The open question</div>
+    <div class="thread-text">We can add. But ask this machine to compute 7 minus 5 and it has nothing, because there is no minus sign anywhere in it, only bits. Yet real processors subtract billions of times a second, and almost none of them contain a subtractor circuit. The trick is to turn subtraction into addition, and the trick requires an answer to a question we have been walking past since Class 2: <strong>what is a negative number in binary?</strong> Answer that, and subtraction is free, and the 2038 timestamp's plunge to 1901 stops being strange. That is Class 5.</div>
+  </div>
+
+  <p>Keep the image of the ripple in your head as we go. Every arithmetic circuit we build from here on is this adder wearing different clothes. Subtraction will be this adder with a twist on one input. Multiplication, in Class 7, will be this adder used repeatedly. The pencil mark you learned at seven turned out to be one of the load-bearing ideas of the century.</p>
+
+  <hr class="sep">
+
+  <h2>Test yourself</h2>
+
+  <p>Ten questions on the ideas from this class.</p>
+
+  <div id="quiz-widget" style="margin-top:1.2rem">
+    <div id="quiz-questions"></div>
+    <div id="quiz-result" style="display:none;margin-top:1.4rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:1.4rem 1.6rem">
+      <div id="quiz-score" style="font:700 1.4rem 'Courier New',monospace;color:var(--accent);margin-bottom:.5rem"></div>
+      <div id="quiz-feedback" style="font:.95rem var(--sans);color:var(--muted);line-height:1.7;margin-bottom:1rem"></div>
+      <button id="quiz-retry" style="padding:.5rem 1.2rem;border-radius:8px;border:1px solid rgba(232,168,76,.4);background:rgba(232,168,76,.08);color:var(--accent);cursor:pointer;font:.9rem var(--sans)">Try again</button>
+    </div>
+  </div>
+
+</article></main>
+
+<aside class="blog-sidebar anim d2">
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Computer Organisation &amp; Design</h2>
+    <a class="sidebar-link" href="class1.html">
+      <div class="sidebar-link-title">Class 1: The Machine Doesn&rsquo;t Care</div>
+      <div class="sidebar-link-note">Done</div>
+    </a>
+    <a class="sidebar-link" href="class2.html">
+      <div class="sidebar-link-title">Class 2: How Do We Count?</div>
+      <div class="sidebar-link-note">Done</div>
+    </a>
+    <a class="sidebar-link" href="class3.html">
+      <div class="sidebar-link-title">Class 3: Can a Switch Do Mathematics?</div>
+      <div class="sidebar-link-note">Done</div>
+    </a>
+    <a class="sidebar-link active-topic" href="#">
+      <div class="sidebar-link-title">Class 4: How Does a Machine Add?</div>
+      <div class="sidebar-link-note">You are here</div>
+    </a>
+    <a class="sidebar-link" href="#">
+      <div class="sidebar-link-title">Class 5: Coming soon</div>
+      <div class="sidebar-link-note"></div>
+    </a>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">The thread</h2>
+    <p style="font-size:.92rem;color:var(--muted);line-height:1.6">Gates can do logic, and now they can add. But the machine still has no idea what a negative number is, and the answer to that is the strangest and most elegant idea in the whole arithmetic arc. Class 5.</p>
+  </div>
+  <div class="sidebar-card">
+    <h2 class="sidebar-title">Key ideas</h2>
+    <p style="font-size:.88rem;color:var(--muted);line-height:1.65;margin-bottom:.5rem">One column of addition: sum = XOR, carry = AND. The half adder.</p>
+    <p style="font-size:.88rem;color:var(--muted);line-height:1.65;margin-bottom:.5rem">A real column takes a carry-in: two half adders + OR = the full adder.</p>
+    <p style="font-size:.88rem;color:var(--muted);line-height:1.65;margin-bottom:.5rem">Chain full adders, carry-out to carry-in: the ripple carry adder.</p>
+    <p style="font-size:.88rem;color:var(--muted);line-height:1.65">The carry chain is sequential. That is why addition costs more than bitwise logic.</p>
+  </div>
+</aside>
+
+</div></div>
+
+<footer class="site-footer">
+  <p class="footer-tagline">Thanks for reading.</p>
+  <p class="footer-copy">&copy; <span id="year"></span> Adithya MD</p>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+var hb = document.getElementById('hamburger'), mo = document.getElementById('mobileMenu');
+hb.addEventListener('click', function() {
+  hb.classList.toggle('active');
+  mo.classList.toggle('active');
+  document.body.style.overflow = mo.classList.contains('active') ? 'hidden' : '';
+});
+mo.querySelectorAll('a').forEach(function(l) {
+  l.addEventListener('click', function() {
+    hb.classList.remove('active');
+    mo.classList.remove('active');
+    document.body.style.overflow = '';
+  });
+});
+</script>
+
+<!-- ============ half adder widget ============ -->
+<script>
+(function() {
+  var a = 0, b = 0;
+  var svg = document.getElementById('ha-svg');
+  var note = document.getElementById('ha-note');
+  var btnA = document.getElementById('ha-a');
+  var btnB = document.getElementById('ha-b');
+
+  function wire(x1, y1, x2, y2, hot) {
+    return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
+      '" stroke="' + (hot ? '#7fff6b' : '#3a3733') + '" stroke-width="' + (hot ? 2.6 : 2) +
+      '" stroke-linecap="round" class="' + (hot ? 'flow' : '') + '"/>';
+  }
+  function pin(x, y, v) {
+    return '<circle cx="' + x + '" cy="' + y + '" r="10" fill="' + (v ? 'rgba(232,168,76,.2)' : '#1d1b17') +
+      '" stroke="' + (v ? '#e8a84c' : '#5a5550') + '" stroke-width="1.4"/>' +
+      '<text x="' + x + '" y="' + (y + 4) + '" text-anchor="middle" style="font:700 11px \'Courier New\',monospace;fill:' +
+      (v ? '#e8a84c' : '#9e968a') + '">' + v + '</text>';
+  }
+  function outBox(x, y, label, v) {
+    var col = v ? '#7fff6b' : '#ff6b6b';
+    return '<rect x="' + x + '" y="' + (y - 22) + '" width="52" height="44" rx="8" fill="' +
+      (v ? 'rgba(127,255,107,.1)' : 'rgba(255,107,107,.07)') + '" stroke="' + col + '" stroke-width="1.4"/>' +
+      '<text x="' + (x + 26) + '" y="' + (y + 4) + '" text-anchor="middle" style="font:700 17px \'Courier New\',monospace;fill:' + col + '">' + v + '</text>' +
+      '<text x="' + (x + 26) + '" y="' + (y + 34) + '" text-anchor="middle" style="font:9px \'Source Sans 3\',sans-serif;fill:#9e968a">' + label + '</text>';
+  }
+  function gateBox(x, y, w, h, name, active) {
+    return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="10" fill="' +
+      (active ? 'rgba(76,168,232,.12)' : 'rgba(76,168,232,.05)') + '" stroke="rgba(76,168,232,' + (active ? '.6' : '.3') + ')" stroke-width="1.5"/>' +
+      '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 4) + '" text-anchor="middle" style="font:700 13px \'Courier New\',monospace;fill:#4ca8e8">' + name + '</text>';
+  }
+
+  function render() {
+    var sum = a ^ b, carry = a & b;
+    var s = '';
+    // input pins
+    s += '<text x="34" y="46" text-anchor="middle" style="font:10px \'Source Sans 3\',sans-serif;fill:#9e968a">A</text>';
+    s += '<text x="34" y="126" text-anchor="middle" style="font:10px \'Source Sans 3\',sans-serif;fill:#9e968a">B</text>';
+    // A wires: to XOR (y=70) and AND (y=150)
+    s += wire(58, 60, 130, 60, a); s += wire(130, 60, 130, 70, a); s += wire(130, 70, 210, 70, a);
+    s += wire(58, 60, 100, 60, a); s += wire(100, 60, 100, 150, a); s += wire(100, 150, 210, 150, a);
+    // B wires
+    s += wire(58, 140, 116, 140, b); s += wire(116, 140, 116, 100, b); s += wire(116, 100, 210, 100, b);
+    s += wire(58, 140, 148, 140, b); s += wire(148, 140, 148, 180, b); s += wire(148, 180, 210, 180, b);
+    // gates
+    s += gateBox(210, 52, 96, 62, 'XOR', sum === 1);
+    s += gateBox(210, 136, 96, 62, 'AND', carry === 1);
+    // output wires
+    s += wire(306, 83, 420, 83, sum); s += wire(306, 167, 420, 167, carry);
+    // pins on top
+    s += pin(58, 60, a); s += pin(58, 140, b);
+    // outputs
+    s += outBox(424, 83, 'SUM', sum);
+    s += outBox(424, 167, 'CARRY', carry);
+    svg.innerHTML = s;
+
+    var msg;
+    if (a && b) msg = '1 + 1 = 10 in binary. The XOR writes the 0, the AND raises the carry. This is the pencil mark, electrified.';
+    else if (a !== b) msg = a + ' + ' + b + ' = 1. XOR sees different inputs and outputs 1. AND needs both, so no carry.';
+    else msg = '0 + 0 = 0. Both gates quiet. Sum 0, carry 0.';
+    note.textContent = msg;
+  }
+
+  btnA.addEventListener('click', function() { a = a ? 0 : 1; this.classList.toggle('on', a === 1); this.textContent = a; render(); });
+  btnB.addEventListener('click', function() { b = b ? 0 : 1; this.classList.toggle('on', b === 1); this.textContent = b; render(); });
+  render();
+})();
+</script>
+
+<!-- ============ full adder widget ============ -->
+<script>
+(function() {
+  var a = 0, b = 0, c = 0;
+  var svg = document.getElementById('fa-svg');
+  var note = document.getElementById('fa-note');
+
+  function wire(x1, y1, x2, y2, hot) {
+    return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
+      '" stroke="' + (hot ? '#7fff6b' : '#3a3733') + '" stroke-width="' + (hot ? 2.6 : 2) +
+      '" stroke-linecap="round" class="' + (hot ? 'flow' : '') + '"/>';
+  }
+  function pin(x, y, v, label) {
+    return '<circle cx="' + x + '" cy="' + y + '" r="10" fill="' + (v ? 'rgba(232,168,76,.2)' : '#1d1b17') +
+      '" stroke="' + (v ? '#e8a84c' : '#5a5550') + '" stroke-width="1.4"/>' +
+      '<text x="' + x + '" y="' + (y + 4) + '" text-anchor="middle" style="font:700 11px \'Courier New\',monospace;fill:' +
+      (v ? '#e8a84c' : '#9e968a') + '">' + v + '</text>' +
+      '<text x="' + x + '" y="' + (y - 16) + '" text-anchor="middle" style="font:10px \'Source Sans 3\',sans-serif;fill:#9e968a">' + label + '</text>';
+  }
+  function box(x, y, w, h, name, sub) {
+    return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="10" fill="rgba(76,168,232,.06)" stroke="rgba(76,168,232,.35)" stroke-width="1.5"/>' +
+      '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 - 2) + '" text-anchor="middle" style="font:700 13px \'Courier New\',monospace;fill:#4ca8e8">' + name + '</text>' +
+      '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 14) + '" text-anchor="middle" style="font:9px \'Source Sans 3\',sans-serif;fill:#5a5550">' + sub + '</text>';
+  }
+  function tag(x, y, txt, v) {
+    return '<text x="' + x + '" y="' + y + '" text-anchor="middle" style="font:700 10px \'Courier New\',monospace;fill:' +
+      (v ? '#7fff6b' : '#5a5550') + '">' + txt + '=' + v + '</text>';
+  }
+  function outBox(x, y, label, v) {
+    var col = v ? '#7fff6b' : '#ff6b6b';
+    return '<rect x="' + x + '" y="' + (y - 22) + '" width="52" height="44" rx="8" fill="' +
+      (v ? 'rgba(127,255,107,.1)' : 'rgba(255,107,107,.07)') + '" stroke="' + col + '" stroke-width="1.4"/>' +
+      '<text x="' + (x + 26) + '" y="' + (y + 4) + '" text-anchor="middle" style="font:700 17px \'Courier New\',monospace;fill:' + col + '">' + v + '</text>' +
+      '<text x="' + (x + 26) + '" y="' + (y + 34) + '" text-anchor="middle" style="font:9px \'Source Sans 3\',sans-serif;fill:#9e968a">' + label + '</text>';
+  }
+
+  function render() {
+    var s1 = a ^ b, c1 = a & b;
+    var sum = s1 ^ c, c2 = s1 & c;
+    var cout = c1 | c2;
+    var s = '';
+
+    // input pins
+    s += pin(46, 70, a, 'A');
+    s += pin(46, 110, b, 'B');
+    s += pin(46, 240, c, 'Cin');
+
+    // wires into HA1
+    s += wire(58, 70, 140, 70, a);
+    s += wire(58, 110, 140, 110, b);
+    s += box(140, 48, 104, 84, 'HA 1', 'adds A and B');
+
+    // s1 wire: HA1 right (y=76) to HA2 left (y=196)
+    s += wire(244, 76, 282, 76, s1); s += wire(282, 76, 282, 196, s1); s += wire(282, 196, 320, 196, s1);
+    s += tag(263, 66, 's1', s1);
+
+    // c1 wire: HA1 right lower (y=112) up to OR
+    s += wire(244, 112, 300, 112, c1); s += wire(300, 112, 300, 84, c1); s += wire(300, 84, 452, 84, c1);
+    s += tag(330, 76, 'c1', c1);
+
+    // Cin wire to HA2
+    s += wire(58, 240, 320, 240, c);
+    s += box(320, 174, 104, 84, 'HA 2', 'adds s1 and Cin');
+
+    // sum wire out
+    s += wire(424, 202, 560, 202, sum);
+    // c2 wire up to OR
+    s += wire(424, 238, 440, 238, c2); s += wire(440, 238, 440, 112, c2); s += wire(440, 112, 452, 112, c2);
+    s += tag(430, 130, 'c2', c2);
+
+    // OR box
+    s += box(452, 62, 76, 66, 'OR', 'c1 or c2');
+    s += wire(528, 95, 560, 95, cout);
+
+    // outputs
+    s += outBox(564, 95, 'Cout', cout);
+    s += outBox(564, 202, 'SUM', sum);
+
+    svg.innerHTML = s;
+
+    var total = a + b + c;
+    var msg = a + ' + ' + b + ' + ' + c + ' = ' + total + '. ';
+    msg += 'HA1: s1=' + s1 + ', c1=' + c1 + '. HA2: sum=' + sum + ', c2=' + c2 + '. Cout = c1 OR c2 = ' + cout + '. ';
+    msg += 'Binary result ' + cout + '' + sum + ' = ' + total + '. The circuit and the arithmetic agree.';
+    note.textContent = msg;
+  }
+
+  function hook(id, setter) {
+    document.getElementById(id).addEventListener('click', function() {
+      var v = setter();
+      this.classList.toggle('on', v === 1);
+      this.textContent = v;
+      render();
+    });
+  }
+  hook('fa-a', function() { a = a ? 0 : 1; return a; });
+  hook('fa-b', function() { b = b ? 0 : 1; return b; });
+  hook('fa-c', function() { c = c ? 0 : 1; return c; });
+  render();
+})();
+</script>
+
+<!-- ============ ripple carry adder widget ============ -->
+<script>
+(function() {
+  var N = 4;
+  var A = [0, 0, 0, 0], B = [0, 0, 0, 0]; // index 0 = least significant bit
+  var sums = [null, null, null, null], carries = [0, null, null, null, null];
+  var animating = false, timer = null;
+
+  var cols = document.getElementById('ra-cols');
+  var note = document.getElementById('ra-note');
+
+  function buildColumns() {
+    cols.innerHTML = '';
+    // carry-out display column (far left)
+    var coutCol = document.createElement('div');
+    coutCol.className = 'ra-col';
+    coutCol.innerHTML =
+      '<div class="ra-lbl">carry out</div>' +
+      '<div id="ra-cout" class="ra-sum" style="border-style:dashed">&nbsp;</div>' +
+      '<div class="ra-lbl" style="visibility:hidden">.</div>' +
+      '<div class="ra-fa" style="visibility:hidden"></div>' +
+      '<div class="ra-lbl" style="visibility:hidden">.</div>' +
+      '<div class="ra-sum" style="visibility:hidden"></div>';
+    cols.appendChild(coutCol);
+
+    for (var i = N - 1; i >= 0; i--) {
+      var col = document.createElement('div');
+      col.className = 'ra-col';
+      col.innerHTML =
+        '<div class="ra-lbl">bit ' + i + ' &middot; weight ' + Math.pow(2, i) + '</div>' +
+        '<button class="bitbtn" id="ra-a' + i + '">0</button>' +
+        '<button class="bitbtn" id="ra-b' + i + '">0</button>' +
+        '<div class="ra-fa" id="ra-fa' + i + '"><span class="fa-name">FA ' + i + '</span><span class="fa-cin" id="ra-cin' + i + '">cin: &mdash;</span></div>' +
+        '<div class="ra-carry" id="ra-c' + i + '">&nbsp;</div>' +
+        '<div class="ra-sum" id="ra-s' + i + '">&middot;</div>';
+      cols.appendChild(col);
+    }
+
+    for (var j = 0; j < N; j++) {
+      (function(idx) {
+        document.getElementById('ra-a' + idx).addEventListener('click', function() {
+          if (animating) return;
+          A[idx] = A[idx] ? 0 : 1; syncBits(); clearResult();
+        });
+        document.getElementById('ra-b' + idx).addEventListener('click', function() {
+          if (animating) return;
+          B[idx] = B[idx] ? 0 : 1; syncBits(); clearResult();
+        });
+      })(j);
+    }
+  }
+
+  function dec(bits) { return bits[0] + bits[1] * 2 + bits[2] * 4 + bits[3] * 8; }
+
+  function syncBits() {
+    for (var i = 0; i < N; i++) {
+      var ba = document.getElementById('ra-a' + i);
+      ba.textContent = A[i]; ba.classList.toggle('on', A[i] === 1);
+      var bb = document.getElementById('ra-b' + i);
+      bb.textContent = B[i]; bb.classList.toggle('on', B[i] === 1);
+    }
+    document.getElementById('ra-adec').textContent = dec(A);
+    document.getElementById('ra-bdec').textContent = dec(B);
+  }
+
+  function clearResult() {
+    if (timer) { clearInterval(timer); timer = null; }
+    animating = false;
+    sums = [null, null, null, null];
+    carries = [0, null, null, null, null];
+    for (var i = 0; i < N; i++) {
+      var s = document.getElementById('ra-s' + i);
+      s.textContent = '\u00b7'; s.classList.remove('set');
+      var fa = document.getElementById('ra-fa' + i);
+      fa.classList.remove('active'); fa.classList.remove('done');
+      document.getElementById('ra-cin' + i).textContent = 'cin: \u2014';
+      var cEl = document.getElementById('ra-c' + i);
+      cEl.textContent = '\u00a0'; cEl.classList.remove('hot');
+    }
+    var co = document.getElementById('ra-cout');
+    co.textContent = '\u00a0'; co.classList.remove('set'); co.style.borderColor = '';
+    document.getElementById('ra-rdec').textContent = '\u2014';
+    document.getElementById('ra-delay').textContent = '0 / 4';
+    note.textContent = 'Toggle the A and B bits in any column, then press Add. Each column is one full adder. The red carry values are the pencil marks.';
+  }
+
+  function runAdd() {
+    if (animating) return;
+    clearResult();
+    animating = true;
+    var step = 0;
+    document.getElementById('ra-fa0').classList.add('active');
+    document.getElementById('ra-cin0').textContent = 'cin: 0';
+    note.textContent = 'Column 0 goes first. It is the only column that can: every other column is waiting for a carry.';
+
+    timer = setInterval(function() {
+      var i = step;
+      // compute column i
+      var cin = carries[i];
+      var total = A[i] + B[i] + cin;
+      sums[i] = total % 2;
+      carries[i + 1] = total >= 2 ? 1 : 0;
+
+      var sEl = document.getElementById('ra-s' + i);
+      sEl.textContent = sums[i]; sEl.classList.add('set');
+      var fa = document.getElementById('ra-fa' + i);
+      fa.classList.remove('active'); fa.classList.add('done');
+      var cEl = document.getElementById('ra-c' + i);
+      cEl.textContent = 'carry ' + carries[i + 1] + ' \u2192';
+      cEl.classList.toggle('hot', carries[i + 1] === 1);
+      document.getElementById('ra-delay').textContent = (i + 1) + ' / 4';
+
+      step++;
+      if (step < N) {
+        var nfa = document.getElementById('ra-fa' + step);
+        nfa.classList.add('active');
+        document.getElementById('ra-cin' + step).textContent = 'cin: ' + carries[step];
+        note.textContent = 'Column ' + i + ' settled: ' + A[i] + '+' + B[i] + '+' + cin + ' gives sum ' + sums[i] +
+          (carries[i + 1] ? ' and a carry. The carry ripples left into column ' + step + '.' : ' and no carry. Column ' + step + ' can now settle.');
+      } else {
+        clearInterval(timer); timer = null; animating = false;
+        var co = document.getElementById('ra-cout');
+        co.textContent = carries[N];
+        co.classList.add('set');
+        var result = dec(sums) + carries[N] * 16;
+        var stored = dec(sums);
+        document.getElementById('ra-rdec').textContent = dec(A) + ' + ' + dec(B) + ' = ' + result;
+        if (carries[N] === 1) {
+          co.style.borderColor = 'rgba(255,107,107,.7)';
+          note.textContent = 'The top column produced a carry-out. The true answer is ' + result +
+            ', which needs 5 bits. A real 4-bit register would silently keep only ' + stored +
+            '. This dangling wire is the wallpaper story, the 2038 story, and all of Class 6.';
+        } else {
+          note.textContent = 'All four columns settled, no carry left over. ' + dec(A) + ' + ' + dec(B) + ' = ' + result + ', and it fits in 4 bits.';
+        }
+      }
+    }, 850);
+  }
+
+  function preset(a, b) {
+    if (animating) return;
+    A = a.slice(); B = b.slice();
+    syncBits(); clearResult();
+  }
+
+  buildColumns();
+  syncBits();
+  clearResult();
+
+  document.getElementById('ra-add').addEventListener('click', runAdd);
+  document.getElementById('ra-worst').addEventListener('click', function() { preset([1, 1, 1, 1], [1, 0, 0, 0]); });
+  document.getElementById('ra-none').addEventListener('click', function() { preset([1, 0, 1, 0], [0, 1, 0, 1]); });
+  document.getElementById('ra-reset').addEventListener('click', function() { preset([0, 0, 0, 0], [0, 0, 0, 0]); });
+})();
+</script>
+
+<!-- ============ quiz ============ -->
+<script>
+(function() {
+  var questions = [
+    {
+      q: "A half adder takes two bits and produces a sum and a carry. Which gates compute them?",
+      opts: [
+        "Sum = OR, Carry = AND",
+        "Sum = XOR, Carry = AND",
+        "Sum = AND, Carry = XOR",
+        "Sum = XOR, Carry = OR"
+      ],
+      ans: 1,
+      explain: "Write the four cases of adding two bits. The sum bit is 1 exactly when the inputs differ, which is XOR. The carry is 1 only when both inputs are 1, which is AND."
+    },
+    {
+      q: "In a single binary column, what does 1 + 1 produce?",
+      opts: [
+        "Sum 1, carry 1",
+        "Sum 0, carry 1",
+        "Sum 1, carry 0",
+        "Sum 2, no carry"
+      ],
+      ans: 1,
+      explain: "1 + 1 = 2, which is 10 in binary. The column writes the sum digit 0 and carries the 1 to the next column, exactly like 7 + 8 = 15 in decimal writes 5 and carries 1."
+    },
+    {
+      q: "Why is the half adder only half of a real adder column?",
+      opts: [
+        "It only produces one output instead of two",
+        "It works only for the number 1",
+        "It has no input for the carry arriving from the column to its right",
+        "It cannot be built from NAND gates"
+      ],
+      ans: 2,
+      explain: "Every column except the rightmost receives three bits: A, B, and the carry-in from the previous column. The half adder has only two inputs, so it can serve the rightmost column and no other."
+    },
+    {
+      q: "How is a full adder constructed?",
+      opts: [
+        "Three XOR gates in series",
+        "Two half adders, with an OR gate combining their two carries",
+        "One half adder and one NOT gate",
+        "Four AND gates feeding one OR gate"
+      ],
+      ans: 1,
+      explain: "A column is two small additions: first A + B (half adder one, producing s1 and c1), then s1 + Cin (half adder two, producing the sum and c2). Cout is c1 OR c2, because a carry happened if either small addition overflowed."
+    },
+    {
+      q: "The full adder joins its two internal carries with a plain OR. Why is that safe, when OR would give the wrong answer if both carries were 1 at once?",
+      opts: [
+        "Both carries being 1 is handled by a hidden third gate",
+        "If c1 is 1 then A and B were both 1, forcing s1 to 0, which forces c2 to 0. The two carries can never both be 1",
+        "The OR gate saturates at 1, so the error never shows",
+        "It is not safe; real processors use a different circuit"
+      ],
+      ans: 1,
+      explain: "c1 = A AND B. If c1 is 1, both A and B are 1, so s1 = A XOR B = 0. Then c2 = s1 AND Cin = 0 regardless of Cin. The carries are mutually exclusive by construction, so OR combines them correctly in every case."
+    },
+    {
+      q: "Compute 0110 + 0011 with a 4-bit ripple adder.",
+      opts: ["1001", "0101", "1010", "1101"],
+      ans: 0,
+      explain: "6 + 3 = 9. Column 0: 0+1=1, no carry. Column 1: 1+1=10, write 0, carry 1. Column 2: 1+0+1=10, write 0, carry 1. Column 3: 0+0+1=1. Result 1001, which is 9."
+    },
+    {
+      q: "What makes the ripple carry adder slow in the worst case?",
+      opts: [
+        "XOR gates are inherently slower than AND gates",
+        "Each column must wait for the carry from the column before it, so the carry can travel sequentially through every stage",
+        "The adder recomputes every column several times to check for errors",
+        "Binary numbers are longer than decimal numbers"
+      ],
+      ans: 1,
+      explain: "A column cannot produce its correct output until its carry-in is known, and that comes from the previous column. In the worst case, such as 1111 + 0001, a carry born in column 0 must physically pass through every stage before the leftmost column can settle. The chain of gate delays is what makes addition slower than bitwise operations, where every bit position works in parallel."
+    },
+    {
+      q: "A 4-bit register holds 1111 (fifteen) and the machine adds 1. What does the register hold afterwards?",
+      opts: [
+        "10000",
+        "1111, the addition is refused",
+        "0000, because the carry out of the top column has nowhere to go",
+        "1000"
+      ],
+      ans: 2,
+      explain: "15 + 1 = 16 = 10000, which needs five bits. The fifth bit is the carry-out of the top column, and a 4-bit register has no room for it. The stored result is 0000. This silent loss of the top carry is the mechanism behind the wallpaper's 271 in an 8-bit channel and the 2038 timestamp problem."
+    },
+    {
+      q: "How many full adders does a 32-bit ripple carry adder need?",
+      opts: [
+        "16, since each full adder handles two bits",
+        "32, one per bit position, with the rightmost carry-in tied to 0",
+        "64, two per bit position",
+        "31, because the last column needs no adder"
+      ],
+      ans: 1,
+      explain: "One full adder per column, so 32. The rightmost column has no incoming carry, so its carry-in is wired to 0 (or that one position can be a half adder, saving a few gates). Each carry-out feeds the next carry-in."
+    },
+    {
+      q: "Konrad Zuse and Claude Shannon worked in the same years with no knowledge of each other, and both arrived at binary switching designs. What does the class suggest this convergence indicates?",
+      opts: [
+        "One of them must have secretly seen the other's work",
+        "Binary adders were already common in industry at the time",
+        "The design is less an invention than a discovery: the logic of the problem forces anyone who follows it to the same answer",
+        "German and American engineering traditions were identical"
+      ],
+      ans: 2,
+      explain: "Zuse built binary adders from mechanical plates and relays in Berlin while Shannon was proving the algebra of switches at MIT, each unaware of the other. Independent convergence on the same structure suggests the structure is forced by the problem itself, the way two people deriving the same theorem does not make it two theorems."
+    }
+  ];
+
+  var answers = new Array(questions.length).fill(null);
+
+  function render() {
+    var container = document.getElementById('quiz-questions');
+    container.innerHTML = '';
+
+    questions.forEach(function(q, qi) {
+      var card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:1.3rem 1.5rem;margin-bottom:.9rem';
+
+      var qnum = document.createElement('div');
+      qnum.style.cssText = 'font:.75rem var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem';
+      qnum.textContent = 'Question ' + (qi + 1) + ' of ' + questions.length;
+      card.appendChild(qnum);
+
+      var qtext = document.createElement('div');
+      qtext.style.cssText = 'font:1rem var(--sans);color:var(--ink);margin-bottom:1rem;line-height:1.65';
+      qtext.textContent = q.q;
+      card.appendChild(qtext);
+
+      q.opts.forEach(function(opt, oi) {
+        var selected = answers[qi] === oi;
+        var btn = document.createElement('button');
+        btn.style.cssText = 'display:block;width:100%;text-align:left;padding:.65rem .9rem;margin-bottom:.4rem;border-radius:8px;cursor:pointer;font:.92rem var(--sans);line-height:1.5;transition:all .15s;border:1px solid ' + (selected ? 'rgba(232,168,76,.6)' : 'rgba(237,232,224,.08)') + ';background:' + (selected ? 'rgba(232,168,76,.1)' : 'transparent') + ';color:' + (selected ? '#e8a84c' : '#9e968a');
+        btn.textContent = opt;
+        btn.addEventListener('click', function() { answers[qi] = oi; render(); });
+        card.appendChild(btn);
+      });
+
+      container.appendChild(card);
+    });
+
+    var allAnswered = answers.every(function(a) { return a !== null; });
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'text-align:center;margin-top:.6rem';
+    var sub = document.createElement('button');
+    sub.textContent = allAnswered ? 'Check answers' : 'Answer all questions to submit';
+    sub.disabled = !allAnswered;
+    sub.style.cssText = 'padding:.6rem 1.6rem;border-radius:8px;cursor:' + (allAnswered ? 'pointer' : 'default') + ';font:.95rem var(--sans);transition:all .2s;border:1px solid rgba(232,168,76,' + (allAnswered ? '.5' : '.2') + ');background:rgba(232,168,76,' + (allAnswered ? '.12' : '.04') + ');color:' + (allAnswered ? '#e8a84c' : '#5a5550');
+    sub.addEventListener('click', function() { if (allAnswered) showResult(); });
+    wrap.appendChild(sub);
+    container.appendChild(wrap);
+  }
+
+  function showResult() {
+    var score = answers.reduce(function(s, a, i) { return s + (a === questions[i].ans ? 1 : 0); }, 0);
+    var pct = Math.round(score / questions.length * 100);
+    document.getElementById('quiz-score').textContent = score + ' / ' + questions.length + ' (' + pct + '%)';
+
+    var fb = pct === 100 ? 'Every question right. The adder is sitting solidly in your head.' :
+             pct >= 80 ? 'Strong. A couple of things to revisit, but the core is there.' :
+             pct >= 60 ? 'Decent. Go back over the sections where the answers surprised you.' :
+             'More rereading would help. Class 5 builds directly on the full adder, so make this solid first.';
+
+    var breakdown = '<div style="margin-top:1rem;display:flex;flex-direction:column;gap:.6rem">';
+    questions.forEach(function(q, i) {
+      var correct = answers[i] === q.ans;
+      breakdown += '<div style="border-left:3px solid ' + (correct ? '#7fff6b' : '#ff6b6b') + ';padding:.6rem .9rem;background:rgba(' + (correct ? '127,255,107' : '255,107,107') + ',.04);border-radius:0 8px 8px 0">';
+      breakdown += '<div style="font:.8rem var(--sans);color:' + (correct ? '#7fff6b' : '#ff6b6b') + ';margin-bottom:.3rem">Q' + (i + 1) + ': ' + (correct ? 'Correct' : 'Incorrect, you chose: ' + q.opts[answers[i]]) + '</div>';
+      breakdown += '<div style="font:.85rem var(--sans);color:#9e968a;line-height:1.6">' + q.explain + '</div>';
+      breakdown += '</div>';
+    });
+    breakdown += '</div>';
+
+    document.getElementById('quiz-feedback').innerHTML = fb + breakdown;
+    document.getElementById('quiz-result').style.display = 'block';
+    document.getElementById('quiz-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.getElementById('quiz-retry').addEventListener('click', function() {
+    answers = new Array(questions.length).fill(null);
+    document.getElementById('quiz-result').style.display = 'none';
+    render();
+    document.getElementById('quiz-widget').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
