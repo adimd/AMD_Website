@@ -138,6 +138,7 @@
 
     /* transistor interactive */
     #trans-widget .flow{stroke-dasharray:5 5;animation:tflow .55s linear infinite}
+    #trans-widget .flowr{stroke-dasharray:5 5;animation:tflow .55s linear infinite}
     @keyframes tflow{to{stroke-dashoffset:-20}}
     #trans-widget .t-tab{flex:1;padding:.7rem .3rem;background:transparent;border:none;border-bottom:2px solid transparent;color:#5a5550;font:600 .95rem 'Courier New',monospace;cursor:pointer;transition:all .2s}
     #trans-widget .t-tab.active{background:rgba(232,168,76,.08);border-bottom:2px solid #e8a84c;color:#e8a84c}
@@ -443,9 +444,11 @@
 
   <p>A transistor is the physical switch underneath all of this. It has three terminals: a gate, a source, and a drain. The gate is the control. When the voltage at the gate is high, the transistor conducts, connecting the source to the drain so current can pass. When the gate voltage is low, it stops conducting and that connection is broken. That is the entire mechanism. One voltage, at the gate, decides whether one electrical path is open or closed. High voltage means a closed switch. Low voltage means an open switch.</p>
 
-  <p>From this single component every gate follows. What changes between gates is only how you arrange the transistors, and where you connect the supply voltage, called Vcc, and ground. A resistor holds the output at one rail by default. The transistors decide whether to override it. That interplay, resistor versus transistor, is what produces a 1 or a 0 at the output.</p>
+  <p>From this single component every gate follows. What changes between gates is only how you arrange the transistors, and where you connect the supply voltage, called Vcc, and ground. Every gate also contains one resistor, and understanding its role is the whole trick. The resistor ties the output node to one rail, Vcc or ground, through a deliberately high resistance. A weak grip. If nothing else touches the node, the resistor's rail wins by default. But when a transistor conducts, it connects the node to the other rail through a resistance thousands of times smaller. Now the node is held by two hands pulling in opposite directions, and the voltage settles where the physics says it must: with the stronger hand. Current, and with it the node's voltage, follows the path of least resistance. The conducting transistor always beats the resistor. The resistor only ever wins when no transistor opposes it.</p>
 
-  <p>Start with NOT, the simplest case. It is a single transistor sitting between the output and ground, with a pull-up resistor tying the output to Vcc. When the input is high the transistor conducts and drags the output down to ground, so the output is low. When the input is low the transistor is off, and the pull-up quietly holds the output high. Input high gives output low. Input low gives output high. That is inversion, built from one switch. AND is two transistors in series, so both must conduct before current reaches the output. OR is two transistors in parallel, where either one conducting is enough. NAND and NOR are the inverting versions of those, where the transistors pull the output down toward ground and a pull-up holds it high the rest of the time. Select a gate below and toggle the inputs. Watch which transistors conduct, where current flows, and what the output does.</p>
+  <p>That is the whole logic of every gate below. The transistors decide whether a low-resistance path exists. The resistor supplies the answer for when it does not.</p>
+
+  <p>Start with NOT, the simplest case. One transistor sits between the output and ground, and a pull-up resistor ties the output weakly to Vcc. When the input is low the transistor is off, the resistor is unopposed, and the output sits high. When the input goes high the transistor conducts, and the output suddenly has an easy road to ground next to its weak road to Vcc. The easy road wins. The node collapses to 0. Input low gives output high, input high gives output low. Inversion, from one tug of war. AND is two transistors in series between Vcc and the output: both must conduct before the strong path to Vcc exists, and a conducting transistor in a broken chain carries nothing at all. OR is two in parallel, where either one conducting is enough. NAND and NOR flip the arrangement, putting the transistors on the ground side so that conduction drags the output low and the pull-up holds it high the rest of the time. Select a gate below, toggle the inputs, and watch which side of the tug of war is winning.</p>
 
   <div class="viz-block">
     <div class="viz-header"><span class="viz-title">Inside the gate &mdash; select a gate, toggle the inputs, watch the current flow through the transistors</span></div>
@@ -479,10 +482,12 @@
           <svg id="trans-svg" width="100%" viewBox="0 0 460 340" role="img" aria-label="Animated transistor circuit for the selected logic gate, showing current flow and output state"></svg>
 
           <!-- legend -->
-          <div style="display:flex;justify-content:center;gap:1.4rem;flex-wrap:wrap;margin-top:.4rem">
-            <span style="display:inline-flex;align-items:center;gap:.4rem;font:.72rem var(--sans);color:#9e968a"><span style="width:18px;height:3px;background:#7fff6b;border-radius:2px;display:inline-block"></span> current flowing</span>
-            <span style="display:inline-flex;align-items:center;gap:.4rem;font:.72rem var(--sans);color:#9e968a"><span style="width:18px;height:3px;background:#e8a84c;border-radius:2px;display:inline-block"></span> resistor holding a rail</span>
-            <span style="display:inline-flex;align-items:center;gap:.4rem;font:.72rem var(--sans);color:#9e968a"><span style="width:18px;height:3px;background:#3a3733;border-radius:2px;display:inline-block"></span> no current</span>
+          <div style="display:flex;justify-content:center;gap:1.1rem;flex-wrap:wrap;margin-top:.4rem">
+            <span style="display:inline-flex;align-items:center;gap:.4rem;font:.72rem var(--sans);color:#9e968a"><span style="width:18px;height:3px;background:#7fff6b;border-radius:2px;display:inline-block"></span> path pulling the output up to Vcc</span>
+            <span style="display:inline-flex;align-items:center;gap:.4rem;font:.72rem var(--sans);color:#9e968a"><span style="width:18px;height:3px;background:#ff6b6b;border-radius:2px;display:inline-block"></span> path dragging the output to ground</span>
+            <span style="display:inline-flex;align-items:center;gap:.4rem;font:.72rem var(--sans);color:#9e968a"><span style="width:18px;height:3px;background:#e8a84c;border-radius:2px;display:inline-block"></span> resistor in control</span>
+            <span style="display:inline-flex;align-items:center;gap:.4rem;font:.72rem var(--sans);color:#9e968a"><span style="width:18px;height:3px;background:rgba(232,168,76,.3);border-radius:2px;display:inline-block"></span> resistor overpowered</span>
+            <span style="display:inline-flex;align-items:center;gap:.4rem;font:.72rem var(--sans);color:#9e968a"><span style="width:18px;height:3px;background:#3a3733;border-radius:2px;display:inline-block"></span> no conduction</span>
           </div>
 
           <!-- explanation -->
@@ -492,6 +497,8 @@
       </div>
     </div>
   </div>
+
+  <p>One honest footnote on the physics. In the losing configurations, current does not stop entirely: whenever a transistor path and the resistor are both connected, a small current trickles from Vcc to ground through the pair, wasted as heat. Resistor-style logic like this runs warm for exactly that reason. Modern chips use a scheme called CMOS, which replaces the resistor with a second, complementary transistor, so that one side of the tug of war is always switched fully off and almost nothing flows at rest. The logic is identical. Only the waste is gone.</p>
 
   <p>This is the moment the abstraction collapses into physics. Logic gates are not metaphors. They are transistors, wired in specific configurations, etched into silicon. But every time you use a gate after this, you draw a symbol instead of these transistors. The symbol hides the pull-up resistor, the supply rail, the ground, the channel that opens and closes. That hiding is deliberate. Nobody designing a processor reasons about individual electrons in a channel. They reason about AND and OR, and the symbol stands in for the whole arrangement you just watched. The abstraction is what makes the complexity survivable.</p>
 
@@ -1117,64 +1124,75 @@ notRender(); andRender(); orRender(); xorRender();
   var btnB = document.getElementById('trans-b');
   var bWrap = document.getElementById('trans-b-wrap');
 
+  // Wire states:
+  //  'g'    green flow  - conducting path pulling the output up to Vcc
+  //  'r'    red flow    - conducting path dragging the output to ground
+  //  'dead' dim gray    - no conduction (includes a closed switch in a broken chain)
+  //  'out'  output wire - colored by the output value
   function L(x1, y1, x2, y2, st, ov) {
     var col, cls = '', w = 2;
-    if (st === 'flow') { col = '#7fff6b'; cls = 'flow'; w = 2.6; }
-    else if (st === 'hold') { col = '#e8a84c'; w = 2.6; }
+    if (st === 'g') { col = '#7fff6b'; cls = 'flow'; w = 2.6; }
+    else if (st === 'r') { col = '#ff6b6b'; cls = 'flowr'; w = 2.6; }
     else if (st === 'out') { col = ov ? '#7fff6b' : '#ff6b6b'; w = 2.6; }
     else { col = '#3a3733'; w = 2; }
     return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
       '" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round" class="' + cls + '"/>';
   }
 
+  // Resistor states: 'hold' = in control (bright amber), 'weak' = overpowered (dim amber)
   function resistor(R) {
-    var st = R.st;
-    var col = st === 'flow' ? '#7fff6b' : (st === 'hold' ? '#e8a84c' : '#3a3733');
-    var cls = st === 'flow' ? 'flow' : '';
+    var inControl = R.st === 'hold';
+    var col = inControl ? '#e8a84c' : 'rgba(232,168,76,.3)';
     var x = R.x, y1 = R.y1, y2 = R.y2;
     var lead = 16;
     var zTop = y1 + lead, zBot = y2 - lead;
-    var s = L(x, y1, x, zTop, st) + L(x, zBot, x, y2, st);
+    var lw = inControl ? 2.6 : 2;
+    var s = '<line x1="' + x + '" y1="' + y1 + '" x2="' + x + '" y2="' + zTop + '" stroke="' + col + '" stroke-width="' + lw + '" stroke-linecap="round"/>' +
+            '<line x1="' + x + '" y1="' + zBot + '" x2="' + x + '" y2="' + y2 + '" stroke="' + col + '" stroke-width="' + lw + '" stroke-linecap="round"/>';
     var pts = [], n = 6, dy = (zBot - zTop) / n;
     for (var i = 0; i <= n; i++) {
       var yy = zTop + dy * i;
       var xx = x + (i === 0 || i === n ? 0 : (i % 2 ? 9 : -9));
       pts.push(xx + ',' + yy);
     }
-    s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + col +
-      '" stroke-width="2.4" class="' + cls + '"/>';
-    s += '<text x="' + (x + 18) + '" y="' + ((zTop + zBot) / 2 + 4) +
-      '" style="font:italic 11px \'Courier New\',monospace;fill:#9e968a">R</text>';
+    s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + col + '" stroke-width="' + lw + '"' +
+      (inControl ? ' style="filter:drop-shadow(0 0 3px rgba(232,168,76,.5))"' : '') + '/>';
     var lbl = R.type === 'pullup' ? 'pull-up' : 'pull-down';
-    s += '<text x="' + (x + 18) + '" y="' + ((zTop + zBot) / 2 + 18) +
+    s += '<text x="' + (x + 18) + '" y="' + ((zTop + zBot) / 2 + 2) +
+      '" style="font:italic 11px \'Courier New\',monospace;fill:' + (inControl ? '#e8a84c' : '#5a5550') + '">R</text>';
+    s += '<text x="' + (x + 18) + '" y="' + ((zTop + zBot) / 2 + 16) +
       '" style="font:8px \'Source Sans 3\',sans-serif;fill:#5a5550">' + lbl + '</text>';
+    s += '<text x="' + (x + 18) + '" y="' + ((zTop + zBot) / 2 + 28) +
+      '" style="font:8px \'Source Sans 3\',sans-serif;fill:' + (inControl ? '#e8a84c' : 'rgba(232,168,76,.45)') + '">' +
+      (inControl ? 'in control' : 'overpowered') + '</text>';
     return s;
   }
 
+  // Transistor: t.on = channel conducting (switch closed); t.carry = 'g' | 'r' | null,
+  // whether current is actually flowing through it. A closed switch in a broken
+  // chain has t.on true and t.carry null: channel lit, leads dead.
   function transistor(t) {
     var chTop = t.top + 14, chBot = t.bot - 14, midY = (chTop + chBot) / 2;
-    var on = t.on;
+    var on = t.on, carry = t.carry;
     var chCol = on ? '#7fff6b' : '#5a5550';
     var gCol = on ? '#e8a84c' : '#5a5550';
-    var leadCls = on ? 'flow' : '';
-    var leadCol = on ? '#7fff6b' : '#3a3733';
+    var leadCol, leadCls = '';
+    if (carry === 'g') { leadCol = '#7fff6b'; leadCls = 'flow'; }
+    else if (carry === 'r') { leadCol = '#ff6b6b'; leadCls = 'flowr'; }
+    else { leadCol = '#3a3733'; }
     var s = '';
     s += '<line x1="' + t.x + '" y1="' + t.top + '" x2="' + t.x + '" y2="' + chTop +
       '" stroke="' + leadCol + '" stroke-width="2.4" stroke-linecap="round" class="' + leadCls + '"/>';
     s += '<line x1="' + t.x + '" y1="' + chBot + '" x2="' + t.x + '" y2="' + t.bot +
       '" stroke="' + leadCol + '" stroke-width="2.4" stroke-linecap="round" class="' + leadCls + '"/>';
-    // channel bar
     s += '<line x1="' + t.x + '" y1="' + chTop + '" x2="' + t.x + '" y2="' + chBot +
       '" stroke="' + chCol + '" stroke-width="3.4" stroke-linecap="round"' +
       (on ? ' style="filter:drop-shadow(0 0 3px rgba(127,255,107,.6))"' : '') + '/>';
-    // source arrow (NMOS)
     s += '<path d="M' + (t.x - 4) + ' ' + (chBot + 2) + ' L' + t.x + ' ' + (chBot - 3) +
       ' L' + (t.x + 4) + ' ' + (chBot + 2) + ' Z" fill="' + chCol + '"/>';
-    // gate plate
     var px = t.x + t.dir * 9;
     s += '<line x1="' + px + '" y1="' + (chTop - 1) + '" x2="' + px + '" y2="' + (chBot + 1) +
       '" stroke="' + gCol + '" stroke-width="2.8"/>';
-    // gate lead
     var gx = t.x + t.dir * 46;
     s += '<line x1="' + px + '" y1="' + midY + '" x2="' + gx + '" y2="' + midY +
       '" stroke="' + (on ? '#e8a84c' : '#9e968a') + '" stroke-width="1.6"/>';
@@ -1195,85 +1213,101 @@ notRender(); andRender(); orRender(); xorRender();
       var on = a === 1;
       node = { x: NX, y: 150 };
       outVal = on ? 0 : 1;
-      R = { x: NX, y1: VCC, y2: 150, type: 'pullup', st: on ? 'flow' : 'hold' };
+      R = { x: NX, y1: VCC, y2: 150, type: 'pullup', st: on ? 'weak' : 'hold' };
       var tt = 162, tb = 214;
-      T.push({ x: NX, top: tt, bot: tb, gate: 'A', on: on, dir: -1 });
-      seg(NX, 150, NX, tt, on ? 'flow' : 'dead');
-      seg(NX, tb, NX, GND, on ? 'flow' : 'dead');
+      T.push({ x: NX, top: tt, bot: tb, gate: 'A', on: on, carry: on ? 'r' : null, dir: -1 });
+      seg(NX, 150, NX, tt, on ? 'r' : 'dead');
+      seg(NX, tb, NX, GND, on ? 'r' : 'dead');
       seg(NX, 150, OUTX, 150, 'out');
       expl = on
-        ? 'Gate A is high, so the transistor conducts and pulls the output down to ground. Current flows from Vcc through the pull-up and the transistor. Output is 0.'
-        : 'Gate A is low, so the transistor is off. No current flows. The pull-up resistor holds the output at Vcc. Output is 1.';
+        ? 'Gate A is high, so the transistor conducts. The output node now has two routes: up to Vcc through the weak resistor, and down to ground through the transistor, whose resistance is thousands of times smaller. The node follows the path of least resistance and collapses to ground. Output 0.'
+        : 'The transistor is off, so the output node has exactly one connection: up through the resistor to Vcc. Weak, but unopposed, so the node sits high. Output 1.';
     }
     else if (gate === 'AND') {
       on1 = a === 1; on2 = b === 1; full = on1 && on2;
       node = { x: NX, y: 206 };
       outVal = full ? 1 : 0;
-      T.push({ x: NX, top: 54, bot: 106, gate: 'A', on: on1, dir: -1 });
-      T.push({ x: NX, top: 130, bot: 182, gate: 'B', on: on2, dir: 1 });
-      seg(NX, VCC, NX, 54, full ? 'flow' : 'dead');
-      seg(NX, 106, NX, 130, full ? 'flow' : 'dead');
-      seg(NX, 182, NX, 206, full ? 'flow' : 'dead');
-      R = { x: NX, y1: 206, y2: GND, type: 'pulldown', st: full ? 'flow' : 'hold' };
+      T.push({ x: NX, top: 54, bot: 106, gate: 'A', on: on1, carry: full ? 'g' : null, dir: -1 });
+      T.push({ x: NX, top: 130, bot: 182, gate: 'B', on: on2, carry: full ? 'g' : null, dir: 1 });
+      seg(NX, VCC, NX, 54, full ? 'g' : 'dead');
+      seg(NX, 106, NX, 130, full ? 'g' : 'dead');
+      seg(NX, 182, NX, 206, full ? 'g' : 'dead');
+      R = { x: NX, y1: 206, y2: GND, type: 'pulldown', st: full ? 'weak' : 'hold' };
       seg(NX, 206, OUTX, 206, 'out');
-      expl = full
-        ? 'Both gates are high, so both series transistors conduct. Current flows from Vcc all the way to the output, which is pulled high. Output is 1.'
-        : 'At least one transistor is off, so the series path from Vcc is broken. The pull-down resistor holds the output at ground. Output is 0.';
+      if (full) {
+        expl = 'Both transistors conduct, completing a low-resistance route from Vcc to the output. The pull-down resistor still ties the node to ground, but it loses the tug of war. Output 1.';
+      } else if (on1 !== on2) {
+        var open = on1 ? 'A' : 'B', broken = on1 ? 'B' : 'A';
+        expl = 'The ' + open + ' transistor is conducting, but the series chain is broken at ' + broken + ', so no current flows through either of them. A closed switch in a broken chain carries nothing. The only live connection to the output is the pull-down resistor, which holds it at ground. Output 0.';
+      } else {
+        expl = 'Neither transistor conducts, so there is no route from Vcc at all. The pull-down resistor is unopposed and holds the output at ground. Output 0.';
+      }
     }
     else if (gate === 'OR') {
       on1 = a === 1; on2 = b === 1; full = on1 || on2;
       var LX = 150, RX = 230;
       node = { x: NX, y: 206 };
       outVal = full ? 1 : 0;
-      T.push({ x: LX, top: 70, bot: 122, gate: 'A', on: on1, dir: -1 });
-      T.push({ x: RX, top: 70, bot: 122, gate: 'B', on: on2, dir: 1 });
-      seg(LX, VCC, LX, 70, on1 ? 'flow' : 'dead');
-      seg(RX, VCC, RX, 70, on2 ? 'flow' : 'dead');
-      seg(LX, 122, LX, 178, on1 ? 'flow' : 'dead');
-      seg(LX, 178, NX, 178, on1 ? 'flow' : 'dead');
-      seg(RX, 122, RX, 178, on2 ? 'flow' : 'dead');
-      seg(RX, 178, NX, 178, on2 ? 'flow' : 'dead');
-      seg(NX, 178, NX, 206, full ? 'flow' : 'dead');
-      R = { x: NX, y1: 206, y2: GND, type: 'pulldown', st: full ? 'flow' : 'hold' };
+      T.push({ x: LX, top: 70, bot: 122, gate: 'A', on: on1, carry: on1 ? 'g' : null, dir: -1 });
+      T.push({ x: RX, top: 70, bot: 122, gate: 'B', on: on2, carry: on2 ? 'g' : null, dir: 1 });
+      seg(LX, VCC, LX, 70, on1 ? 'g' : 'dead');
+      seg(RX, VCC, RX, 70, on2 ? 'g' : 'dead');
+      seg(LX, 122, LX, 178, on1 ? 'g' : 'dead');
+      seg(LX, 178, NX, 178, on1 ? 'g' : 'dead');
+      seg(RX, 122, RX, 178, on2 ? 'g' : 'dead');
+      seg(RX, 178, NX, 178, on2 ? 'g' : 'dead');
+      seg(NX, 178, NX, 206, full ? 'g' : 'dead');
+      R = { x: NX, y1: 206, y2: GND, type: 'pulldown', st: full ? 'weak' : 'hold' };
       seg(NX, 206, OUTX, 206, 'out');
-      expl = full
-        ? 'At least one transistor conducts, giving current a path from Vcc to the output. The output is pulled high. Output is 1.'
-        : 'Both transistors are off. Neither parallel path conducts. The pull-down resistor holds the output at ground. Output is 0.';
+      if (full) {
+        var which = (on1 && on2) ? 'Both branches conduct' : ('The ' + (on1 ? 'A' : 'B') + ' branch conducts');
+        expl = which + ', so the output has a low-resistance route up to Vcc. Each parallel branch is a complete path on its own. The pull-down resistor loses the tug of war. Output 1.';
+      } else {
+        expl = 'Both branches are off, so no route to Vcc exists. The pull-down resistor is unopposed and holds the output at ground. Output 0.';
+      }
     }
     else if (gate === 'NAND') {
       on1 = a === 1; on2 = b === 1; full = on1 && on2;
       node = { x: NX, y: 150 };
       outVal = full ? 0 : 1;
-      R = { x: NX, y1: VCC, y2: 150, type: 'pullup', st: full ? 'flow' : 'hold' };
-      T.push({ x: NX, top: 162, bot: 210, gate: 'A', on: on1, dir: -1 });
-      T.push({ x: NX, top: 230, bot: 278, gate: 'B', on: on2, dir: 1 });
-      seg(NX, 150, NX, 162, full ? 'flow' : 'dead');
-      seg(NX, 210, NX, 230, full ? 'flow' : 'dead');
-      seg(NX, 278, NX, GND, full ? 'flow' : 'dead');
+      R = { x: NX, y1: VCC, y2: 150, type: 'pullup', st: full ? 'weak' : 'hold' };
+      T.push({ x: NX, top: 162, bot: 210, gate: 'A', on: on1, carry: full ? 'r' : null, dir: -1 });
+      T.push({ x: NX, top: 230, bot: 278, gate: 'B', on: on2, carry: full ? 'r' : null, dir: 1 });
+      seg(NX, 150, NX, 162, full ? 'r' : 'dead');
+      seg(NX, 210, NX, 230, full ? 'r' : 'dead');
+      seg(NX, 278, NX, GND, full ? 'r' : 'dead');
       seg(NX, 150, OUTX, 150, 'out');
-      expl = full
-        ? 'Both gates are high, so both series transistors conduct and pull the output down to ground. Output is 0.'
-        : 'At least one transistor is off, so the path to ground is broken. The pull-up resistor holds the output high. Output is 1.';
+      if (full) {
+        expl = 'Both transistors conduct, completing an easy road from the output down to ground. The pull-up resistor cannot compete with it, so the node collapses low. Output 0.';
+      } else if (on1 !== on2) {
+        var openN = on1 ? 'A' : 'B', brokenN = on1 ? 'B' : 'A';
+        expl = 'The ' + openN + ' transistor is conducting, but the chain to ground is broken at ' + brokenN + ', so no current flows through the stack. The pull-up resistor is unopposed and holds the output high. Output 1.';
+      } else {
+        expl = 'Neither transistor conducts, so the output has no route to ground. The pull-up resistor alone holds it at Vcc. Output 1.';
+      }
     }
     else if (gate === 'NOR') {
       on1 = a === 1; on2 = b === 1; full = on1 || on2;
       var LX2 = 150, RX2 = 230;
       node = { x: NX, y: 150 };
       outVal = full ? 0 : 1;
-      R = { x: NX, y1: VCC, y2: 150, type: 'pullup', st: full ? 'flow' : 'hold' };
-      T.push({ x: LX2, top: 190, bot: 242, gate: 'A', on: on1, dir: -1 });
-      T.push({ x: RX2, top: 190, bot: 242, gate: 'B', on: on2, dir: 1 });
-      seg(NX, 150, NX, 172, full ? 'flow' : 'dead');
-      seg(LX2, 172, NX, 172, on1 ? 'flow' : 'dead');
-      seg(NX, 172, RX2, 172, on2 ? 'flow' : 'dead');
-      seg(LX2, 172, LX2, 190, on1 ? 'flow' : 'dead');
-      seg(RX2, 172, RX2, 190, on2 ? 'flow' : 'dead');
-      seg(LX2, 242, LX2, GND, on1 ? 'flow' : 'dead');
-      seg(RX2, 242, RX2, GND, on2 ? 'flow' : 'dead');
+      R = { x: NX, y1: VCC, y2: 150, type: 'pullup', st: full ? 'weak' : 'hold' };
+      T.push({ x: LX2, top: 190, bot: 242, gate: 'A', on: on1, carry: on1 ? 'r' : null, dir: -1 });
+      T.push({ x: RX2, top: 190, bot: 242, gate: 'B', on: on2, carry: on2 ? 'r' : null, dir: 1 });
+      seg(NX, 150, NX, 172, full ? 'r' : 'dead');
+      seg(LX2, 172, NX, 172, on1 ? 'r' : 'dead');
+      seg(NX, 172, RX2, 172, on2 ? 'r' : 'dead');
+      seg(LX2, 172, LX2, 190, on1 ? 'r' : 'dead');
+      seg(RX2, 172, RX2, 190, on2 ? 'r' : 'dead');
+      seg(LX2, 242, LX2, GND, on1 ? 'r' : 'dead');
+      seg(RX2, 242, RX2, GND, on2 ? 'r' : 'dead');
       seg(NX, 150, OUTX, 150, 'out');
-      expl = full
-        ? 'At least one transistor conducts and pulls the output down to ground. Output is 0.'
-        : 'Both transistors are off. The pull-up resistor holds the output high. Output is 1.';
+      if (full) {
+        var whichN = (on1 && on2) ? 'Both transistors conduct' : ('The ' + (on1 ? 'A' : 'B') + ' transistor conducts');
+        expl = whichN + ', giving the output an easy road down to ground. The pull-up loses the tug of war and the node collapses low. Output 0.';
+      } else {
+        expl = 'Both transistors are off, so the output has no route to ground. The pull-up resistor is unopposed. Output 1.';
+      }
     }
     return { T: T, W: W, R: R, node: node, outVal: outVal, expl: expl };
   }
@@ -1281,7 +1315,6 @@ notRender(); andRender(); orRender(); xorRender();
   function render() {
     var sc = scene(gate, a, b);
     var s = '';
-    // rails
     s += '<line x1="60" y1="' + VCC + '" x2="400" y2="' + VCC + '" stroke="#5a5340" stroke-width="2"/>';
     s += '<text x="52" y="' + (VCC + 4) + '" text-anchor="end" style="font:11px \'Courier New\',monospace;fill:#e8a84c">Vcc</text>';
     s += '<line x1="60" y1="' + GND + '" x2="400" y2="' + GND + '" stroke="#4a463f" stroke-width="2"/>';
@@ -1289,9 +1322,7 @@ notRender(); andRender(); orRender(); xorRender();
     if (sc.R) s += resistor(sc.R);
     sc.W.forEach(function (w) { s += L(w[0], w[1], w[2], w[3], w[4], sc.outVal); });
     sc.T.forEach(function (t) { s += transistor(t); });
-    // node dot
     s += '<circle cx="' + sc.node.x + '" cy="' + sc.node.y + '" r="4" fill="' + (sc.outVal ? '#7fff6b' : '#ff6b6b') + '"/>';
-    // output box
     var oy = sc.node.y;
     s += '<rect x="404" y="' + (oy - 20) + '" width="48" height="40" rx="7" fill="' +
       (sc.outVal ? 'rgba(127,255,107,.12)' : 'rgba(255,107,107,.1)') + '" stroke="' +
@@ -1324,6 +1355,88 @@ notRender(); andRender(); orRender(); xorRender();
   });
 
   render();
+})();
+</script>
+
+<!-- ============ gate explorer ============ -->
+<script>
+(function() {
+  var gate = 'AND';
+  var a = 0, b = 0;
+
+  var gates = {
+    AND:  { fn: function(a,b){ return a & b; }, two: true,  ex: function(a,b,r){ return r ? 'Both inputs are 1, so the output is 1.' : 'At least one input is 0, so the output is 0.'; } },
+    OR:   { fn: function(a,b){ return a | b; }, two: true,  ex: function(a,b,r){ return r ? 'At least one input is 1, so the output is 1.' : 'Both inputs are 0, so the output is 0.'; } },
+    NOT:  { fn: function(a,b){ return a ? 0 : 1; }, two: false, ex: function(a,b,r){ return 'Input is ' + a + ', output is its inverse: ' + r + '.'; } },
+    XOR:  { fn: function(a,b){ return a ^ b; }, two: true,  ex: function(a,b,r){ return r ? 'Inputs differ, so the output is 1.' : 'Inputs are the same, so the output is 0.'; } },
+    NAND: { fn: function(a,b){ return (a & b) ? 0 : 1; }, two: true,  ex: function(a,b,r){ return r ? 'At least one input is 0, so NAND outputs 1.' : 'Both inputs are 1, so NAND outputs 0.'; } },
+    NOR:  { fn: function(a,b){ return (a | b) ? 0 : 1; }, two: true,  ex: function(a,b,r){ return r ? 'Both inputs are 0, so NOR outputs 1.' : 'At least one input is 1, so NOR outputs 0.'; } }
+  };
+
+  function update() {
+    var g = gates[gate];
+    var r = g.fn(a, b);
+
+    var btnA = document.getElementById('gate-a');
+    btnA.textContent = a;
+    btnA.style.background = a ? 'rgba(232,168,76,.15)' : 'var(--bg)';
+    btnA.style.borderColor = a ? 'rgba(232,168,76,.5)' : 'rgba(237,232,224,.2)';
+    btnA.style.color = a ? '#e8a84c' : 'var(--muted)';
+
+    var btnB = document.getElementById('gate-b');
+    var bWrap = document.getElementById('gate-b-wrap');
+    bWrap.style.display = g.two ? 'block' : 'none';
+    if (g.two) {
+      btnB.textContent = b;
+      btnB.style.background = b ? 'rgba(232,168,76,.15)' : 'var(--bg)';
+      btnB.style.borderColor = b ? 'rgba(232,168,76,.5)' : 'rgba(237,232,224,.2)';
+      btnB.style.color = b ? '#e8a84c' : 'var(--muted)';
+    }
+
+    var out = document.getElementById('gate-out');
+    out.textContent = r;
+    out.style.background = r ? 'rgba(127,255,107,.12)' : 'rgba(255,107,107,.08)';
+    out.style.borderColor = r ? 'rgba(127,255,107,.5)' : 'rgba(255,107,107,.3)';
+    out.style.color = r ? '#7fff6b' : '#ff6b6b';
+
+    document.getElementById('gate-label-display').textContent = gate;
+
+    var wrap = document.getElementById('gate-tt-wrap');
+    var rows = g.two
+      ? [[0,0,g.fn(0,0)],[0,1,g.fn(0,1)],[1,0,g.fn(1,0)],[1,1,g.fn(1,1)]]
+      : [[0,g.fn(0,0)],[1,g.fn(1,0)]];
+    var html = '<table class="tt" style="width:100%"><tr>';
+    html += '<th>A</th>' + (g.two ? '<th>B</th>' : '') + '<th>' + gate + '(A' + (g.two ? ',B' : '') + ')</th></tr>';
+    rows.forEach(function(row) {
+      var active = g.two ? (row[0] === a && row[1] === b) : row[0] === a;
+      html += '<tr' + (active ? ' class="row-active"' : '') + '>';
+      html += '<td class="' + (row[0] ? 't1' : 't0') + '">' + row[0] + '</td>';
+      if (g.two) html += '<td class="' + (row[1] ? 't1' : 't0') + '">' + row[1] + '</td>';
+      var res = row[g.two ? 2 : 1];
+      html += '<td class="' + (res ? 't1' : 't0') + '">' + res + '</td>';
+      html += '</tr>';
+    });
+    html += '</table>';
+    wrap.innerHTML = html;
+
+    document.getElementById('gate-explain').textContent = g.ex(a, b, r);
+  }
+
+  document.getElementById('gate-a').addEventListener('click', function() { a = a ? 0 : 1; update(); });
+  document.getElementById('gate-b').addEventListener('click', function() { b = b ? 0 : 1; update(); });
+
+  document.querySelectorAll('.gate-sel').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      gate = this.dataset.gate;
+      document.querySelectorAll('.gate-sel').forEach(function(bn) {
+        bn.className = 'gate-sel ctrl-btn';
+      });
+      this.className = 'gate-sel ctrl-btn primary';
+      update();
+    });
+  });
+
+  update();
 })();
 </script>
 
