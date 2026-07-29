@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 7 · What the reserved patterns bought</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --mark:#ffdf8a;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:70px 92px 104px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .34s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:32px;left:92px;font-family:var(--mono);font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:32px;right:92px;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:92px;right:92px;bottom:36px;display:flex;gap:3px;align-items:flex-end;height:12px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:11px}
+#count{position:absolute;right:92px;bottom:60px;font-family:var(--mono);font-size:15px;color:var(--soft);z-index:5}
+#help{position:absolute;left:92px;bottom:60px;font-family:var(--mono);font-size:13px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+.kicker.grey{color:var(--soft)} .kicker.red{color:var(--fail)} .kicker.amber{color:var(--amber)}
+h1{font-family:var(--display);font-weight:600;font-size:90px;line-height:1.0;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:54px;line-height:1.08;letter-spacing:-.02em;color:var(--ink);margin-bottom:20px}
+p{font-size:26px;line-height:1.46;max-width:32ch}
+p+p{margin-top:14px}
+.big{font-size:34px;line-height:1.3;color:var(--ink);font-weight:300;max-width:27ch}
+.small{font-size:20px;line-height:1.5;color:var(--soft);max-width:60ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.mark{background:linear-gradient(180deg,transparent 56%,var(--mark) 56%,var(--mark) 95%,transparent 95%);padding:0 .1em}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center}
+.split.l{grid-template-columns:1.12fr .88fr}
+.split.r{grid-template-columns:.84fr 1.16fr}
+.stack>*+*{margin-top:14px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:22px 24px}
+.panel .lab{font-family:var(--mono);font-size:13.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:12px}
+
+.btn{font-family:var(--mono);font-size:15px;letter-spacing:.05em;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:9px 13px;cursor:pointer}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.warm{background:var(--fail);border-color:var(--fail);color:#fff}
+.btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;justify-content:center}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* bit rows */
+.fbits{display:flex;gap:3px;justify-content:center;align-items:flex-end}
+.fbits .grp{display:flex;gap:2px}
+.fbits .grp+.grp{margin-left:13px}
+.fbits b{min-width:18px;height:42px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:14px;font-weight:700;border-radius:3px;cursor:pointer;
+  background:#f1efe9;color:#a9a69d;border:1px solid var(--rule2);transition:.1s}
+.fbits .sg b{min-width:40px}
+.fbits .ex b{min-width:29px}
+.fbits .sg b.on{background:var(--fail);border-color:var(--fail);color:#fff}
+.fbits .ex b.on{background:var(--amber);border-color:var(--amber);color:#fff}
+.fbits .mn b.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.flabels{display:flex;justify-content:center;gap:13px;margin-bottom:7px;font-family:var(--mono);font-size:12.5px;letter-spacing:.14em}
+
+.verdict{border-radius:10px;padding:16px 20px;text-align:center;margin-top:16px}
+.verdict .n{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase}
+.verdict .v{font-family:var(--display);font-size:38px;font-weight:600;line-height:1.15;margin-top:4px;word-break:break-all}
+.v-normal{background:var(--accent-soft);border:1px solid #c3cee6}
+.v-normal .n{color:var(--accent)} .v-normal .v{color:var(--ink)}
+.v-sub{background:var(--amber-soft);border:1px solid #e8d3ab}
+.v-sub .n{color:var(--amber)} .v-sub .v{color:var(--amber)}
+.v-zero{background:#eeece6;border:1px solid var(--rule2)}
+.v-zero .n{color:var(--soft)} .v-zero .v{color:var(--ink)}
+.v-inf{background:var(--ok-soft);border:1px solid #b6d5cc}
+.v-inf .n{color:var(--ok)} .v-inf .v{color:var(--ok)}
+.v-nan{background:var(--fail-soft);border:1px solid #eecdcb}
+.v-nan .n{color:var(--fail)} .v-nan .v{color:var(--fail)}
+
+.readout{width:100%;border-collapse:collapse;font-family:var(--mono)}
+.readout td{padding:8px 3px;border-bottom:1px solid var(--rule);font-size:20px}
+.readout td:first-child{color:var(--soft);font-size:12px;letter-spacing:.13em;text-transform:uppercase;width:11rem}
+.readout td:last-child{text-align:right;font-weight:700;color:var(--ink);word-break:break-all}
+.readout tr:last-child td{border-bottom:none}
+.readout td.nan{color:var(--fail)} .readout td.inf{color:var(--ok)}
+
+.census{width:100%;border-collapse:collapse;font-family:var(--mono)}
+.census td{padding:11px 6px;border-bottom:1px solid var(--rule);font-size:22px}
+.census td:first-child{color:var(--ink);font-weight:700;width:32%}
+.census td:nth-child(2){color:var(--soft);font-size:17px}
+.census td:last-child{text-align:right;font-weight:700;font-size:24px}
+.census tr.tot td{border-top:2px solid var(--ink);border-bottom:none;padding-top:14px;color:var(--accent)}
+
+figcaption{font-family:var(--mono);font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-top:8px}
+svg text{font-family:'JetBrains Mono',monospace}
+
+.frag{opacity:0;transition:opacity .3s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:92px;right:92px;bottom:88px;display:none;padding:13px 17px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:19px;line-height:1.45;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:60px 92px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:18px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:70px}
+#jump li{padding:6px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:20px;color:var(--body);display:flex;gap:18px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:42px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 07</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 7 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- ===== ACT 1 · THE UNSPENT PATTERNS ===== -->
+
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="1 · unspent">
+  <div>
+    <div class="kicker">class 07 · hour seven of fifty</div>
+    <h1>The patterns<br>we never spent.</h1>
+    <p class="big" style="margin-top:34px;max-width:40ch">Last session we built a float and then quietly refused to use two of its exponent patterns. Today we find out what they were being saved for.</p>
+  </div>
+  <div class="cue">Open by asking the room to remember which two. Somebody will get all zeros and all ones.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Thirty three million" data-act="1 · unspent">
+  <div>
+    <div class="kicker grey">count what was set aside</div>
+    <h2 style="font-size:50px;margin-bottom:18px">Two exponent patterns.<br>Not two numbers.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Each exponent value comes with <span class="num">2<sup>23</sup></span> mantissa patterns and two signs.</p>
+        <p class="frag">So holding back <span class="num">00000000</span> and <span class="num">11111111</span> costs <span class="num">33,554,428</span> bit patterns.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">Roughly eight tenths of one percent of everything a float can be.</p>
+        <p>Nobody spends that much without a reason. There are two reasons, one at each end of the number line.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Two reasons, one at each end. That sentence is the shape of the whole hour.</div>
+</section>
+
+<!-- ===== ACT 2 · ALL ONES ===== -->
+
+<!-- 03 -->
+<section class="slide" data-t="All ones" data-act="2 · the top end">
+  <div>
+    <div class="kicker amber">exponent 11111111 · mantissa all zero</div>
+    <h2 style="font-size:56px;margin-bottom:22px">Infinity.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Not a very large number. A pattern that means <em>the answer went off the top of the range and I am telling you so.</em></p>
+        <p class="frag">There are two of them, one for each sign.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">And it is a value you can keep computing with.</p>
+        <p class="small">A machine could have stopped the program instead. IEEE 754 chose to hand you a value that behaves sensibly, so a long calculation does not have to die at the first overflow.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The design choice is worth naming: continue with a meaningful value rather than trap. That is why it is useful and also why it is dangerous.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Infinity arithmetic" data-act="2 · the top end">
+  <div>
+    <div class="kicker">press these and watch</div>
+    <h2 style="font-size:44px;margin-bottom:14px">What infinity does<br>when you use it.</h2>
+    <div class="split r" style="gap:40px">
+      <div class="stack">
+        <p class="small">Every one of these is real float arithmetic, evaluated in the page. Nothing is faked.</p>
+        <p class="small frag" style="color:var(--fail)">Watch which ones give you infinity and which give you something else entirely.</p>
+      </div>
+      <div class="panel">
+        <span class="lab">float arithmetic, live</span>
+        <div style="text-align:center;min-height:112px" id="infOut"></div>
+        <div class="btnrow" id="infBtns"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Do the first four in order, then let a student pick. The jump from infinity to NaN is the door into the next slide.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="NaN" data-act="2 · the top end">
+  <div>
+    <div class="kicker red">exponent 11111111 · mantissa anything else</div>
+    <h2 style="font-size:56px;margin-bottom:22px">Not a number.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Zero divided by zero. Infinity minus infinity. The square root of a negative. Questions with no right answer.</p>
+        <p class="frag">Rather than guess, the machine returns a pattern that says <em>a question was asked that has no answer, and it happened somewhere back there.</em></p>
+      </div>
+      <div class="stack frag">
+        <p class="big">And it is contagious, on purpose.</p>
+        <p class="small">Anything you do to a NaN gives you a NaN. So one bad value at step three is still visible at step nine hundred, instead of quietly becoming a plausible number.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Contrast with Class 1 explicitly. This is the one place in the whole course where a machine does tell you something went wrong.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="NaN is not equal to NaN" data-act="2 · the top end">
+  <div>
+    <div class="kicker">and one thing that catches everybody</div>
+    <h2 style="font-size:48px;margin-bottom:18px">A NaN is not equal<br>to itself.</h2>
+    <div class="split l">
+      <div class="panel" style="text-align:center">
+        <div style="font-family:var(--mono);font-size:26px;line-height:1.9;color:var(--ink)">
+          <div>x = 0.0f / 0.0f;</div>
+          <div style="color:var(--soft)">&nbsp;</div>
+          <div>x == x &nbsp;<span style="color:var(--fail);font-weight:700" id="nanEq">false</span></div>
+          <div>x != x &nbsp;<span style="color:var(--fail);font-weight:700" id="nanNe">true</span></div>
+        </div>
+      </div>
+      <div class="stack">
+        <p>The comparison asks whether two values are the same number. Neither of these is a number, so the honest answer is no.</p>
+        <p class="big frag" style="margin-top:8px">Which gives you the standard test.</p>
+        <p class="small frag">If a value is not equal to itself, it is a NaN. That is how <code>isnan</code> was written for years.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask them where this bites: sorting, hash keys, and any loop that stops when two values agree.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Classify it" data-act="2 · the top end">
+  <div>
+    <div class="kicker">click any bit and watch the verdict</div>
+    <div class="panel">
+      <div class="flabels">
+        <span style="width:42px;color:var(--fail)">SIGN</span>
+        <span style="width:250px;color:var(--amber)">EXPONENT</span>
+        <span style="width:490px;color:var(--accent)">MANTISSA</span>
+      </div>
+      <div class="fbits" id="cBits"></div>
+      <div class="verdict v-normal" id="cVerdict"><div class="n">NORMAL</div><div class="v">1</div></div>
+      <div class="btnrow" id="cBtns"></div>
+    </div>
+  </div>
+  <div class="cue">Set the exponent to all ones, then flip a single mantissa bit. Infinity becomes NaN from one wire changing.</div>
+</section>
+
+<!-- ===== ACT 3 · ALL ZEROS ===== -->
+
+<!-- 08 -->
+<section class="slide" data-t="All zeros" data-act="3 · the bottom end">
+  <div>
+    <div class="kicker amber">exponent 00000000 · mantissa all zero</div>
+    <h2 style="font-size:52px;margin-bottom:20px">Zero. Both of them.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>The hidden bit says every float begins with a one, so no arrangement of exponent and mantissa can ever produce zero. It has to be a special case.</p>
+        <p class="frag">And because the sign bit is separate, there are two: a positive zero and a negative zero, with different bit patterns.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">They compare as equal, which papers over most of it.</p>
+        <p class="small">But divide by each of them and you get infinities with opposite signs. The sign of a zero survives, and occasionally it matters.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This is the two zeros problem from Class 5, which we rejected in sign magnitude and accepted here. Say so.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="The hole at the bottom" data-act="3 · the bottom end">
+  <div>
+    <div class="kicker red">now suppose that is all zeros did</div>
+    <h2 style="font-size:46px;margin-bottom:14px">Look at the gap<br>either side of it.</h2>
+    <figure>
+      <svg viewBox="0 0 1400 220" width="100%" role="img" aria-label="The gap between zero and the smallest normal float">
+        <g id="figHole"></g>
+      </svg>
+    </figure>
+    <p class="big frag" style="margin-top:10px;max-width:86ch;font-size:29px">Between the smallest normal float and zero there is a gap <span class="mark">eight million times wider</span> than the gap between it and its neighbour above.</p>
+  </div>
+  <div class="cue">The number line is evenly spaced everywhere except right at the bottom, where it has one enormous hole. That is the problem.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="The argument" data-act="3 · the bottom end">
+  <div>
+    <div class="kicker red">and here is what that hole does</div>
+    <h2 style="font-size:46px;margin-bottom:14px">Two different numbers,<br>subtracting to zero.</h2>
+    <div class="split l">
+      <div class="panel">
+        <table class="readout">
+          <tr><td>a</td><td style="font-size:15px">1.1754944e-38</td></tr>
+          <tr><td>b</td><td style="font-size:15px">1.1754943e-38</td></tr>
+          <tr><td>a == b</td><td style="color:var(--accent)">false</td></tr>
+          <tr><td>a &minus; b</td><td style="color:var(--fail)" id="cancelOut">0</td></tr>
+          <tr><td>a &minus; b == 0</td><td style="color:var(--fail)" id="cancelZero">true</td></tr>
+        </table>
+        <div class="btnrow">
+          <button class="btn hot" id="cancelToggle">turn subnormals on</button>
+        </div>
+      </div>
+      <div class="stack">
+        <p>Two values the machine agrees are different. Subtract them and, without subnormals, the answer falls into the hole and lands on zero.</p>
+        <p class="big frag" style="margin-top:8px">So <code>a != b</code> is true and <code>a - b == 0</code> is also true, at the same time.</p>
+        <p class="frag">Which breaks a guarantee every numerical method leans on. Code that checks two values differ, and then divides by their difference, has just divided by zero.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Press the toggle. The guarantee is that a minus b is zero only when a equals b. Without subnormals it fails. This is the entire argument, and it is almost always skipped.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Subnormals" data-act="3 · the bottom end">
+  <div>
+    <div class="kicker">so spend the other reserved pattern</div>
+    <h2 style="font-size:48px;margin-bottom:18px">Drop the hidden one.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>When the exponent field is all zeros and the mantissa is not, read the leading digit as <span class="num">0</span> instead of <span class="num">1</span>, and fix the exponent at <span class="num">2<sup>&minus;126</sup></span>.</p>
+        <p class="frag">So the value is <span class="num">0.mantissa &times; 2<sup>&minus;126</sup></span> rather than <span class="num">1.mantissa &times; 2<sup>e</sup></span>.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">Which fills the hole with evenly spaced steps all the way down to zero.</p>
+        <p class="small">These are subnormals, and the effect is called gradual underflow. Numbers do not fall off the bottom, they fade out.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Note the trade: you keep going, but every step down costs you one bit of precision. Nothing is free here.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Walking down" data-act="3 · the bottom end">
+  <div>
+    <div class="kicker">halve it, and keep halving</div>
+    <h2 style="font-size:42px;margin-bottom:12px">Watch the digits<br>run out.</h2>
+    <div class="split r" style="gap:36px">
+      <div class="stack">
+        <p class="small">Start just above the smallest normal float and halve repeatedly. The exponent walks down until it cannot, and then the mantissa starts falling off the end.</p>
+        <div class="btnrow" style="justify-content:flex-start">
+          <button class="btn hot" id="halveGo">halve it</button>
+          <button class="btn" id="halveAuto">run</button>
+          <button class="btn" id="halveRst">reset</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="flabels">
+          <span style="width:42px;color:var(--fail)">S</span>
+          <span style="width:250px;color:var(--amber)">EXPONENT</span>
+          <span style="width:490px;color:var(--accent)">MANTISSA</span>
+        </div>
+        <div class="fbits" id="hBits"></div>
+        <table class="readout" style="margin-top:14px">
+          <tr><td>value</td><td id="hVal" style="font-size:17px">1.1754944e-38</td></tr>
+          <tr><td>family</td><td id="hFam">normal</td></tr>
+          <tr><td>significant bits left</td><td id="hSig">24</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Run it and let it go all the way to zero. Twenty four bits of precision bleed away one at a time, and the last step lands on nothing.</div>
+</section>
+
+<!-- ===== ACT 4 · THE CENSUS ===== -->
+
+<!-- 13 -->
+<section class="slide" data-t="Five families" data-act="4 · the census">
+  <div>
+    <div class="kicker grey">every pattern a float can be</div>
+    <h2 style="font-size:46px;margin-bottom:16px">Five families.<br>No pattern left over.</h2>
+    <table class="census" id="censusTable"></table>
+  </div>
+  <div class="cue">Have them check the addition. Five families that partition 2^32 exactly is a much stronger statement than a list of special cases.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Nothing at all" data-act="4 · the census">
+  <div class="center">
+    <div class="kicker red">and one number worth sitting with</div>
+    <h2 style="font-size:52px;margin-bottom:24px">About sixteen million patterns<br>denote nothing at all.</h2>
+    <p class="big" style="max-width:54ch;color:var(--soft)">Every one of them is a NaN. Sixteen million distinct arrangements of thirty two wires, and not one of them names a number.</p>
+    <p class="big frag" style="margin-top:26px;max-width:48ch">Which is another way of saying: the machine does not know what its bits mean.</p>
+  </div>
+  <div class="cue">That last line has been on the board since Class 1. Point at it if it is still there.</div>
+</section>
+
+<!-- ===== ACT 5 · THE COST ===== -->
+
+<!-- 15 -->
+<section class="slide" data-t="Subnormals are slow" data-act="5 · the cost">
+  <div>
+    <div class="kicker red">and now the bill</div>
+    <h2 style="font-size:48px;margin-bottom:18px">Subnormals are slow.<br>Sometimes very slow.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>A normal float has its leading one in a known place. A subnormal does not, so the hardware has to find it and shift, and on many processors that path is not the fast one.</p>
+        <p class="frag">Ten to a hundred times slower is normal, on real machines, for arithmetic that looks identical in the source.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">So a loop can slow to a crawl because the numbers flowing through it got small,</p>
+        <p class="big" style="color:var(--fail)">and nothing in the code changed.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Audio developers know this one well: a reverb tail decaying towards zero drops into subnormals and the CPU load spikes.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Flush to zero" data-act="5 · the cost">
+  <div>
+    <div class="kicker">so a lot of software turns them off</div>
+    <h2 style="font-size:48px;margin-bottom:18px">Flush to zero.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>A processor flag that says: any result that would be subnormal, make it zero and move on.</p>
+        <p class="frag">Audio codecs use it. Graphics pipelines use it. Machine learning frameworks use it.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">Which throws away the guarantee from four slides ago.</p>
+        <p class="small">Turn it on and two unequal numbers can once again subtract to zero. Most of the time nothing bad happens. That is precisely what makes it a bad bug when it does.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">A tradeoff a third semester student can hold both sides of. Do not tell them which side is right.</div>
+</section>
+
+<!-- ===== ACT 6 · THE TWO CLIFFS ===== -->
+
+<!-- 17 -->
+<section class="slide" data-t="The top cliff" data-act="6 · the two cliffs">
+  <div>
+    <div class="kicker red">the first edge</div>
+    <h2 style="font-size:48px;margin-bottom:18px">At the top, nothing<br>catches you.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>The largest float is about <span class="num">3.4 &times; 10<sup>38</sup></span>. Its neighbour below it is <span class="num">2 &times; 10<sup>31</sup></span> away, which is already a gap the size of the observable universe in metres.</p>
+        <p class="frag">One step past it and there is no next value. You get infinity.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">No warning, no ramp, no gradual anything.</p>
+        <p class="big" style="color:var(--fail)">A cliff.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">There is no gradual overflow. The committee built a ramp at one end of the range and not the other, and it is worth asking why.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="The bottom" data-act="6 · the two cliffs">
+  <div>
+    <div class="kicker">the second edge</div>
+    <h2 style="font-size:48px;margin-bottom:18px">At the bottom, somebody<br>built a staircase.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Underflow was going to be a cliff too. Below <span class="num">1.18 &times; 10<sup>&minus;38</sup></span> the next stop would have been zero.</p>
+        <p class="frag">The subnormals turn that drop into <span class="num">8.4 million</span> evenly spaced steps, fading out rather than falling off.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">Paid for with sixteen million patterns, a slow path in the hardware, and one bit of precision per step.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask which end you would have built the ramp at, if you could only afford one. It is a real design question.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-t="The two cliffs" data-act="6 · the two cliffs">
+  <div>
+    <div class="kicker grey">the whole range, both ends</div>
+    <h2 style="font-size:40px;margin-bottom:6px">Everything a float can be.</h2>
+    <figure>
+      <svg viewBox="0 0 1400 330" width="100%" role="img" aria-label="The full float range with the overflow cliff at the top and the subnormal ramp at the bottom">
+        <g id="figCliffs"></g>
+      </svg>
+    </figure>
+  </div>
+  <div class="cue">Leave this up while they pack. Both edges, the ramp at one end, the drop at the other, and the enormous well-behaved middle.</div>
+</section>
+
+<!-- 20 -->
+<section class="slide" data-t="Close" data-act="6 · the two cliffs">
+  <div class="center">
+    <h2 style="font-size:50px;margin-bottom:26px">A float is a finite set<br>pretending to be the reals.</h2>
+    <p class="big frag" style="max-width:52ch;color:var(--soft)">The impersonation is superb across nearly the whole range, and it fails at both edges, in different ways, for different reasons.</p>
+    <p class="big frag" style="margin-top:24px;max-width:46ch">Next session, what that costs you in the middle.</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Do not mention associativity or cancellation. That is its own hour.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- chassis ---------- */
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  /* decided in the capture phase, before a widget can redraw and detach the node */
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ---------- float helpers ---------- */
+  var buf=new ArrayBuffer(4), dv=new DataView(buf);
+  function toBits(x){ dv.setFloat32(0,x); return (dv.getUint32(0)>>>0).toString(2).padStart(32,'0'); }
+  function fromBits(b){ dv.setUint32(0,parseInt(b,2)>>>0); return dv.getFloat32(0); }
+  function fr(x){ return Math.fround(x); }
+  function fmt(x){
+    if(Number.isNaN(x)) return 'NaN';
+    if(!Number.isFinite(x)) return (x>0?'infinity':'-infinity');
+    if(x===0) return (1/x===-Infinity)?'-0':'0';
+    var a=Math.abs(x);
+    if(a>=1e7||a<1e-4) return x.toExponential(7);
+    return String(parseFloat(x.toPrecision(9)));
+  }
+  function classify(b){
+    var e=parseInt(b.slice(1,9),2), m=parseInt(b.slice(9),2);
+    if(e===255) return m===0?'inf':'nan';
+    if(e===0)   return m===0?'zero':'sub';
+    return 'normal';
+  }
+
+  /* ---------- 04 · infinity playground ---------- */
+  var infB=document.getElementById('infBtns');
+  if(infB){
+    var BIG=3.4028234663852886e38;
+    var OPS=[
+      ['1.0f / 0.0f',        function(){ return fr(1)/fr(0); }],
+      ['-1.0f / 0.0f',       function(){ return fr(-1)/fr(0); }],
+      ['largest * 2',        function(){ return fr(BIG*2); }],
+      ['inf + 1',            function(){ return fr(1/0)+fr(1); }],
+      ['1 / inf',            function(){ return fr(1)/fr(1/0); }],
+      ['0.0f / 0.0f',        function(){ return fr(0)/fr(0); }],
+      ['inf - inf',          function(){ return fr(1/0)-fr(1/0); }],
+      ['sqrt(-1)',           function(){ return Math.sqrt(-1); }]
+    ];
+    var h='';
+    OPS.forEach(function(o,k){ h+='<button class="btn" data-op="'+k+'">'+o[0]+'</button>'; });
+    infB.innerHTML=h;
+    function showOp(k){
+      var v=OPS[k][1](), b=toBits(v), cls=classify(b);
+      var name={inf:'INFINITY',nan:'NOT A NUMBER',zero:'ZERO',sub:'SUBNORMAL',normal:'AN ORDINARY FLOAT'}[cls];
+      var col={inf:'var(--ok)',nan:'var(--fail)',zero:'var(--soft)',sub:'var(--amber)',normal:'var(--accent)'}[cls];
+      document.getElementById('infOut').innerHTML=
+        '<div style="font-family:var(--mono);font-size:24px;color:var(--soft);margin-bottom:8px">'+OPS[k][0]+'</div>'+
+        '<div style="font-family:var(--display);font-size:46px;font-weight:600;color:'+col+'">'+fmt(v)+'</div>'+
+        '<div style="font-family:var(--mono);font-size:13px;letter-spacing:.16em;color:'+col+';margin-top:6px">'+name+'</div>'+
+        '<div style="font-family:var(--mono);font-size:15px;color:var(--rule2);margin-top:8px">'+
+        b.slice(0,1)+' '+b.slice(1,9)+' '+b.slice(9)+'</div>';
+      Array.prototype.forEach.call(infB.querySelectorAll('button'),function(x){ x.classList.remove('hot'); });
+      infB.querySelectorAll('button')[k].classList.add('hot');
+    }
+    Array.prototype.forEach.call(infB.querySelectorAll('button'),function(b){
+      b.onclick=function(){ showOp(+b.dataset.op); };
+    });
+    showOp(0);
+  }
+
+  /* ---------- 06 · NaN equality ---------- */
+  var ne=document.getElementById('nanEq');
+  if(ne){
+    var x=fr(0)/fr(0);
+    ne.textContent=(x===x)?'true':'false';
+    document.getElementById('nanNe').textContent=(x!==x)?'true':'false';
+  }
+
+  /* ---------- 07 · classifier ---------- */
+  var cB=document.getElementById('cBits');
+  if(cB){
+    var bits=toBits(1.0).split('');
+    var PRESETS=[['1.0',1],['0.0',0],['infinity',Infinity],['-infinity',-Infinity],
+                 ['largest',3.4028234663852886e38],['smallest normal',1.1754943508222875e-38],
+                 ['smallest subnormal',1.401298464324817e-45]];
+    var bh='';
+    PRESETS.forEach(function(p,k){ bh+='<button class="btn" data-cp="'+k+'">'+p[0]+'</button>'; });
+    bh+='<button class="btn warm" data-nan="1">a NaN</button>';
+    document.getElementById('cBtns').innerHTML=bh;
+    function cell(k){ return '<b data-k="'+k+'" class="'+(bits[k]==='1'?'on':'')+'">'+bits[k]+'</b>'; }
+    function drawC(){
+      var h='<div class="grp sg">'+cell(0)+'</div><div class="grp ex">';
+      for(var k=1;k<9;k++) h+=cell(k);
+      h+='</div><div class="grp mn">';
+      for(var k=9;k<32;k++) h+=cell(k);
+      h+='</div>';
+      cB.innerHTML=h;
+      Array.prototype.forEach.call(cB.querySelectorAll('b'),function(el){
+        el.onclick=function(){ var k=+el.dataset.k; bits[k]=bits[k]==='1'?'0':'1'; drawC(); };
+      });
+      var b=bits.join('', ''), cls=classify(b), v=fromBits(b);
+      var meta={
+        normal:['NORMAL','v-normal'], sub:['SUBNORMAL','v-sub'],
+        zero:['ZERO','v-zero'], inf:['INFINITY','v-inf'], nan:['NOT A NUMBER','v-nan']
+      }[cls];
+      var vd=document.getElementById('cVerdict');
+      vd.className='verdict '+meta[1];
+      vd.innerHTML='<div class="n">'+meta[0]+'</div><div class="v">'+fmt(v)+'</div>';
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-cp]'),function(b){
+      b.onclick=function(){ bits=toBits(PRESETS[+b.dataset.cp][1]).split(''); drawC(); };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-nan]'),function(b){
+      b.onclick=function(){ bits=('0'+'11111111'+'10000000000000000000000').split(''); drawC(); };
+    });
+    drawC();
+  }
+
+  /* ---------- 09 · the hole figure ---------- */
+  var fh=document.getElementById('figHole');
+  if(fh){
+    var s='', X0=90, W=1220, Y=110;
+    s+='<line x1="'+X0+'" y1="'+Y+'" x2="'+(X0+W)+'" y2="'+Y+'" stroke="#c6c3ba" stroke-width="2"/>';
+    /* zero */
+    s+='<line x1="'+X0+'" y1="'+(Y-26)+'" x2="'+X0+'" y2="'+(Y+26)+'" stroke="#15171b" stroke-width="4"/>';
+    s+='<text x="'+X0+'" y="'+(Y+52)+'" font-size="18" fill="#15171b" text-anchor="middle">0</text>';
+    /* the smallest normal and a few neighbours, crowded at the right */
+    for(var k=0;k<6;k++){
+      var x=X0+W*0.72+k*36;
+      s+='<line x1="'+x+'" y1="'+(Y-20)+'" x2="'+x+'" y2="'+(Y+20)+'" stroke="#23408f" stroke-width="3"/>';
+    }
+    s+='<text x="'+(X0+W*0.72)+'" y="'+(Y+52)+'" font-size="16" fill="#23408f" text-anchor="middle">1.18e-38</text>';
+    s+='<text x="'+(X0+W*0.72+36*5)+'" y="'+(Y+52)+'" font-size="15" fill="#8b9096" text-anchor="middle">and up</text>';
+    /* the hole */
+    s+='<path d="M'+(X0+14)+' '+(Y-44)+' L'+(X0+W*0.72-14)+' '+(Y-44)+'" stroke="#a8231f" stroke-width="2" stroke-dasharray="6 5"/>';
+    s+='<text x="'+(X0+W*0.36)+'" y="'+(Y-56)+'" font-size="19" fill="#a8231f" text-anchor="middle">NOT ONE VALUE IN HERE</text>';
+    s+='<text x="'+(X0+W*0.36)+'" y="'+(Y+52)+'" font-size="16" fill="#8b9096" text-anchor="middle">one enormous hole</text>';
+    s+='<text x="'+(X0+W*0.86)+'" y="'+(Y-56)+'" font-size="16" fill="#23408f" text-anchor="middle">evenly spaced from here on</text>';
+    fh.innerHTML=s;
+  }
+
+  /* ---------- 10 · cancellation ---------- */
+  var ct=document.getElementById('cancelToggle');
+  if(ct){
+    var subOn=false;
+    var a=fromBits('0'+'00000001'+'0'.repeat(22)+'1');
+    var b=fromBits('0'+'00000001'+'0'.repeat(23));
+    function drawCancel(){
+      var d=fr(a-b);
+      var shown = subOn ? d : 0;
+      document.getElementById('cancelOut').textContent = subOn ? fmt(d) : '0';
+      document.getElementById('cancelOut').style.color = subOn ? 'var(--ok)' : 'var(--fail)';
+      var z=document.getElementById('cancelZero');
+      z.textContent = subOn ? 'false' : 'true';
+      z.style.color = subOn ? 'var(--ok)' : 'var(--fail)';
+      ct.textContent = subOn ? 'turn subnormals off' : 'turn subnormals on';
+      ct.className = subOn ? 'btn' : 'btn hot';
+    }
+    ct.onclick=function(){ subOn=!subOn; drawCancel(); };
+    drawCancel();
+  }
+
+  /* ---------- 12 · halving down into the subnormals ---------- */
+  var hB=document.getElementById('hBits');
+  if(hB){
+    var START=fromBits('0'+'00000001'+'0'.repeat(23));   /* smallest normal */
+    var v=START, tH=null;
+    function drawH(){
+      var b=toBits(v), cls=classify(b);
+      var h='<div class="grp sg"><b class="'+(b.charAt(0)==='1'?'on':'')+'">'+b.charAt(0)+'</b></div><div class="grp ex">';
+      for(var k=1;k<9;k++) h+='<b class="'+(b.charAt(k)==='1'?'on':'')+'">'+b.charAt(k)+'</b>';
+      h+='</div><div class="grp mn">';
+      for(var k=9;k<32;k++) h+='<b class="'+(b.charAt(k)==='1'?'on':'')+'">'+b.charAt(k)+'</b>';
+      h+='</div>';
+      hB.innerHTML=h;
+      document.getElementById('hVal').textContent=fmt(v);
+      var fam=document.getElementById('hFam');
+      fam.textContent={normal:'normal',sub:'subnormal',zero:'zero',inf:'infinity',nan:'NaN'}[cls];
+      fam.style.color={normal:'var(--accent)',sub:'var(--amber)',zero:'var(--fail)',inf:'var(--ok)',nan:'var(--fail)'}[cls];
+      var m=parseInt(b.slice(9),2), sig;
+      if(cls==='normal') sig=24;
+      else if(cls==='sub'){ sig=24-(24-m.toString(2).length); sig=m.toString(2).length; }
+      else sig=0;
+      var se=document.getElementById('hSig');
+      se.textContent=sig;
+      se.style.color = sig===0?'var(--fail)':(sig<24?'var(--amber)':'var(--accent)');
+    }
+    function step(){ v=fr(v/2); drawH(); return v!==0; }
+    document.getElementById('halveGo').onclick=function(){ step(); };
+    document.getElementById('halveRst').onclick=function(){ clearInterval(tH); tH=null; v=START; drawH(); };
+    document.getElementById('halveAuto').onclick=function(){
+      if(tH){ clearInterval(tH); tH=null; this.textContent='run'; return; }
+      this.textContent='stop';
+      var self=this;
+      tH=setInterval(function(){ if(!step()){ clearInterval(tH); tH=null; self.textContent='run'; } },260);
+    };
+    drawH();
+  }
+
+  /* ---------- 13 · the census ---------- */
+  var cs=document.getElementById('censusTable');
+  if(cs){
+    function C(n){ return n.toLocaleString('en-GB'); }
+    var P23=8388608;
+    var rows=[
+      ['Normal',     'exponent 1 to 254',                 2*254*P23,  'var(--accent)'],
+      ['Subnormal',  'exponent 0, mantissa not zero',     2*(P23-1),  'var(--amber)'],
+      ['Zero',       'exponent 0, mantissa zero',         2,          'var(--soft)'],
+      ['Infinity',   'exponent 255, mantissa zero',       2,          'var(--ok)'],
+      ['Not a number','exponent 255, mantissa not zero',  2*(P23-1),  'var(--fail)']
+    ];
+    var tot=0, h='';
+    rows.forEach(function(r){
+      tot+=r[2];
+      h+='<tr><td style="color:'+r[3]+'">'+r[0]+'</td><td>'+r[1]+'</td><td style="color:'+r[3]+'">'+C(r[2])+'</td></tr>';
+    });
+    h+='<tr class="tot"><td>Total</td><td>which is exactly 2<sup>32</sup></td><td>'+C(tot)+'</td></tr>';
+    cs.innerHTML=h;
+  }
+
+  /* ---------- 19 · the two cliffs ---------- */
+  var fc=document.getElementById('figCliffs');
+  if(fc){
+    var X0=70, W=1260, Y=150, s='';
+    function px(t){ return X0+t*W; }
+    /* the well behaved middle */
+    s+='<rect x="'+px(0.16)+'" y="'+(Y-26)+'" width="'+(px(0.84)-px(0.16))+'" height="52" rx="6" fill="#eaeef7" stroke="#c3cee6"/>';
+    s+='<text x="'+px(0.5)+'" y="'+(Y+7)+'" font-size="20" fill="#23408f" text-anchor="middle">NORMAL FLOATS  ·  4.26 BILLION OF THEM</text>';
+    /* the subnormal ramp */
+    s+='<path d="M'+px(0.06)+' '+(Y+26)+' L'+px(0.16)+' '+(Y-26)+' L'+px(0.16)+' '+(Y+26)+' z" fill="#fbf0dc" stroke="#e8d3ab"/>';
+    s+='<text x="'+px(0.11)+'" y="'+(Y+52)+'" font-size="15" fill="#b06a12" text-anchor="middle">SUBNORMALS</text>';
+    /* the top cliff */
+    s+='<line x1="'+px(0.84)+'" y1="'+(Y-46)+'" x2="'+px(0.84)+'" y2="'+(Y+46)+'" stroke="#a8231f" stroke-width="4"/>';
+    s+='<rect x="'+px(0.88)+'" y="'+(Y-26)+'" width="'+(px(1.0)-px(0.88))+'" height="52" rx="6" fill="#e6f1ee" stroke="#b6d5cc"/>';
+    s+='<text x="'+px(0.94)+'" y="'+(Y+8)+'" font-size="26" fill="#146b5c" text-anchor="middle">&#8734;</text>';
+    /* zero */
+    s+='<line x1="'+px(0.06)+'" y1="'+(Y-40)+'" x2="'+px(0.06)+'" y2="'+(Y+40)+'" stroke="#15171b" stroke-width="4"/>';
+    s+='<text x="'+px(0.06)+'" y="'+(Y-52)+'" font-size="17" fill="#15171b" text-anchor="middle">0</text>';
+    /* markers */
+    var marks=[[0.16,'1.18e-38','smallest normal','#b06a12'],[0.84,'3.40e+38','largest float','#a8231f']];
+    marks.forEach(function(m){
+      s+='<text x="'+px(m[0])+'" y="'+(Y-52)+'" font-size="17" fill="'+m[3]+'" text-anchor="middle">'+m[1]+'</text>';
+      s+='<text x="'+px(m[0])+'" y="'+(Y-74)+'" font-size="13" fill="#8b9096" text-anchor="middle">'+m[2]+'</text>';
+    });
+    /* the two verdicts */
+    s+='<rect x="'+px(0.0)+'" y="230" width="600" height="80" rx="10" fill="#fbf0dc" stroke="#e8d3ab"/>';
+    s+='<text x="'+(px(0)+24)+'" y="258" font-size="14" fill="#b06a12">CLIFF ONE  ·  UNDERFLOW</text>';
+    s+='<text x="'+(px(0)+24)+'" y="290" font-size="21" fill="#15171b">turned into a staircase, at a price</text>';
+    s+='<rect x="'+px(0.52)+'" y="230" width="600" height="80" rx="10" fill="#fbeeed" stroke="#e0bcb9"/>';
+    s+='<text x="'+(px(0.52)+24)+'" y="258" font-size="14" fill="#a8231f">CLIFF TWO  ·  OVERFLOW</text>';
+    s+='<text x="'+(px(0.52)+24)+'" y="290" font-size="21" fill="#a8231f">left exactly as it was</text>';
+    fc.innerHTML=s;
+  }
+
+  paint();
+})();
+</script>
+</body>
+</html>
