@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FCA Class 4 · What reads a number?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --good:#1d6b45; --good-soft:#e8f2ec;
+  --gold:#8a6a12; --gold-soft:#fbf2dc;
+  --mark:#ffdf8a;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:74px 96px 108px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .34s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:34px;left:96px;font-family:var(--mono);font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.thread{position:absolute;top:34px;right:96px;font-family:var(--mono);font-size:14px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--rule2);z-index:5}
+.thread b{color:var(--accent);font-weight:400}
+#rail{position:absolute;left:96px;right:96px;bottom:38px;display:flex;gap:4px;align-items:flex-end;height:12px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)}
+#rail i.q{background:var(--gold);height:6px}
+#rail i.here{background:var(--accent);height:11px}
+#count{position:absolute;right:96px;bottom:62px;font-family:var(--mono);font-size:15px;color:var(--soft);z-index:5}
+#help{position:absolute;left:96px;bottom:62px;font-family:var(--mono);font-size:13px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:24px}
+.kicker.grey{color:var(--soft)} .kicker.red{color:var(--fail)} .kicker.gold{color:var(--gold)}
+h1{font-family:var(--display);font-weight:600;font-size:96px;line-height:1.0;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:60px;line-height:1.08;letter-spacing:-.02em;color:var(--ink);margin-bottom:26px}
+h3{font-weight:700;font-size:23px;color:var(--ink);margin-bottom:8px;line-height:1.25}
+p{font-size:28px;line-height:1.46;max-width:32ch}
+p+p{margin-top:15px}
+.big{font-size:37px;line-height:1.3;color:var(--ink);font-weight:300;max-width:26ch}
+.small{font-size:21px;line-height:1.5;color:var(--soft);max-width:58ch}
+strong{color:var(--ink);font-weight:700}
+em{font-style:italic;color:var(--ink)}
+.mark{background:linear-gradient(180deg,transparent 56%,var(--mark) 56%,var(--mark) 95%,transparent 95%);padding:0 .1em}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.split.l{grid-template-columns:1.12fr .88fr}
+.split.r{grid-template-columns:.84fr 1.16fr}
+.stack>*+*{margin-top:16px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:24px 28px}
+.panel .lab{font-family:var(--mono);font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.grid4 .panel{padding:20px 18px}
+.grid4 h3{font-size:20px}
+.grid4 .cap{font-size:18px;line-height:1.4;color:var(--body);margin-top:8px}
+.grid4 .n{font-family:var(--mono);font-size:13px;letter-spacing:.16em;color:var(--soft);display:block;margin-bottom:12px}
+
+.ask{border-left:5px solid var(--gold);background:var(--gold-soft);padding:18px 24px;border-radius:0 10px 10px 0;margin-bottom:22px}
+.ask p{font-family:var(--display);font-size:36px;line-height:1.22;color:var(--ink);max-width:36ch}
+
+.btn{font-family:var(--mono);font-size:16px;letter-spacing:.06em;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:10px 15px;cursor:pointer;transition:.14s}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.hot:hover{background:#1a3170;color:#fff}
+.btnrow{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap;align-items:center}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+.readout{width:100%;border-collapse:collapse;font-family:var(--mono)}
+.readout td{padding:9px 4px;border-bottom:1px solid var(--rule);font-size:23px}
+.readout td:first-child{color:var(--soft);font-size:14px;letter-spacing:.12em;text-transform:uppercase;width:11rem;vertical-align:middle}
+.readout td:last-child{color:var(--ink);text-align:right;font-weight:700}
+.readout tr:last-child td{border-bottom:none}
+.readout td.gold{color:var(--gold)} .readout td.bad{color:var(--fail)}
+
+figure{width:100%}
+figcaption{font-family:var(--mono);font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-top:10px}
+svg text{font-family:'JetBrains Mono',monospace}
+
+table.tt{border-collapse:collapse;font-family:var(--mono);font-size:21px}
+table.tt td,table.tt th{border:1px solid var(--rule2);padding:8px 18px;text-align:center}
+table.tt th{background:#f1efe9;font-weight:400;color:var(--soft);font-size:14px;letter-spacing:.1em}
+table.tt td.out{background:var(--accent-soft);color:var(--accent);font-weight:700}
+table.tt td.q{background:var(--gold-soft);color:var(--gold);font-weight:700}
+
+.bits{display:flex;gap:6px}
+.bits b{width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);
+  font-size:19px;font-weight:700;background:#f1efe9;color:#b3b0a7;border:1px solid var(--rule2);border-radius:5px;
+  cursor:pointer;user-select:none;
+  transition:background .16s ease,color .16s ease,border-color .16s ease,transform .16s cubic-bezier(.2,1.5,.4,1)}
+.bits b:hover{border-color:var(--ink);transform:translateY(-3px)}
+.bits b.one{background:var(--accent);border-color:var(--accent);color:#fff}
+.bits b.flip{transform:translateY(-8px) scale(1.14)}
+.bits.b .one{background:var(--good);border-color:var(--good)}
+.bits.op .one{background:var(--gold);border-color:var(--gold)}
+.bits.res b{cursor:default}
+.bits.res b.one{background:var(--ink);border-color:var(--ink);color:#fff}
+.bits.res b:hover{transform:none;border-color:var(--rule2)}
+.blab{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin-bottom:7px}
+
+.units{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:14px 0}
+.unit{border:1px solid var(--rule2);border-radius:8px;padding:11px 8px;text-align:center;background:#f6f4ef;
+  transition:background .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}
+.unit .nm{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.unit .vl{font-family:var(--mono);font-size:25px;font-weight:700;color:var(--rule2);margin-top:5px}
+.unit.sel{background:var(--accent-soft);border-color:var(--accent);transform:translateY(-6px);box-shadow:0 10px 22px rgba(35,64,143,.18)}
+.unit.sel .nm{color:var(--accent)} .unit.sel .vl{color:var(--accent)}
+.flags{display:flex;gap:9px;margin-top:8px}
+.flag{font-family:var(--mono);font-size:14px;letter-spacing:.1em;padding:5px 11px;border-radius:6px;
+  border:1px solid var(--rule2);color:var(--rule2);transition:.18s}
+.flag.on{background:var(--fail);border-color:var(--fail);color:#fff}
+
+.rip{display:flex;gap:8px;justify-content:center;margin:8px 0}
+.rip .st{flex:1;border:1px solid var(--rule2);border-radius:8px;padding:11px 8px;text-align:center;background:#f6f4ef;transition:.22s}
+.rip .st.live{background:var(--mark);border-color:var(--gold);transform:translateY(-6px)}
+.rip .st.done{background:var(--good-soft);border-color:var(--good)}
+.rip .st .h{font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--soft)}
+.rip .st .v{font-family:var(--mono);font-size:23px;font-weight:700;color:var(--ink);margin-top:4px}
+.rip .st .cin{font-family:var(--mono);font-size:13px;color:var(--fail);margin-top:3px;height:17px}
+
+/* the data flow */
+.flowbox{transition:fill .25s ease,stroke .25s ease,stroke-width .25s ease}
+.flowwire{transition:stroke .25s ease,stroke-width .25s ease,opacity .25s ease}
+.lit{stroke:#a8231f !important;stroke-width:4 !important;opacity:1 !important}
+.litbox{fill:#fbeeed !important;stroke:#a8231f !important;stroke-width:2.6 !important}
+.dim{opacity:.28}
+
+.frag{opacity:0;transition:opacity .3s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:96px;right:96px;bottom:92px;display:none;padding:13px 17px;
+  border-left:4px solid var(--fail);background:var(--fail-soft);color:#8a2420;font-size:19px;line-height:1.42;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+.cue b{font-style:normal}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:66px 96px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:22px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:80px}
+#jump li{padding:8px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:21px;color:var(--body);display:flex;gap:18px;break-inside:avoid}
+#jump li:hover{color:var(--accent)}
+#jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:44px}
+#jump li.q span{color:var(--gold)}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag,.bits b,.unit,.rip .st,.flowbox,.flowwire{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Fundamentals of Computer Architecture &nbsp;·&nbsp; <b>Class 04</b></div>
+  <div class="thread" id="thread"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 4 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- 01 -->
+<section class="slide" data-t="Title" data-th="">
+  <div>
+    <div class="kicker">Class 04 · last hour of week one</div>
+    <h1>What reads<br>a number?</h1>
+    <p class="big" style="margin-top:40px;max-width:38ch">Three hours on what a number is. Not one minute on anything that does something with one.</p>
+  </div>
+  <div class="cue"><b>Read this before you start.</b> This hour is also your measurement. Six questions are scattered through it, marked gold on the rail. Nothing is badged as a test and the room should never feel examined. Note who answers, who hesitates, and where the silence is. The closing cue tells you what each one meant.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="The gap" data-th="a circuit">
+  <div>
+    <div class="kicker grey">where week one got to</div>
+    <h2 style="margin-bottom:24px">You own representation<br>completely.</h2>
+    <div class="split" style="gap:56px">
+      <div class="stack">
+        <p>Whole numbers on a wheel. Fractions with a fixed point. Floats with a scale that runs out at both ends.</p>
+        <p class="frag">And a machine that can hold all of them and do nothing to any of them.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">Representation without operation is a filing cabinet.</p>
+        <p class="small">Today we build the thing that reads what is in the cabinet. By the end there is one diagram on the screen, and it is the shape of every processor ever made.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Name the destination now. One diagram, assembled in front of them, and it will be on the last slide complete. People follow a build better when they know a build is happening.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="A gate" data-th="a circuit">
+  <div>
+    <div class="kicker">the smallest thing that reads a pattern</div>
+    <h2 style="margin-bottom:22px">A gate does not pass<br>its input through.</h2>
+    <div class="split" style="gap:56px">
+      <div class="stack">
+        <p>It looks at the voltage on its inputs, makes a decision, and then <strong>re-drives its output</strong> to a clean full rail using its own power supply.</p>
+        <p class="frag">So a slightly degraded input produces a perfectly clean output.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">That is why you can wire fifty billion of them together and the last one is as crisp as the first.</p>
+        <p class="small">An analog chain degrades a little at every stage. A digital chain does not degrade at all, and that single property is the reason everything is digital.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Restoration is skipped in almost every course and it is the real answer to "why digital". Ninety seconds, no more.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Specify it" data-th="a circuit" data-q="1">
+  <div>
+    <div class="kicker gold">so how do you tell one what to decide</div>
+    <div class="ask"><p>A microwave runs when the door is shut <em>and</em> start is pressed. Write that so a machine could check it.</p></div>
+    <div class="split" style="gap:56px">
+      <div class="stack">
+        <p class="small">Ninety seconds on paper, then somebody puts it up.</p>
+        <p class="frag">A truth table is not a technique you apply to problems. It is what a specification looks like once every ambiguity has been squeezed out of it.</p>
+      </div>
+      <div class="frag">
+        <table class="tt">
+          <tr><th>door shut</th><th>start</th><th>run</th></tr>
+          <tr><td>0</td><td>0</td><td class="out">0</td></tr>
+          <tr><td>0</td><td>1</td><td class="out">0</td></tr>
+          <tr><td>1</td><td>0</td><td class="out">0</td></tr>
+          <tr><td>1</td><td>1</td><td class="out">1</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="cue"><b>Question one.</b> A confident room draws four rows in half a minute. A shaky one writes an English sentence or two rows. If somebody asks what happens when the door opens mid-cycle, that is the best answer in the room and you should say so.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Any table at all" data-th="a circuit" data-q="1">
+  <div>
+    <div class="kicker gold">and the part that makes tables worth anything</div>
+    <div class="ask"><p>This output column came from a coin. Can you still build a circuit for it?</p></div>
+    <div class="split" style="gap:50px">
+      <div>
+        <table class="tt">
+          <tr><th>a</th><th>b</th><th>c</th><th>out</th></tr>
+          <tr><td>0</td><td>0</td><td>0</td><td class="q">1</td></tr>
+          <tr><td>0</td><td>1</td><td>1</td><td class="q">1</td></tr>
+          <tr><td>1</td><td>0</td><td>0</td><td class="q">1</td></tr>
+          <tr><td>1</td><td>0</td><td>1</td><td class="q">1</td></tr>
+        </table>
+        <p class="small" style="margin-top:10px">the four rows that matter · the others are zero</p>
+      </div>
+      <div class="stack">
+        <p class="frag">Read a row. Use the variable where the bit is one, its inverse where the bit is zero, and AND them. That circuit fires on exactly that row and nothing else.</p>
+        <p class="frag">Do that for every row you want, then OR the lot together.</p>
+        <p class="big frag">No insight anywhere. It is a procedure, and it works on <span class="mark">any table you can write.</span></p>
+      </div>
+    </div>
+  </div>
+  <div class="cue"><b>Question two.</b> Demonstrating on nonsense is deliberate. On a meaningful function students quietly conclude the meaning helped. If the room has this, they say "sum of products" in one breath. If they do not, the logic layer is missing and the next arc needs two extra hours.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Arithmetic falls out" data-th="arithmetic" data-q="1">
+  <div>
+    <div class="kicker gold">so point it at something worth having</div>
+    <div class="ask"><p>What does adding two single bits require? Write the table.</p></div>
+    <div class="split" style="gap:50px">
+      <div class="frag">
+        <table class="tt">
+          <tr><th>a</th><th>b</th><th>sum</th><th>carry</th></tr>
+          <tr><td>0</td><td>0</td><td class="out">0</td><td class="out">0</td></tr>
+          <tr><td>0</td><td>1</td><td class="out">1</td><td class="out">0</td></tr>
+          <tr><td>1</td><td>0</td><td class="out">1</td><td class="out">0</td></tr>
+          <tr><td>1</td><td>1</td><td class="out">0</td><td class="out">1</td></tr>
+        </table>
+      </div>
+      <div class="stack">
+        <p class="frag">Four rows, two output columns. You have owned the machinery to turn that into a circuit since the last slide.</p>
+        <p class="big frag">Sum is <span class="num">XOR</span>. Carry is <span class="num">AND</span>.</p>
+        <p class="small frag">Notice what happened. Nobody reasoned about arithmetic. Four sums you learned as a child, one mechanical procedure, and <strong>arithmetic came out the other end.</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="cue"><b>Question three, and the sharpest instrument in the hour.</b> The tell is whether they produce <em>two</em> output columns unprompted. One column means they have not internalised that one plus one does not fit in one bit.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="★ Four bits" data-th="arithmetic">
+  <div>
+    <div class="kicker">chain four and step the carry through</div>
+    <div class="panel">
+      <span class="lab">4-bit ripple carry · 0111 + 0011</span>
+      <div class="rip" id="ripRow"></div>
+      <table class="readout" style="margin-top:4px">
+        <tr><td>result so far</td><td id="ripOut">····</td></tr>
+        <tr><td>carry travelling</td><td class="bad" id="ripC">—</td></tr>
+      </table>
+      <div class="btnrow">
+        <button class="btn hot" id="ripNext">next stage</button>
+        <button class="btn" id="ripAuto">run it</button>
+        <button class="btn" id="ripR">reset</button>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:20px;max-width:72ch">Bit three cannot decide until bit two has decided. <span class="mark">The carry is the only slow thing in here</span>, and every fast adder ever designed is an attack on that one signal.</p>
+  </div>
+  <div class="cue">Run it and let the gold block travel left. Ask what happens at sixty four bits. The answer is that the adder alone would set the clock speed of the machine, which is a thread we pick up much later.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Subtract for free" data-th="arithmetic" data-q="1">
+  <div>
+    <div class="kicker gold">you have an adder and nothing else</div>
+    <div class="ask"><p>How much extra hardware do you need to subtract?</p></div>
+    <div class="split" style="gap:56px">
+      <div class="stack">
+        <p class="small">Think about the wheel from last hour before you answer.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">One row of inverters and a one on the carry in.</p>
+        <p><span class="num">a − b</span> is <span class="num">a + (−b)</span>, and minus b on the wheel is b inverted, plus one. The inverters invert. The carry in is the plus one.</p>
+        <p class="small">Not one gate of the adder changes. This is the same fact you met last hour when an unsigned adder produced correct signed answers.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue"><b>Question four, and it audits Class 3.</b> "Invert and add one" means two's complement is a mechanism to them. Reaching for a separate subtractor means it is vocabulary, and you should re-run the wheel before Class 5.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Four circuits, two wires" data-th="selection" data-q="1">
+  <div>
+    <div class="kicker">so count what is on the bench now</div>
+    <div class="grid4" style="margin-bottom:24px">
+      <div class="panel"><span class="n">CIRCUIT</span><h3>ADD</h3><p class="cap">the chain from two slides ago</p></div>
+      <div class="panel"><span class="n">CIRCUIT</span><h3>SUB</h3><p class="cap">the same chain with inverters</p></div>
+      <div class="panel"><span class="n">CIRCUIT</span><h3>AND</h3><p class="cap">four gates, one per bit</p></div>
+      <div class="panel"><span class="n">CIRCUIT</span><h3>OR</h3><p class="cap">four gates, one per bit</p></div>
+    </div>
+    <div class="ask"><p>All four want the same two inputs and the same output wires. Do you route the operands to the one you want, or send them to all four and pick which answer escapes?</p></div>
+  </div>
+  <div class="cue"><b>Question five.</b> Most rooms say route, because it sounds efficient. The moment worth waiting for is somebody objecting that routing is itself a selection problem, one step earlier. If that comes from the room, this cohort runs at full speed.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Send them everywhere" data-th="selection">
+  <div>
+    <div class="kicker grey">and the answer is the wasteful-sounding one</div>
+    <h2 style="margin-bottom:22px">Every unit computes,<br>every time.</h2>
+    <div class="split" style="gap:56px">
+      <div class="stack">
+        <p>Routing needs a circuit that decides where to send things, which is the same problem one step earlier and no easier.</p>
+        <p class="frag">Choosing what to keep needs one multiplexer, and a multiplexer is four AND gates and an OR.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">So all four run, and three answers are thrown away.</p>
+        <p class="small">The objection deserves a real reply. Those units are on the silicon whether they run or not, so idling one recovers no area. They do burn power, which is why real processors gate the clock to unused units. Parallelism in hardware is free in time. Routing is not.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This is the sentence that transfers furthest in the whole course, and it is exactly backwards in software. Say that out loud. It comes back when we measure anything.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="★★ The tiny ALU" data-th="selection">
+  <div>
+    <div class="kicker red">so here is the whole thing, working</div>
+    <div class="panel" style="padding:20px 26px">
+      <div class="split" style="gap:34px;align-items:start">
+        <div>
+          <div class="blab">operand A · click a bit</div>
+          <div class="bits" id="aBits"></div>
+          <div class="blab" style="margin-top:14px">operand B · click a bit</div>
+          <div class="bits b" id="bBits"></div>
+          <div class="blab" style="margin-top:14px">select lines</div>
+          <div class="bits op" id="opBits"></div>
+        </div>
+        <div>
+          <div class="blab">every unit computes, always</div>
+          <div class="units" id="units"></div>
+          <div class="blab">what the multiplexer let through</div>
+          <div class="bits res" id="rBits"></div>
+          <div class="flags" id="flags"></div>
+          <table class="readout" style="margin-top:10px">
+            <tr><td>reads as</td><td id="aluTxt">7 + 3 = 10</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Change only the two gold bits and watch the selected unit lift while the other three keep computing and keep being discarded. Then set A and B so that ADD overflows, and let somebody notice the flags move.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Nobody invented the opcode" data-th="selection">
+  <div>
+    <div class="kicker">now look at what those two gold bits actually are</div>
+    <h2 style="margin-bottom:22px">An ordinary binary number.</h2>
+    <div class="split" style="gap:56px">
+      <div>
+        <table class="tt">
+          <tr><th>select</th><th>what escapes</th></tr>
+          <tr><td>00</td><td class="out">ADD</td></tr>
+          <tr><td>01</td><td class="out">SUB</td></tr>
+          <tr><td>10</td><td class="out">AND</td></tr>
+          <tr><td>11</td><td class="out">OR</td></tr>
+        </table>
+      </div>
+      <div class="stack">
+        <p class="frag">Four circuits needs two select lines. Eight needs three. Sixteen needs four.</p>
+        <p class="big frag">That width was never a convention somebody chose. It is forced by how many circuits the machine contains.</p>
+        <p class="small frag">Those select lines are an opcode, and <strong>nobody had to invent it.</strong> It fell out of needing a multiplexer.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">If a student says "so that is why opcodes are the width they are", stop and have them repeat it to the room. Worth far more from a peer than from you.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Where do they come from?" data-th="storage" data-q="1">
+  <div>
+    <div class="kicker gold">use it for something</div>
+    <div class="ask"><p>Compute the sum of one to five on that machine. What stops you?</p></div>
+    <div class="split" style="gap:56px">
+      <div class="stack">
+        <p class="small">Try it on the widget behind you. Set one and two, take the answer, then add three to it.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">The answer is a voltage on the output wires that exists only while the inputs are held.</p>
+        <p>Change the inputs and it is gone. There is nowhere to put anything.</p>
+        <p class="small">And there is a second problem, quieter than the first. Somebody is setting those two gold bits by hand at every step. <em>Add, add, add, add</em> is information, and it is not in the machine.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue"><b>Question six.</b> Nearly every room finds the storage problem. Far fewer find the second one. If somebody says "you are choosing the operation each time", they have independently found the stored program idea and you should name them for it.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Registers" data-th="storage">
+  <div>
+    <div class="kicker grey">so add the two things that are missing</div>
+    <h2 style="margin-bottom:22px">Somewhere to keep values,<br>and somewhere to keep<br>the choice.</h2>
+    <div class="split" style="gap:56px">
+      <div class="stack">
+        <p>A register holds a value without the inputs staying put, takes a new one only when told, and presents it continuously.</p>
+        <p class="frag">Several of them, individually addressable, is a register file. Two read ports feed the two operands. One write port catches the result.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">And the select lines come from a register too.</p>
+        <p class="small">Because they are a binary number, and a register is where binary numbers live. Nothing in the hardware marks one register as holding a choice and another as holding a value.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Do not build a latch today. Note whether the word "register" needed explaining, because that decides how much of the storage arc you rebuild later.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="★ The picture assembles" data-th="the data flow">
+  <div>
+    <div class="kicker">so put every piece where it goes</div>
+    <figure>
+      <svg viewBox="0 0 1220 560" width="100%" style="max-height:640px" role="img" aria-label="The data flow assembling in layers">
+        <defs>
+          <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M1 1 L9 5 L1 9" fill="none" stroke="#4b5057" stroke-width="2" stroke-linecap="round"/></marker>
+        </defs>
+
+        <!-- layer 1 : the four units -->
+        <g>
+          <rect class="flowbox" x="316" y="300" width="130" height="76" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/>
+          <text x="381" y="345" text-anchor="middle" font-size="20" fill="#23408f">ADD</text>
+          <rect class="flowbox" x="462" y="300" width="130" height="76" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/>
+          <text x="527" y="345" text-anchor="middle" font-size="20" fill="#23408f">SUB</text>
+          <rect class="flowbox" x="608" y="300" width="130" height="76" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/>
+          <text x="673" y="345" text-anchor="middle" font-size="20" fill="#23408f">AND</text>
+          <rect class="flowbox" x="754" y="300" width="130" height="76" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/>
+          <text x="819" y="345" text-anchor="middle" font-size="20" fill="#23408f">OR</text>
+        </g>
+
+        <!-- layer 2 : operand bus -->
+        <g class="fragsvg">
+          <rect x="300" y="248" width="600" height="34" rx="8" fill="#f1efe9" stroke="#c6c3ba"/>
+          <text x="600" y="270" text-anchor="middle" font-size="16" fill="#8b9096">BOTH OPERANDS REACH EVERY UNIT</text>
+          <g stroke="#4b5057" stroke-width="2" marker-end="url(#a1)">
+            <line x1="381" y1="282" x2="381" y2="296"/><line x1="527" y1="282" x2="527" y2="296"/>
+            <line x1="673" y1="282" x2="673" y2="296"/><line x1="819" y1="282" x2="819" y2="296"/>
+          </g>
+        </g>
+
+        <!-- layer 3 : mux -->
+        <g class="fragsvg">
+          <path d="M360 408 L840 408 L740 466 L460 466 Z" fill="#eaeef7" stroke="#23408f" stroke-width="1.8"/>
+          <text x="600" y="443" text-anchor="middle" font-size="19" fill="#23408f">MULTIPLEXER</text>
+          <g stroke="#4b5057" stroke-width="2" marker-end="url(#a1)">
+            <line x1="381" y1="376" x2="381" y2="404"/><line x1="527" y1="376" x2="527" y2="404"/>
+            <line x1="673" y1="376" x2="673" y2="404"/><line x1="819" y1="376" x2="819" y2="404"/>
+          </g>
+        </g>
+
+        <!-- layer 4 : registers -->
+        <g class="fragsvg">
+          <rect x="400" y="150" width="400" height="80" rx="8" fill="#fff" stroke="#15171b" stroke-width="1.8"/>
+          <text x="600" y="184" text-anchor="middle" font-size="22" fill="#15171b">REGISTERS</text>
+          <text x="600" y="210" text-anchor="middle" font-size="15" fill="#8b9096">r0 &nbsp; r1 &nbsp; r2 &nbsp; r3</text>
+          <g stroke="#4b5057" stroke-width="2" marker-end="url(#a1)">
+            <line x1="520" y1="230" x2="520" y2="244"/><line x1="680" y1="230" x2="680" y2="244"/>
+          </g>
+          <text x="498" y="245" font-size="15" fill="#8b9096">A</text>
+          <text x="690" y="245" font-size="15" fill="#8b9096">B</text>
+        </g>
+
+        <!-- layer 5 : result + writeback -->
+        <g class="fragsvg">
+          <rect x="490" y="500" width="220" height="46" rx="8" fill="#e8f2ec" stroke="#1d6b45" stroke-width="1.8"/>
+          <text x="600" y="530" text-anchor="middle" font-size="19" fill="#1d6b45">RESULT</text>
+          <line x1="600" y1="466" x2="600" y2="496" stroke="#4b5057" stroke-width="2" marker-end="url(#a1)"/>
+          <path d="M710 523 L1040 523 L1040 190 L806 190" fill="none" stroke="#1d6b45" stroke-width="2" marker-end="url(#a1)"/>
+          <text x="1050" y="360" font-size="15" fill="#1d6b45" writing-mode="tb">WRITE BACK</text>
+        </g>
+
+        <!-- layer 6 : the instruction -->
+        <g class="fragsvg">
+          <rect x="260" y="20" width="680" height="52" rx="8" fill="#fbf2dc" stroke="#8a6a12" stroke-width="1.8"/>
+          <line x1="430" y1="20" x2="430" y2="72" stroke="#8a6a12"/>
+          <line x1="600" y1="20" x2="600" y2="72" stroke="#8a6a12"/>
+          <line x1="770" y1="20" x2="770" y2="72" stroke="#8a6a12"/>
+          <text x="345" y="52" text-anchor="middle" font-size="18" fill="#8a6a12">op</text>
+          <text x="515" y="52" text-anchor="middle" font-size="18" fill="#8a6a12">rd</text>
+          <text x="685" y="52" text-anchor="middle" font-size="18" fill="#8a6a12">ra</text>
+          <text x="855" y="52" text-anchor="middle" font-size="18" fill="#8a6a12">rb</text>
+          <g stroke="#8a6a12" stroke-width="2" marker-end="url(#a1)" fill="none">
+            <line x1="515" y1="72" x2="515" y2="146"/>
+            <line x1="685" y1="72" x2="685" y2="146"/>
+            <path d="M855 72 L855 110 L790 110 L790 146"/>
+            <path d="M345 72 L345 110 L180 110 L180 437 L356 437"/>
+          </g>
+          <text x="196" y="290" font-size="15" fill="#8a6a12">SELECT</text>
+        </g>
+      </svg>
+    </figure>
+  </div>
+  <div class="cue">Six presses. Units, then the operand bus, then the multiplexer, then the registers, then write back, then the instruction. Name each piece as it lands and say which slide it came from.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="★★ The data flow" data-th="the data flow">
+  <div>
+    <div class="kicker red">and this is the machine · set an instruction and watch it flow</div>
+    <div class="split r" style="gap:30px;align-items:center">
+      <div>
+        <div class="blab">the instruction word · click any bit</div>
+        <div class="bits op" id="iBits" style="gap:5px"></div>
+        <div style="display:flex;gap:5px;margin-top:7px" id="iLabs"></div>
+        <table class="readout" style="margin-top:16px">
+          <tr><td>as a number</td><td id="iNum">0</td></tr>
+          <tr><td>it says</td><td class="gold" id="iAsm">add r0, r0, r0</td></tr>
+          <tr><td>r0 r1 r2 r3</td><td id="iRegs">0 0 0 0</td></tr>
+        </table>
+        <div class="btnrow">
+          <button class="btn hot" id="iRun">run one cycle</button>
+          <button class="btn" id="iRnd">random instruction</button>
+          <button class="btn" id="iRst">reset registers</button>
+        </div>
+      </div>
+      <figure>
+        <svg viewBox="0 0 1220 560" width="100%" style="max-height:600px" role="img" aria-label="The complete data flow with the active path highlighted">
+          <defs>
+            <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M1 1 L9 5 L1 9" fill="none" stroke="#4b5057" stroke-width="2" stroke-linecap="round"/></marker>
+          </defs>
+
+          <rect x="260" y="20" width="680" height="52" rx="8" fill="#fbf2dc" stroke="#8a6a12" stroke-width="1.8"/>
+          <line x1="430" y1="20" x2="430" y2="72" stroke="#8a6a12"/>
+          <line x1="600" y1="20" x2="600" y2="72" stroke="#8a6a12"/>
+          <line x1="770" y1="20" x2="770" y2="72" stroke="#8a6a12"/>
+          <text x="345" y="52" text-anchor="middle" font-size="18" fill="#8a6a12" id="fOp">op</text>
+          <text x="515" y="52" text-anchor="middle" font-size="18" fill="#8a6a12" id="fRd">rd</text>
+          <text x="685" y="52" text-anchor="middle" font-size="18" fill="#8a6a12" id="fRa">ra</text>
+          <text x="855" y="52" text-anchor="middle" font-size="18" fill="#8a6a12" id="fRb">rb</text>
+
+          <g stroke="#8a6a12" stroke-width="2" marker-end="url(#a2)" fill="none">
+            <line class="flowwire" x1="515" y1="72" x2="515" y2="146"/>
+            <line class="flowwire" x1="685" y1="72" x2="685" y2="146"/>
+            <path class="flowwire" d="M855 72 L855 110 L790 110 L790 146"/>
+            <path class="flowwire" id="wSel" d="M345 72 L345 110 L180 110 L180 437 L356 437"/>
+          </g>
+          <text x="196" y="290" font-size="15" fill="#8a6a12">SELECT</text>
+
+          <rect x="400" y="150" width="400" height="80" rx="8" fill="#fff" stroke="#15171b" stroke-width="1.8"/>
+          <text x="600" y="184" text-anchor="middle" font-size="22" fill="#15171b">REGISTERS</text>
+          <text x="600" y="210" text-anchor="middle" font-size="15" fill="#8b9096" id="fRegs">r0  r1  r2  r3</text>
+          <g stroke="#4b5057" stroke-width="2" marker-end="url(#a2)">
+            <line class="flowwire" x1="520" y1="230" x2="520" y2="244"/>
+            <line class="flowwire" x1="680" y1="230" x2="680" y2="244"/>
+          </g>
+
+          <rect x="300" y="248" width="600" height="34" rx="8" fill="#f1efe9" stroke="#c6c3ba"/>
+          <text x="600" y="270" text-anchor="middle" font-size="16" fill="#8b9096" id="fBus">BOTH OPERANDS REACH EVERY UNIT</text>
+          <g stroke="#4b5057" stroke-width="2" marker-end="url(#a2)">
+            <line class="flowwire" x1="381" y1="282" x2="381" y2="296"/><line class="flowwire" x1="527" y1="282" x2="527" y2="296"/>
+            <line class="flowwire" x1="673" y1="282" x2="673" y2="296"/><line class="flowwire" x1="819" y1="282" x2="819" y2="296"/>
+          </g>
+
+          <g id="fUnits">
+            <rect class="flowbox" x="316" y="300" width="130" height="76" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/>
+            <rect class="flowbox" x="462" y="300" width="130" height="76" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/>
+            <rect class="flowbox" x="608" y="300" width="130" height="76" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/>
+            <rect class="flowbox" x="754" y="300" width="130" height="76" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/>
+          </g>
+          <text x="381" y="333" text-anchor="middle" font-size="19" fill="#23408f">ADD</text>
+          <text x="527" y="333" text-anchor="middle" font-size="19" fill="#23408f">SUB</text>
+          <text x="673" y="333" text-anchor="middle" font-size="19" fill="#23408f">AND</text>
+          <text x="819" y="333" text-anchor="middle" font-size="19" fill="#23408f">OR</text>
+          <text x="381" y="362" text-anchor="middle" font-size="20" fill="#8b9096" id="u0">0</text>
+          <text x="527" y="362" text-anchor="middle" font-size="20" fill="#8b9096" id="u1">0</text>
+          <text x="673" y="362" text-anchor="middle" font-size="20" fill="#8b9096" id="u2">0</text>
+          <text x="819" y="362" text-anchor="middle" font-size="20" fill="#8b9096" id="u3">0</text>
+
+          <g stroke="#4b5057" stroke-width="2" marker-end="url(#a2)">
+            <line class="flowwire" id="m0" x1="381" y1="376" x2="381" y2="404"/>
+            <line class="flowwire" id="m1" x1="527" y1="376" x2="527" y2="404"/>
+            <line class="flowwire" id="m2" x1="673" y1="376" x2="673" y2="404"/>
+            <line class="flowwire" id="m3" x1="819" y1="376" x2="819" y2="404"/>
+          </g>
+
+          <path d="M360 408 L840 408 L740 466 L460 466 Z" fill="#eaeef7" stroke="#23408f" stroke-width="1.8"/>
+          <text x="600" y="443" text-anchor="middle" font-size="19" fill="#23408f">MULTIPLEXER</text>
+
+          <line class="flowwire" x1="600" y1="466" x2="600" y2="496" stroke="#4b5057" stroke-width="2" marker-end="url(#a2)"/>
+          <rect class="flowbox" id="fRes" x="490" y="500" width="220" height="46" rx="8" fill="#e8f2ec" stroke="#1d6b45" stroke-width="1.8"/>
+          <text x="600" y="530" text-anchor="middle" font-size="19" fill="#1d6b45" id="fResV">RESULT</text>
+          <path class="flowwire" id="wWb" d="M710 523 L1040 523 L1040 190 L806 190" fill="none" stroke="#1d6b45" stroke-width="2" marker-end="url(#a2)"/>
+        </svg>
+      </figure>
+    </div>
+  </div>
+  <div class="cue"><b>The end of week one.</b> Press "run one cycle" repeatedly and watch the path light: two registers out, four units compute, one escapes, one register written. Then flip a single op bit and run again. Same wires, different answer, and the only thing that changed was a number sitting in a register.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="What is not here" data-th="the data flow">
+  <div>
+    <div class="kicker grey">and be honest about what that picture is missing</div>
+    <h2 style="margin-bottom:22px">Somebody is still<br>choosing the instruction.</h2>
+    <div class="split" style="gap:56px">
+      <div class="stack">
+        <p>There is no memory in that diagram, so a program of a thousand values has nowhere to live.</p>
+        <p class="frag">There is nothing that produces the next instruction, so every step is you, by hand.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">Which means the instruction is a number that has to come from somewhere, and the only somewhere is memory.</p>
+        <p class="small">So instructions and data end up in the same place, stored the same way, indistinguishable to the hardware. That is not an accident, it is the decision that made a programmable machine possible.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Plant this and stop. It is the opening of the processor arc, and if one or two people look uneasy about instructions living in memory, the hour has done its job.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Close" data-th="">
+  <div>
+    <div class="kicker grey">so that was week one</div>
+    <h2 style="font-size:52px;margin-bottom:24px">Four hours, and you<br>have built the thing that<br>every processor is.</h2>
+    <div class="split" style="gap:56px">
+      <div class="stack">
+        <p>A pattern. A table. A circuit. Four circuits. A selector. Somewhere to keep the answers. And a number that drives all of it.</p>
+        <p class="small">Not one step needed an idea you did not already have. The only thing missing was somebody asking for them in that order.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">Next week the machine gets a memory, and then it gets fast.</p>
+        <p class="small">And from Class 5 onward, every claim in this course has to survive a stopwatch.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue"><b>Exit slip at the door:</b> one line, no name. Which part of today would you least like to be asked about next week? <b>Then tonight, read the six against your notes.</b> Q1 and Q2 weak means rebuild the logic layer inside Class 5. Q3 weak is the most serious, because arithmetic-from-a-table is what the whole arc stands on. Q4 weak means Class 3 did not land and the wheel needs re-running. Q5 and Q6 weak is expected and fine, because that is precisely where the next arc begins.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ stage.style.transform='translate(-50%,-50%) scale('+Math.min(innerWidth/1600,innerHeight/900)+')'; }
+  addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=[].slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    var t=document.createElement('i'); if(s.dataset.q) t.className='q';
+    rail.appendChild(t);
+    var li=document.createElement('li'); if(s.dataset.q) li.className='q';
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), thread=document.getElementById('thread');
+
+  function frags(){ return [].slice.call(slides[i].querySelectorAll('.frag, .fragsvg')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++){
+      var base=slides[k].dataset.q?'q ':'';
+      ticks[k].className=base+(k<i?'done':(k===i?'here':''));
+    }
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    var th=slides[i].dataset.th||'';
+    thread.innerHTML = th ? 'from a pattern to a machine &nbsp;·&nbsp; <b>'+th+'</b>' : '';
+    frags().forEach(function(el,k){
+      var on=k<f;
+      if(el.classList.contains('fragsvg')) el.style.opacity=on?1:0;
+      else el.classList.toggle('shown',on);
+    });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag, .fragsvg').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA'){ if(k==='Escape') e.target.blur(); return; }
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); }
+    else if(k==='n'||k==='N'){ document.body.classList.toggle('cues'); }
+    else if(k==='o'||k==='O'){ document.getElementById('jump').classList.toggle('open'); }
+    else if(k==='Escape'){ document.getElementById('jump').classList.remove('open'); }
+  });
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||
+       e.target.closest('.bits')||e.target.closest('input')||e.target.closest('svg')) return;
+    if(e.clientX<innerWidth*0.26) prev(); else next();
+  });
+
+  function strip(host,n,get,set){
+    var cells=[],last=null;
+    for(var k=0;k<n;k++){
+      var b=document.createElement('b'); b.textContent='0'; b.tabIndex=0;
+      host.appendChild(b); cells.push(b);
+      (function(kk){
+        function go(){ set(get()^(1<<(n-1-kk))); }
+        b.onclick=go;
+        b.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();go();} };
+      })(k);
+    }
+    return function(v){
+      for(var k=0;k<n;k++){
+        var bit=(v>>(n-1-k))&1;
+        if(last!==null && ((last>>(n-1-k))&1)!==bit){
+          (function(c){ c.classList.add('flip'); setTimeout(function(){c.classList.remove('flip');},200); })(cells[k]);
+        }
+        cells[k].textContent=bit; cells[k].className=bit?'one':'';
+      }
+      last=v;
+    };
+  }
+
+  /* ===== 07 · ripple carry ===== */
+  var ripNext=document.getElementById('ripNext');
+  if(ripNext){
+    var A=[1,1,1,0], B=[1,1,0,0];
+    var sum=[0,0,0,0], cy=[0,0,0,0,0];
+    (function(){ var c=0; for(var k=0;k<4;k++){ var s=A[k]+B[k]+c; sum[k]=s&1; c=s>>1; cy[k+1]=c; } })();
+    var host=document.getElementById('ripRow'), step=0, tm=null;
+    for(var k=3;k>=0;k--){
+      var d=document.createElement('div'); d.className='st'; d.dataset.k=k;
+      d.innerHTML='<div class="h">BIT '+k+'</div><div class="v">\u00b7</div><div class="cin"></div>';
+      host.appendChild(d);
+    }
+    function rip(){
+      [].forEach.call(host.children,function(d){
+        var k=+d.dataset.k;
+        d.className='st'+(step===k+1?' live':(step>k+1?' done':''));
+        d.querySelector('.v').textContent = step>k ? sum[k] : '\u00b7';
+        d.querySelector('.cin').textContent = (step>k && cy[k]) ? 'carry in 1' : '';
+      });
+      document.getElementById('ripOut').textContent=[3,2,1,0].map(function(k){ return step>k?sum[k]:'\u00b7'; }).join('');
+      var c=document.getElementById('ripC');
+      if(step===0) c.textContent='\u2014';
+      else if(step<4) c.textContent=cy[step]?'yes, into bit '+step:'none';
+      else c.textContent=cy[4]?'fell off the top':'none';
+    }
+    ripNext.onclick=function(){ if(step<5){step++;rip();} };
+    document.getElementById('ripAuto').onclick=function(){
+      if(tm){clearInterval(tm);tm=null;return;}
+      tm=setInterval(function(){ if(step>=5){clearInterval(tm);tm=null;return;} step++; rip(); },600);
+    };
+    document.getElementById('ripR').onclick=function(){ if(tm){clearInterval(tm);tm=null;} step=0; rip(); };
+    rip();
+  }
+
+  /* ===== 11 · the tiny ALU ===== */
+  function units4(a,b,op){
+    var raw=[(a+b),(a+((~b)&15)+1),(a&b),(a|b)];
+    return { res:raw.map(function(v){return v&15;}), carry:(op<2)?((raw[op]>>4)&1):0 };
+  }
+  var aH=document.getElementById('aBits');
+  if(aH){
+    var A4=7,B4=3,OP=0;
+    var setA=strip(aH,4,function(){return A4;},function(v){A4=v&15;alu();});
+    var setB=strip(document.getElementById('bBits'),4,function(){return B4;},function(v){B4=v&15;alu();});
+    var setO=strip(document.getElementById('opBits'),2,function(){return OP;},function(v){OP=v&3;alu();});
+    var uHost=document.getElementById('units'), names=['ADD','SUB','AND','OR'], uEls=[];
+    names.forEach(function(nm){
+      var d=document.createElement('div'); d.className='unit';
+      d.innerHTML='<div class="nm">'+nm+'</div><div class="vl">0</div>';
+      uHost.appendChild(d); uEls.push(d);
+    });
+    strip(document.getElementById('rBits'),4,function(){return 0;},function(){});
+    var fHost=document.getElementById('flags'), fEls={};
+    ['Z','N','C','V'].forEach(function(nm){
+      var s=document.createElement('span'); s.className='flag'; s.textContent=nm;
+      fHost.appendChild(s); fEls[nm]=s;
+    });
+    function alu(){
+      var u=units4(A4,B4,OP), res=u.res;
+      var bx=OP===1?((~B4)&15):B4;
+      var v=(OP<2)?((((A4>>3)&1)===((bx>>3)&1)) && (((res[OP]>>3)&1)!==((A4>>3)&1))?1:0):0;
+      uEls.forEach(function(d,k){ d.className='unit'+(k===OP?' sel':''); d.querySelector('.vl').textContent=res[k]; });
+      setA(A4); setB(B4); setO(OP);
+      var r=res[OP];
+      [].forEach.call(document.getElementById('rBits').children,function(b,k){
+        var bit=(r>>(3-k))&1; b.textContent=bit; b.className=bit?'one':'';
+      });
+      fEls.Z.className='flag'+(r===0?' on':'');
+      fEls.N.className='flag'+(((r>>3)&1)?' on':'');
+      fEls.C.className='flag'+(u.carry?' on':'');
+      fEls.V.className='flag'+(v?' on':'');
+      var symb=['+','\u2212','AND','OR'][OP];
+      document.getElementById('aluTxt').textContent=A4+' '+symb+' '+B4+' = '+r+((OP<2&&u.carry)?'  (carry out)':'');
+    }
+    alu();
+  }
+
+  /* ===== 16 · the data flow ===== */
+  var iH=document.getElementById('iBits');
+  if(iH){
+    var W=0x00, R=[0,0,0,0], litT=null;
+    var setI=strip(iH,8,function(){return W;},function(v){W=v&255;ins();});
+    var labs=document.getElementById('iLabs');
+    [['op',2],['rd',2],['ra',2],['rb',2]].forEach(function(p){
+      var d=document.createElement('div');
+      d.style.cssText='flex:0 0 '+(p[1]*50+(p[1]-1)*5)+'px;text-align:center;font-family:var(--mono);'+
+        'font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)';
+      d.textContent=p[0]; labs.appendChild(d);
+    });
+    function clearLit(){
+      [].forEach.call(document.querySelectorAll('.flowwire,.flowbox'),function(e){
+        e.classList.remove('lit'); e.classList.remove('litbox'); e.classList.remove('dim');
+      });
+    }
+    function ins(){
+      setI(W);
+      var op=(W>>6)&3, rd=(W>>4)&3, ra=(W>>2)&3, rb=W&3;
+      var nm=['add','sub','and','or'][op];
+      document.getElementById('iNum').textContent=W+'  ('+W.toString(2).padStart(8,'0')+')';
+      document.getElementById('iAsm').textContent=nm+' r'+rd+', r'+ra+', r'+rb;
+      document.getElementById('iRegs').textContent=R.join(' ');
+      document.getElementById('fOp').textContent='op '+op.toString(2).padStart(2,'0');
+      document.getElementById('fRd').textContent='rd '+rd;
+      document.getElementById('fRa').textContent='ra '+ra;
+      document.getElementById('fRb').textContent='rb '+rb;
+      document.getElementById('fRegs').textContent=R.map(function(v,k){return 'r'+k+'='+v;}).join('  ');
+      var u=units4(R[ra],R[rb],op);
+      for(var k=0;k<4;k++){
+        var t=document.getElementById('u'+k);
+        t.textContent=u.res[k];
+        t.setAttribute('fill', k===op ? '#a8231f' : '#8b9096');
+      }
+      document.getElementById('fBus').textContent='A = r'+ra+' = '+R[ra]+'   \u00b7   B = r'+rb+' = '+R[rb];
+      document.getElementById('fResV').textContent=u.res[op];
+      clearLit();
+      for(var k=0;k<4;k++) if(k!==op) document.getElementById('m'+k).classList.add('dim');
+      document.getElementById('m'+op).classList.add('lit');
+      document.getElementById('fUnits').children[op].classList.add('litbox');
+      document.getElementById('wSel').classList.add('lit');
+    }
+    document.getElementById('iRun').onclick=function(){
+      var op=(W>>6)&3, rd=(W>>4)&3, ra=(W>>2)&3, rb=W&3;
+      var u=units4(R[ra],R[rb],op);
+      R[rd]=u.res[op];
+      ins();
+      var wb=document.getElementById('wWb');
+      wb.classList.add('lit');
+      if(litT) clearTimeout(litT);
+      litT=setTimeout(function(){ wb.classList.remove('lit'); },900);
+    };
+    document.getElementById('iRnd').onclick=function(){ W=Math.floor(Math.random()*256); ins(); };
+    document.getElementById('iRst').onclick=function(){ R=[0,1,2,3]; ins(); };
+    R=[0,1,2,3];
+    ins();
+  }
+
+  paint();
+})();
+</script>
+</body>
+</html>
