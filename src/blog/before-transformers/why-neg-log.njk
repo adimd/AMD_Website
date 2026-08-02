@@ -1,0 +1,782 @@
+---
+layout: chapter.njk
+title: "Why −log P?"
+seriesKey: before-transformers
+chapterSlug: why-neg-log
+---
+
+{% raw %}
+<style>
+.chapter-scope *, .chapter-scope *::before, .chapter-scope *::after {margin:0;padding:0;box-sizing:border-box}
+.chapter-scope a {color:var(--accent);text-decoration:none;transition:all .25s}
+.chapter-scope a:hover {color:#b5541c}
+@keyframes rise {from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.chapter-scope .anim {animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+.chapter-scope .d1 {animation-delay:.08s}
+.chapter-scope .d2 {animation-delay:.18s}
+.chapter-scope .nav-container {max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+.chapter-scope .nav-links {display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+.chapter-scope .nav-links a {color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+.chapter-scope .nav-links a::after {content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+.chapter-scope .nav-links a:hover {color:var(--ink)}
+.chapter-scope .nav-links a:hover::after {width:100%}
+.chapter-scope .dropbtn {background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+.chapter-scope .dropbtn:hover {color:var(--ink)}
+.chapter-scope /* article */
+    .article {background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+.chapter-scope .article::before {content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+.chapter-scope .series-tag {display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+.chapter-scope .series-dot {width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.chapter-scope .article h1 {font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+.chapter-scope .blog-subtitle {font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+.chapter-scope .article h2 {font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+.chapter-scope .article h3 {font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+.chapter-scope .article p {font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+.chapter-scope .article strong {color:var(--ink);font-weight:500}
+.chapter-scope .article em {color:var(--ink)}
+.chapter-scope .article code {font-size:.9em;background:rgba(138,129,114,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+.chapter-scope .callout {margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+.chapter-scope .sep {border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+.chapter-scope /* sidebar */
+    .sidebar-card {background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+.chapter-scope .sidebar-title {font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+.chapter-scope .sidebar-link {display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+.chapter-scope .sidebar-link+.sidebar-link {margin-top:.15rem}
+.chapter-scope .sidebar-link:hover {background:var(--accent-dim);transform:translateX(2px)}
+.chapter-scope .sidebar-link-title {font-size:.88rem;font-weight:500;color:var(--ink)}
+.chapter-scope .sidebar-link-note {font-size:.73rem;color:var(--muted);margin-top:.12rem}
+.chapter-scope .sidebar-link.active-topic {background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+.chapter-scope /* viz */
+    .viz-block {margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chapter-scope .viz-header {padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+.chapter-scope .viz-title {font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+.chapter-scope .viz-body {padding:1.6rem}
+.chapter-scope .viz-note {font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+.chapter-scope /* ── VIZ 1: candidate penalty functions ──────────────────────────────── */
+    .pen-wrap {display:flex;flex-direction:column;gap:1rem}
+.chapter-scope #penCanvas {width:100%;height:auto;background:#ffffff;border-radius:10px;border:1px solid var(--border);display:block}
+.chapter-scope .pen-controls {display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.chapter-scope .pen-slider-wrap {flex:1;min-width:260px;display:flex;flex-direction:column;gap:.3rem}
+.chapter-scope .pen-slider-label {display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted)}
+.chapter-scope .pen-slider-label strong {color:var(--accent);font-family:'Courier New',monospace}
+.chapter-scope .pen-slider {width:100%;accent-color:var(--accent)}
+.chapter-scope .pen-toggles {display:flex;gap:.4rem;flex-wrap:wrap}
+.chapter-scope .pen-toggle {padding:.4rem .85rem;border-radius:6px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--muted);font-size:.82rem;cursor:pointer;transition:all .2s;font-family:inherit;display:inline-flex;align-items:center;gap:.5rem}
+.chapter-scope .pen-toggle.on {background:rgba(138,129,114,.05);color:var(--ink)}
+.chapter-scope .pen-toggle .swatch {width:10px;height:10px;border-radius:2px}
+.chapter-scope .pen-readout {display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6rem}
+.chapter-scope .pen-card {padding:.65rem .9rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;gap:.15rem}
+.chapter-scope .pen-card-label {font-size:.75rem;color:var(--muted);font-family:'Courier New',monospace}
+.chapter-scope .pen-card-val {font-family:'Courier New',monospace;font-size:1.1rem;font-weight:700}
+.chapter-scope /* ── VIZ 2: cross-entropy comparator ─────────────────────────────────── */
+    .ce-wrap {display:flex;flex-direction:column;gap:1rem}
+.chapter-scope .ce-grid {display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:820px) { .chapter-scope .ce-grid {grid-template-columns:1fr} }
+.chapter-scope .ce-col {background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:.7rem}
+.chapter-scope .ce-col-title {font-family:var(--display);font-size:1.15rem;color:var(--ink)}
+.chapter-scope .ce-bars {display:flex;flex-direction:column;gap:.4rem}
+.chapter-scope .ce-bar-row {display:flex;align-items:center;gap:.6rem;font-family:'Courier New',monospace;font-size:.82rem}
+.chapter-scope .ce-bar-word {min-width:50px;text-align:right;color:var(--body)}
+.chapter-scope .ce-bar-track {flex:1;height:20px;background:rgba(138,129,114,.04);border-radius:4px;position:relative;overflow:hidden}
+.chapter-scope .ce-bar-fill {position:absolute;top:0;bottom:0;left:0;border-radius:3px;transition:all .4s cubic-bezier(.22,1,.36,1)}
+.chapter-scope .ce-bar-fill.data {background:rgba(181,84,28,.75)}
+.chapter-scope .ce-bar-fill.model-a {background:rgba(124,77,188,.75)}
+.chapter-scope .ce-bar-fill.model-b {background:rgba(46,90,125,.75)}
+.chapter-scope .ce-bar-val {min-width:48px;text-align:right;color:var(--ink);font-weight:600;font-size:.78rem}
+.chapter-scope .ce-sliders {display:flex;flex-direction:column;gap:.5rem;padding-top:.5rem;border-top:1px solid var(--border)}
+.chapter-scope .ce-slider-row {display:flex;align-items:center;gap:.6rem;font-family:'Courier New',monospace;font-size:.78rem}
+.chapter-scope .ce-slider-row span.word {min-width:50px;text-align:right;color:var(--muted)}
+.chapter-scope .ce-slider-row input {flex:1;accent-color:var(--accent)}
+.chapter-scope .ce-slider-row span.val {min-width:50px;text-align:right;color:var(--accent)}
+.chapter-scope .ce-loss {margin-top:.3rem;padding:.7rem .9rem;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:8px;display:flex;flex-direction:column;gap:.35rem}
+.chapter-scope .ce-loss-row {display:flex;justify-content:space-between;font-family:'Courier New',monospace;font-size:.85rem;color:var(--body)}
+.chapter-scope .ce-loss-row strong {color:var(--accent)}
+.chapter-scope .ce-loss-row.total {padding-top:.35rem;border-top:1px solid var(--border);font-size:.92rem}
+.chapter-scope .ce-loss-row.total strong {color:var(--ink)}
+.chapter-scope .ce-presets {display:flex;gap:.45rem;flex-wrap:wrap}
+.chapter-scope .ce-preset {padding:.35rem .85rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.8rem;cursor:pointer;transition:all .2s;font-family:inherit}
+.chapter-scope .ce-preset:hover {border-color:var(--accent);color:var(--accent)}
+.chapter-scope .ce-preset.active {border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.chapter-scope .ce-verdict {display:flex;justify-content:space-between;align-items:center;padding:.65rem .9rem;background:var(--bg-elevated);border:1px solid rgba(10,125,82,.25);border-radius:8px;font-size:.88rem}
+.chapter-scope .ce-verdict strong {color:var(--green);font-family:'Courier New',monospace}
+.chapter-scope /* ── VIZ 3: one-hot collapse ─────────────────────────────────────────── */
+    .oh-wrap {display:flex;flex-direction:column;gap:1rem}
+.chapter-scope .oh-top {display:flex;gap:.8rem;align-items:flex-end;flex-wrap:wrap}
+.chapter-scope .oh-true-picker {display:flex;gap:.35rem;flex-wrap:wrap}
+.chapter-scope .oh-true-btn {padding:.35rem .75rem;border-radius:6px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--muted);font-size:.82rem;cursor:pointer;transition:all .2s;font-family:inherit}
+.chapter-scope .oh-true-btn.active {background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.chapter-scope .oh-terms {display:flex;flex-direction:column;gap:.35rem}
+.chapter-scope .oh-term {display:grid;grid-template-columns:34px 60px 14px 70px 14px 70px 14px 72px;gap:.4rem;align-items:center;padding:.5rem .8rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-family:'Courier New',monospace;font-size:.82rem;transition:all .3s}
+@media(max-width:640px) { .chapter-scope .oh-term {grid-template-columns:repeat(4,1fr);font-size:.74rem} .chapter-scope .oh-term .mult, .chapter-scope .oh-term .eq {display:none} }
+.chapter-scope .oh-term.alive {border-color:rgba(181,84,28,.4);background:rgba(181,84,28,.06)}
+.chapter-scope .oh-term.dead {opacity:.32}
+.chapter-scope .oh-idx {color:var(--muted);text-align:right}
+.chapter-scope .oh-q {color:var(--accent);text-align:center}
+.chapter-scope .oh-q.zero {color:var(--muted)}
+.chapter-scope .oh-logp {color:var(--body);text-align:center}
+.chapter-scope .oh-prod {color:var(--ink);text-align:center;font-weight:600}
+.chapter-scope .oh-prod.zero {color:var(--muted);font-weight:400}
+.chapter-scope .mult, .chapter-scope .eq {color:var(--muted);text-align:center;font-size:.7rem}
+.chapter-scope .oh-sum {padding:.85rem 1.1rem;background:var(--bg-elevated);border:1px solid rgba(181,84,28,.25);border-radius:8px;font-family:'Courier New',monospace;font-size:.95rem;color:var(--body);line-height:1.65}
+.chapter-scope .oh-sum strong {color:var(--accent);font-weight:700}
+.chapter-scope .oh-sum .highlight {background:rgba(181,84,28,.15);padding:.15rem .35rem;border-radius:4px;color:var(--ink)}
+.chapter-scope .oh-legend {display:flex;gap:1rem;flex-wrap:wrap;font-size:.78rem;color:var(--muted);padding-bottom:.3rem;padding-left:.1rem}
+.chapter-scope /* comments */
+    .comments-section {margin-top:2.5rem}
+.chapter-scope .comments-section h2 {font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+@media(max-width:640px) { .chapter-scope .nav-links {display:none} .chapter-scope .article {padding:2rem 1.4rem} .chapter-scope .article h1 {font-size:1.9rem} }
+</style>
+
+
+
+  <span class="series-tag"><span class="series-dot"></span>Before Transformers: How Embeddings Learn Meaning</span>
+  <h1>Why −log P?</h1>
+  <p class="blog-subtitle">From measuring a single prediction to measuring the distance between two distributions.</p>
+
+  <h2>Where we stand</h2>
+
+  <p>We have two distributions now. \(P_{\text{data}}\) is encoded implicitly by the corpus, revealed through repeated sampling of centre-context pairs. \(P_{\text{model}}\) comes from vector geometry, via a softmax over dot products. Training means reshaping the geometry until these two distributions agree.</p>
+
+  <p>Agreement needs a number. We need a single quantity that says: <em>this model's belief disagrees with the data by this much</em>. A scalar we can watch go down as training progresses. Something we can differentiate to get a direction for the vectors to move.</p>
+
+  <div class="callout">We have a pair of distributions to compare. We need a way to score the comparison.</div>
+
+  <p>The answer lives inside one innocuous-looking expression: \(-\log P_{\text{model}}(x)\). This post is about where that minus sign and that logarithm come from, and why no other choice would do the job.</p>
+
+  <hr class="sep">
+
+  <h2>What a good penalty function should look like</h2>
+
+  <p>Fix a single training example. The corpus has handed us a real pair like (my, dog). The model has produced a probability for the correct context: \(p = P_{\text{model}}(\text{dog} \mid \text{my})\). This one number expresses the model's belief about this specific event.</p>
+
+  <p>We want to convert \(p\) into a penalty \(f(p)\). The properties we want are easy to state.</p>
+
+  <p>When the model is right and confident, with \(p\) close to 1, the penalty should be near zero. When the model is right but hesitant, the penalty should be modest. When the model is confidently wrong about the truth, with \(p\) near zero, the penalty should be severe. It has to be smooth, because gradient descent needs continuous feedback, not step functions. And critically, it should treat different regions of \(p\) asymmetrically. Going from 0.9 to 0.8 shouldn't hurt much. Going from 0.1 to 0.001 should hurt a lot more, even though the numerical change is smaller.</p>
+
+  <p>That last requirement is the one most candidates fail.</p>
+
+  <hr class="sep">
+
+  <h2>Why the obvious candidates don't work</h2>
+
+  <p>The simplest idea is \(f(p) = 1 - p\). When the model is right, penalty zero. When the model assigns zero probability to the truth, penalty one. Feels reasonable. But look at what it says about confident nonsense. If the model assigns \(p = 0.1\) to the true word, the penalty is 0.9. If it assigns \(p = 10^{-6}\), the penalty is 0.999999. The difference between "bad" and "catastrophically bad" is a rounding error. The function saturates. Language models that hallucinate with high confidence need to feel the sting of that confidence, and this function can't deliver it.</p>
+
+  <p>Squaring it and using \(f(p) = (1-p)^2\) amplifies the middle but doesn't solve the ceiling. The penalty is still bounded above by 1. Confidently wrong and mildly wrong still look similar.</p>
+
+  <p>Going the other way with \(f(p) = 1/p\) blows up near zero, which is the right instinct. But now \(p = 1\) gives penalty 1 instead of zero. And it explodes too fast, so gradients become unstable. Useful energy, wrong shape.</p>
+
+  <p>What we need is a function that vanishes at \(p=1\), grows without bound as \(p\) approaches zero, and does so smoothly. One function fits.</p>
+
+  <!-- VIZ 1: penalty function comparison -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Four candidates. Only one has the right shape.</span></div>
+    <div class="viz-body">
+      <div class="pen-wrap">
+        <canvas id="penCanvas" width="700" height="380"></canvas>
+        <div class="pen-toggles" id="penToggles"></div>
+        <div class="pen-controls">
+          <div class="pen-slider-wrap">
+            <div class="pen-slider-label">Probability assigned to the true word: <strong id="penPVal">0.30</strong></div>
+            <input type="range" id="penSlider" class="pen-slider" min="1" max="999" step="1" value="300">
+          </div>
+        </div>
+        <div class="pen-readout" id="penReadout"></div>
+      </div>
+      <p class="viz-note">Drag the slider to move the probability the model assigned to the truth. Watch each penalty's value at that point. The first three candidates are bounded or badly behaved. Only the fourth has the right shape: quiet when the model is correct, merciless when the model is confidently wrong, smoothly in between. That fourth curve is \(-\log p\).</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Enter −log p</h2>
+
+  <p>The function \(f(p) = -\log p\) does exactly what we need. At \(p = 1\) it's zero. At \(p = 0.5\) it's about 0.69. At \(p = 0.1\) it's 2.3. At \(p = 0.01\) it's 4.6. As \(p\) approaches zero it goes to infinity, smoothly, without any nasty numerical cliffs.</p>
+<figure class="fig">
+  <svg viewBox="0 0 660 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four candidate penalty curves plotted over probability from zero to one. One minus p and its square hit a ceiling, one over p is wrong at p equals one, and minus log p vanishes at one and grows without bound near zero.">
+    <line x1="80" y1="258" x2="620" y2="258" stroke="#c5c0b4" stroke-width="1.5"/>
+    <line x1="80" y1="258" x2="80" y2="36" stroke="#c5c0b4" stroke-width="1.5"/>
+    <text x="620" y="280" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#8a8172">p = 1 (model was sure, and right)</text>
+    <text x="80" y="280" font-family="JetBrains Mono" font-size="10" fill="#8a8172">p &#8594; 0</text>
+    <text x="46" y="46" font-family="JetBrains Mono" font-size="10" fill="#8a8172">penalty</text>
+    <line x1="80" y1="215" x2="620" y2="215" stroke="#8a8172" stroke-width="1" stroke-dasharray="4 4"/>
+    <text x="616" y="209" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#8a8172">the ceiling both bounded candidates hit</text>
+    <path d="M81,215 L86,215 L91,216 L97,216 L102,217 L108,217 L113,218 L118,218 L124,218 L129,219 L135,219 L140,220 L145,220 L151,221 L156,221 L162,221 L167,222 L172,222 L178,223 L183,223 L189,224 L194,224 L199,225 L205,225 L210,225 L216,226 L221,226 L226,227 L232,227 L237,228 L243,228 L248,228 L253,229 L259,229 L264,230 L270,230 L275,231 L280,231 L286,231 L291,232 L297,232 L302,233 L307,233 L313,234 L318,234 L324,234 L329,235 L334,235 L340,236 L345,236 L351,237 L356,237 L361,237 L367,238 L372,238 L378,239 L383,239 L388,240 L394,240 L399,240 L405,241 L410,241 L415,242 L421,242 L426,243 L432,243 L437,243 L442,244 L448,244 L453,245 L459,245 L464,246 L469,246 L475,246 L480,247 L486,247 L491,248 L496,248 L502,249 L507,249 L513,249 L518,250 L523,250 L529,251 L534,251 L540,252 L545,252 L550,252 L556,253 L561,253 L567,254 L572,254 L577,255 L583,255 L588,255 L594,256 L599,256 L604,257 L610,257 L615,258" fill="none" stroke="#8a8172" stroke-width="2"/>
+    <text x="252.8" y="220.76" font-family="JetBrains Mono" font-size="10" fill="#8a8172">1-p</text>
+    <path d="M81,215 L86,216 L91,217 L97,218 L102,218 L108,219 L113,220 L118,221 L124,222 L129,222 L135,223 L140,224 L145,225 L151,226 L156,226 L162,227 L167,228 L172,228 L178,229 L183,230 L189,231 L194,231 L199,232 L205,233 L210,233 L216,234 L221,235 L226,235 L232,236 L237,236 L243,237 L248,238 L253,238 L259,239 L264,239 L270,240 L275,240 L280,241 L286,242 L291,242 L297,243 L302,243 L307,244 L313,244 L318,245 L324,245 L329,246 L334,246 L340,246 L345,247 L351,247 L356,248 L361,248 L367,249 L372,249 L378,249 L383,250 L388,250 L394,250 L399,251 L405,251 L410,251 L415,252 L421,252 L426,252 L432,253 L437,253 L442,253 L448,254 L453,254 L459,254 L464,254 L469,255 L475,255 L480,255 L486,255 L491,256 L496,256 L502,256 L507,256 L513,256 L518,256 L523,257 L529,257 L534,257 L540,257 L545,257 L550,257 L556,257 L561,257 L567,258 L572,258 L577,258 L583,258 L588,258 L594,258 L599,258 L604,258 L610,258 L615,258" fill="none" stroke="#2e5a7d" stroke-width="2"/>
+    <text x="166.4" y="243.6592" font-family="JetBrains Mono" font-size="10" fill="#2e5a7d">(1-p)&#178;</text>
+    <path d="M188,43 L193,53 L199,63 L204,71 L210,79 L215,86 L220,93 L226,99 L231,104 L237,110 L242,115 L247,119 L253,124 L258,128 L264,132 L269,135 L274,139 L280,142 L285,145 L291,148 L296,151 L301,153 L307,156 L312,158 L318,160 L323,162 L328,165 L334,167 L339,168 L345,170 L350,172 L355,174 L361,175 L366,177 L372,178 L377,180 L382,181 L388,183 L393,184 L399,185 L404,186 L409,188 L415,189 L420,190 L426,191 L431,192 L436,193 L442,194 L447,195 L453,196 L458,197 L463,197 L469,198 L474,199 L480,200 L485,201 L490,201 L496,202 L501,203 L507,204 L512,204 L517,205 L523,206 L528,206 L534,207 L539,207 L544,208 L550,209 L555,209 L561,210 L566,210 L571,211 L577,211 L582,212 L588,212 L593,213 L598,213 L604,214 L609,214 L615,215 L620,215" fill="none" stroke="#b5541c" stroke-width="2"/>
+    <text x="263.6" y="123.52941176470591" font-family="JetBrains Mono" font-size="10" fill="#b5541c">1/p</text>
+    <circle cx="620" cy="215" r="4" fill="#b5541c"/>
+    <text x="612" y="233" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#b5541c">penalty 1 when perfectly right</text>
+    <path d="M84,45 L89,83 L95,103 L100,116 L105,127 L111,135 L116,142 L122,148 L127,153 L132,158 L138,162 L143,166 L149,169 L154,173 L159,176 L165,178 L170,181 L176,184 L181,186 L186,188 L192,190 L197,192 L203,194 L208,196 L213,198 L219,200 L224,201 L230,203 L235,204 L240,206 L246,207 L251,209 L257,210 L262,211 L267,212 L273,214 L278,215 L284,216 L289,217 L294,218 L300,219 L305,220 L311,221 L316,222 L321,223 L327,224 L332,225 L338,226 L343,227 L348,228 L354,229 L359,230 L365,230 L370,231 L375,232 L381,233 L386,234 L392,234 L397,235 L402,236 L408,237 L413,237 L419,238 L424,239 L429,239 L435,240 L440,241 L446,241 L451,242 L456,242 L462,243 L467,244 L473,244 L478,245 L483,245 L489,246 L494,247 L500,247 L505,248 L510,248 L516,249 L521,249 L527,250 L532,250 L537,251 L543,251 L548,252 L554,252 L559,253 L564,253 L570,254 L575,254 L581,255 L586,255 L591,256 L597,256 L602,257 L608,257 L613,257 L618,258" fill="none" stroke="#0a7d52" stroke-width="3"/>
+    <text x="113.47999999999999" y="60" font-family="JetBrains Mono" font-size="11" fill="#0a7d52">-log p</text>
+    <circle cx="350.0" cy="228.33" r="4" fill="#0a7d52"/>
+    <text x="358.0" y="222.33" font-family="JetBrains Mono" font-size="9" fill="#0a7d52">p=.5 &#8594; 0.69</text>
+    <circle cx="134.0" cy="159.10000000000002" r="4" fill="#0a7d52"/>
+    <text x="142.0" y="159.10000000000002" font-family="JetBrains Mono" font-size="9" fill="#0a7d52">p=.1 &#8594; 2.3</text>
+    <circle cx="87.56" cy="74.39000000000001" r="4" fill="#0a7d52"/>
+    <text x="96.56" y="78.39000000000001" font-family="JetBrains Mono" font-size="9" fill="#0a7d52">p=.01 &#8594; 4.6</text>
+    <circle cx="620" cy="258" r="4" fill="#0a7d52"/>
+    <text x="612" y="250" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#0a7d52">exactly zero when right</text>
+  </svg>
+  <figcaption>Four candidates, one survivor. Only the green curve is zero when the model is right and unbounded when it is confidently wrong, with nothing but smoothness in between.</figcaption>
+</figure>
+
+
+  <p>Information theory has a name for this quantity. It's the <em>surprise</em> of an event with probability \(p\). An event that was almost certain is unsurprising when it happens. An event that was almost impossible is shocking when it happens. \(-\log p\) quantifies that shock.</p>
+
+  <div class="callout">\(-\log p\) is the surprise of the truth, given what the model believed.</div>
+
+  <p>For a single training example with true context \(w_o\) given centre \(w_i\), the loss is:</p>
+
+  <p style="text-align:center;">\(\ell(w_i, w_o) = -\log P_{\text{model}}(w_o \mid w_i)\)</p>
+
+  <p>Small when the model had already assigned high probability to the truth. Large when the model thought the truth was unlikely. Infinite in the limit where the model assigned zero probability, which is exactly the behaviour we want. A model that says "this could never happen" and then sees it happen is maximally wrong.</p>
+
+  <hr class="sep">
+
+  <h2>From one example to a distribution comparison</h2>
+
+  <p>One example is a single data point. The corpus hands us many of them. Average the surprise over all training pairs:</p>
+
+  <p style="text-align:center;">\(\displaystyle \frac{1}{N} \sum_{n=1}^{N} -\log P_{\text{model}}(w_o^{(n)} \mid w_i^{(n)})\)</p>
+
+  <p>Recall the fact from last post: the training pairs are samples from \(P_{\text{data}}\). Frequent pairs appear often, rare pairs appear rarely. So the average above isn't arbitrary. It's the expected surprise, weighted by how reality actually happens:</p>
+
+  <p style="text-align:center;">\(\mathbb{E}_{(w_i, w_o) \sim P_{\text{data}}}\left[-\log P_{\text{model}}(w_o \mid w_i)\right]\)</p>
+
+  <p>This quantity has a name: the <strong>cross-entropy</strong> of \(P_{\text{data}}\) relative to \(P_{\text{model}}\), written \(H(P_{\text{data}}, P_{\text{model}})\). It measures the average shock the model experiences as the corpus plays out.</p>
+
+  <div class="callout">Cross-entropy is the average surprise of reality, when judged by the model's beliefs.</div>
+
+  <p>When \(P_{\text{model}}\) and \(P_{\text{data}}\) agree, the model is rarely surprised and cross-entropy is low. When they disagree, the model is constantly shocked and cross-entropy is high. The single scalar we wanted has appeared, not by decree, but by averaging a well-motivated per-example loss over the data.</p>
+<figure class="fig">
+  <svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ten training events plotted as surprise spikes over time. Most are small, two are tall shocks. A dashed line marks the average: the cross-entropy.">
+    <line x1="50" y1="200" x2="630" y2="200" stroke="#c5c0b4" stroke-width="1.5"/>
+    <text x="50" y="222" font-family="JetBrains Mono" font-size="10" fill="#8a8172">training pairs, as they stream past</text>
+    <text x="46" y="52" font-family="JetBrains Mono" font-size="10" fill="#8a8172">surprise</text>
+    <line x1="70" y1="200" x2="70" y2="178" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><text x="70" y="166" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#0a7d52">expected</text><line x1="126" y1="200" x2="126" y2="187" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="182" y1="200" x2="182" y2="174" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="238" y1="200" x2="238" y2="182" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="294" y1="200" x2="294" y2="72" stroke="#a83c2c" stroke-width="6" stroke-linecap="round"/><text x="294" y="60" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">shock</text><line x1="350" y1="200" x2="350" y2="178" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="406" y1="200" x2="406" y2="185" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="462" y1="200" x2="462" y2="176" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="518" y1="200" x2="518" y2="42" stroke="#a83c2c" stroke-width="6" stroke-linecap="round"/><text x="518" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">shock</text><line x1="574" y1="200" x2="574" y2="180" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/>
+    <line x1="50" y1="155" x2="630" y2="155" stroke="#57503f" stroke-width="2" stroke-dasharray="7 5"/>
+    <text x="626" y="147" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#57503f">the average = cross-entropy</text>
+  </svg>
+  <figcaption>Cross-entropy is not a new object. It is the running average of the same per-example surprise, weighted by how often reality serves each event.</figcaption>
+</figure>
+
+
+  <!-- VIZ 2: cross-entropy comparator -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Two models trying to match the same truth</span></div>
+    <div class="viz-body">
+      <div class="ce-wrap">
+        <div style="font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:-.3rem">Preset scenarios</div>
+        <div class="ce-presets" id="cePresets"></div>
+        <div class="ce-grid">
+          <div class="ce-col">
+            <div class="ce-col-title">Model A <span style="font-family:var(--sans);font-size:.75rem;color:var(--muted);font-weight:400;letter-spacing:.08em;text-transform:uppercase">uniformly confused</span></div>
+            <div style="font-size:.78rem;color:var(--muted)">drag the sliders to change its belief</div>
+            <div class="ce-bars" id="ceModelABars"></div>
+            <div class="ce-sliders" id="ceModelASliders"></div>
+            <div class="ce-loss" id="ceModelALoss"></div>
+          </div>
+          <div class="ce-col">
+            <div class="ce-col-title">Model B <span style="font-family:var(--sans);font-size:.75rem;color:var(--muted);font-weight:400;letter-spacing:.08em;text-transform:uppercase">almost correct</span></div>
+            <div style="font-size:.78rem;color:var(--muted)">drag the sliders to change its belief</div>
+            <div class="ce-bars" id="ceModelBBars"></div>
+            <div class="ce-sliders" id="ceModelBSliders"></div>
+            <div class="ce-loss" id="ceModelBLoss"></div>
+          </div>
+        </div>
+        <div class="ce-col" style="padding:.75rem 1rem">
+          <div class="ce-col-title" style="font-size:1.05rem">Ground truth: P<sub>data</sub>( · | "my" )</div>
+          <div class="ce-bars" id="ceDataBars"></div>
+        </div>
+        <div class="ce-verdict" id="ceVerdict">-</div>
+      </div>
+      <p class="viz-note">Three panels. Orange at the bottom is what the corpus actually shows. Purple and blue are two candidate models. Each candidate gets its own cross-entropy score. Drag the sliders to change what each model believes and watch the losses respond. A model that puts its probability mass where the data does gets a low score. A model that spreads itself thin or points in the wrong direction gets a high one. You can only lower a model's loss by making its beliefs look more like P<sub>data</sub>.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>From cross-entropy to a familiar single-term expression</h2>
+
+  <p>Cross-entropy in its general form is a sum over all possible outcomes:</p>
+
+  <p style="text-align:center;">\(\displaystyle H(q, p) = -\sum_{k=1}^{K} q_k \log p_k\)</p>
+
+  <p>Here \(q\) is the true distribution and \(p\) is the model's. For each possible class \(k\), we weight the surprise \(-\log p_k\) by how much probability the truth assigns to that class.</p>
+
+  <p>In classification, including word prediction, the truth for a single observed example is sharp. If the context word is "dog", the truth says dog happened, everything else didn't. This makes \(q\) a one-hot vector: \(q_y = 1\) for the true class \(y\), and \(q_k = 0\) for every other \(k\).</p>
+
+  <p>Substitute this one-hot \(q\) into the sum:</p>
+
+  <p style="text-align:center;">\(H(q, p) = -\left[0 \cdot \log p_1 + \cdots + 1 \cdot \log p_y + \cdots + 0 \cdot \log p_K\right]\)</p>
+
+  <p>Every term except one gets multiplied by zero. The whole sum collapses to a single term:</p>
+
+  <p style="text-align:center;">\(H(q, p) = -\log p_y\)</p>
+
+  <div class="callout">The sum doesn't disappear because the other classes don't matter. It disappears because the truth, on this example, pointed at exactly one of them.</div>
+
+  <!-- VIZ 3: one-hot collapse -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Watch the sum collapse</span></div>
+    <div class="viz-body">
+      <div class="oh-wrap">
+        <div class="oh-top">
+          <div>
+            <div style="font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Which word actually occurred?</div>
+            <div class="oh-true-picker" id="ohTruePicker"></div>
+          </div>
+        </div>
+        <div class="oh-legend">
+          <span style="color:var(--accent)">■</span> surviving term
+          <span style="color:var(--muted);margin-left:.6rem">■</span> term killed by q<sub>k</sub>=0
+        </div>
+        <div class="oh-terms" id="ohTerms"></div>
+        <div class="oh-sum" id="ohSum"></div>
+      </div>
+      <p class="viz-note">Each row is one term of the cross-entropy sum: \(q_k \cdot \log p_k\). Pick which word actually occurred. Every row where \(q_k = 0\) contributes zero regardless of what the model thinks. The row where \(q_k = 1\) is the only one that survives. What's left is a single term: the model's log-probability for the thing that happened. No classification shortcut. No special rule. Just the general cross-entropy formula applied to a distribution that's certain about what it saw.</p>
+    </div>
+  </div>
+
+  <p>This is why \(-\log p_y\) shows up everywhere classification appears. It isn't a separate loss function. It's what cross-entropy always reduces to when the truth is deterministic, which is exactly the situation we're in, example by example, as training pairs stream out of the corpus.</p>
+<figure class="fig">
+  <svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five cross-entropy terms, one per word. Four are multiplied by zero and fade. The dog term is multiplied by one and survives as the whole loss.">
+    <text x="330" y="26" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#57503f">the observed context was "dog", so the truth is one-hot</text>
+    <text x="74" y="52" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#8a8172">q = 0</text><rect x="34" y="64" width="80" height="52" rx="9" fill="#ffffff" stroke="#c5c0b4" stroke-width="2" opacity="0.6"/><text x="74" y="86" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c5c0b4">I</text><text x="74" y="104" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c5c0b4">-log p&#8342;</text><text x="74" y="140" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#a83c2c">&#215; 0</text><text x="170" y="52" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#8a8172">q = 0</text><rect x="130" y="64" width="80" height="52" rx="9" fill="#ffffff" stroke="#c5c0b4" stroke-width="2" opacity="0.6"/><text x="170" y="86" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c5c0b4">You</text><text x="170" y="104" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c5c0b4">-log p&#8342;</text><text x="170" y="140" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#a83c2c">&#215; 0</text><text x="266" y="52" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#8a8172">q = 0</text><rect x="226" y="64" width="80" height="52" rx="9" fill="#ffffff" stroke="#c5c0b4" stroke-width="2" opacity="0.6"/><text x="266" y="86" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c5c0b4">love</text><text x="266" y="104" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c5c0b4">-log p&#8342;</text><text x="266" y="140" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#a83c2c">&#215; 0</text><text x="362" y="52" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#0a7d52">q = 1</text><rect x="322" y="64" width="80" height="52" rx="9" fill="#ffffff" stroke="#0a7d52" stroke-width="2" opacity="1"/><text x="362" y="86" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">dog</text><text x="362" y="104" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">-log p_dog</text><text x="362" y="140" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#0a7d52">&#215; 1</text><text x="458" y="52" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#8a8172">q = 0</text><rect x="418" y="64" width="80" height="52" rx="9" fill="#ffffff" stroke="#c5c0b4" stroke-width="2" opacity="0.6"/><text x="458" y="86" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c5c0b4">cat</text><text x="458" y="104" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#c5c0b4">-log p&#8342;</text><text x="458" y="140" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#a83c2c">&#215; 0</text>
+    <path d="M 330 158 L 330 176" stroke="#57503f" stroke-width="2"/>
+    <path d="M324 171 L330 180 L336 171" fill="none" stroke="#57503f" stroke-width="2"/>
+    <rect x="234" y="188" width="192" height="40" rx="10" fill="#0a7d52"/>
+    <text x="330" y="213" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#ffffff">L = -log p_dog</text>
+    <text x="330" y="246" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">the sum was never really a sum</text>
+  </svg>
+  <figcaption>Four of the five terms are multiplied by zero before anything is computed. The whole general formula quietly hands back the per-example loss we started with.</figcaption>
+</figure>
+
+
+  <hr class="sep">
+
+  <h2>Putting it together</h2>
+
+  <p>We wanted a scalar score for how wrong a model's probability is. Natural candidates like \(1-p\), \((1-p)^2\), and \(1/p\) all failed to scale punishment with overconfidence. The function \(-\log p\) did, with no numerical cliffs.</p>
+
+  <p>For a single example, this gave a per-example loss equal to the model's surprise at seeing the truth. Averaging that surprise over all training pairs, weighted by how frequently the corpus actually produced each pair, gave us cross-entropy: the average surprise of reality under the model's beliefs.</p>
+
+  <p>And because the truth on any single example is deterministic, the general cross-entropy formula collapses to exactly what we started with: \(-\log p_y\). The loss we'll actually use is the loss we were building toward all along.</p>
+
+  <div class="callout">\(-\log P\) isn't a trick or a convention. It's the only function that measures disagreement between a deterministic truth and a soft belief in the way learning needs.</div>
+
+  <hr class="sep">
+
+  <h2>Where we go next</h2>
+
+  <p>Cross-entropy gives us a number. Training needs more than a number. To actually improve, the model has to know which scores to change and by how much. The next post is about turning this scalar loss into a direction: how a single number, \(-\log p_y\), produces a push on every one of the model's raw scores, and why the resulting learning signal turns out to be the simplest possible expression: \(p_k - q_k\).</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+
+
+<script>
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: candidate penalty functions
+// ═══════════════════════════════════════════════════════════════════════════
+const PEN_FUNCS=[
+  {key:'lin',    label:'f(p) = 1 − p',       col:'#7c4dbc', fn:p=>1-p,                cap:1.01},
+  {key:'sq',     label:'f(p) = (1 − p)²',    col:'#2e5a7d', fn:p=>(1-p)*(1-p),        cap:1.01},
+  {key:'inv',    label:'f(p) = 1/p',          col:'#a83c2c', fn:p=>1/p,                cap:10},
+  {key:'neglog', label:'f(p) = −log p',       col:'#b5541c', fn:p=>-Math.log(p),       cap:10}
+];
+let penOn={lin:true,sq:true,inv:true,neglog:true};
+let penP=0.30;
+
+function renderPenToggles(){
+  const host=document.getElementById('penToggles');
+  host.innerHTML='';
+  PEN_FUNCS.forEach(f=>{
+    const el=document.createElement('button');
+    el.className='pen-toggle'+(penOn[f.key]?' on':'');
+    el.innerHTML=`<span class="swatch" style="background:${f.col}"></span>${f.label}`;
+    el.addEventListener('click',()=>{
+      penOn[f.key]=!penOn[f.key];
+      renderPenToggles();
+      drawPen();
+    });
+    host.appendChild(el);
+  });
+}
+
+function drawPen(){
+  const canvas=document.getElementById('penCanvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth||700,H=380;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+
+  const padL=60,padR=30,padT=30,padB=55;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  const X_MIN=0.001, X_MAX=1.0;
+  const Y_MAX=5.5; // visible y cap
+
+  // grid
+  ctx.strokeStyle='rgba(138,129,114,.06)';ctx.lineWidth=1;
+  for(let i=1;i<=10;i++){
+    const x=padL+(i/10)*plotW;
+    ctx.beginPath();ctx.moveTo(x,padT);ctx.lineTo(x,padT+plotH);ctx.stroke();
+  }
+  for(let i=0;i<=5;i++){
+    const y=padT+(i/5)*plotH;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(padL+plotW,y);ctx.stroke();
+  }
+  // axes
+  ctx.strokeStyle='rgba(138,129,114,.2)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(padL,padT+plotH);ctx.lineTo(padL+plotW,padT+plotH);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(padL,padT);ctx.lineTo(padL,padT+plotH);ctx.stroke();
+
+  // x-labels
+  ctx.fillStyle='rgba(138,129,114,.7)';
+  ctx.font='10px "Courier New",monospace';
+  ctx.textAlign='center';
+  for(let i=0;i<=10;i+=2){
+    const x=padL+(i/10)*plotW;
+    ctx.fillText((i/10).toFixed(1),x,padT+plotH+16);
+  }
+  ctx.font='11px "Source Sans 3",sans-serif';
+  ctx.fillStyle='var(--muted)';
+  ctx.fillText('p  (probability of the true word)',padL+plotW/2,padT+plotH+36);
+
+  // y-labels
+  ctx.textAlign='right';
+  ctx.font='10px "Courier New",monospace';
+  ctx.fillStyle='rgba(138,129,114,.7)';
+  for(let i=0;i<=5;i++){
+    const y=padT+plotH-(i/5)*plotH;
+    ctx.fillText(i.toFixed(0),padL-6,y+3);
+  }
+  ctx.save();
+  ctx.translate(18,padT+plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center';
+  ctx.font='11px "Source Sans 3",sans-serif';
+  ctx.fillStyle='var(--muted)';
+  ctx.fillText('penalty  f(p)',0,0);
+  ctx.restore();
+
+  // draw curves
+  PEN_FUNCS.forEach(f=>{
+    if(!penOn[f.key])return;
+    ctx.strokeStyle=f.col;
+    ctx.lineWidth=2.5;
+    ctx.beginPath();
+    let first=true;
+    for(let i=0;i<=400;i++){
+      const p=X_MIN+(X_MAX-X_MIN)*i/400;
+      let y=f.fn(p);
+      if(y>Y_MAX)y=Y_MAX;
+      if(y<0)y=0;
+      const cx=padL+((p-X_MIN)/(X_MAX-X_MIN))*plotW;
+      const cy=padT+plotH-(y/Y_MAX)*plotH;
+      if(first){ctx.moveTo(cx,cy);first=false;}
+      else{ctx.lineTo(cx,cy);}
+    }
+    ctx.stroke();
+  });
+
+  // vertical line at current p
+  const xCur=padL+((penP-X_MIN)/(X_MAX-X_MIN))*plotW;
+  ctx.strokeStyle='rgba(138,129,114,.3)';
+  ctx.setLineDash([4,4]);
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(xCur,padT);ctx.lineTo(xCur,padT+plotH);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // dots on each active curve at p=penP
+  PEN_FUNCS.forEach(f=>{
+    if(!penOn[f.key])return;
+    let y=f.fn(penP);
+    if(y>Y_MAX)y=Y_MAX;
+    if(y<0)y=0;
+    const cy=padT+plotH-(y/Y_MAX)*plotH;
+    ctx.fillStyle=f.col;
+    ctx.beginPath();ctx.arc(xCur,cy,5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#ffffff';
+    ctx.lineWidth=2;
+    ctx.stroke();
+  });
+
+  // p label above axis
+  ctx.fillStyle='#57503f';
+  ctx.font='600 11px "Courier New",monospace';
+  ctx.textAlign='center';
+  ctx.fillText('p = '+penP.toFixed(3),xCur,padT-8);
+
+  // readout cards
+  const host=document.getElementById('penReadout');
+  host.innerHTML='';
+  PEN_FUNCS.forEach(f=>{
+    if(!penOn[f.key])return;
+    const val=f.fn(penP);
+    const valStr=val>100?val.toExponential(1):val.toFixed(2);
+    const card=document.createElement('div');
+    card.className='pen-card';
+    card.style.borderLeft='3px solid '+f.col;
+    card.innerHTML=`
+      <div class="pen-card-label">${f.label}</div>
+      <div class="pen-card-val" style="color:${f.col}">${valStr}</div>
+    `;
+    host.appendChild(card);
+  });
+}
+
+document.getElementById('penSlider').addEventListener('input',e=>{
+  penP=parseFloat(e.target.value)/1000;
+  document.getElementById('penPVal').textContent=penP.toFixed(3);
+  drawPen();
+});
+renderPenToggles();
+drawPen();
+window.addEventListener('resize',drawPen);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: cross-entropy comparator (Model A vs Model B vs P_data)
+// ═══════════════════════════════════════════════════════════════════════════
+const CE_WORDS=['love','dog','cat','friends'];
+const CE_PDATA=[0.50, 0.25, 0.25, 0.00];
+// Presets for Model A and Model B (must sum to ~1)
+const CE_PRESETS={
+  'prose':{
+    name:'Uniform vs almost-right',
+    A:[0.25,0.25,0.25,0.25],
+    B:[0.48,0.24,0.24,0.04]
+  },
+  'confident-wrong':{
+    name:'B is confidently wrong',
+    A:[0.30,0.30,0.30,0.10],
+    B:[0.05,0.05,0.05,0.85]
+  },
+  'close-to-truth':{
+    name:'Both close-ish',
+    A:[0.40,0.30,0.20,0.10],
+    B:[0.45,0.28,0.25,0.02]
+  },
+  'matched':{
+    name:'B matches P_data',
+    A:[0.25,0.25,0.25,0.25],
+    B:[0.50,0.25,0.25,0.001]
+  }
+};
+let ceModelA=[...CE_PRESETS.prose.A];
+let ceModelB=[...CE_PRESETS.prose.B];
+let ceActivePreset='prose';
+
+function normaliseCE(arr){
+  // clamp each to [0.001, ~0.999] and renormalise
+  let clipped=arr.map(v=>Math.max(0.001,Math.min(0.999,v)));
+  const s=clipped.reduce((a,b)=>a+b,0);
+  return clipped.map(v=>v/s);
+}
+
+function renderCEBars(hostId,probs,cls){
+  const host=document.getElementById(hostId);
+  host.innerHTML='';
+  probs.forEach((p,i)=>{
+    const row=document.createElement('div');
+    row.className='ce-bar-row';
+    row.innerHTML=`
+      <span class="ce-bar-word">${CE_WORDS[i]}</span>
+      <div class="ce-bar-track"><div class="ce-bar-fill ${cls}" style="width:${p*100}%"></div></div>
+      <span class="ce-bar-val">${(p*100).toFixed(0)}%</span>
+    `;
+    host.appendChild(row);
+  });
+}
+
+function renderCESliders(hostId,getArr,setArr){
+  const host=document.getElementById(hostId);
+  host.innerHTML='';
+  const cur=getArr();
+  cur.forEach((p,i)=>{
+    const row=document.createElement('div');
+    row.className='ce-slider-row';
+    row.innerHTML=`
+      <span class="word">${CE_WORDS[i]}</span>
+      <input type="range" min="1" max="990" step="1" value="${Math.round(p*1000)}" data-idx="${i}">
+      <span class="val">${(p*100).toFixed(1)}%</span>
+    `;
+    host.appendChild(row);
+  });
+  host.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      const idx=parseInt(e.target.dataset.idx);
+      const arr=[...getArr()];
+      arr[idx]=parseFloat(e.target.value)/1000;
+      const norm=normaliseCE(arr);
+      setArr(norm);
+      // mark no preset active
+      ceActivePreset=null;
+      renderCE();
+    });
+  });
+}
+
+function crossEntropy(pData,pModel){
+  let ce=0;
+  for(let i=0;i<pData.length;i++){
+    if(pData[i]>0)ce+=-pData[i]*Math.log(pModel[i]);
+  }
+  return ce;
+}
+
+function renderCELoss(hostId,probs){
+  const host=document.getElementById(hostId);
+  host.innerHTML='';
+  // show each contributing term
+  let rows='';
+  let total=0;
+  for(let i=0;i<CE_WORDS.length;i++){
+    if(CE_PDATA[i]>0){
+      const term=-CE_PDATA[i]*Math.log(probs[i]);
+      total+=term;
+      rows+=`<div class="ce-loss-row"><span>−${CE_PDATA[i].toFixed(2)} · log(${probs[i].toFixed(3)})</span><strong>${term.toFixed(3)}</strong></div>`;
+    }
+  }
+  rows+=`<div class="ce-loss-row total">Cross-entropy H(P<sub>data</sub>, P<sub>model</sub>)<strong>${total.toFixed(3)}</strong></div>`;
+  host.innerHTML=rows;
+  return total;
+}
+
+function renderCE(){
+  const normA=normaliseCE(ceModelA);
+  const normB=normaliseCE(ceModelB);
+  renderCEBars('ceDataBars',CE_PDATA,'data');
+  renderCEBars('ceModelABars',normA,'model-a');
+  renderCEBars('ceModelBBars',normB,'model-b');
+  renderCESliders('ceModelASliders',()=>ceModelA,v=>{ceModelA=v;});
+  renderCESliders('ceModelBSliders',()=>ceModelB,v=>{ceModelB=v;});
+  const lossA=renderCELoss('ceModelALoss',normA);
+  const lossB=renderCELoss('ceModelBLoss',normB);
+
+  // update preset button styling
+  document.querySelectorAll('.ce-preset').forEach(b=>{
+    b.classList.toggle('active',b.dataset.preset===ceActivePreset);
+  });
+
+  // verdict
+  const verdict=document.getElementById('ceVerdict');
+  const diff=Math.abs(lossA-lossB);
+  const winner=lossA<lossB?'Model A':'Model B';
+  let msg;
+  if(diff<0.01){
+    msg='<span>The two models are basically tied.</span><strong>Δ H = '+diff.toFixed(3)+'</strong>';
+  }else if(diff<0.1){
+    msg=`<span>${winner} is slightly ahead.</span><strong>Δ H = ${diff.toFixed(3)}</strong>`;
+  }else{
+    msg=`<span>${winner} wins by a clear margin.</span><strong>Δ H = ${diff.toFixed(3)}</strong>`;
+  }
+  verdict.innerHTML=msg;
+}
+
+// preset buttons
+function renderCEPresets(){
+  const host=document.getElementById('cePresets');
+  host.innerHTML='';
+  for(const [k,p] of Object.entries(CE_PRESETS)){
+    const b=document.createElement('button');
+    b.className='ce-preset';
+    b.dataset.preset=k;
+    b.textContent=p.name;
+    b.addEventListener('click',()=>{
+      ceModelA=[...p.A];
+      ceModelB=[...p.B];
+      ceActivePreset=k;
+      renderCE();
+    });
+    host.appendChild(b);
+  }
+}
+renderCEPresets();
+renderCE();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: one-hot collapse
+// ═══════════════════════════════════════════════════════════════════════════
+const OH_WORDS=['love','dog','cat','friends','music'];
+// A fixed P_model so readers focus on the collapse, not the probabilities
+const OH_PMODEL=[0.45, 0.25, 0.15, 0.10, 0.05];
+let ohTrueIdx=1; // "dog"
+
+function renderOHPicker(){
+  const host=document.getElementById('ohTruePicker');
+  host.innerHTML='';
+  OH_WORDS.forEach((w,i)=>{
+    const b=document.createElement('button');
+    b.className='oh-true-btn'+(i===ohTrueIdx?' active':'');
+    b.textContent=w;
+    b.addEventListener('click',()=>{ohTrueIdx=i;renderOH();});
+    host.appendChild(b);
+  });
+}
+
+function renderOH(){
+  renderOHPicker();
+  const host=document.getElementById('ohTerms');
+  host.innerHTML='';
+  let surviving=0;
+  OH_WORDS.forEach((w,i)=>{
+    const q=i===ohTrueIdx?1:0;
+    const p=OH_PMODEL[i];
+    const logp=Math.log(p);
+    const term=q*logp;
+    const alive=q===1;
+    const row=document.createElement('div');
+    row.className='oh-term '+(alive?'alive':'dead');
+    row.innerHTML=`
+      <span class="oh-idx">k=${i+1}</span>
+      <span style="color:var(--ink)">${w}</span>
+      <span class="mult">·</span>
+      <span class="oh-q ${q===0?'zero':''}">q=${q}</span>
+      <span class="mult">·</span>
+      <span class="oh-logp">log(${p.toFixed(2)})</span>
+      <span class="eq">=</span>
+      <span class="oh-prod ${q===0?'zero':''}">${term===0?'0':term.toFixed(3)}</span>
+    `;
+    host.appendChild(row);
+    if(alive)surviving=term;
+  });
+
+  // sum display
+  const sumHost=document.getElementById('ohSum');
+  const finalLoss=-surviving;
+  const pTrue=OH_PMODEL[ohTrueIdx];
+  const wTrue=OH_WORDS[ohTrueIdx];
+  sumHost.innerHTML=`
+    H(q, p) = −Σ q<sub>k</sub> · log(p<sub>k</sub>) &nbsp;=&nbsp; −[ <span class="highlight">${surviving.toFixed(3)}</span> ] &nbsp;=&nbsp; <strong>−log p<sub>${wTrue}</sub> = ${finalLoss.toFixed(3)}</strong>
+    <br><span style="font-size:.85rem;color:var(--muted);font-style:italic">The sum over ${OH_WORDS.length} terms reduces to a single one: the model's log-probability for "${wTrue}".</span>
+  `;
+}
+renderOH();
+
+</script>
+{% endraw %}
