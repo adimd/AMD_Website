@@ -1,0 +1,56 @@
+---
+layout: base.njk
+---
+{% set s = series[seriesKey] %}
+<nav class="breadcrumb">
+  <a href="/blog/">Blog</a>
+  <span>/</span>
+  <a href="/blog/{{ seriesKey }}/">{{ s.title }}</a>
+</nav>
+
+<script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']] } };</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<div class="chapter-grid">
+  <div class="chapter-scope">
+    {{ content | safe }}
+  </div>
+  <aside class="chap-side">
+    <div class="panel">
+      <span class="series-name">{{ s.title }}</span>
+      <ol>
+        {% for ch in s.chapters %}
+        <li{% if ch.slug == chapterSlug %} class="current"{% endif %}>
+          {% if ch.live %}
+          <a href="/blog/{{ seriesKey }}/{{ ch.slug }}/">{{ ch.short }}</a>
+          {% else %}
+          <a style="opacity:0.45; pointer-events:none;">{{ ch.short }}</a>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </aside>
+</div>
+
+{% set prev = null %}{% set next = null %}
+{% for ch in s.chapters %}
+  {% if ch.slug == chapterSlug %}
+    {% if not loop.first %}{% set prev = s.chapters[loop.index0 - 1] %}{% endif %}
+    {% if not loop.last %}{% set next = s.chapters[loop.index0 + 1] %}{% endif %}
+  {% endif %}
+{% endfor %}
+<div class="chapter-nav">
+  {% if prev and prev.live %}
+  <a class="prev" href="/blog/{{ seriesKey }}/{{ prev.slug }}/">
+    <span class="dir">Previous</span>
+    <span class="name">{{ prev.short }}</span>
+  </a>
+  {% endif %}
+  {% if next and next.live %}
+  <a class="next" href="/blog/{{ seriesKey }}/{{ next.slug }}/">
+    <span class="dir">Next</span>
+    <span class="name">{{ next.short }}</span>
+  </a>
+  {% endif %}
+</div>
