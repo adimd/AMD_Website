@@ -2,7 +2,8 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/theme.css");
   eleventyConfig.addPassthroughCopy("src/assets");
   eleventyConfig.addPassthroughCopy("src/CNAME");
-
+  eleventyConfig.addPassthroughCopy({ "src/decks/cod": "courses/cod" });
+ 
   return {
     dir: {
       input: "src",
@@ -13,3 +14,4 @@ module.exports = function (eleventyConfig) {
     htmlTemplateEngine: "njk",
   };
 };
+ 
