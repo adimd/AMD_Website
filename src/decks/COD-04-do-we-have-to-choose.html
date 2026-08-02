@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 4 · One number, two notations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c;
+  --mark:#ffdf8a;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:70px 92px 104px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .34s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:32px;left:92px;font-family:var(--mono);font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:32px;right:92px;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:92px;right:92px;bottom:36px;display:flex;gap:3px;align-items:flex-end;height:12px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)}
+#rail i.here{background:var(--accent);height:11px}
+#count{position:absolute;right:92px;bottom:60px;font-family:var(--mono);font-size:15px;color:var(--soft);z-index:5}
+#help{position:absolute;left:92px;bottom:60px;font-family:var(--mono);font-size:13px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:24px}
+.kicker.grey{color:var(--soft)} .kicker.red{color:var(--fail)}
+h1{font-family:var(--display);font-weight:600;font-size:100px;line-height:1.0;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:60px;line-height:1.07;letter-spacing:-.02em;color:var(--ink);margin-bottom:26px}
+p{font-size:28px;line-height:1.48;max-width:31ch}
+p+p{margin-top:16px}
+.big{font-size:38px;line-height:1.3;color:var(--ink);font-weight:300;max-width:25ch}
+.small{font-size:21px;line-height:1.5;color:var(--soft);max-width:58ch}
+strong{color:var(--ink);font-weight:700}
+em{font-style:italic;color:var(--ink)}
+.mark{background:linear-gradient(180deg,transparent 56%,var(--mark) 56%,var(--mark) 95%,transparent 95%);padding:0 .1em}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.split.l{grid-template-columns:1.1fr .9fr}
+.split.r{grid-template-columns:.86fr 1.14fr}
+.stack>*+*{margin-top:18px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:26px 28px}
+.panel .lab{font-family:var(--mono);font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:16px}
+
+.btn{font-family:var(--mono);font-size:16px;letter-spacing:.06em;background:var(--stage);color:var(--body);border:1px solid var(--rule2);border-radius:7px;padding:10px 15px;cursor:pointer}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap;align-items:center}
+input[type=number]{font-family:var(--mono);font-size:24px;background:var(--stage);color:var(--ink);border:2px solid var(--rule2);border-radius:7px;padding:5px 9px;width:6.5ch}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* the shared base dial */
+.dial{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dial .d{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin-right:4px}
+.dial button{font-family:var(--mono);font-size:17px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:8px 14px;cursor:pointer;min-width:52px}
+.dial button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+
+/* bit row */
+.bits{display:flex;gap:6px;justify-content:center}
+.bits .c{width:78px;text-align:center;cursor:pointer;user-select:none}
+.bits .w{font-family:var(--mono);font-size:15px;color:var(--soft);margin-bottom:6px}
+.bits .v{font-family:var(--mono);font-size:32px;font-weight:700;height:62px;line-height:62px;
+  border:1px solid var(--rule2);border-radius:7px;background:#f1efe9;color:#a9a69d;transition:.12s}
+.bits .c.on .v{background:var(--accent);border-color:var(--accent);color:#fff}
+.bits .c.on .w{color:var(--accent);font-weight:700}
+
+/* monospace working */
+.work{font-family:var(--mono);font-size:26px;line-height:1.45;color:var(--ink);white-space:pre;display:inline-block;text-align:left}
+.work .d{color:var(--soft)}
+.work .c{color:var(--fail)}
+.work .bar{border-top:2px solid var(--ink);padding-top:4px;margin-top:3px}
+.work .tot{color:var(--accent);font-weight:700}
+
+table.grid{border-collapse:collapse;font-family:var(--mono)}
+table.grid td,table.grid th{border:1px solid var(--rule);text-align:center;color:var(--body);font-weight:400}
+table.grid th{color:var(--soft);background:#f4f2ec}
+table.small td,table.small th{width:34px;height:28px;font-size:14px}
+table.big td,table.big th{width:88px;height:66px;font-size:30px}
+table.big td{color:var(--ink);font-weight:700}
+
+.six{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.six .b{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:14px 8px;text-align:center;cursor:pointer}
+.six .b.on{border-color:var(--accent);background:var(--accent-soft)}
+.six .b .n{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--soft)}
+.six .b .v{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--ink);margin-top:6px;word-break:break-all}
+.six .b.on .v{color:var(--accent)}
+
+figcaption{font-family:var(--mono);font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-top:10px}
+svg text{font-family:'JetBrains Mono',monospace}
+
+.frag{opacity:0;transition:opacity .3s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:92px;right:92px;bottom:88px;display:none;padding:13px 17px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:19px;line-height:1.45;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:64px 92px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:20px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:70px}
+#jump li{padding:7px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:21px;color:var(--body);display:flex;gap:18px;break-inside:avoid}
+#jump li:hover{color:var(--accent)}
+#jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:42px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 04</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 4 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- ============ ACT 1 · THE JOB ============ -->
+
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="1 · the job">
+  <div>
+    <div class="kicker">class 04 · hour four of fifty</div>
+    <h1>One number,<br>two notations.</h1>
+    <p class="big" style="margin-top:36px;max-width:38ch">Last session ended with a diagram that looked ridiculous. Nobody in the room proposed the real fix, because everybody assumed there has to be <em>one</em> way of writing a number.</p>
+    <p class="big frag" style="margin-top:22px;max-width:38ch;color:var(--accent)">There does not. The human's notation and the machine's notation are allowed to differ, as long as something translates at the boundary.</p>
+  </div>
+  <div class="cue">Ninety seconds on this. The resolution is not the hour, the translator is.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Whole numbers only" data-act="1 · the job">
+  <div>
+    <div class="kicker grey">before we start, one promise</div>
+    <h2 style="margin-bottom:22px">Today: whole numbers.<br>Nothing else.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>No fractions. No negative numbers.</p>
+        <p class="frag">Not because they are difficult. Because each of them breaks something different, and each one is worth an hour on its own.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">So everything you see today will work perfectly, and I am telling you in advance that the perfection is because of what we left out.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Naming the restriction now stops it feeling like an omission later, and it makes Class 5 feel like a promise being kept rather than a complication.</div>
+</section>
+
+<!-- ============ ACT 2 · READING IS FREE ============ -->
+
+<!-- 03 -->
+<section class="slide" data-t="What does 47 mean?" data-act="2 · reading is free">
+  <div class="center">
+    <div class="kicker">start somewhere you already know</div>
+    <h2 style="font-size:52px;margin-bottom:30px">What does this actually mean?</h2>
+    <div style="font-family:var(--mono);font-size:150px;font-weight:700;color:var(--ink);line-height:1">47</div>
+    <p class="big frag" style="margin-top:34px;max-width:36ch">Not what is it. What does the writing <em>mean</em>. Say it out loud.</p>
+  </div>
+  <div class="cue">Wait for somebody to say "four tens and seven ones". Do not accept "forty seven". Make them unpack the notation.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="The general rule" data-act="2 · reading is free">
+  <div>
+    <div class="kicker">you just stated the rule yourselves</div>
+    <h2 style="font-size:52px;margin-bottom:20px">Digits, times powers<br>of the base.</h2>
+    <div class="split l">
+      <div class="panel" style="text-align:center">
+        <div class="work" id="expand47"></div>
+      </div>
+      <div class="stack">
+        <p>Pick any base <span class="num">b</span>. You get <span class="num">b</span> symbols, from 0 up to <span class="num">b−1</span>.</p>
+        <p>The columns are worth <span class="num">1, b, b², b³</span> and onwards, right to left.</p>
+        <p class="big frag" style="margin-top:8px">This is Babylon from two sessions ago, written as a formula. Nothing here is new.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Say the callback explicitly. They invented positional notation in Class 2 and are now writing down what they invented.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Binary is that, with a 2" data-act="2 · reading is free">
+  <div>
+    <div class="kicker">so put a two in it</div>
+    <h2 style="font-size:52px;margin-bottom:16px">Two symbols. Same rule.</h2>
+    <div class="panel">
+      <span class="lab">click the bits · the weights are just powers of two</span>
+      <div class="bits" id="bitrow"></div>
+      <div style="text-align:center;margin-top:22px">
+        <span style="font-family:var(--mono);font-size:15px;letter-spacing:.16em;color:var(--soft)">ADDS UP TO</span>
+        <span style="font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);margin-left:18px" id="bitSum">0</span>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:20px;max-width:72ch;font-size:32px">Reading binary is nothing more than <span class="mark">adding up the columns that are switched on.</span></p>
+  </div>
+  <div class="cue">Get a student to call out a pattern and read it. Nobody finds this direction hard, which is exactly the setup for the next slide.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="So why is it hard?" data-act="2 · reading is free">
+  <div>
+    <div class="kicker grey">and yet</div>
+    <h2 style="margin-bottom:22px">Reading binary took<br>you four minutes.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>You learned no new rule. You used the one you already had, with a different number in it.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">So why does going the other way feel like a trick you have to be taught?</p>
+        <p>Here is 47. Give me the bits.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Let them try it in their heads for thirty seconds. Most will do greedy subtraction without knowing it has a name.</div>
+</section>
+
+<!-- ============ ACT 3 · WRITING IS WORK ============ -->
+
+<!-- 07 -->
+<section class="slide" data-t="Greedy subtraction" data-act="3 · writing is work">
+  <div>
+    <div class="kicker">the way you probably just did it</div>
+    <h2 style="font-size:50px;margin-bottom:16px">Take the biggest<br>column that fits.</h2>
+    <div class="split r">
+      <div class="stack">
+        <p>Find the largest power of two that is not bigger than what is left. Put a one there. Subtract it.</p>
+        <p class="small">Repeat until nothing is left. Every column you skipped gets a zero.</p>
+      </div>
+      <div class="panel">
+        <span class="lab">watch the number get eaten</span>
+        <div id="greedy" style="min-height:250px"></div>
+        <div class="btnrow" style="justify-content:center">
+          <button class="btn hot" id="gStep">next step</button>
+          <button class="btn" id="gRun">run</button>
+          <button class="btn" id="gReset">reset</button>
+          <input type="number" id="gN" value="47" min="0" max="255">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Type in a number a student shouts out. It works for anything, which matters more than the example.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Repeated division" data-act="3 · writing is work">
+  <div>
+    <div class="kicker">the way the textbook does it</div>
+    <h2 style="font-size:50px;margin-bottom:16px">Divide by two.<br>Keep the remainder.</h2>
+    <div class="split r">
+      <div class="stack">
+        <p>Divide, write down the remainder, divide the quotient again, and keep going until you reach zero.</p>
+        <p class="small">Then read the remainders <strong>upwards</strong>. That is your answer.</p>
+        <p class="small frag" style="color:var(--fail)">Which looks exactly like a rule you are expected to memorise.</p>
+      </div>
+      <div class="panel">
+        <span class="lab">the division ladder</span>
+        <div id="ladderA" style="min-height:260px"></div>
+        <div class="btnrow" style="justify-content:center">
+          <button class="btn hot" id="lStep">next step</button>
+          <button class="btn" id="lRun">run</button>
+          <button class="btn" id="lReset">reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Deliberately present this as arbitrary. The whole point of the next slide is that it is not.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="It is just odd or even" data-act="3 · writing is work">
+  <div>
+    <div class="kicker red">look at what each line is actually asking</div>
+    <h2 style="font-size:50px;margin-bottom:14px">Every one of those<br>is the same question.</h2>
+    <div class="split r">
+      <div class="stack">
+        <p class="big" style="font-size:34px">Is this number odd?</p>
+        <p>The remainder is a one when the answer is yes and a zero when it is no. That is all a remainder after dividing by two can ever be.</p>
+        <p class="small frag">So the bits of a number are the answers to "is it odd" asked over and over, each time after halving.</p>
+      </div>
+      <div class="panel">
+        <span class="lab">same ladder, one extra column</span>
+        <div id="ladderB" style="min-height:260px"></div>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:16px;max-width:76ch;font-size:31px">There was never a rule to memorise. <span class="mark">Nobody ever needs to look this up again.</span></p>
+  </div>
+  <div class="cue">This is the slide of the hour. If they leave with one thing, it is this. Slow right down.</div>
+</section>
+
+<!-- ============ ACT 4 · THE FIRST PIVOT ============ -->
+
+<!-- 10 -->
+<section class="slide" data-t="Point at the binary step" data-act="4 · the first pivot">
+  <div class="center">
+    <div class="kicker">now go back and look again</div>
+    <h2 style="font-size:54px;margin-bottom:26px">Point at the step<br>that needed it to be two.</h2>
+    <p class="big" style="max-width:44ch;color:var(--soft)">Divide. Write the remainder. Divide again. Read upwards.</p>
+    <p class="big frag" style="margin-top:32px;max-width:40ch;color:var(--fail)">There isn't one.</p>
+  </div>
+  <div class="cue">Ask it as a real question and wait. Somebody will start to answer and then stop, which is the moment you want.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="One algorithm, every base" data-act="4 · the first pivot">
+  <div>
+    <div class="kicker">divide by b, remainders upwards</div>
+    <h2 style="font-size:48px;margin-bottom:14px">The same procedure,<br>six different answers.</h2>
+    <div class="six" id="sixStrip" style="margin-bottom:20px"></div>
+    <div class="split r" style="gap:40px">
+      <div class="stack">
+        <p class="small">Click any base above to run the ladder in it.</p>
+        <div class="dial" id="dialA" style="margin-top:10px"></div>
+        <div class="btnrow">
+          <span style="font-family:var(--mono);font-size:14px;letter-spacing:.16em;color:var(--soft)">NUMBER</span>
+          <input type="number" id="sixN" value="47" min="0" max="4095">
+        </div>
+      </div>
+      <div class="panel" style="padding:20px 24px">
+        <span class="lab" id="ladderCLab">the ladder in base 2</span>
+        <div id="ladderC" style="min-height:190px"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Change nothing but the dial. The algorithm on screen never changes, only the number you divide by.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Binary is a setting" data-act="4 · the first pivot">
+  <div>
+    <div class="kicker grey">so what did we actually build</div>
+    <h2 style="margin-bottom:22px">It was never<br>a binary translator.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>It is a base translator. Binary is one setting on a dial that has no special position.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">The machine picked two for reasons that had nothing to do with mathematics, and mathematics did not object.</p>
+        <p class="small">Which raises the obvious next question. Writing numbers down is one thing. Can you still <em>compute</em> with them?</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Hold the room here. Everything so far has been notation. The rest of the hour is arithmetic.</div>
+</section>
+
+<!-- ============ ACT 5 · ARITHMETIC ============ -->
+
+<!-- 13 -->
+<section class="slide" data-t="Three additions" data-act="5 · arithmetic">
+  <div>
+    <div class="kicker">the same two quantities, three times</div>
+    <h2 style="font-size:48px;margin-bottom:18px">Twenty three plus twelve.</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px" id="threeAdds"></div>
+    <p class="big frag" style="margin-top:24px;max-width:74ch;font-size:32px">Find the difference between these three. There is exactly one, and it is not the answer.</p>
+  </div>
+  <div class="cue">Do not explain. Let them stare. Somebody will say "the carries happen in different places", which is nearly right and is the door to the next slide.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Carry at the base" data-act="5 · arithmetic">
+  <div>
+    <div class="kicker red">here it is</div>
+    <h2 style="font-size:54px;margin-bottom:24px">You carry when a column<br>reaches the base.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>In base ten you carry at ten. In base five you carry at five. In base two you carry at two.</p>
+        <p class="frag">Line up the columns, add each one, carry when it fills. That is the procedure, and it is word for word the same in every base.</p>
+      </div>
+      <div class="panel">
+        <span class="lab">add anything, in any base</span>
+        <div class="dial" id="dialB" style="margin-bottom:16px"></div>
+        <div style="text-align:center" id="addWork"></div>
+        <div class="btnrow" style="justify-content:center">
+          <input type="number" id="addX" value="23" min="0" max="999">
+          <span style="font-family:var(--mono);font-size:24px;color:var(--soft)">+</span>
+          <input type="number" id="addY" value="12" min="0" max="999">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Same dial as three slides ago, on purpose. The control is the argument: the base is a setting, not a subject.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="The addition tables" data-act="5 · arithmetic">
+  <div>
+    <div class="kicker">and now the part nobody warns you about</div>
+    <h2 style="font-size:48px;margin-bottom:18px">This is what you<br>memorised as a child.</h2>
+    <div class="split" style="align-items:center">
+      <div style="text-align:center">
+        <table class="grid small" id="add10" style="margin:0 auto"></table>
+        <div style="font-family:var(--mono);font-size:14px;letter-spacing:.16em;color:var(--soft);margin-top:12px">BASE TEN · 100 ENTRIES</div>
+      </div>
+      <div style="text-align:center" class="frag">
+        <table class="grid big" id="add2" style="margin:0 auto"></table>
+        <div style="font-family:var(--mono);font-size:14px;letter-spacing:.16em;color:var(--accent);margin-top:12px">BASE TWO · 4 ENTRIES</div>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:22px;max-width:70ch;font-size:31px">The left one took you about a year. The right one took you the length of this sentence.</p>
+  </div>
+  <div class="cue">Let the two tables sit side by side in silence for a few seconds. The size difference does the arguing.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="The times tables" data-act="5 · arithmetic">
+  <div>
+    <div class="kicker">and the same thing again</div>
+    <h2 style="font-size:48px;margin-bottom:18px">Multiplication is worse<br>in decimal, and trivial here.</h2>
+    <div class="split" style="align-items:center">
+      <div style="text-align:center">
+        <table class="grid small" id="mul10" style="margin:0 auto"></table>
+        <div style="font-family:var(--mono);font-size:14px;letter-spacing:.16em;color:var(--soft);margin-top:12px">BASE TEN TIMES TABLE</div>
+      </div>
+      <div style="text-align:center" class="frag">
+        <table class="grid big" id="mul2" style="margin:0 auto"></table>
+        <div style="font-family:var(--mono);font-size:14px;letter-spacing:.16em;color:var(--accent);margin-top:12px">BASE TWO TIMES TABLE</div>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:22px;max-width:74ch;font-size:31px">Multiplying by a binary digit is either <span class="mark">copy it</span> or <span class="mark">write nothing.</span> There is no third case.</p>
+  </div>
+  <div class="cue">The right hand table has no multiplication in it at all. Every entry is a decision about whether to copy.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Shift and add" data-act="5 · arithmetic">
+  <div>
+    <div class="kicker">so long multiplication collapses</div>
+    <h2 style="font-size:48px;margin-bottom:16px">Eleven times five,<br>in binary.</h2>
+    <div class="split l">
+      <div class="panel" style="text-align:center">
+        <div class="work" id="binMul"></div>
+      </div>
+      <div class="stack">
+        <p>Every row is either a copy of the top number or a row of nothing, shifted along.</p>
+        <p class="frag">No products to remember. No times table to recall. Just <strong>shift</strong> and <strong>add</strong>.</p>
+        <p class="big frag" style="margin-top:8px">A machine that can shift and add can multiply.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Work it on the board in twenty seconds while they watch. Also flag that shift and add is literally what you will build in Class 24.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Easier and unreadable" data-act="5 · arithmetic">
+  <div>
+    <div class="kicker grey">be honest about what this means</div>
+    <h2 style="margin-bottom:22px">Binary arithmetic is<br>easier than decimal.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Fewer symbols means smaller tables, simpler carries and shorter rules. Genuinely easier, not merely different.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">And fewer symbols is exactly why it is unreadable to you.</p>
+        <p>The same property causes both. It is short for a machine and long for a person, and there is no version of this where you get both.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This is the honest centre of the trade. Neither side is a flaw. It is one property seen from two directions.</div>
+</section>
+
+<!-- ============ ACT 6 · THE PROOF ============ -->
+
+<!-- 19 -->
+<section class="slide" data-t="47 x 19, three ways" data-act="6 · the proof">
+  <div>
+    <div class="kicker">so let us settle it</div>
+    <h2 style="font-size:48px;margin-bottom:18px">Forty seven times nineteen.</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px" id="threeMuls"></div>
+    <p class="big frag" style="margin-top:22px;max-width:76ch;font-size:31px">Three different notations. Three different sets of marks on the page. <span class="mark">One quantity.</span></p>
+  </div>
+  <div class="cue">Have somebody check the base five and base two answers convert back to 893. Do not assert it, verify it in front of them.</div>
+</section>
+
+<!-- 20 -->
+<section class="slide" data-t="Rome, again" data-act="6 · the proof">
+  <div>
+    <div class="kicker red">remember this</div>
+    <h2 style="font-size:54px;margin-bottom:26px">You could not do<br>XLVII &times; XIX at all.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Two sessions ago you had two minutes and got nowhere, and it was not because Roman numerals are hard.</p>
+        <p class="frag">It was because they have no columns, so there is nothing to carry into, so there is no procedure to run.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">Every positional base just did it. Base two, base five, base ten, all of them.</p>
+        <p class="big" style="color:var(--accent)">The base was never what made the method work. Position was.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Worth naming: they have now proved something about Class 2 using tools built in Class 4. That is what the arc is for.</div>
+</section>
+
+<!-- ============ ACT 7 · CLOSE ============ -->
+
+<!-- 21 -->
+<section class="slide" data-t="The only difference" data-act="7 · close">
+  <div class="center">
+    <div class="kicker">everything today, in one line</div>
+    <h2 style="font-size:56px;margin-bottom:30px">Carry when a column<br>reaches the base.</h2>
+    <p class="big" style="max-width:48ch;color:var(--soft)">That is the only difference the procedure ever notices. Not the symbols, not the size of the tables, not which base a machine happens to prefer.</p>
+  </div>
+  <div class="cue">Put this on the physical board. It comes back in Class 6 when they run the same algorithms in base three and base seven.</div>
+</section>
+
+<!-- 22 -->
+<section class="slide" data-t="The tension is gone" data-act="7 · close">
+  <div>
+    <div class="kicker grey">so where does that leave last session</div>
+    <h2 style="margin-bottom:22px">The machine choosing two<br>costs us nothing.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Mathematically, nothing at all. Every procedure survives the change of base untouched.</p>
+        <p class="frag">It costs readability, and readability is fixed by a translator that fits on one slide and runs on a question a child can answer.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">Those two red arrows are not waste. They are the price of letting each side be good at its own job.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Bring back the Class 3 pipeline image on the board if you can. Same picture, and it no longer looks absurd.</div>
+</section>
+
+<!-- 23 -->
+<section class="slide" data-t="Whole numbers" data-act="7 · close">
+  <div class="center">
+    <h2 style="font-size:56px;margin-bottom:28px">Every number in this hour<br>has been a whole one.</h2>
+    <p class="big frag" style="max-width:44ch;color:var(--soft)">Next session, try writing down half of something.</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Say nothing else. Do not hint at what goes wrong, and do not mention one tenth. They should walk in next time expecting it to be easy.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+  var DIG='0123456789ABCDEF';
+
+  /* ---------- helpers ---------- */
+  function toBase(n,b){
+    if(n===0) return '0';
+    var s=''; while(n>0){ s=DIG.charAt(n%b)+s; n=Math.floor(n/b); } return s;
+  }
+  function pad(s,w){ while(s.length<w) s=' '+s; return s; }
+  function ladderRows(n,b){
+    var r=[];
+    if(n===0) return [{v:0,q:0,rem:0}];
+    while(n>0){ r.push({v:n,q:Math.floor(n/b),rem:n%b}); n=Math.floor(n/b); }
+    return r;
+  }
+  function addCols(x,y,b){
+    var A=toBase(x,b), B=toBase(y,b), w=Math.max(A.length,B.length)+1;
+    A=pad(A,w); B=pad(B,w);
+    var sum=new Array(w), car=new Array(w), carry=0;
+    for(var k=0;k<w;k++) car[k]=' ';
+    for(var i=w-1;i>=0;i--){
+      var ca=A.charAt(i), cb=B.charAt(i);
+      var da=(ca===' ')?0:DIG.indexOf(ca), db=(cb===' ')?0:DIG.indexOf(cb);
+      var t=da+db+carry;
+      sum[i]=DIG.charAt(t%b);
+      carry=Math.floor(t/b);
+      if(carry && i>0) car[i-1]='1';
+    }
+    var S=sum.join('').replace(/^0(?=.)/,' ');
+    return {a:A,b:B,sum:S,car:car.join(''),w:w};
+  }
+
+  /* ---------- deck chassis ---------- */
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  /* decided in the capture phase, before a widget can redraw and detach the node */
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')|| e.target.closest('input')||e.target.closest('.six')||e.target.closest('.dial'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ---------- 04 · expansion of 47 ---------- */
+  var ex=document.getElementById('expand47');
+  if(ex){
+    var SUP=function(x){ return '<sup style="font-size:.58em;vertical-align:super">'+x+'</sup>'; };
+    ex.innerHTML =
+      '<div style="font-size:44px">47</div>'+
+      '<div class="d" style="font-size:19px;margin:16px 0 6px">means</div>'+
+      '<div>4 &times; 10  +  7 &times; 1</div>'+
+      '<div class="d" style="font-size:19px;margin:16px 0 6px">which is</div>'+
+      '<div>4 &times; 10'+SUP(1)+'  +  7 &times; 10'+SUP(0)+'</div>'+
+      '<div class="d" style="font-size:19px;margin:16px 0 6px">in any base b</div>'+
+      '<div class="tot">d&#8321; &times; b'+SUP(1)+'  +  d&#8320; &times; b'+SUP(0)+'</div>';
+  }
+
+  /* ---------- 05 · bit row ---------- */
+  var br=document.getElementById('bitrow');
+  if(br){
+    var bits=[0,0,1,0,1,1,1,1];
+    function drawBits(){
+      var h='', tot=0;
+      for(var k=0;k<8;k++){
+        var w=Math.pow(2,7-k);
+        if(bits[k]) tot+=w;
+        h+='<div class="c'+(bits[k]?' on':'')+'" data-k="'+k+'"><div class="w">'+w+'</div><div class="v">'+bits[k]+'</div></div>';
+      }
+      br.innerHTML=h;
+      document.getElementById('bitSum').textContent=tot;
+      Array.prototype.forEach.call(br.querySelectorAll('.c'),function(c){
+        c.onclick=function(){ var k=+c.dataset.k; bits[k]=bits[k]?0:1; drawBits(); };
+      });
+    }
+    drawBits();
+  }
+
+  /* ---------- 07 · greedy subtraction ---------- */
+  var gEl=document.getElementById('greedy');
+  if(gEl){
+    var gTarget=47, gLeft=47, gRows=[], gT=null;
+    function drawGreedy(){
+      var h='<div class="work" style="font-size:23px">';
+      h+='<div class="d">start with '+gTarget+'</div>';
+      gRows.forEach(function(r){
+        h+='<div>'+pad(String(r.p),4)+'  fits into '+pad(String(r.before),4)+'   leaves '+pad(String(r.after),4)+'</div>';
+      });
+      if(gLeft>0) h+='<div class="c">'+pad(String(gLeft),4)+'  still left</div>';
+      else h+='<div class="tot" style="margin-top:10px">'+toBase(gTarget,2)+'</div>';
+      h+='</div>';
+      gEl.innerHTML=h;
+    }
+    function gStep(){
+      if(gLeft<=0) return false;
+      var p=1; while(p*2<=gLeft) p*=2;
+      gRows.push({p:p,before:gLeft,after:gLeft-p});
+      gLeft-=p; drawGreedy();
+      return gLeft>0;
+    }
+    function gInit(){
+      clearInterval(gT); gT=null;
+      gTarget=Math.max(0,Math.min(255,parseInt(document.getElementById('gN').value,10)||0));
+      gLeft=gTarget; gRows=[]; drawGreedy();
+    }
+    document.getElementById('gStep').onclick=function(){ gStep(); };
+    document.getElementById('gReset').onclick=gInit;
+    document.getElementById('gN').addEventListener('input',gInit);
+    document.getElementById('gRun').onclick=function(){
+      if(gT) return;
+      gT=setInterval(function(){ if(!gStep()){ clearInterval(gT); gT=null; } },650);
+    };
+    gInit();
+  }
+
+  /* ---------- 08 / 09 · division ladders ---------- */
+  function buildLadder(elId, b, showOdd, stepped){
+    var el=document.getElementById(elId); if(!el) return null;
+    var rows=ladderRows(47,b), shown=stepped?0:rows.length, t=null;
+    function draw(){
+      var h='<div class="work" style="font-size:22px">';
+      h+='<div class="d">'+pad('n',5)+pad('/'+b,5)+pad('rem',6)+(showOdd?'   odd?':'')+'</div>';
+      for(var k=0;k<shown;k++){
+        var r=rows[k];
+        h+='<div>'+pad(String(r.v),5)+pad(String(r.q),5)+
+           '<span class="tot">'+pad(String(r.rem),6)+'</span>'+
+           (showOdd?('<span class="c">'+pad(r.rem?'yes':'no',7)+'</span>'):'')+'</div>';
+      }
+      if(shown===rows.length){
+        h+='<div class="bar tot" style="margin-top:8px">read up: '+toBase(47,b)+'</div>';
+      }
+      h+='</div>';
+      el.innerHTML=h;
+    }
+    draw();
+    return {
+      step:function(){ if(shown<rows.length){ shown++; draw(); return true; } return false; },
+      run:function(){ if(t) return; t=setInterval(function(){ if(shown<rows.length){shown++;draw();} else {clearInterval(t);t=null;} },600); },
+      reset:function(){ clearInterval(t); t=null; shown=0; draw(); }
+    };
+  }
+  var LA=buildLadder('ladderA',2,false,true);
+  if(LA){
+    document.getElementById('lStep').onclick=LA.step;
+    document.getElementById('lRun').onclick=LA.run;
+    document.getElementById('lReset').onclick=LA.reset;
+  }
+  buildLadder('ladderB',2,true,false);
+
+  /* ---------- shared base dial ---------- */
+  var BASES=[2,3,5,8,10,16];
+  function makeDial(id,onPick,initial){
+    var el=document.getElementById(id); if(!el) return;
+    var cur=initial;
+    function draw(){
+      var h='<span class="d">base</span>';
+      BASES.forEach(function(b){ h+='<button data-b="'+b+'" class="'+(b===cur?'on':'')+'">'+b+'</button>'; });
+      el.innerHTML=h;
+      Array.prototype.forEach.call(el.querySelectorAll('button'),function(bt){
+        bt.onclick=function(){ cur=+bt.dataset.b; draw(); onPick(cur); };
+      });
+    }
+    draw(); onPick(cur);
+  }
+
+  /* ---------- 11 · six bases + ladder ---------- */
+  var six=document.getElementById('sixStrip');
+  if(six){
+    var sixVal=47, sixBase=2;
+    function drawSix(){
+      var h='';
+      BASES.forEach(function(b){
+        h+='<div class="b'+(b===sixBase?' on':'')+'" data-b="'+b+'"><div class="n">BASE '+b+'</div><div class="v">'+toBase(sixVal,b)+'</div></div>';
+      });
+      six.innerHTML=h;
+      Array.prototype.forEach.call(six.querySelectorAll('.b'),function(el){
+        el.onclick=function(){ sixBase=+el.dataset.b; redrawSix(); };
+      });
+      document.getElementById('ladderCLab').textContent='the ladder in base '+sixBase;
+      var rows=ladderRows(sixVal,sixBase);
+      var t='<div class="work" style="font-size:21px">';
+      t+='<div class="d">'+pad('n',6)+pad('/'+sixBase,6)+pad('rem',6)+'</div>';
+      rows.forEach(function(r){
+        t+='<div>'+pad(String(r.v),6)+pad(String(r.q),6)+'<span class="tot">'+pad(DIG.charAt(r.rem),6)+'</span></div>';
+      });
+      t+='<div class="bar tot" style="margin-top:8px">read up: '+toBase(sixVal,sixBase)+'</div></div>';
+      document.getElementById('ladderC').innerHTML=t;
+    }
+    function redrawSix(){
+      drawSix();
+      var el=document.getElementById('dialA');
+      Array.prototype.forEach.call(el.querySelectorAll('button'),function(bt){
+        bt.className = (+bt.dataset.b===sixBase)?'on':'';
+      });
+    }
+    makeDial('dialA',function(b){ sixBase=b; drawSix(); },2);
+    document.getElementById('sixN').addEventListener('input',function(){
+      sixVal=Math.max(0,Math.min(4095,parseInt(this.value,10)||0)); drawSix();
+    });
+    drawSix();
+  }
+
+  /* ---------- 13 · three additions ---------- */
+  var ta=document.getElementById('threeAdds');
+  if(ta){
+    var h='';
+    [10,5,2].forEach(function(b){
+      var r=addCols(23,12,b);
+      h+='<div class="panel" style="text-align:center;padding:22px 18px">'+
+         '<div class="lab" style="margin-bottom:14px">BASE '+b+'</div>'+
+         '<div class="work" style="font-size:27px">'+
+         '<div class="c">'+r.car+'</div>'+
+         '<div>'+r.a+'</div>'+
+         '<div>'+pad('+'+r.b.replace(/^ +/,''),r.w)+'</div>'+
+         '<div class="bar tot">'+r.sum+'</div></div></div>';
+    });
+    ta.innerHTML=h;
+  }
+
+  /* ---------- 14 · addition in any base ---------- */
+  var aw=document.getElementById('addWork');
+  if(aw){
+    var abase=10;
+    function drawAdd(){
+      var x=Math.max(0,parseInt(document.getElementById('addX').value,10)||0);
+      var y=Math.max(0,parseInt(document.getElementById('addY').value,10)||0);
+      var r=addCols(x,y,abase);
+      aw.innerHTML='<div class="work" style="font-size:30px">'+
+        '<div class="c">'+r.car+'</div>'+
+        '<div>'+r.a+'</div>'+
+        '<div>'+pad('+'+r.b.replace(/^ +/,''),r.w)+'</div>'+
+        '<div class="bar tot">'+r.sum+'</div>'+
+        '<div class="d" style="font-size:17px;margin-top:10px">carry whenever a column reaches '+abase+'</div></div>';
+    }
+    makeDial('dialB',function(b){ abase=b; drawAdd(); },10);
+    document.getElementById('addX').addEventListener('input',drawAdd);
+    document.getElementById('addY').addEventListener('input',drawAdd);
+    drawAdd();
+  }
+
+  /* ---------- 15 / 16 · the tables ---------- */
+  function fillTable(id,b,op){
+    var el=document.getElementById(id); if(!el) return;
+    var h='<tr><th>'+(op==='+'?'+':'&times;')+'</th>';
+    for(var c=0;c<b;c++) h+='<th>'+c+'</th>';
+    h+='</tr>';
+    for(var r=0;r<b;r++){
+      h+='<tr><th>'+r+'</th>';
+      for(var c=0;c<b;c++){
+        var v=(op==='+')?(r+c):(r*c);
+        h+='<td>'+toBase(v,b)+'</td>';
+      }
+      h+='</tr>';
+    }
+    el.innerHTML=h;
+  }
+  fillTable('add10',10,'+'); fillTable('add2',2,'+');
+  fillTable('mul10',10,'x'); fillTable('mul2',2,'x');
+
+  /* ---------- 17 · binary long multiplication ---------- */
+  var bm=document.getElementById('binMul');
+  if(bm){
+    var A=11,B=5, a2=toBase(A,2), b2=toBase(B,2), W=a2.length+b2.length;
+    var h='<div class="d">'+pad(a2,W)+'</div><div class="d">'+pad('x '+b2,W)+'</div>';
+    var rows=[];
+    for(var k=0;k<b2.length;k++){
+      var bit=b2.charAt(b2.length-1-k);
+      var row=(bit==='1')?a2:new Array(a2.length+1).join('0');
+      rows.push(pad(row+new Array(k+1).join(' '),W));
+    }
+    h+='<div class="bar">'+rows[0]+'</div>';
+    for(var k=1;k<rows.length;k++) h+='<div>'+rows[k]+'</div>';
+    h+='<div class="bar tot">'+pad(toBase(A*B,2),W)+'</div>';
+    h+='<div class="d" style="font-size:19px;margin-top:12px">'+A+' &times; '+B+' = '+(A*B)+'</div>';
+    bm.innerHTML=h;
+  }
+
+  /* ---------- 19 · 47 x 19 in three bases ---------- */
+  var tm=document.getElementById('threeMuls');
+  if(tm){
+    var h='';
+    [10,5,2].forEach(function(b){
+      h+='<div class="panel" style="text-align:center;padding:22px 18px">'+
+         '<div class="lab" style="margin-bottom:14px">BASE '+b+'</div>'+
+         '<div class="work" style="font-size:'+(b===2?22:30)+'px">'+
+         '<div>'+toBase(47,b)+'</div>'+
+         '<div>&times; '+toBase(19,b)+'</div>'+
+         '<div class="bar tot">'+toBase(893,b)+'</div></div>'+
+         '<div class="d" style="font-family:var(--mono);font-size:16px;color:var(--soft);margin-top:12px">= 893</div></div>';
+    });
+    tm.innerHTML=h;
+  }
+
+  paint();
+})();
+</script>
+</body>
+</html>

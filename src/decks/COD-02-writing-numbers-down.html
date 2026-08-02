@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 2 · How did humans learn to count without making mistakes?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --mark:#ffdf8a;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:74px 96px 108px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .34s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:34px;left:96px;font-family:var(--mono);font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+#rail{position:absolute;left:96px;right:96px;bottom:38px;display:flex;gap:4px;align-items:flex-end;height:12px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)}
+#rail i.here{background:var(--accent);height:11px}
+#count{position:absolute;right:96px;bottom:62px;font-family:var(--mono);font-size:15px;color:var(--soft);z-index:5}
+#help{position:absolute;left:96px;bottom:62px;font-family:var(--mono);font-size:13px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:26px}
+.kicker.grey{color:var(--soft)} .kicker.red{color:var(--fail)}
+h1{font-family:var(--display);font-weight:600;font-size:104px;line-height:1.0;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:64px;line-height:1.07;letter-spacing:-.02em;color:var(--ink);margin-bottom:28px}
+h3{font-weight:700;font-size:24px;color:var(--ink);margin-bottom:8px;line-height:1.25}
+p{font-size:29px;line-height:1.48;max-width:31ch}
+p+p{margin-top:18px}
+.big{font-size:39px;line-height:1.3;color:var(--ink);font-weight:300;max-width:25ch}
+.small{font-size:22px;line-height:1.5;color:var(--soft);max-width:58ch}
+strong{color:var(--ink);font-weight:700}
+em{font-style:italic;color:var(--ink)}
+.mark{background:linear-gradient(180deg,transparent 56%,var(--mark) 56%,var(--mark) 95%,transparent 95%);padding:0 .1em}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+.rom{font-family:var(--display);font-weight:600;letter-spacing:.06em;color:var(--ink)}
+code{font-family:var(--mono);font-size:.86em;color:var(--accent);background:var(--accent-soft);padding:.06em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.split.l{grid-template-columns:1.08fr .92fr}
+.split.r{grid-template-columns:.9fr 1.1fr}
+.stack>*+*{margin-top:20px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+/* image plates */
+.plate{position:relative;width:100%;height:430px;border-radius:12px;overflow:hidden;background:#1b1e22;box-shadow:0 16px 40px rgba(20,22,28,.2)}
+.plate img{width:100%;height:100%;object-fit:contain;display:block}
+.plate .ph{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:var(--stage);border:2px dashed var(--rule2);border-radius:12px;text-align:center;padding:30px}
+.plate.missing img{display:none}
+.plate.missing .ph{display:flex}
+.plate .ph .f{font-family:var(--mono);font-size:26px;color:var(--ink);font-weight:700}
+.plate .ph .s{font-family:var(--mono);font-size:16px;color:var(--soft);letter-spacing:.08em;line-height:1.7}
+.cap{font-family:var(--mono);font-size:15px;color:var(--soft);letter-spacing:.1em;margin-top:14px;text-transform:uppercase}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:28px 30px}
+.panel .lab{font-family:var(--mono);font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:20px}
+
+.btn{font-family:var(--mono);font-size:16px;letter-spacing:.06em;background:var(--stage);color:var(--body);border:1px solid var(--rule2);border-radius:7px;padding:11px 16px;cursor:pointer}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+input[type=number]{font-family:var(--mono);font-size:26px;background:var(--stage);color:var(--ink);border:2px solid var(--rule2);border-radius:7px;padding:6px 10px;width:7ch}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* flock */
+.flock{display:flex;flex-wrap:wrap;gap:10px;min-height:96px;align-content:flex-start}
+.flock .u{width:52px;height:44px;position:relative}
+.pebrow{display:flex;flex-wrap:wrap;gap:10px;min-height:52px;align-content:flex-start}
+.peb{width:34px;height:26px;border-radius:50%;background:#8f9299;box-shadow:inset -3px -4px 0 rgba(0,0,0,.16)}
+.peb.left{background:var(--fail);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+
+/* tally */
+.tally{display:flex;flex-wrap:wrap;align-items:flex-end;gap:0}
+.tally .g{display:flex;align-items:flex-end;position:relative;margin-right:0}
+.tally .m{width:5px;height:58px;background:var(--ink);margin-right:9px;border-radius:1px}
+.tally.grouped .g{margin-right:28px}
+.tally.grouped .g .m:nth-child(5){position:absolute;left:-2px;width:64px;height:5px;transform:rotate(-24deg);top:26px;margin:0}
+
+/* five systems */
+.five{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;align-items:stretch}
+.sys{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:20px 16px;display:flex;flex-direction:column}
+.sys .h{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin-bottom:14px}
+.sys .body{flex:1;display:flex;align-items:center;justify-content:center;min-height:190px}
+.sys .foot{font-size:16px;color:var(--soft);line-height:1.35;margin-top:12px;text-align:center}
+.sys .val{font-family:var(--display);font-size:54px;font-weight:600;color:var(--ink)}
+
+/* column arithmetic */
+.colsum{font-family:var(--mono);font-size:44px;line-height:1.5;color:var(--ink);text-align:right;display:inline-block}
+.colsum .r{display:block}
+.colsum .bar{border-top:3px solid var(--ink);margin-top:6px;padding-top:6px}
+.colsum .carry{font-size:22px;color:var(--fail)}
+
+
+.posrow{display:flex;gap:10px;margin-bottom:18px}
+.poscell{flex:1;height:120px;border:2px dashed var(--rule2);border-radius:10px;background:var(--stage);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:.15s}
+.poscell:hover{border-color:var(--soft);background:#f2f0ea}
+.poscell .w{font-family:var(--mono);font-size:15px;letter-spacing:.1em;color:var(--soft)}
+.poscell .tok{font-family:var(--display);font-weight:600;font-size:52px;color:var(--rule2)}
+.poscell.has{border-style:solid;border-color:var(--accent);background:var(--accent-soft)}
+.poscell.has .tok{color:var(--ink)}
+.poscell.rome.has{border-color:var(--soft);background:#f1efe9}
+.posval{font-size:26px;color:var(--ink);font-weight:700;min-height:34px}
+.ambig{display:flex;flex-direction:column;gap:14px}
+.ambig .row{display:flex;align-items:center;gap:20px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.ambig .row:last-child{border-bottom:none}
+.ambig .cols{display:flex;gap:8px}
+.ambig .col{width:52px;height:56px;border:1px solid var(--rule2);border-radius:6px;display:flex;
+  align-items:center;justify-content:center;font-family:var(--mono);font-size:22px;color:var(--ink);background:#fff}
+.ambig .col.empty{background:repeating-linear-gradient(45deg,#f4f2ec,#f4f2ec 5px,#eae7df 5px,#eae7df 10px);color:var(--soft)}
+.ambig .eq{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--fail);margin-left:auto}
+figcaption{font-family:var(--mono);font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-top:12px}
+svg text{font-family:'JetBrains Mono',monospace}
+
+.frag{opacity:0;transition:opacity .3s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:96px;right:96px;bottom:92px;display:none;padding:14px 18px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:19px;line-height:1.45;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:70px 96px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:24px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:80px}
+#jump li{padding:9px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:23px;color:var(--body);display:flex;gap:20px;break-inside:avoid}
+#jump li:hover{color:var(--accent)}
+#jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:44px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}.peb.left{animation:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 02</b></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 2 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- 01 -->
+<section class="slide" data-t="Title">
+  <div>
+    <div class="kicker">class 02 · hour two of fifty</div>
+    <h1>How did humans learn<br>to count without<br>making mistakes?</h1>
+    <p class="big" style="margin-top:40px;max-width:34ch">Last session four machines were destroyed by the way a number was written down. Nobody handed us that way of writing. It was invented.</p>
+  </div>
+  <div class="cue">Open by collecting the send-off. Two or three failures from the room, sixty seconds each, then straight into the shepherd.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="The frame">
+  <div>
+    <div class="kicker grey">the shape of this hour</div>
+    <h2>Every counting system ever<br>invented was a fix<br>for one specific mistake.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Not one of them was designed by a mathematician sitting down to design a numeral system.</p>
+        <p>Each was somebody with a practical problem, losing something, and finding a way to stop losing it.</p>
+      </div>
+      <div class="stack">
+        <p class="big frag">So for each one, the question is: what error did this eliminate?</p>
+        <p class="small frag">And the follow-up, which is the more interesting one: what did it cost to eliminate it?</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Set this frame explicitly. It's the thread through six systems and forty thousand years, and without it the hour is just history.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="The shepherd">
+  <div>
+    <div class="kicker">forty thousand years ago</div>
+    <h2>You have a flock of sheep.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>In the morning they go out to graze. In the evening they come back.</p>
+        <p class="big frag">Did they all come back?</p>
+      </div>
+      <div class="stack frag">
+        <p>You cannot count them. Not because you are bad at it.</p>
+        <p><strong>Because counting does not exist yet.</strong> There are no numbers. There is no word for how many you have. Nobody has invented one.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Push on this. Students assume the shepherd is uneducated. He isn't. The tool doesn't exist. Nobody anywhere has it.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="One pebble each">
+  <div>
+    <div class="kicker">the fix</div>
+    <h2 style="margin-bottom:22px">One pebble per sheep.</h2>
+    <div class="split l">
+      <div class="stack">
+        <p>In the morning, as each sheep walks out, drop one pebble into a bag.</p>
+        <p>In the evening, as each sheep walks back, take one pebble out.</p>
+        <p class="big frag">If the bag is empty, they all came home.</p>
+      </div>
+      <div class="panel">
+        <span class="lab">the bag</span>
+        <div class="flock" id="flock"></div>
+        <div style="height:1px;background:var(--rule);margin:16px 0"></div>
+        <div class="pebrow" id="pebs"></div>
+        <div style="font-size:22px;color:var(--soft);margin-top:14px" id="flockMsg">Eight went out. Eight came back.</div>
+        <div class="btnrow">
+          <button class="btn hot" id="fLose">one wanders off</button>
+          <button class="btn" id="fReset">start again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Run it. The point is the leftover pebble. The shepherd knows something is wrong without knowing the word "one".</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="What it bought">
+  <div>
+    <div class="kicker grey">what that eliminated</div>
+    <h2>The error of remembering.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Memory is the thing that fails. The pebbles do not need memory. They <em>are</em> the memory.</p>
+        <p class="frag">And notice what it does not need. No numbers. No words for quantity. No arithmetic. Not even the idea that "how many" is a thing you could ask.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">One thing standing for another thing. That is the entire invention.</p>
+        <p class="small">The Latin for pebble is <em>calculus</em>. It is where we get the word calculate. The word is a fossil of a man with a bag of stones.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The etymology usually gets an audible reaction. Let it land, then say Mesopotamian accountants were still doing exactly this with clay tokens thousands of years later.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="What it cost">
+  <div>
+    <div class="kicker red">but</div>
+    <h2>Four hundred sheep<br>is four hundred pebbles.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>The bag grows exactly as fast as the flock. It never gets easier.</p>
+        <p class="frag">You cannot say how many you have. You cannot write it down. You cannot send it to anyone.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">And you certainly cannot ask what happens if you buy a second flock the same size.</p>
+        <p class="small">The pebbles record a quantity perfectly and let you do nothing with it.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This shape repeats all hour: every fix solves one error and creates the next problem. Name it as a pattern the first time.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Lebombo bone">
+  <div>
+    <div class="kicker">the oldest one we have found</div>
+    <div class="split r" style="gap:56px">
+      <div class="stack">
+        <h2 style="font-size:52px;margin-bottom:20px">The Lebombo bone.</h2>
+        <p>A baboon's fibula, about six centimetres long, cut with <span class="num">29</span> deliberate notches.</p>
+        <p>Border Cave, in the Lebombo mountains on the border between South Africa and Eswatini. Radiocarbon dating puts it between <span class="num">42,000</span> and <span class="num">44,000</span> years old.</p>
+        <p class="small frag">Twenty-nine is roughly a lunar month, so it may be a calendar. We do not know. What we do know is that somebody was keeping a record on purpose.</p>
+      </div>
+      <div>
+        <div class="plate">
+          <img src="img/lebombo.jpg" alt="The Lebombo bone, a notched baboon fibula">
+          <div class="ph">
+            <div class="f">img/lebombo.jpg</div>
+            <div class="s">DROP THE PHOTO IN AN img/ FOLDER<br>NEXT TO THIS FILE</div>
+          </div>
+        </div>
+        <div class="cap">border cave · kwazulu-natal museum</div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Say the number out loud: forty-three thousand years. The oldest thing in this course by a factor of a thousand.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Ishango bone">
+  <div>
+    <div class="kicker">twenty thousand years later</div>
+    <div class="split r" style="gap:56px">
+      <div class="stack">
+        <h2 style="font-size:52px;margin-bottom:20px">The Ishango bone.</h2>
+        <p>Also a baboon's fibula, about ten centimetres, with a sharp piece of quartz still fixed into one end for cutting.</p>
+        <p><span class="num">168</span> notches, but not in a line. In <strong>three columns</strong>, and inside each column the notches sit in <strong>groups</strong>.</p>
+        <p class="big frag" style="margin-top:8px">Somebody stopped making a mark per thing and started arranging the marks.</p>
+      </div>
+      <div>
+        <div class="plate">
+          <img src="img/ishango.jpg" alt="The Ishango bone, notched in three columns">
+          <div class="ph">
+            <div class="f">img/ishango.jpg</div>
+            <div class="s">DROP THE PHOTO IN AN img/ FOLDER<br>NEXT TO THIS FILE</div>
+          </div>
+        </div>
+        <div class="cap">royal belgian institute of natural sciences, brussels</div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ignore the prime-numbers claims. They are contested and not the point. The point is grouping.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Why grouping">
+  <div>
+    <div class="kicker">why that matters</div>
+    <h2 style="margin-bottom:20px">How many marks is this?</h2>
+    <div class="panel">
+      <div class="tally" id="tally"></div>
+      <div class="btnrow">
+        <button class="btn hot" id="tG">group them in fives</button>
+        <button class="btn" id="tU">back to plain marks</button>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:26px;max-width:64ch;font-size:34px">Same quantity, same marks. One of them you have to count. The other one you can just <span class="mark">read</span>.</p>
+  </div>
+  <div class="cue">Ask for the count before grouping. Take three guesses. They will disagree. Then group it and ask again. Instant, unanimous.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Grouping's limit">
+  <div>
+    <div class="kicker grey">the second error, eliminated</div>
+    <h2>Grouping kills the error of scale.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>You cannot look at forty-seven scratches and know it is forty-seven. You can look at nine bundles and two.</p>
+        <p class="frag">So: give the bundle its own symbol. Then give the bundle-of-bundles its own symbol. Keep going.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">That idea, taken as far as it will go, is Rome.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This is the hinge into Roman numerals. Make it feel like the obvious next move, because it was.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Roman numerals">
+  <div>
+    <div class="kicker">rome</div>
+    <h2 style="margin-bottom:24px">A new symbol every<br>time you run out.</h2>
+    <div class="split l">
+      <div class="stack">
+        <p>One is <span class="rom">I</span>. Five gets its own mark, <span class="rom">V</span>. Ten, <span class="rom">X</span>. Fifty, <span class="rom">L</span>. A hundred, <span class="rom">C</span>. Five hundred, <span class="rom">D</span>. A thousand, <span class="rom">M</span>.</p>
+        <p class="frag">It is compact, it is readable, and it was used across an empire for centuries by people running the largest accounting operation in the world.</p>
+      </div>
+      <div class="panel" style="text-align:center">
+        <span class="lab">the same quantity</span>
+        <div style="font-size:34px;font-family:var(--mono);color:var(--soft);margin-bottom:10px">47 marks</div>
+        <div style="font-size:20px;color:var(--soft);line-height:1.6;margin-bottom:24px">|||||||||||||||||||||||||||||||||||||||||||||||</div>
+        <div style="font-family:var(--display);font-size:88px;font-weight:600;color:var(--ink)">XLVII</div>
+        <div style="font-size:20px;color:var(--soft);margin-top:14px">five symbols instead of forty-seven</div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Give Rome real credit here. The room will want to sneer at it, and the next slide works much better if they don't.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="XLVII × XIX">
+  <div class="center">
+    <div class="kicker red">now try to use it</div>
+    <h2 style="font-size:56px;margin-bottom:26px">Multiply these two.<br>Do not convert them.</h2>
+    <div style="font-family:var(--display);font-weight:600;font-size:110px;color:var(--ink);letter-spacing:.04em">XLVII &nbsp;×&nbsp; XIX</div>
+    <div class="btnrow" style="justify-content:center;margin-top:34px">
+      <button class="btn hot" id="rStart">start two minutes</button>
+      <span id="rClock" style="font-family:var(--mono);font-size:40px;font-weight:700;color:var(--ink);min-width:150px;text-align:center">2:00</span>
+      <button class="btn" id="rShow">the answer</button>
+    </div>
+    <div id="rAns" style="font-family:var(--display);font-size:64px;font-weight:600;color:var(--fail);margin-top:24px;opacity:0;transition:opacity .3s">DCCCXCIII</div>
+  </div>
+  <div class="cue">Make them actually try. Walk around. Nobody gets anywhere, and they need to feel that before you explain why.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Why it fails">
+  <div>
+    <div class="kicker">why you got nowhere</div>
+    <h2 style="margin-bottom:24px">It is not that it is hard.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>You were not slow, and you were not out of practice.</p>
+        <p class="frag">In <span class="rom">XLVII</span>, the <span class="rom">X</span> means ten wherever it sits. Position carries no meaning. So there are no columns.</p>
+        <p class="frag">No columns means there is nothing to carry <em>into</em>.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">And if there is nothing to carry into, there is no procedure to follow.</p>
+        <p>There is no method you failed to remember. There isn't one. Roman arithmetic was done on a counting board and then written down.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">"There is no procedure" is the sentence of the hour. Everything after this is people inventing one.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Babylon">
+  <div>
+    <div class="kicker">babylon · four thousand years ago</div>
+    <h2 style="margin-bottom:22px">Two symbols. That is all.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>A thin wedge for one. A corner wedge for ten. Pressed into wet clay with the end of a reed.</p>
+        <p>Two marks, and with them they wrote every number they ever needed, including astronomical tables we can still check.</p>
+        <p class="big frag" style="margin-top:6px">And they grouped, not in tens, but in <strong>sixties</strong>.</p>
+      </div>
+      <div class="panel">
+        <span class="lab">two wedges, side by side</span>
+        <div id="babDemo" style="display:flex;gap:56px;justify-content:center;align-items:flex-end;min-height:180px"></div>
+        <p class="small" style="margin-top:14px;font-size:20px;text-align:center">two in the sixties column, forty-seven in the ones column</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask what number that is before you say. Somebody will work out 2 times 60 plus 47. That is them doing positional arithmetic without being taught it.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Where have you seen sixty?">
+  <div class="center">
+    <div class="kicker">before I tell you anything</div>
+    <h2 style="font-size:58px;margin-bottom:16px">Where have you seen<br>sixty before?</h2>
+    <p class="big" style="color:var(--soft);max-width:46ch">You have used base sixty every day of your life. Where?</p>
+    <div style="display:flex;gap:80px;justify-content:center;margin-top:36px;align-items:center">
+      <div class="frag">
+        <svg viewBox="0 0 220 220" width="230" height="230" role="img" aria-label="A clock face">
+          <circle cx="110" cy="110" r="98" fill="#fff" stroke="#c6c3ba" stroke-width="3"/>
+          <g id="clockticks"></g>
+          <line x1="110" y1="110" x2="110" y2="52" stroke="#15171b" stroke-width="6" stroke-linecap="round"/>
+          <line x1="110" y1="110" x2="158" y2="132" stroke="#23408f" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="110" cy="110" r="6" fill="#15171b"/>
+        </svg>
+        <div class="cap" style="text-align:center">60 seconds · 60 minutes</div>
+      </div>
+      <div class="frag">
+        <svg viewBox="0 0 220 220" width="230" height="230" role="img" aria-label="A full circle of 360 degrees divided into six parts">
+          <circle cx="110" cy="110" r="92" fill="#fff" stroke="#c6c3ba" stroke-width="3"/>
+          <g stroke="#23408f" stroke-width="2.5">
+            <line x1="110" y1="110" x2="202" y2="110"/><line x1="110" y1="110" x2="156" y2="30"/>
+            <line x1="110" y1="110" x2="64" y2="30"/><line x1="110" y1="110" x2="18" y2="110"/>
+            <line x1="110" y1="110" x2="64" y2="190"/><line x1="110" y1="110" x2="156" y2="190"/>
+          </g>
+          <text x="110" y="118" font-size="26" fill="#15171b" text-anchor="middle">360</text>
+        </svg>
+        <div class="cap" style="text-align:center">six sixties around a point</div>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:28px;max-width:52ch">A clock face is a Babylonian artefact. So is a protractor. <span class="mark">Four thousand years old, still on your wrist.</span></p>
+  </div>
+  <div class="cue">Ask it as a real question and wait. Somebody gets the clock quickly. Almost nobody gets degrees until you prompt with "how many degrees in a circle, and why such an odd number".</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Position">
+  <div>
+    <div class="kicker red">but sixty is not the invention</div>
+    <h2 style="margin-bottom:20px">This is the invention.</h2>
+    <div class="split" style="gap:48px">
+      <div class="panel">
+        <span class="lab">rome · put the mark anywhere</span>
+        <div class="posrow" id="romeRow"></div>
+        <div class="posval" id="romeVal">this X is worth ten</div>
+        <p class="small" style="font-size:19px;margin-top:12px">Move it. Nothing happens. A symbol carries its whole value with it, so the columns are decoration.</p>
+      </div>
+      <div class="panel">
+        <span class="lab">positional · put the mark anywhere</span>
+        <div class="posrow" id="posRow"></div>
+        <div class="posval" id="posVal" style="color:var(--accent)">this 3 is worth three</div>
+        <p class="small" style="font-size:19px;margin-top:12px">Move it. The value changes by a factor of ten, and the symbol never changed at all.</p>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:26px;max-width:70ch;font-size:34px">The mark stopped carrying its own value. <span class="mark">Where it sits now carries part of it.</span></p>
+  </div>
+  <div class="cue">Click both rows in front of them. This is the single most important idea in the hour, and it is worth two full minutes on its own.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Why position matters">
+  <div>
+    <div class="kicker grey">why that changes everything</div>
+    <h2 style="margin-bottom:24px">Columns are what<br>you carry into.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Once a position has a fixed weight, a column can overflow into the one beside it, and that is a carry.</p>
+        <p class="frag">Once carries exist, addition has a rule. Then multiplication has a rule built from addition. Then long division has a rule built from that.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">Every arithmetic procedure you know is standing on position.</p>
+        <p>Rome had no columns, so Rome had no carries, so Rome had no procedures. That is the whole reason you got nowhere ten minutes ago.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Point back at the XLVII slide physically. The failure they felt now has a one word cause.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="The missing zero">
+  <div>
+    <div class="kicker red">and yet</div>
+    <h2 style="margin-bottom:22px">Babylon had no zero.</h2>
+    <div class="split r">
+      <div class="stack">
+        <p>Position works because every column has a weight. But if a column is empty, what do you write?</p>
+        <p class="frag">Nothing. You left a gap. And a gap in wet clay looks like a slightly wider gap.</p>
+        <p class="big frag" style="margin-top:6px">So the same two marks could mean three different numbers.</p>
+      </div>
+      <div class="panel">
+        <span class="lab">the same clay, three readings</span>
+        <div id="ambig"></div>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:24px;max-width:74ch;font-size:32px">You had to know from context which one was meant. The marks did not tell you. <span class="mark">The clay does not know what its wedges mean.</span></p>
+  </div>
+  <div class="cue">That last line is Class 1's board line, four thousand years early. Say it in exactly those words and watch who notices.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-t="The Maya">
+  <div>
+    <div class="kicker">mesoamerica · base twenty</div>
+    <h2 style="margin-bottom:22px">Three symbols.<br>And one of them is zero.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>A dot for one, a bar for five, and a shell for nothing. Stacked vertically, each level worth twenty times the one below.</p>
+        <p class="big frag">Independently of anyone, the Maya wrote down a symbol for <em>none</em>, and put it in a column, where it does real work.</p>
+      </div>
+      <div class="panel">
+        <span class="lab">how they wrote 47</span>
+        <div id="mayaDemo" style="display:flex;justify-content:center;min-height:200px;align-items:center"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Zero as a placeholder and zero as a number you can calculate with are two different inventions. The Maya had the first. India gets to the second.</div>
+</section>
+
+<!-- 20 -->
+<section class="slide" data-t="One quantity, five ways">
+  <div>
+    <div class="kicker grey">forty thousand years, one problem</div>
+    <h2 style="font-size:52px;margin-bottom:22px">The same quantity, five ways.</h2>
+    <div class="five" id="five"></div>
+    <div class="panel noadvance" style="margin-top:20px;padding:16px 22px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-family:var(--mono);font-size:15px;letter-spacing:.16em;color:var(--soft);text-transform:uppercase;margin-right:8px">show</span>
+        <button class="btn qp" data-q="0">0</button>
+        <button class="btn qp" data-q="7">7</button>
+        <button class="btn qp" data-q="19">19</button>
+        <button class="btn qp" data-q="20">20</button>
+        <button class="btn qp" data-q="47">47</button>
+        <button class="btn qp" data-q="60">60</button>
+        <button class="btn qp" data-q="100">100</button>
+        <button class="btn qp" data-q="365">365</button>
+        <span style="flex:1"></span>
+        <button class="btn" id="qDown">&minus;1</button>
+        <input type="number" id="qIn" value="47" min="0" max="399">
+        <button class="btn" id="qUp">+1</button>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Type 60, then 20, then 0. Watch which systems get elegant and which get ugly. That's the base showing through.</div>
+</section>
+
+<!-- 21 -->
+<section class="slide" data-t="Base ten">
+  <div>
+    <div class="kicker">and then ten</div>
+    <h2 style="margin-bottom:22px">Why ten? Look down.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>There is no mathematical reason for ten. We have ten fingers. That is the entire argument, and it is not a good one.</p>
+        <p class="frag">But in India the three pieces finally came together in one system: <strong>ten symbols</strong>, <strong>position</strong>, and <strong>a zero that is a number</strong>, not just a gap.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">In 628, Brahmagupta wrote down the rules for arithmetic with zero.</p>
+        <p class="small">What to do when you add it, subtract it, multiply by it. And what happens if you divide by it, a question he got wrong, and which is still special-cased in the hardware you will build in this course.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Flag the divide-by-zero line. It comes back in Class 26 and again in Class 49 as a hardware trap.</div>
+</section>
+
+<!-- 22 -->
+<section class="slide" data-t="The Silk Route">
+  <div>
+    <div class="kicker">how it got here</div>
+    <h2 style="font-size:54px;margin-bottom:8px">It travelled with the merchants.</h2>
+    <figure>
+      <svg viewBox="0 0 1400 300" width="100%" role="img" aria-label="The route Hindu-Arabic numerals travelled from India to Europe">
+        <path d="M120 190 C 340 90, 520 90, 700 165 S 1010 250, 1270 130" fill="none" stroke="#c6c3ba" stroke-width="3" stroke-dasharray="8 8"/>
+        <g fill="#23408f">
+          <circle cx="120" cy="190" r="10"/><circle cx="470" cy="112" r="10"/>
+          <circle cx="700" cy="165" r="10"/><circle cx="990" cy="222" r="10"/><circle cx="1270" cy="130" r="10"/>
+        </g>
+        <g font-size="21" fill="#15171b" text-anchor="middle">
+          <text x="120" y="240">India</text><text x="470" y="86">Baghdad</text>
+          <text x="700" y="215">Córdoba</text><text x="990" y="272">Pisa</text><text x="1270" y="104">Europe</text>
+        </g>
+        <g font-size="16" fill="#8b9096" text-anchor="middle">
+          <text x="120" y="266">by 628 CE</text><text x="470" y="62">c. 825</text>
+          <text x="700" y="241">10th c.</text><text x="990" y="298">1202</text><text x="1270" y="80">slowly</text>
+        </g>
+      </svg>
+    </figure>
+    <div class="split" style="margin-top:14px">
+      <p class="small frag" style="font-size:22px;max-width:none">In Baghdad around 825, al-Khwārizmī wrote a book on calculating with these numerals. His name, in Latin, became the word <strong>algorithm</strong>. The title of another of his books gave us <strong>algebra</strong>.</p>
+      <p class="small frag" style="font-size:22px;max-width:none">Europe resisted for three hundred years. Florence banned the new numerals from account books in 1299. Merchants used them anyway, because the books closed faster.</p>
+    </div>
+  </div>
+  <div class="cue">The winner was not the most elegant system. It was the one that made commerce cheaper. That is the same reason binary wins in Class 3.</div>
+</section>
+
+<!-- 23 -->
+<section class="slide" data-t="Arithmetic becomes mechanical">
+  <div>
+    <div class="kicker">what we actually gained</div>
+    <h2 style="margin-bottom:20px">Now there is a procedure.</h2>
+    <div class="split l">
+      <div class="stack">
+        <p>Columns exist, so there is somewhere for a carry to go, so there is a method, and the method is the same every time, for any two numbers, forever.</p>
+        <p class="big frag" style="margin-top:10px">You do not have to be clever. You have to follow the steps.</p>
+      </div>
+      <div class="panel" style="text-align:center">
+        <span class="lab">the thing rome could not do</span>
+        <div class="colsum">
+          <span class="r" style="color:var(--soft);font-size:26px">XLVII × XIX</span>
+          <span class="r">47</span>
+          <span class="r">× 19</span>
+          <span class="r bar frag">423</span>
+          <span class="r frag">470</span>
+          <span class="r bar frag" style="color:var(--accent)">893</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Do it on the board by hand while you talk. Thirty seconds. After two minutes of failing at XLVII × XIX, it lands hard.</div>
+</section>
+
+<!-- 24 -->
+<section class="slide" data-t="Is compute solved?">
+  <div>
+    <div class="kicker grey">so where does that leave us</div>
+    <h2 style="margin-bottom:24px">We have agreed on<br>how to write it down.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>Forty thousand years, six systems, and one survivor that everybody on earth now uses.</p>
+        <p class="big frag">Representation: solved.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">So is computing solved too?</p>
+        <p>We have a procedure that needs no cleverness. Surely that is the same as having the answer.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Let somebody say yes. Then the last slide.</div>
+</section>
+
+<!-- 25 -->
+<section class="slide" data-t="A different beast">
+  <div class="center">
+    <div class="kicker red">no</div>
+    <h2 style="font-size:60px;margin-bottom:28px">A procedure still needs<br>somebody to follow it.</h2>
+    <p class="big frag" style="max-width:44ch">And people get bored, and tired, and distracted, which is the one error nobody in this entire hour has managed to eliminate.</p>
+    <p class="big frag" style="margin-top:32px;color:var(--ink);max-width:40ch"><span class="mark">Writing it down and computing with it are two different beasts.</span></p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Say as they pack up: it needs no thought, so does it need a human? That's Class 3.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key;
+    if(e.target.tagName==='INPUT'&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  /* decided in the capture phase, before a widget can redraw and detach the node */
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('.plate')||e.target.closest('input')||e.target.closest('label')||e.target.closest('.noadvance'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* image plates: show placeholder if the file isn't there */
+  Array.prototype.forEach.call(document.querySelectorAll('.plate img'),function(im){
+    im.addEventListener('error',function(){ im.parentNode.classList.add('missing'); });
+    if(im.complete && im.naturalWidth===0) im.parentNode.classList.add('missing');
+  });
+
+  /* ---------- sheep + pebbles ---------- */
+  var flock=document.getElementById('flock');
+  if(flock){
+    var pebs=document.getElementById('pebs'), msg=document.getElementById('flockMsg'), TOT=8, here=TOT;
+    var SHEEP='<svg viewBox="0 0 52 44" width="52" height="44">'+
+      '<ellipse cx="24" cy="24" rx="17" ry="13" fill="#d9d6cd" stroke="#8b9096" stroke-width="1.5"/>'+
+      '<circle cx="41" cy="17" r="7" fill="#5a5f66"/>'+
+      '<line x1="17" y1="35" x2="17" y2="43" stroke="#5a5f66" stroke-width="2.5"/>'+
+      '<line x1="30" y1="35" x2="30" y2="43" stroke="#5a5f66" stroke-width="2.5"/></svg>';
+    function draw(){
+      flock.innerHTML=''; pebs.innerHTML='';
+      for(var k=0;k<here;k++){ var d=document.createElement('div'); d.className='u'; d.innerHTML=SHEEP; flock.appendChild(d); }
+      var left=TOT-here;
+      for(var k=0;k<left;k++){ var p=document.createElement('div'); p.className='peb left'; pebs.appendChild(p); }
+      if(left===0) msg.innerHTML='Eight went out. Eight came back. The bag is empty.';
+      else msg.innerHTML='<span style="color:var(--fail);font-weight:700">'+left+' pebble'+(left>1?'s':'')+' left in the bag. Something did not come home.</span>';
+    }
+    document.getElementById('fLose').onclick=function(){ if(here>0){here--;draw();} };
+    document.getElementById('fReset').onclick=function(){ here=TOT; draw(); };
+    draw();
+  }
+
+  /* ---------- tally grouping ---------- */
+  var tal=document.getElementById('tally');
+  if(tal){
+    function drawTally(grouped){
+      tal.className='tally'+(grouped?' grouped':'');
+      tal.innerHTML='';
+      var n=47, per=grouped?5:1, made=0;
+      while(made<n){
+        var g=document.createElement('div'); g.className='g';
+        var c=Math.min(per,n-made);
+        for(var k=0;k<c;k++){ var m=document.createElement('div'); m.className='m'; g.appendChild(m); }
+        tal.appendChild(g); made+=c;
+      }
+    }
+    document.getElementById('tG').onclick=function(){ drawTally(true); };
+    document.getElementById('tU').onclick=function(){ drawTally(false); };
+    drawTally(false);
+  }
+
+  /* ---------- roman timer ---------- */
+  var rStart=document.getElementById('rStart');
+  if(rStart){
+    var left=120, timer=null, clock=document.getElementById('rClock');
+    function show(){ clock.textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0');
+      clock.style.color = left<=15 ? 'var(--fail)' : 'var(--ink)'; }
+    rStart.onclick=function(){
+      if(timer) return;
+      timer=setInterval(function(){ left--; show(); if(left<=0){clearInterval(timer);timer=null;} },1000);
+    };
+    document.getElementById('rShow').onclick=function(){ document.getElementById('rAns').style.opacity=1; };
+    show();
+  }
+
+  /* ---------- numeral renderers ---------- */
+  function roman(n){
+    if(n<=0) return 'nothing';
+    var v=[1000,900,500,400,100,90,50,40,10,9,5,4,1],
+        s=['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'],out='';
+    for(var k=0;k<v.length;k++) while(n>=v[k]){ out+=s[k]; n-=v[k]; }
+    return out;
+  }
+  function tallySVG(n){
+    if(n>80) return '<div style="font-family:var(--mono);font-size:22px;color:var(--soft);text-align:center">'+n+' marks<br>(too many to draw)</div>';
+    if(n===0) return '<div style="font-family:var(--mono);font-size:22px;color:var(--soft)">nothing to draw</div>';
+    var h='<div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center">';
+    for(var g=0; g<Math.ceil(n/5); g++){
+      var c=Math.min(5,n-g*5);
+      h+='<svg width="34" height="40" viewBox="0 0 34 40">';
+      for(var k=0;k<Math.min(c,4);k++) h+='<rect x="'+(2+k*7)+'" y="6" width="3" height="28" fill="#15171b"/>';
+      if(c===5) h+='<line x1="0" y1="32" x2="30" y2="8" stroke="#15171b" stroke-width="3"/>';
+      h+='</svg>';
+    }
+    return h+'</div>';
+  }
+  function babSVG(n){
+    if(n===0) return '<div style="font-family:var(--mono);font-size:20px;color:var(--fail);text-align:center">no symbol<br>for this</div>';
+    var digits=[]; var m=n;
+    while(m>0){ digits.unshift(m%60); m=Math.floor(m/60); }
+    var h='<div style="display:flex;gap:26px;justify-content:center;align-items:flex-end">';
+    digits.forEach(function(d){
+      var tens=Math.floor(d/10), ones=d%10;
+      h+='<svg width="90" height="120" viewBox="0 0 90 120">';
+      for(var k=0;k<tens;k++){
+        var x=(k%3)*26+4, y=Math.floor(k/3)*22+4;
+        h+='<path d="M'+x+' '+(y+9)+' L'+(x+20)+' '+y+' L'+(x+20)+' '+(y+18)+' Z" fill="#23408f"/>';
+      }
+      var oy=Math.ceil(tens/3)*22+8;
+      for(var k=0;k<ones;k++){
+        var x2=(k%5)*15+5, y2=Math.floor(k/5)*30+oy;
+        h+='<path d="M'+x2+' '+y2+' L'+(x2+9)+' '+y2+' L'+(x2+4.5)+' '+(y2+24)+' Z" fill="#15171b"/>';
+      }
+      h+='</svg>';
+    });
+    return h+'</div>';
+  }
+  function mayaSVG(n){
+    var digits=[]; var m=n;
+    if(n===0) digits=[0]; else { while(m>0){ digits.unshift(m%20); m=Math.floor(m/20); } }
+    var h='<div style="display:flex;flex-direction:column;gap:16px;align-items:center">';
+    digits.forEach(function(d){
+      var bars=Math.floor(d/5), dots=d%5;
+      h+='<svg width="110" height="'+(Math.max(1,bars)*16+26)+'" viewBox="0 0 110 '+(Math.max(1,bars)*16+26)+'">';
+      if(d===0){
+        h+='<ellipse cx="55" cy="18" rx="24" ry="14" fill="none" stroke="#a8231f" stroke-width="3"/>'+
+           '<path d="M36 18 Q55 30 74 18" fill="none" stroke="#a8231f" stroke-width="3"/>';
+      } else {
+        for(var k=0;k<dots;k++) h+='<circle cx="'+(55-(dots-1)*13+k*26)+'" cy="10" r="7" fill="#15171b"/>';
+        for(var k=0;k<bars;k++) h+='<rect x="22" y="'+(22+k*16)+'" width="66" height="9" rx="2" fill="#15171b"/>';
+      }
+      h+='</svg>';
+    });
+    return h+'</div>';
+  }
+
+  /* babylonian / maya single demos */
+  var bd=document.getElementById('babDemo'); if(bd) bd.innerHTML=babSVG(167);
+  var md=document.getElementById('mayaDemo'); if(md) md.innerHTML=mayaSVG(47);
+
+  /* ---------- five systems ---------- */
+  var five=document.getElementById('five');
+  if(five){
+    var qIn=document.getElementById('qIn');
+    var defs=[
+      {h:'tally · 40,000 bce', foot:'one mark per thing', r:function(n){return tallySVG(n);}},
+      {h:'roman · base ten-ish', foot:'compact, but no columns', r:function(n){return '<div class="val" style="font-size:'+(roman(n).length>7?34:50)+'px">'+roman(n)+'</div>';}},
+      {h:'babylon · base sixty', foot:'positional, but no zero', r:function(n){return babSVG(n);}},
+      {h:'maya · base twenty', foot:'positional, with a zero', r:function(n){return mayaSVG(n);}},
+      {h:'india · base ten', foot:'the one that survived', r:function(n){return '<div class="val">'+n+'</div>';}}
+    ];
+    function drawFive(){
+      var n=parseInt(qIn.value,10); if(isNaN(n)||n<0) n=0; if(n>399) n=399;
+      five.innerHTML='';
+      defs.forEach(function(d){
+        var el=document.createElement('div'); el.className='sys';
+        el.innerHTML='<div class="h">'+d.h+'</div><div class="body">'+d.r(n)+'</div><div class="foot">'+d.foot+'</div>';
+        five.appendChild(el);
+      });
+    }
+    function setQ(n){
+      n = Math.max(0, Math.min(399, n));
+      qIn.value = n;
+      drawFive();
+      Array.prototype.forEach.call(document.querySelectorAll('.qp'), function(b){
+        b.classList.toggle('hot', parseInt(b.dataset.q,10) === n);
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.qp'), function(b){
+      b.onclick = function(){ setQ(parseInt(b.dataset.q,10)); };
+    });
+    document.getElementById('qUp').onclick   = function(){ setQ((parseInt(qIn.value,10)||0) + 1); };
+    document.getElementById('qDown').onclick = function(){ setQ((parseInt(qIn.value,10)||0) - 1); };
+    qIn.addEventListener('input', function(){ setQ(parseInt(qIn.value,10) || 0); });
+    setQ(47);
+  }
+
+  /* ---------- clock ticks ---------- */
+  var ct=document.getElementById('clockticks');
+  if(ct){
+    var out='';
+    for(var k=0;k<60;k++){
+      var a=k*6*Math.PI/180, big=(k%5===0);
+      var r1=big?76:84, r2=92;
+      out+='<line x1="'+(110+r1*Math.sin(a))+'" y1="'+(110-r1*Math.cos(a))+'" x2="'+(110+r2*Math.sin(a))+'" y2="'+(110-r2*Math.cos(a))+'" stroke="'+(big?'#15171b':'#c6c3ba')+'" stroke-width="'+(big?3:1.5)+'"/>';
+    }
+    ct.innerHTML=out;
+  }
+
+  /* ---------- positional widget ---------- */
+  function buildPos(rowId, valId, weights, token, words, isRome){
+    var row=document.getElementById(rowId); if(!row) return;
+    var val=document.getElementById(valId), at=weights.length-1;
+    function draw(){
+      row.innerHTML='';
+      weights.forEach(function(w,k){
+        var c=document.createElement('div');
+        c.className='poscell'+(isRome?' rome':'')+(k===at?' has':'');
+        c.innerHTML='<span class="w">'+(isRome?'slot '+(k+1):w.toLocaleString())+'</span>'+
+                    '<span class="tok">'+(k===at?token:'&nbsp;')+'</span>';
+        c.onclick=function(){ at=k; draw(); };
+        row.appendChild(c);
+      });
+      val.textContent = isRome
+        ? 'this X is worth ten'
+        : 'this 3 is worth ' + words[at];
+    }
+    draw();
+  }
+  buildPos('romeRow','romeVal',[1,1,1],'X',null,true);
+  buildPos('posRow','posVal',[100,10,1],'3',['three hundred','thirty','three'],false);
+
+  /* ---------- babylonian ambiguity ---------- */
+  var amb=document.getElementById('ambig');
+  if(amb){
+    var rows=[
+      {cols:['','','\u25bc\u25bc'], eq:'2'},
+      {cols:['','\u25bc\u25bc',''],  eq:'120'},
+      {cols:['\u25bc\u25bc','',''],  eq:'7,200'}
+    ];
+    var h='<div class="ambig">';
+    rows.forEach(function(r){
+      h+='<div class="row"><div class="cols">';
+      r.cols.forEach(function(c){ h+='<div class="col'+(c?'':' empty')+'">'+(c||'?')+'</div>'; });
+      h+='</div><span class="eq">'+r.eq+'</span></div>';
+    });
+    amb.innerHTML=h+'</div>';
+  }
+
+
+  paint();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 10 · What happens at the boundary?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:76px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.prog{display:grid;grid-template-columns:1.02fr .98fr;gap:34px;align-items:start}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+
+pre{background:#14181f;border-radius:10px;padding:18px 22px;font-family:var(--mono);font-size:15px;
+  line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre.xs{font-size:13.5px;line-height:1.45}
+pre .c{color:#7f8896} pre .k{color:#ff96a2}
+pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.term{background:#0f1319;border-radius:10px;padding:16px 20px;font-family:var(--mono);
+  font-size:16px;line-height:1.6;color:#9fe8b8;box-shadow:0 10px 24px rgba(20,22,28,.18);white-space:pre;overflow:hidden}
+.term.xs{font-size:13px;line-height:1.5}
+.term.xxs{font-size:11.5px;line-height:1.5}
+.term .dim{color:#7f8896} .term .hit{color:#ffd47e;font-weight:700}
+.term .bad{color:#ff96a2;font-weight:700} .term .ok{color:#7fe6ad}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+
+.rules{width:100%;border-collapse:collapse;font-size:19px}
+.rules td,.rules th{padding:9px 10px;border-bottom:1px solid var(--rule);text-align:left}
+.rules th{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);font-weight:400}
+.rules td:first-child{font-family:var(--mono);color:var(--ink);font-weight:700;width:24%}
+.rules td.w{color:var(--fail)} .rules td.s{color:var(--ok)}
+.rules tr:last-child td{border-bottom:none}
+
+.chain{display:flex;flex-direction:column;gap:0}
+.chain .step{display:grid;grid-template-columns:64px 1fr;gap:16px;align-items:start;padding:9px 0}
+.chain .n{font-family:var(--mono);font-size:13px;color:var(--fail);padding-top:3px}
+.chain .t{font-size:20px;line-height:1.4;color:var(--ink)}
+.chain .step+.step{border-top:1px solid var(--rule)}
+
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 10</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 10 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 10 · hour ten of fifty</div>
+    <h1>What happens<br>at the boundary?</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">You now have four ways to hold a number. Real programs move values between them constantly, and that is where this arc's last open story ends.</p>
+  </div>
+  <div class="cue">Seven programs. Ariane closes at the end, nineteen classes after it went on the board.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Four schemes, one program" data-act="opening">
+  <div>
+    <h2>Every program you write crosses these lines all day.</h2>
+    <div class="split" style="margin-top:6px">
+      <div class="stack">
+        <p>An <code>int</code> index into an array of <code>float</code>. A <code>double</code> sensor reading written into a <code>short</code> field. A count compared against <code>strlen</code>.</p>
+        <p class="frag">Every one of those is a value leaving a representation that could hold it and entering one that might not.</p>
+      </div>
+      <div class="rem" style="margin-top:0">
+        <div class="h">the four things that can go wrong</div>
+        <ul>
+          <li>The new type has less precision, so digits are lost.</li>
+          <li>The new type has less range, so the value wraps.</li>
+          <li>The new type reads the same bits differently, so the value changes meaning.</li>
+          <li>The value does not fit at all, and the standard stops defining what happens.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Keep this list on the board. Each of the next five programs is one row of it.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="01 · float to int" data-act="program 1">
+  <div>
+    <h2>Float to int does not round.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="c">/* 01-truncate.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">double</span> v[] = { <span class="s">3.9</span>, <span class="s">3.99999</span>, <span class="s">-3.9</span>, <span class="s">0.6</span>, <span class="s">-0.6</span> };
+
+    printf(<span class="s">"value      (int) gives   what you probably wanted\n"</span>);
+
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt; <span class="s">5</span>; i++)
+        printf(<span class="s">"%-10.5f %-13d %.0f\n"</span>,
+               v[i], (<span class="f">int</span>)v[i],
+               v[i] &lt; <span class="s">0</span> ? v[i] - <span class="s">0.5</span> : v[i] + <span class="s">0.5</span>);
+
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">value      (int) gives   what you probably wanted
+3.90000    <span class="bad">3</span>             4
+3.99999    <span class="bad">3</span>             4
+-3.90000   <span class="bad">-3</span>            -4
+0.60000    <span class="bad">0</span>             1
+-0.60000   <span class="bad">0</span>            -1</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>The cast throws away the fraction. It does not round to nearest.</li>
+            <li>It truncates toward zero, so 3.9 becomes 3 and minus 3.9 becomes minus 3. Not a floor, not a ceiling.</li>
+            <li>3.99999 also becomes 3. A value one hundred thousandth away from 4 lands on 3.</li>
+            <li>If you want rounding, ask for it: <code>lround</code>, or add half before casting.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask what happens to minus 0.6. Most say minus 1. It is zero, and there are two of those from Class 7.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="02 · int to float" data-act="program 2">
+  <div>
+    <h2>Int to float can lose digits, going the safe direction.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="c">/* 02-precision.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">int</span> v[] = { <span class="s">1000</span>, <span class="s">16777216</span>, <span class="s">16777217</span>,
+                <span class="s">16777219</span>, <span class="s">2147483647</span> };
+
+    printf(<span class="s">"integer        through a float    same?\n"</span>);
+
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt; <span class="s">5</span>; i++) {
+        <span class="f">int</span> back = (<span class="f">int</span>)(<span class="f">float</span>)v[i];
+        printf(<span class="s">"%-14d %-18d %s\n"</span>,
+               v[i], back, v[i] == back ? <span class="s">"yes"</span> : <span class="s">"no"</span>);
+    }
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">integer        through a float    same?
+1000           1000               <span class="ok">yes</span>
+16777216       16777216           <span class="ok">yes</span>
+16777217       <span class="bad">16777216</span>           no
+16777219       <span class="bad">16777220</span>           no
+2147483647     <span class="bad">-2147483648</span>        no</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Both types are 32 bits, so this feels safe. It is not. A float spends 8 of its bits on the exponent.</li>
+            <li>Above 2<sup>24</sup> a float cannot hold every integer. This is the gap of 2 from Class 6, in a different costume.</li>
+            <li>16777219 came back as 16777220. It rounded up, and it rounded to the even neighbour.</li>
+            <li>The last row is worse than wrong. The float is 2147483648, which no int can hold, so the conversion back is undefined.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This is the one that surprises people. Same width, and the int does not survive the round trip.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="03 · narrowing" data-act="program 3">
+  <div>
+    <h2>Into a smaller integer, it simply wraps.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="c">/* 03-narrow.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">int</span> v[] = { <span class="s">300</span>, <span class="s">32767</span>, <span class="s">32768</span>, <span class="s">70000</span>, <span class="s">-70000</span> };
+
+    printf(<span class="s">"int         as short    as char\n"</span>);
+
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt; <span class="s">5</span>; i++)
+        printf(<span class="s">"%-11d %-11d %d\n"</span>,
+               v[i], (<span class="f">short</span>)v[i], (<span class="f">char</span>)v[i]);
+
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">int         as short    as char
+300         300         <span class="bad">44</span>
+32767       32767       <span class="bad">-1</span>
+32768       <span class="bad">-32768</span>      0
+70000       <span class="bad">4464</span>        112
+-70000      <span class="bad">-4464</span>       -112</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Narrowing keeps the low bits and discards the rest. That is the circle from Class 5, cut smaller.</li>
+            <li>32768 as a short is minus 32768. One past the top and you are at the bottom.</li>
+            <li>Row one is the wallpaper crash from Class 1. 300 into a char is 44, because 300 minus 256 is 44.</li>
+            <li>No warning at run time, and by default no warning at compile time either.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Compile with -Wconversion and this program lights up. Show that. Most students have never turned it on.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="04 · signed to unsigned" data-act="program 4">
+  <div>
+    <h2>And the same bits can change sides.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 04-unsigned.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;string.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">int</span>  i = <span class="s">-1</span>;
+    <span class="f">char</span> *s = <span class="s">"hello"</span>;
+
+    printf(<span class="s">"(unsigned)-1          = %u\n"</span>, (<span class="f">unsigned</span>)i);
+    printf(<span class="s">"(size_t)-1            = %zu\n\n"</span>, (size_t)i);
+
+    printf(<span class="s">"i is %d and strlen is %zu, "</span>
+           <span class="s">"so i &lt; strlen(s) must be true.\n"</span>, i, strlen(s));
+    printf(<span class="s">"i &lt; strlen(s)         %s\n\n"</span>,
+           i &lt; strlen(s) ? <span class="s">"true"</span> : <span class="s">"false"</span>);
+
+    size_t z = <span class="s">0</span>;
+    printf(<span class="s">"z &gt;= 0                %s\n"</span>,
+           z &gt;= <span class="s">0</span> ? <span class="s">"always true"</span> : <span class="s">"sometimes false"</span>);
+    printf(<span class="s">"z - 1                 %zu\n"</span>, z - <span class="s">1</span>);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">(unsigned)-1          = 4294967295
+(size_t)-1            = 18446744073709551615
+
+i is -1 and strlen is 5, so i &lt; strlen(s) must be true.
+i &lt; strlen(s)         <span class="bad">false</span>
+
+z &gt;= 0                <span class="bad">always true</span>
+z - 1                 <span class="bad">18446744073709551615</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Nothing was converted here in the sense of being changed. The bits stayed put and the reading changed.</li>
+            <li>Comparing a signed value with an unsigned one turns the signed one unsigned first, so minus one becomes enormous.</li>
+            <li><code>i &lt; strlen(s)</code> is false when i is minus one. That is a real bug in real code, and it compiles silently.</li>
+            <li>A loop counting down with an unsigned index never ends, because unsigned values are never below zero.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This is the most common of the five in ordinary software. It is also the one that never looks like a conversion.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="05 · off the end" data-act="program 5">
+  <div>
+    <h2>And when it does not fit at all, the standard gives up.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 05-outofrange.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">double</span> a = <span class="s">1e10</span>;
+    <span class="f">double</span> b = <span class="s">40000.0</span>;
+    <span class="f">double</span> c = <span class="s">-50000.0</span>;
+
+    printf(<span class="s">"all three are out of range "</span>
+           <span class="s">"for the type they go into\n\n"</span>);
+    printf(<span class="s">"(int)   1e10      = %d\n"</span>, (<span class="f">int</span>)a);
+    printf(<span class="s">"(short) 40000.0   = %d\n"</span>, (<span class="f">short</span>)b);
+    printf(<span class="s">"(short) -50000.0  = %d\n"</span>, (<span class="f">short</span>)c);
+
+    printf(<span class="s">"\nthe C standard says this is undefined behaviour.\n"</span>);
+    printf(<span class="s">"the compiler is allowed to produce anything at all,\n"</span>);
+    printf(<span class="s">"and as you can see it did not even pick one answer.\n"</span>);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">(int)   1e10      = <span class="bad">-2147483648</span>
+(short) 40000.0   = <span class="bad">-25536</span>
+(short) -50000.0  = <span class="bad">15536</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Converting a float to an integer type that cannot hold it is undefined behaviour, not merely wrong.</li>
+            <li>Undefined means the compiler owes you nothing. It may wrap, clamp, produce rubbish, or delete the surrounding code.</li>
+            <li>Three conversions in one program gave three unrelated answers. There is no rule here to learn.</li>
+            <li>Which means you cannot test your way out of it. The only fix is to check the range before converting.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Rebuild this with -O2 or with clang. The numbers change. That is the lesson, not the numbers.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="The five rules" data-act="summary">
+  <div>
+    <h2>Five conversions, five different failures.</h2>
+    <table class="rules">
+      <tr><th>conversion</th><th>what it does</th><th>what you lose</th></tr>
+      <tr><td>float to int</td><td>drops the fraction, toward zero</td><td class="w">everything after the point</td></tr>
+      <tr><td>int to float</td><td>rounds to the nearest float</td><td class="w">low digits above 2<sup>24</sup></td></tr>
+      <tr><td>int to smaller int</td><td>keeps the low bits</td><td class="w">the high bits, silently</td></tr>
+      <tr><td>signed to unsigned</td><td>changes nothing at all</td><td class="w">the meaning of the top bit</td></tr>
+      <tr><td>out of range</td><td>undefined behaviour</td><td class="w">any guarantee whatsoever</td></tr>
+      <tr><td>int to bigger int</td><td>sign extends</td><td class="s">nothing. this one is safe</td></tr>
+    </table>
+    <p class="big frag" style="margin-top:16px;max-width:none;font-size:26px">Only the last row is free. Everything else costs something, and none of them announce it.</p>
+  </div>
+  <div class="cue">Worth copying down. This table is the practical output of the whole arc.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="4 June 1996" data-act="ariane">
+  <div>
+    <div class="kicker">kourou, french guiana</div>
+    <h2 style="font-size:46px;margin-bottom:20px">4 June 1996.<br>Ariane 5, flight 501.</h2>
+    <div class="split">
+      <div class="stack">
+        <p>First flight of a new launcher. Ten years of development, and a cluster of four scientific satellites on board.</p>
+        <p class="frag">Thirty seven seconds after ignition the guidance system fails. At about forty seconds the vehicle breaks up and is destroyed.</p>
+      </div>
+      <div class="stack frag">
+        <p class="big">The rocket was fine. The engines were fine.</p>
+        <p>The guidance software had flown successfully on Ariane 4 for years. It was reused, deliberately, because it was proven.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This has been on the board since Class 1. Say so. They have been waiting nine sessions for it.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="06 · the conversion" data-act="ariane">
+  <div>
+    <h2>The line that did it.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 06-ariane.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;stdint.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="c">/* the guidance unit held a horizontal value as a 64 bit
+       float and wrote it into a 16 bit signed integer,
+       with no check                                       */</span>
+
+    <span class="f">double</span> v[] = { <span class="s">5000</span>, <span class="s">20000</span>, <span class="s">32767</span>,
+                   <span class="s">32768</span>, <span class="s">60000</span>, <span class="s">100000</span> };
+
+    printf(<span class="s">"64 bit float   into int16     still correct?\n"</span>);
+
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt; <span class="s">6</span>; i++) {
+        int16_t stored = (int16_t)(int32_t)v[i];
+        printf(<span class="s">"%-14.0f %-14d %s\n"</span>,
+               v[i], stored, stored == v[i] ? <span class="s">"yes"</span> : <span class="s">"NO"</span>);
+    }
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">64 bit float   into int16     still correct?
+5000           5000           yes
+20000          20000          yes
+32767          32767          yes
+32768          <span class="bad">-32768</span>         NO
+60000          <span class="bad">-5536</span>          NO
+100000         <span class="bad">-31072</span>         NO</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>A 64 bit float can hold a value that a 16 bit integer cannot. Nothing checked whether this one could.</li>
+            <li>Ariane 4 never produced a value past the third row, because it flew a shallower, slower trajectory.</li>
+            <li>Ariane 5 was faster. Its horizontal velocity was several times larger, and the value went past the limit.</li>
+            <li>The conversion was one of seven. Four had range checks. Three did not, on the argument that they could never overflow, based on Ariane 4 flight data.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The reasoning behind leaving three unchecked was not laziness. It was a documented analysis, using the wrong rocket's numbers.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="What followed" data-act="ariane">
+  <div>
+    <h2>What one unchecked conversion set off.</h2>
+    <div class="chain">
+      <div class="step"><div class="n">1</div><div class="t">The conversion raises an operand error. Nothing catches it.</div></div>
+      <div class="step frag"><div class="n">2</div><div class="t">The inertial reference unit shuts itself down and puts a diagnostic pattern on its output.</div></div>
+      <div class="step frag"><div class="n">3</div><div class="t">The backup unit is running identical software on identical data. It had already failed, moments earlier, for the same reason.</div></div>
+      <div class="step frag"><div class="n">4</div><div class="t">The on board computer reads the diagnostic pattern as though it were flight data.</div></div>
+      <div class="step frag"><div class="n">5</div><div class="t">It commands a full deflection of the nozzles to correct an attitude error that does not exist.</div></div>
+      <div class="step frag"><div class="n">6</div><div class="t">The vehicle turns sharply into the airflow, begins to break up, and the self destruct fires.</div></div>
+    </div>
+  </div>
+  <div class="cue">Step three is the one worth dwelling on. Redundancy protects against a part failing, not against a decision being wrong.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="It was not needed" data-act="ariane">
+  <div>
+    <h2>And the piece of code that failed had no job to do.</h2>
+    <div class="split" style="margin-top:6px">
+      <div class="stack">
+        <p>The function computing that value was part of the alignment routine, which prepares the guidance system before launch.</p>
+        <p class="frag">On Ariane 4 it kept running for some seconds after lift off, so that a late hold in the countdown would not require a full realignment.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0;border-left-color:var(--fail)">
+        <div class="h" style="color:var(--fail)">remember</div>
+        <ul>
+          <li>Ariane 5 had no such requirement. The routine served no purpose after lift off at all.</li>
+          <li>It was left in because it worked on Ariane 4, and removing working code felt like the larger risk.</li>
+          <li>The value it was computing was never used by anything. It was calculated, converted, and thrown away.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Roughly 370 million dollars of launcher and payload, over a number nobody read.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="07 · the fix" data-act="the fix">
+  <div>
+    <h2>What it would have taken.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 07-guard.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;stdint.h&gt;</span>
+
+<span class="f">int</span> to_int16(<span class="f">double</span> v, int16_t *out)
+{
+    <span class="k">if</span> (v &lt; <span class="s">-32768.0</span> || v &gt; <span class="s">32767.0</span>) <span class="k">return</span> <span class="s">0</span>;
+    *out = (int16_t)v;
+    <span class="k">return</span> <span class="s">1</span>;
+}
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">double</span> v[] = { <span class="s">20000</span>, <span class="s">32768</span>, <span class="s">100000</span> };
+    int16_t out;
+
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt; <span class="s">3</span>; i++)
+        <span class="k">if</span> (to_int16(v[i], &amp;out))
+            printf(<span class="s">"%-8.0f stored as %d\n"</span>, v[i], out);
+        <span class="k">else</span>
+            printf(<span class="s">"%-8.0f refused, out of range\n"</span>, v[i]);
+
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">20000    stored as 20000
+32768    <span class="hit">refused, out of range</span>
+100000   <span class="hit">refused, out of range</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>One comparison before the cast. That is the entire difference.</li>
+            <li>The point is not the check. It is that the function now has to say whether it worked, so the caller has to decide what to do.</li>
+            <li>A conversion that cannot fail needs no return value. A conversion that can fail and does not report it is the pattern behind most of this arc.</li>
+            <li>Newer languages make this the default. Rust makes you handle a failed conversion, and Python simply refuses to have a fixed width.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask what the caller should do when it refuses. There is no good answer in flight software, and that is the real engineering problem.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="The ledger" data-act="close">
+  <div>
+    <h2>Four stories went on the board in Class 1.</h2>
+    <table class="rules" style="margin-top:4px">
+      <tr><th>failure</th><th>mechanism</th><th>status</th></tr>
+      <tr><td>0.1 + 0.2</td><td>one tenth has no exact binary form</td><td class="s">closed, Class 6</td></tr>
+      <tr><td>Ariane 5</td><td>64 bit float into a 16 bit integer, unchecked</td><td class="s">closed, today</td></tr>
+      <tr><td>the wallpaper crash</td><td>271 into 8 bits, and nothing read the flag</td><td class="w">half open</td></tr>
+      <tr><td>the 2038 problem</td><td>a 32 bit signed counter reaching its top</td><td class="w">half open</td></tr>
+    </table>
+    <p class="big frag" style="margin-top:16px;max-width:none;font-size:26px">You know the mechanism of all four now. What you still cannot explain is why the last two <span style="color:var(--fail)">said nothing</span>. That needs a flag, in hardware you have not built yet.</p>
+  </div>
+  <div class="cue">Class 20. They build the adder, feed it an overflow, and find the flag sitting there unread.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Close" data-act="close">
+  <div class="center">
+    <h2 style="font-size:44px;margin-bottom:22px">A conversion is a promise that<br>a value fits somewhere else.</h2>
+    <p class="big" style="max-width:52ch;color:var(--soft)">Nobody checks the promise unless you write the check. The language will not, the compiler will not by default, and the hardware cannot.</p>
+    <p class="big frag" style="margin-top:22px;max-width:48ch">Next session: what else a pattern can mean, when it is not a number at all.</p>
+  </div>
+  <div class="cue">Send off: rebuild programs 3 and 5 with -Wconversion and -fsanitize=undefined, and come back with what each one told you.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

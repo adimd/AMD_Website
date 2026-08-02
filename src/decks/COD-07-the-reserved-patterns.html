@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 7 · The two exponent patterns we held back</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.prog{display:grid;grid-template-columns:1.02fr .98fr;gap:34px;align-items:start}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+
+pre{background:#14181f;border-radius:10px;padding:18px 22px;font-family:var(--mono);font-size:15px;
+  line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre.xs{font-size:13.5px;line-height:1.45}
+pre .c{color:#7f8896} pre .k{color:#ff96a2}
+pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.term{background:#0f1319;border-radius:10px;padding:16px 20px;font-family:var(--mono);
+  font-size:16px;line-height:1.6;color:#9fe8b8;box-shadow:0 10px 24px rgba(20,22,28,.18);white-space:pre;overflow:hidden}
+.term.xs{font-size:13.5px;line-height:1.5}
+.term .dim{color:#7f8896} .term .hit{color:#ffd47e;font-weight:700}
+.term .bad{color:#ff96a2;font-weight:700} .term .ok{color:#7fe6ad}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+
+.big-n{font-family:var(--display);font-size:64px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+/* bit instrument */
+.fbits{display:flex;justify-content:center;align-items:flex-end;gap:12px}
+.fgroup{display:flex;flex-direction:column;align-items:center}
+.glab{font-family:var(--mono);font-size:11px;letter-spacing:.16em;margin-bottom:5px}
+.glab.sg{color:var(--fail)} .glab.ex{color:var(--amber)} .glab.mn{color:var(--accent)}
+.grow{display:flex;gap:2px}
+.grow b{height:44px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:14px;font-weight:700;border-radius:4px;
+  background:#f1efe9;color:#b3b0a7;border:1px solid var(--rule2)}
+.grow.sg b{width:38px} .grow.ex b{width:33px} .grow.mn b{width:29px;font-size:12px}
+.grow.sg b.on{background:var(--fail);border-color:var(--fail);color:#fff}
+.grow.ex b.on{background:var(--amber);border-color:var(--amber);color:#fff}
+.grow.mn b.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.btn{font-family:var(--mono);font-size:15px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:8px 13px;cursor:pointer}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap;align-items:center}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+.readout{width:100%;border-collapse:collapse;font-family:var(--mono)}
+.readout td{padding:6px 3px;border-bottom:1px solid var(--rule);font-size:18px}
+.readout td:first-child{color:var(--soft);font-size:11px;letter-spacing:.13em;text-transform:uppercase;width:10rem}
+.readout td:last-child{text-align:right;font-weight:700;color:var(--ink)}
+.readout tr:last-child td{border-bottom:none}
+
+.census{width:100%;border-collapse:collapse;font-family:var(--mono)}
+.census td{padding:8px 6px;border-bottom:1px solid var(--rule);font-size:20px}
+.census td:first-child{color:var(--ink);font-weight:700;width:28%}
+.census td:nth-child(2){color:var(--soft);font-size:15px}
+.census td:last-child{text-align:right;font-weight:700;font-size:22px}
+.census tr.tot td{border-top:2px solid var(--ink);border-bottom:none;padding-top:11px;color:var(--accent)}
+
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 07</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 7 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 07 · hour seven of fifty</div>
+    <h1>The two exponent<br>patterns we held back.</h1>
+    <p class="big" style="margin-top:26px;max-width:44ch">Twelve programs today. All of them are short, all of them compile, and you can run every one on your own laptop.</p>
+  </div>
+  <div class="cue">Terminal open on the projector for the whole hour. Compile in front of them.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="01 · a float in memory" data-act="program 1">
+  <div>
+    <h2>First, a way to see the bits.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 01-bits.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;string.h&gt;</span>
+
+<span class="f">void</span> show(<span class="f">char</span> *label, <span class="f">float</span> v)
+{
+    <span class="f">unsigned</span> u;
+    memcpy(&amp;u, &amp;v, <span class="s">4</span>);
+    printf(<span class="s">"%-10s "</span>, label);
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">31</span>; i &gt;= <span class="s">0</span>; i--) {
+        putchar(u &gt;&gt; i &amp; <span class="s">1</span> ? <span class="s">'1'</span> : <span class="s">'0'</span>);
+        <span class="k">if</span> (i == <span class="s">31</span> || i == <span class="s">23</span>) putchar(<span class="s">' '</span>);
+    }
+    printf(<span class="s">"  %g\n"</span>, v);
+}
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    show(<span class="s">"1.0f"</span>,  <span class="s">1.0f</span>);
+    show(<span class="s">"2.0f"</span>,  <span class="s">2.0f</span>);
+    show(<span class="s">"4.0f"</span>,  <span class="s">4.0f</span>);
+    show(<span class="s">"0.5f"</span>,  <span class="s">0.5f</span>);
+    show(<span class="s">"-1.0f"</span>, <span class="s">-1.0f</span>);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">1.0f       0 01111111 00000000000000000000000  1
+2.0f       0 <span class="hit">10000000</span> 00000000000000000000000  2
+4.0f       0 <span class="hit">10000001</span> 00000000000000000000000  4
+0.5f       0 <span class="hit">01111110</span> 00000000000000000000000  0.5
+-1.0f      <span class="hit">1</span> 01111111 00000000000000000000000  -1</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>memcpy moves the four bytes without converting anything. That is why we can look at them.</li>
+            <li>Doubling adds one to the exponent. Halving takes one away. The mantissa never moves.</li>
+            <li>Negating changes one bit and nothing else.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Type this one out. It is the instrument for the rest of the hour and it takes two minutes.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="How much did we hold back" data-act="the question">
+  <div>
+    <h2>Last session we refused to use two of these. Count what that costs.</h2>
+    <div class="ngrid" style="margin-top:26px">
+      <div class="cellx"><div class="big-n">256</div><div class="nlab">values the 8 bit<br>exponent can take</div></div>
+      <div class="cellx frag"><div class="big-n">254</div><div class="nlab">actually used<br>as exponents</div></div>
+      <div class="cellx frag"><div class="big-n red">33,554,432</div><div class="nlab">bit patterns sitting<br>under those two</div></div>
+      <div class="cellx frag"><div class="big-n red">0.78%</div><div class="nlab">of everything<br>a float can be</div></div>
+    </div>
+    <div class="rem frag" style="margin-top:26px;max-width:none">
+      <div class="h">the question for this hour</div>
+      <ul>
+        <li>Two exponent values, times 2<sup>23</sup> mantissas, times two signs, is 33,554,432 patterns.</li>
+        <li>Is a bit under one percent of the type a fair price? We will answer that at the end, once we know what it bought.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Have them do the multiplication. 2 x 8388608 x 2. Then hold the question open until the last slide.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="02 · int and float at the top" data-act="program 2">
+  <div>
+    <h2>What each type does when you go one past the top.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="c">/* 02-edges.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">int</span> i = <span class="s">2147483647</span>;
+    printf(<span class="s">"int   max     = %d\n"</span>, i);
+    printf(<span class="s">"int   max + 1 = %d\n"</span>, i + <span class="s">1</span>);
+
+    <span class="f">float</span> f = <span class="s">3.4028235e38f</span>;
+    printf(<span class="s">"float max     = %g\n"</span>, f);
+    printf(<span class="s">"float max * 2 = %g\n"</span>, f * <span class="s">2</span>);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">int   max     = 2147483647
+int   max + 1 = <span class="bad">-2147483648</span>
+float max     = 3.40282e+38
+float max * 2 = <span class="hit">inf</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Both types have an edge at the top. Neither can hold the next value.</li>
+            <li>The int wraps to the most negative number and says nothing.</li>
+            <li>The float produces a value that means "this went past the end". It is the only type in C that reports its own overflow.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask for both predictions first. Most expect the int to wrap and the float to either wrap or crash.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="03 · infinity" data-act="program 3">
+  <div>
+    <h2>Infinity is a value you can keep computing with.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="c">/* 03-infinity.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">float</span> inf = <span class="s">1.0f</span> / <span class="s">0.0f</span>;
+
+    printf(<span class="s">"1.0f / 0.0f  = %g\n"</span>, inf);
+    printf(<span class="s">"inf + 1      = %g\n"</span>, inf + <span class="s">1</span>);
+    printf(<span class="s">"inf * 2      = %g\n"</span>, inf * <span class="s">2</span>);
+    printf(<span class="s">"1 / inf      = %g\n"</span>, <span class="s">1</span> / inf);
+    printf(<span class="s">"-1.0f / 0.0f = %g\n"</span>, <span class="s">-1.0f</span> / <span class="s">0.0f</span>);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">1.0f / 0.0f  = <span class="hit">inf</span>
+inf + 1      = <span class="hit">inf</span>
+inf * 2      = <span class="hit">inf</span>
+1 / inf      = <span class="ok">0</span>
+-1.0f / 0.0f = <span class="hit">-inf</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Dividing an integer by zero kills the program. Dividing a float by zero does not.</li>
+            <li>Infinity absorbs addition and multiplication. Dividing into it gives zero.</li>
+            <li>There are two infinities, one per sign.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Run the integer version too, so they see it die. The contrast is the design decision.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="04 · not a number" data-act="program 4">
+  <div>
+    <h2>Some questions have no answer, so the machine says so.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 04-nan.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;string.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;math.h&gt;</span>
+
+<span class="f">void</span> show(<span class="f">char</span> *label, <span class="f">float</span> v)
+{
+    <span class="f">unsigned</span> u;
+    memcpy(&amp;u, &amp;v, <span class="s">4</span>);
+    printf(<span class="s">"%-12s "</span>, label);
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">31</span>; i &gt;= <span class="s">0</span>; i--) {
+        putchar(u &gt;&gt; i &amp; <span class="s">1</span> ? <span class="s">'1'</span> : <span class="s">'0'</span>);
+        <span class="k">if</span> (i == <span class="s">31</span> || i == <span class="s">23</span>) putchar(<span class="s">' '</span>);
+    }
+    printf(<span class="s">"  %g\n"</span>, v);
+}
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">float</span> inf = <span class="s">1.0f</span> / <span class="s">0.0f</span>;
+
+    show(<span class="s">"infinity"</span>,    inf);
+    show(<span class="s">"0.0f / 0.0f"</span>, <span class="s">0.0f</span> / <span class="s">0.0f</span>);
+    show(<span class="s">"inf - inf"</span>,   inf - inf);
+    show(<span class="s">"sqrtf(-1)"</span>,   sqrtf(<span class="s">-1.0f</span>));
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">infinity     0 <span class="hit">11111111</span> <span class="ok">00000000000000000000000</span>  inf
+0.0f / 0.0f  1 <span class="hit">11111111</span> <span class="bad">10000000000000000000000</span>  -nan
+inf - inf    1 <span class="hit">11111111</span> <span class="bad">10000000000000000000000</span>  -nan
+sqrtf(-1)    1 <span class="hit">11111111</span> <span class="bad">10000000000000000000000</span>  -nan</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Exponent all ones with a zero mantissa is infinity.</li>
+            <li>Exponent all ones with any other mantissa is NaN, not a number.</li>
+            <li>One mantissa bit is the whole difference between them.</li>
+            <li>Any nonzero mantissa works, so there are 16,777,214 NaN patterns.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Argue about 0/0 for a minute first. Some will say 0, some 1, and both cases are reasonable, which is the point.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="05 · NaN survives" data-act="program 5">
+  <div>
+    <h2>A NaN does not go away.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="c">/* 05-spread.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">float</span> x = <span class="s">0.0f</span> / <span class="s">0.0f</span>;
+
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">1</span>; i &lt;= <span class="s">5</span>; i++) {
+        x = x * <span class="s">2.0f</span> + <span class="s">1.0f</span>;
+        printf(<span class="s">"step %d   x = %g\n"</span>, i, x);
+    }
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">step 1   x = <span class="bad">-nan</span>
+step 2   x = <span class="bad">-nan</span>
+step 3   x = <span class="bad">-nan</span>
+step 4   x = <span class="bad">-nan</span>
+step 5   x = <span class="bad">-nan</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Any arithmetic on a NaN gives a NaN.</li>
+            <li>This is deliberate. A bad value stays visible instead of turning into a plausible number.</li>
+            <li>Compare with Class 1, where four machines carried on with wrong values and told nobody.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Short slide. The output is five identical lines and that is the whole content.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="06 · NaN comparisons" data-act="program 6">
+  <div>
+    <h2>Comparisons against a NaN are all false, including equality.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 06-compare.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">float</span> largest(<span class="f">float</span> *d, <span class="f">int</span> n)
+{
+    <span class="f">float</span> m = d[<span class="s">0</span>];
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">1</span>; i &lt; n; i++)
+        <span class="k">if</span> (d[i] &gt; m) m = d[i];
+    <span class="k">return</span> m;
+}
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">float</span> nan = <span class="s">0.0f</span> / <span class="s">0.0f</span>;
+
+    printf(<span class="s">"nan == nan   %s\n"</span>, nan == nan ? <span class="s">"true"</span> : <span class="s">"false"</span>);
+    printf(<span class="s">"nan &lt;  1     %s\n"</span>, nan &lt;  <span class="s">1</span>   ? <span class="s">"true"</span> : <span class="s">"false"</span>);
+    printf(<span class="s">"nan &gt;= 1     %s\n"</span>, nan &gt;= <span class="s">1</span>   ? <span class="s">"true"</span> : <span class="s">"false"</span>);
+
+    <span class="f">float</span> a[<span class="s">5</span>] = { <span class="s">3</span>, <span class="s">7</span>, nan, <span class="s">9</span>, <span class="s">2</span> };
+    <span class="f">float</span> b[<span class="s">5</span>] = { nan, <span class="s">3</span>, <span class="s">7</span>, <span class="s">9</span>, <span class="s">2</span> };
+    printf(<span class="s">"largest {3, 7, nan, 9, 2} = %g\n"</span>, largest(a, <span class="s">5</span>));
+    printf(<span class="s">"largest {nan, 3, 7, 9, 2} = %g\n"</span>, largest(b, <span class="s">5</span>));
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">nan == nan   <span class="bad">false</span>
+nan &lt;  1     <span class="bad">false</span>
+nan &gt;= 1     <span class="bad">false</span>
+largest {3, 7, nan, 9, 2} = <span class="ok">9</span>
+largest {nan, 3, 7, 9, 2} = <span class="bad">-nan</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>A NaN is the only value not equal to itself. That is how <code>isnan</code> used to be written.</li>
+            <li><code>x &lt; 1</code> and <code>x &gt;= 1</code> are both false at once, which your branches assume cannot happen.</li>
+            <li>Same function, same data, different order, different answer. A NaN in the middle gets skipped. A NaN first poisons the result.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The two array orders are the useful part. This is the shape of every NaN bug they will meet.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="07 · two zeros" data-act="program 7">
+  <div>
+    <h2>Now the other reserved exponent. Start with zero.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 07-zero.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;string.h&gt;</span>
+
+<span class="f">void</span> show(<span class="f">char</span> *label, <span class="f">float</span> v)
+{
+    <span class="f">unsigned</span> u;
+    memcpy(&amp;u, &amp;v, <span class="s">4</span>);
+    printf(<span class="s">"%-8s "</span>, label);
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">31</span>; i &gt;= <span class="s">0</span>; i--) {
+        putchar(u &gt;&gt; i &amp; <span class="s">1</span> ? <span class="s">'1'</span> : <span class="s">'0'</span>);
+        <span class="k">if</span> (i == <span class="s">31</span> || i == <span class="s">23</span>) putchar(<span class="s">' '</span>);
+    }
+    printf(<span class="s">"  %g\n"</span>, v);
+}
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">float</span> p =  <span class="s">0.0f</span>;
+    <span class="f">float</span> n = <span class="s">-0.0f</span>;
+
+    show(<span class="s">"+0.0f"</span>, p);
+    show(<span class="s">"-0.0f"</span>, n);
+    printf(<span class="s">"p == n     %s\n"</span>, p == n ? <span class="s">"true"</span> : <span class="s">"false"</span>);
+    printf(<span class="s">"1.0f / p = %g\n"</span>, <span class="s">1.0f</span> / p);
+    printf(<span class="s">"1.0f / n = %g\n"</span>, <span class="s">1.0f</span> / n);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">+0.0f    <span class="ok">0</span> 00000000 00000000000000000000000  0
+-0.0f    <span class="bad">1</span> 00000000 00000000000000000000000  -0
+p == n     <span class="ok">true</span>
+1.0f / p = <span class="hit">inf</span>
+1.0f / n = <span class="bad">-inf</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Zero has to be a special case. Every normal float is 1.something, so no exponent and mantissa can produce zero.</li>
+            <li>There are two zeros. They compare as equal but they are different patterns.</li>
+            <li>Divide by each and the sign shows up again, as opposite infinities.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">In Class 5 we rejected sign magnitude for having two zeros. Here we accept it. Ask why the trade is different.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="08 · the gap at the bottom" data-act="program 8">
+  <div>
+    <h2>Measure what sits either side of the smallest float.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="c">/* 08-hole.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;math.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">float</span> small = <span class="s">1.17549435e-38f</span>;
+    <span class="f">float</span> above = nextafterf(small, <span class="s">1.0f</span>);
+
+    printf(<span class="s">"smallest normal  = %.4e\n"</span>, small);
+    printf(<span class="s">"the one above it = %.4e\n"</span>, above);
+    printf(<span class="s">"step upwards     = %.4e\n"</span>, above - small);
+    printf(<span class="s">"step down to 0   = %.4e\n"</span>, small);
+    printf(<span class="s">"the drop is      = %.0f times wider\n"</span>,
+           small / (above - small));
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">smallest normal  = 1.1755e-38
+the one above it = 1.1755e-38
+step upwards     = <span class="ok">1.4013e-45</span>
+step down to 0   = <span class="bad">1.1755e-38</span>
+the drop is      = <span class="bad">8388608 times wider</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>If the all zero exponent only ever meant zero, there would be nothing at all between zero and 1.1755e-38.</li>
+            <li>That gap is 8,388,608 times wider than every other gap nearby.</li>
+            <li>8,388,608 is 2<sup>23</sup>. The hole is exactly as wide as the mantissa is deep.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask them to guess the ratio before running it. Nobody guesses eight million.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="09 · the guarantee" data-act="program 9">
+  <div>
+    <h2>Two neighbours, subtracted.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="c">/* 09-guarantee.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;math.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">float</span> b = <span class="s">1.17549435e-38f</span>;
+    <span class="f">float</span> a = nextafterf(b, <span class="s">1.0f</span>);
+
+    printf(<span class="s">"a          = %.4e\n"</span>, a);
+    printf(<span class="s">"b          = %.4e\n"</span>, b);
+    printf(<span class="s">"a != b       %s\n"</span>, a != b ? <span class="s">"true"</span> : <span class="s">"false"</span>);
+    printf(<span class="s">"a - b      = %.4e\n"</span>, a - b);
+    printf(<span class="s">"a - b == 0   %s\n"</span>,
+           a - b == <span class="s">0.0f</span> ? <span class="s">"true"</span> : <span class="s">"false"</span>);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">a          = 1.1755e-38
+b          = 1.1755e-38
+a != b       <span class="ok">true</span>
+a - b      = <span class="ok">1.4013e-45</span>
+a - b == 0   <span class="ok">false</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Their difference is smaller than the smallest normal float, so it lands in that hole.</li>
+            <li>It comes out nonzero, which means something lives in the hole after all.</li>
+            <li>The rule being protected: a minus b is zero only when a equals b. Numerical code assumes this everywhere.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Do not explain what fills the hole yet. Next slide.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="What fills the hole" data-act="subnormals">
+  <div>
+    <h2>What the all zero exponent actually means.</h2>
+    <div class="split" style="margin-top:12px">
+      <div class="stack">
+        <p>If the exponent field is all zeros and the mantissa is not zero, read the leading digit as <span class="num">0</span> instead of <span class="num">1</span>, and hold the exponent at <span class="num">2<sup>&minus;126</sup></span>.</p>
+        <p>So the value is <span class="num">0.mantissa &times; 2<sup>&minus;126</sup></span> rather than <span class="num">1.mantissa &times; 2<sup>e</sup></span>.</p>
+      </div>
+      <div class="rem" style="margin-top:0">
+        <div class="h">remember</div>
+        <ul>
+          <li>These are called subnormals.</li>
+          <li>They fill the hole with 8,388,606 evenly spaced values between zero and the smallest normal float.</li>
+          <li>The spacing down there is constant, the same 1.4013e-45 all the way.</li>
+          <li>The cost: each step down loses one bit of precision, because the leading zeros are not carrying information.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">One of only two slides in the hour without a program. Keep it to two minutes.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="10 · walking down" data-act="program 10">
+  <div>
+    <h2>Halve the smallest normal float, twenty four times.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 10-walk.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;string.h&gt;</span>
+
+<span class="f">void</span> show(<span class="f">int</span> step, <span class="f">float</span> v)
+{
+    <span class="f">unsigned</span> u;
+    memcpy(&amp;u, &amp;v, <span class="s">4</span>);
+    printf(<span class="s">"step %-3d "</span>, step);
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">31</span>; i &gt;= <span class="s">0</span>; i--) {
+        putchar(u &gt;&gt; i &amp; <span class="s">1</span> ? <span class="s">'1'</span> : <span class="s">'0'</span>);
+        <span class="k">if</span> (i == <span class="s">31</span> || i == <span class="s">23</span>) putchar(<span class="s">' '</span>);
+    }
+    printf(<span class="s">"  %g\n"</span>, v);
+}
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">float</span> v = <span class="s">1.17549435e-38f</span>;
+
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt;= <span class="s">24</span>; i++) {
+        show(i, v);
+        v = v / <span class="s">2.0f</span>;
+    }
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">step 0   0 <span class="ok">00000001</span> 00000000000000000000000  1.17549e-38
+step 1   0 <span class="bad">00000000</span> <span class="hit">1</span>0000000000000000000000  5.87747e-39
+step 2   0 <span class="bad">00000000</span> 0<span class="hit">1</span>000000000000000000000  2.93874e-39
+step 3   0 <span class="bad">00000000</span> 00<span class="hit">1</span>00000000000000000000  1.46937e-39
+   ...
+step 22  0 00000000 000000000000000000000<span class="hit">1</span>0  2.8026e-45
+step 23  0 00000000 0000000000000000000000<span class="hit">1</span>  1.4013e-45
+step 24  0 00000000 00000000000000000000000  <span class="bad">0</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>The exponent walks down until it hits zero and then stops.</li>
+            <li>After that the single 1 moves one place right per halving. That is the leading digit being lost.</li>
+            <li>Twenty four halvings from the smallest normal float to zero, which is exactly how many digits a float has.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Run the full output, not the abridged version on the slide. Watching all twenty five lines scroll is worth the ten seconds.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="The same walk, by hand" data-act="program 10">
+  <div>
+    <h2>The same thing, one press at a time.</h2>
+    <div class="split" style="gap:34px;margin-top:10px">
+      <div class="stack">
+        <div class="btnrow" style="margin-top:0">
+          <button class="btn hot" id="halveGo">halve</button>
+          <button class="btn" id="halveAuto">run</button>
+          <button class="btn" id="halveRst">reset</button>
+        </div>
+        <table class="readout" style="margin-top:14px">
+          <tr><td>value</td><td id="hVal" style="font-size:15px">1.1754944e-38</td></tr>
+          <tr><td>family</td><td id="hFam">normal</td></tr>
+          <tr><td>bits of precision</td><td id="hSig">24</td></tr>
+          <tr><td>halvings so far</td><td id="hN">0</td></tr>
+        </table>
+      </div>
+      <div class="panel">
+        <div class="fbits">
+          <div class="fgroup"><div class="glab sg">S</div><div class="grow sg" id="hSign"></div></div>
+          <div class="fgroup"><div class="glab ex">EXPONENT</div><div class="grow ex" id="hExp"></div></div>
+          <div class="fgroup"><div class="glab mn">MANTISSA</div><div class="grow mn" id="hMan"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Give the button to a student. Twenty four presses.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="11 · what they cost in time" data-act="program 11">
+  <div>
+    <h2>Identical arithmetic, at two different magnitudes.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 11-speed.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;time.h&gt;</span>
+
+<span class="f">volatile</span> <span class="f">float</span> sink;
+
+<span class="f">double</span> run(<span class="f">float</span> start)
+{
+    clock_t t0 = clock();
+    <span class="k">for</span> (<span class="f">int</span> r = <span class="s">0</span>; r &lt; <span class="s">200</span>; r++) {
+        <span class="f">float</span> v = start;
+        <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt; <span class="s">200000</span>; i++)
+            v = v * <span class="s">0.999f</span> + start * <span class="s">0.001f</span>;
+        sink = v;
+    }
+    <span class="k">return</span> (<span class="f">double</span>)(clock() - t0) / CLOCKS_PER_SEC;
+}
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">double</span> normal = run(<span class="s">1.0f</span>);
+    <span class="f">double</span> tiny   = run(<span class="s">1.0e-40f</span>);
+
+    printf(<span class="s">"normal numbers    %.3f s\n"</span>, normal);
+    printf(<span class="s">"subnormal numbers %.3f s\n"</span>, tiny);
+    printf(<span class="s">"ratio             %.1f times slower\n"</span>,
+           tiny / normal);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">normal numbers    <span class="ok">0.097 s</span>
+subnormal numbers <span class="bad">1.741 s</span>
+ratio             <span class="bad">17.9 times slower</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Same instructions, same loop count. Only the size of the numbers is different.</li>
+            <li>A normal float has its leading one in a known place. A subnormal does not, so the hardware has to find it and shift.</li>
+            <li>On many processors that is not the fast path. Ten to a hundred times slower is normal.</li>
+            <li>A loop can slow down because the numbers got small, with no change to the code.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Run it on your own machine beforehand. The ratio varies and showing your own number is better than showing mine.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="09 again · one flag" data-act="program 9 again">
+  <div>
+    <h2>The same program, compiled twice.</h2>
+    <div class="split" style="gap:34px;margin-top:8px">
+      <div>
+        <div class="term">$ gcc 09-guarantee.c -o g -lm
+$ ./g
+a != b       <span class="ok">true</span>
+a - b      = <span class="ok">1.4013e-45</span>
+a - b == 0   <span class="ok">false</span></div>
+      </div>
+      <div>
+        <div class="term frag">$ gcc 09-guarantee.c -o g -lm <span class="hit">-ffast-math</span>
+$ ./g
+a != b       <span class="ok">true</span>
+a - b      = <span class="bad">0.0000e+00</span>
+a - b == 0   <span class="bad">true</span></div>
+      </div>
+    </div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>The flag switches on flush to zero, which throws subnormal results away rather than computing them.</li>
+        <li>The guarantee from program 9 is gone. Two values are unequal and their difference is zero.</li>
+        <li>Audio, graphics and machine learning code all do this, and are usually right to, because it is faster and most of the time nothing bad happens.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Two commands, live. Same source, same machine, two different answers about the same two numbers.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="12 · count everything" data-act="program 12">
+  <div>
+    <h2>Now just count every pattern there is.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 12-census.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">unsigned</span> <span class="f">long</span> <span class="f">long</span> normal = <span class="s">0</span>, sub = <span class="s">0</span>,
+                       zero = <span class="s">0</span>, inf = <span class="s">0</span>, nan = <span class="s">0</span>;
+
+    <span class="k">for</span> (<span class="f">unsigned</span> <span class="f">long</span> <span class="f">long</span> u = <span class="s">0</span>; u &lt;= <span class="s">0xFFFFFFFF</span>; u++) {
+        <span class="f">unsigned</span> e = u &gt;&gt; <span class="s">23</span> &amp; <span class="s">0xFF</span>;
+        <span class="f">unsigned</span> m = u       &amp; <span class="s">0x7FFFFF</span>;
+
+        <span class="k">if</span>      (e == <span class="s">0xFF</span>) { <span class="k">if</span> (m) nan++;  <span class="k">else</span> inf++;  }
+        <span class="k">else</span> <span class="k">if</span> (e == <span class="s">0</span>)    { <span class="k">if</span> (m) sub++;  <span class="k">else</span> zero++; }
+        <span class="k">else</span>                  normal++;
+    }
+
+    printf(<span class="s">"normal       %12llu\n"</span>, normal);
+    printf(<span class="s">"subnormal    %12llu\n"</span>, sub);
+    printf(<span class="s">"zero         %12llu\n"</span>, zero);
+    printf(<span class="s">"infinity     %12llu\n"</span>, inf);
+    printf(<span class="s">"not a number %12llu\n"</span>, nan);
+    printf(<span class="s">"total        %12llu\n"</span>,
+           normal + sub + zero + inf + nan);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">normal         4261412864
+subnormal        16777214
+zero                    2
+infinity                2
+not a number     16777214
+total          4294967296</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Five families, and every one of the 4,294,967,296 patterns belongs to exactly one.</li>
+            <li>16,777,214 of them are NaN, so about sixteen million bit patterns name no number at all.</li>
+            <li>This is not a proof, it is a loop. The machine counted its own type in about three seconds.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Run it live. Three and a half seconds of silence while a machine enumerates every float that exists.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Where the 33 million went" data-act="the answer">
+  <div>
+    <h2>The 33,554,432 patterns we set aside at the start.</h2>
+    <table class="census" id="censusTable" style="margin-top:6px"></table>
+  </div>
+  <div class="cue">Add the last four rows on the board. 16,777,214 twice plus two plus two is 33,554,432, which is the number from slide three.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-t="Both ends" data-act="the answer">
+  <div>
+    <h2>What a float looks like end to end.</h2>
+    <figure>
+      <svg viewBox="0 0 1400 320" width="100%" role="img" aria-label="The float range, with a staircase at the bottom and a hard stop at the top">
+        <g id="figCliffs"></g>
+      </svg>
+    </figure>
+  </div>
+  <div class="cue">Underflow was made gradual. Overflow was not. Ask which end they would have spent the patterns on if they could only afford one.</div>
+</section>
+
+<!-- 20 -->
+<section class="slide" data-t="Was it worth it" data-act="the answer">
+  <div>
+    <h2>So: was 0.78% of the type a fair price?</h2>
+    <div class="split" style="margin-top:14px">
+      <div class="rem" style="margin-top:0;border-left-color:var(--ok)">
+        <div class="h" style="color:var(--ok)">what it bought</div>
+        <ul>
+          <li>A value that says an overflow happened, instead of wrapping in silence like an int.</li>
+          <li>A value that says a question had no answer, and stays visible for the rest of the computation.</li>
+          <li>Zero, which the format otherwise cannot express at all.</li>
+          <li>8.4 million steps between zero and the smallest normal float, which keeps a minus b zero only when a equals b.</li>
+        </ul>
+      </div>
+      <div class="rem" style="margin-top:0;border-left-color:var(--fail)">
+        <div class="h" style="color:var(--fail)">what it cost</div>
+        <ul>
+          <li>33,554,432 patterns, of which sixteen million name nothing.</li>
+          <li>A slow path in the hardware that can cost a factor of twenty.</li>
+          <li>One bit of precision per step once you are in the subnormal range.</li>
+          <li>Two zeros, which have to compare as equal everywhere.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:18px;max-width:none;font-size:26px">You have both columns now. Next session is what a float costs you in the middle, where none of this applies.</p>
+  </div>
+  <div class="cue">Do not tell them the answer. Take a vote if there is time.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ---------- float helpers ---------- */
+  var buf=new ArrayBuffer(4), dv=new DataView(buf);
+  function toBits(x){ dv.setFloat32(0,x); return (dv.getUint32(0)>>>0).toString(2).padStart(32,'0'); }
+  function fromBits(b){ dv.setUint32(0,parseInt(b,2)>>>0); return dv.getFloat32(0); }
+  function classify(b){
+    var e=parseInt(b.slice(1,9),2), m=parseInt(b.slice(9),2);
+    if(e===255) return m===0?'infinity':'not a number';
+    if(e===0)   return m===0?'zero':'subnormal';
+    return 'normal';
+  }
+  function fmt(x){
+    if(x===0) return '0';
+    var a=Math.abs(x);
+    if(a>=1e7||a<1e-4) return x.toExponential(7);
+    return String(parseFloat(x.toPrecision(9)));
+  }
+
+  /* ---------- the halving walk ---------- */
+  var hSign=document.getElementById('hSign');
+  if(hSign){
+    var hExp=document.getElementById('hExp'), hMan=document.getElementById('hMan');
+    var START=fromBits('0'+'00000001'+'00000000000000000000000');
+    var v=START, n=0, tH=null;
+    function drawH(){
+      var b=toBits(v), cls=classify(b);
+      function cells(from,to){
+        var h='';
+        for(var k=from;k<to;k++) h+='<b class="'+(b.charAt(k)==='1'?'on':'')+'">'+b.charAt(k)+'</b>';
+        return h;
+      }
+      hSign.innerHTML=cells(0,1);
+      hExp.innerHTML=cells(1,9);
+      hMan.innerHTML=cells(9,32);
+      document.getElementById('hVal').textContent=fmt(v);
+      var fam=document.getElementById('hFam');
+      fam.textContent=cls;
+      fam.style.color={'normal':'var(--accent)','subnormal':'var(--amber)','zero':'var(--fail)',
+                       'infinity':'var(--ok)','not a number':'var(--fail)'}[cls];
+      var m=parseInt(b.slice(9),2), sig;
+      if(cls==='normal') sig=24; else if(cls==='subnormal') sig=m.toString(2).length; else sig=0;
+      var se=document.getElementById('hSig');
+      se.textContent=sig;
+      se.style.color = sig===0?'var(--fail)':(sig<24?'var(--amber)':'var(--accent)');
+      document.getElementById('hN').textContent=n;
+    }
+    function step(){ v=Math.fround(v/2); n++; drawH(); return v!==0; }
+    document.getElementById('halveGo').onclick=function(){ step(); };
+    document.getElementById('halveRst').onclick=function(){ clearInterval(tH); tH=null; v=START; n=0; drawH(); };
+    document.getElementById('halveAuto').onclick=function(){
+      var self=this;
+      if(tH){ clearInterval(tH); tH=null; self.textContent='run'; return; }
+      self.textContent='stop';
+      tH=setInterval(function(){ if(!step()){ clearInterval(tH); tH=null; self.textContent='run'; } },300);
+    };
+    drawH();
+  }
+
+  /* ---------- the census, as the program printed it ---------- */
+  var cs=document.getElementById('censusTable');
+  if(cs){
+    function C(n){ return n.toLocaleString('en-GB'); }
+    var rows=[
+      ['normal',       'exponent 1 to 254, the ordinary case', 4261412864, 'var(--soft)', false],
+      ['subnormal',    'exponent 0, mantissa not zero',           16777214, 'var(--amber)', true],
+      ['zero',         'exponent 0, mantissa zero',                      2, 'var(--ink)',   true],
+      ['infinity',     'exponent 255, mantissa zero',                    2, 'var(--ok)',    true],
+      ['not a number', 'exponent 255, mantissa not zero',         16777214, 'var(--fail)',  true]
+    ];
+    var held=0,h='';
+    rows.forEach(function(r){
+      if(r[4]) held+=r[2];
+      h+='<tr><td style="color:'+r[3]+'">'+r[0]+'</td><td>'+r[1]+'</td><td style="color:'+r[3]+'">'+C(r[2])+'</td></tr>';
+    });
+    h+='<tr class="tot"><td>the two reserved</td><td>everything the held back exponents became</td><td>'+C(held)+'</td></tr>';
+    cs.innerHTML=h;
+  }
+
+  /* ---------- both ends ---------- */
+  var fc=document.getElementById('figCliffs');
+  if(fc){
+    var X0=70, W=1260, Y=150, s='';
+    function px(t){ return X0+t*W; }
+    s+='<rect x="'+px(0.16)+'" y="'+(Y-26)+'" width="'+(px(0.84)-px(0.16))+'" height="52" rx="6" fill="#eaeef7" stroke="#c3cee6"/>';
+    s+='<text x="'+px(0.5)+'" y="'+(Y+7)+'" font-size="18" fill="#23408f" text-anchor="middle">NORMAL FLOATS  ·  4,261,412,864 OF THEM</text>';
+    s+='<path d="M'+px(0.06)+' '+(Y+26)+' L'+px(0.16)+' '+(Y-26)+' L'+px(0.16)+' '+(Y+26)+' z" fill="#fbf0dc" stroke="#e8d3ab"/>';
+    s+='<text x="'+px(0.11)+'" y="'+(Y+48)+'" font-size="13" fill="#b06a12" text-anchor="middle">SUBNORMALS</text>';
+    s+='<line x1="'+px(0.84)+'" y1="'+(Y-44)+'" x2="'+px(0.84)+'" y2="'+(Y+44)+'" stroke="#a8231f" stroke-width="4"/>';
+    s+='<rect x="'+px(0.88)+'" y="'+(Y-26)+'" width="'+(px(1.0)-px(0.88))+'" height="52" rx="6" fill="#e6f1ee" stroke="#b6d5cc"/>';
+    s+='<text x="'+px(0.94)+'" y="'+(Y+9)+'" font-size="25" fill="#146b5c" text-anchor="middle">&#8734;</text>';
+    s+='<line x1="'+px(0.06)+'" y1="'+(Y-38)+'" x2="'+px(0.06)+'" y2="'+(Y+38)+'" stroke="#15171b" stroke-width="4"/>';
+    s+='<text x="'+px(0.06)+'" y="'+(Y-48)+'" font-size="15" fill="#15171b" text-anchor="middle">0</text>';
+    [[0.16,'1.18e-38','smallest normal','#b06a12'],[0.84,'3.40e+38','largest float','#a8231f']].forEach(function(m){
+      s+='<text x="'+px(m[0])+'" y="'+(Y-48)+'" font-size="15" fill="'+m[3]+'" text-anchor="middle">'+m[1]+'</text>';
+      s+='<text x="'+px(m[0])+'" y="'+(Y-68)+'" font-size="12" fill="#8b9096" text-anchor="middle">'+m[2]+'</text>';
+    });
+    s+='<rect x="0" y="228" width="600" height="74" rx="10" fill="#fbf0dc" stroke="#e8d3ab"/>';
+    s+='<text x="24" y="254" font-size="12" fill="#b06a12">THE BOTTOM</text>';
+    s+='<text x="24" y="284" font-size="19" fill="#15171b">8.4 million steps down to zero</text>';
+    s+='<rect x="740" y="228" width="600" height="74" rx="10" fill="#fbeeed" stroke="#e0bcb9"/>';
+    s+='<text x="764" y="254" font-size="12" fill="#a8231f">THE TOP</text>';
+    s+='<text x="764" y="284" font-size="19" fill="#a8231f">one step, and there is nothing</text>';
+    fc.innerHTML=s;
+  }
+
+  paint();
+})();
+</script>
+</body>
+</html>
