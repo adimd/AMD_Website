@@ -67,7 +67,7 @@ title: How Numbers Behave on a Chip With No FPU
 
   <p>All of that is well documented, and I believe it is correct. But I had mostly <em>described</em> the behaviour rather than watched it, and I wanted to be sure I had it right. So I picked up an ESP32-C3-mini that had been sitting in a drawer and used it to check my own claims, one at a time, against the hardware.</p>
 
-  <p>The C3 is a good place for this because it runs a single 32-bit RISC-V core with no floating-point unit. Every floating-point operation is emulated in software, one library routine at a time, while integer and fixed-point math runs natively. A chip with no FPU does not hide the cost of floating-point behind dedicated silicon, so if a claim from the unit has a consequence, it tends to show up plainly here, sometimes as a wrong number and at least once as the board resetting itself.</p>
+  <p>The C3 is a good chip for this because it runs a single 32-bit RISC-V core with no floating-point unit. Every float operation gets emulated in software, one library routine at a time, while integer and fixed-point math runs natively. A chip with no FPU has nowhere to hide the cost of floating-point, so when a claim from the unit has a consequence, it shows up plainly here. Sometimes as a wrong number. At least once as the board resetting itself.</p>
 
   <div class="hw-grid">
     <div class="hw-item"><span class="hw-key">Chip</span><span class="hw-val">ESP32-C3-mini · RISC-V</span></div>
@@ -93,17 +93,17 @@ title: How Numbers Behave on a Chip With No FPU
     <li><strong>Verdict.</strong> Confirmed, confirmed with a twist, or diverges, and the reason why.</li>
   </ul>
 
-  <p>One detail that matters throughout: I print floats as their raw IEEE-754 bits rather than as decimals. The chip's minimal C library cannot reliably format floats, and more importantly the bits are the ground truth while a decimal is only a lossy rendering of them. When a decimal and the bits seem to disagree, trust the bits. I also compiled the whole project at <code>-O3</code>, the most aggressive optimization level, which is not the usual default. The reason becomes clear in Phase&nbsp;4, where it is the one choice that makes the final result visible at all.</p>
+  <p>One detail that matters throughout: I print floats as their raw IEEE-754 bits rather than as decimals. Partly because the chip's minimal C library cannot reliably format floats, but mostly because the bits are the ground truth and a decimal is only a lossy rendering of them. Whenever a decimal and the bits seem to disagree, trust the bits. I also compiled the whole project at <code>-O3</code>, the most aggressive optimization level, which is not the usual default. Why becomes clear in Phase&nbsp;4, where it is the one choice that makes the strangest result possible.</p>
 
 
   <!-- SECTION 3 -->
   <h2 id="phase1">Phase 1: building the float, and watching it round</h2>
 
-  <p>Why start here? Because a float is the default container for almost every number in a machine-learning model: every weight, every activation, every input pixel. If you do not know exactly what that container can and cannot hold, you cannot reason about anything built on top of it. So before testing how floats break, I wanted to confirm what a float actually <em>is</em> on this chip, down to the bit.</p>
+  <p>Why start here? Because a float is the default container for almost every number in a machine-learning model: every weight, every activation, every input pixel. If you don't know exactly what that container can and cannot hold, you can't reason about anything built on top of it. So before watching floats break, I wanted to confirm what a float actually <em>is</em> on this chip, down to the bit.</p>
 
   <p>A 32-bit float is three fields packed into one word: one sign bit, eight exponent bits, and twenty-three fraction bits, plus a "hidden 1" in front of the fraction that is never stored but always assumed.</p>
 
-  <h3>Probe 1.1 — a float is exactly its bits</h3>
+  <h3>Probe 1.1: a float is exactly its bits</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>A float's value can be reconstructed entirely from its three stored fields, with nothing else needed. If that is true, the format is exactly what the unit describes.</p>
@@ -132,7 +132,7 @@ title: How Numbers Behave on a Chip With No FPU
     <p>Because it is always 1, the format does not store it. It assumes it and stores only the fraction that follows, which is why 23 stored bits buy 24 bits of precision. The one exception is when the exponent field is all zeros, the reserved flag for "no hidden 1 here," which covers zero and the subnormal numbers in Phase&nbsp;3.</p>
   </div>
 
-  <h3>Probe 1.2 — most decimals are not on the grid</h3>
+  <h3>Probe 1.2: most decimals are not on the grid</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>A value like <code>0.1</code> has no exact binary form, so the chip cannot store it. It should keep the nearest representable value instead and report a small error.</p>
@@ -225,7 +225,7 @@ print_f32_fields_binary(f32_bits(stored));</code></pre>
 
   <p>Phase&nbsp;1 showed that every stored number starts slightly wrong. Phase&nbsp;2 is where those small errors compound, and it matters because the thing machine learning does most is <em>add up many numbers</em>: a dot product sums hundreds of terms, a loss accumulates across a whole dataset, a weight is nudged by millions of tiny gradient steps. Every one of those is a long running sum, which is exactly the situation where floats misbehave. It is also where one of my probes failed in a way that taught me something.</p>
 
-  <h3>Probe 2.1 — the gap eventually swallows +1</h3>
+  <h3>Probe 2.1: the gap eventually swallows +1</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>Past <code>2²⁴</code> (about 16.7 million), the gap between adjacent floats grows larger than 1. If so, adding 1 to such a number should change nothing, because there is no representable value one unit away.</p>
@@ -248,10 +248,10 @@ printf(<span class="str">"changed? %s\n"</span>, (y != x) ? <span class="str">"y
   <div class="explainer">
     <span class="explainer-label">Concept explainer</span>
     <h4>Why the gap doubles at every power of two</h4>
-    <p>The 24-bit significand always carries 24 significant bits, wherever the number sits. Between <code>2²³</code> and <code>2²⁴</code> those bits are enough to name every integer, so the gap is 1. To represent numbers between <code>2²⁴</code> and <code>2²⁵</code>, the value is twice as large while the significand still has 24 bits, so the smallest step it can express is now 2. The next octave makes it 4, then 8, and so on. Precision is a fixed number of significant figures, which means the absolute spacing grows right along with the size of the numbers. This is the same doubling drawn in the grid figure above.</p>
+    <p>The 24-bit significand always carries 24 significant bits, wherever the number sits. Between <code>2&sup2;&sup3;</code> and <code>2&sup2;&#8308;</code> those bits are enough to name every integer, so the gap is 1. One octave up, the value is twice as large but the significand still has only 24 bits, so the smallest step it can express becomes 2. The next octave makes it 4, then 8, and so on. Precision is a fixed number of significant figures, and that means the absolute spacing grows right along with the number.</p>
   </div>
 
-  <h3>Probe 2.2 — machine epsilon is the grid step at 1.0</h3>
+  <h3>Probe 2.2: machine epsilon is the grid step at 1.0</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>The smallest value you can add to <code>1.0</code> and still change it is machine epsilon, <code>2⁻²³</code> for float32. Anything smaller than half that step should round away.</p>
@@ -271,7 +271,7 @@ printf(<span class="str">"changed? %s\n"</span>, (y != x) ? <span class="str">"y
   <span class="plabel v">Verdict</span>
   <p><strong>Confirmed.</strong> The measured step matched the published constant to the digit. Adding exactly epsilon moves to the next mark; adding half a step rounds back, because it lands closer to where it started. Epsilon is simply the grid spacing at <code>1.0</code>.</p>
 
-  <h3>Probe 2.3 — accumulation freezes, creeps, or works</h3>
+  <h3>Probe 2.3: accumulation freezes, creeps, or works</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>A long running sum of a small increment will behave differently depending on how the increment compares to the local grid gap: below half the gap it freezes, just above epsilon it creeps and loses accuracy, and well above the gap it accumulates cleanly.</p>
@@ -290,7 +290,7 @@ printf(<span class="str">"changed? %s\n"</span>, (y != x) ? <span class="str">"y
   <span class="plabel v">Verdict</span>
   <p><strong>Confirmed.</strong> Same loop, three different fates. When the increment was below half the gap, a million additions moved the value by exactly nothing, because every single add rounded straight back. Just above epsilon it crept but lost real arithmetic to rounding, ending at <code>9.87</code> instead of <code>10.0</code>. The outcome is decided entirely by the increment versus the local grid spacing.</p>
 
-  <h3>Probe 2.4 — addition is not associative (and the test that fooled me)</h3>
+  <h3>Probe 2.4: addition is not associative (and the test that fooled me)</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>Summing the same numbers in a different order gives a different total, because where rounding happens depends on the running sum.</p>
@@ -322,7 +322,7 @@ printf(<span class="str">"discrepancy = %f\n"</span>, asc - desc);</code></pre>
   <div class="explainer">
     <span class="explainer-label">Concept explainer</span>
     <h4>How Kahan summation rescues the lost bits</h4>
-    <p>When a small number is added to a large running total, the bottom bits of the small number fall off the end and are lost. Kahan summation keeps a second variable that tracks exactly those discarded bits, and adds the leftover back in before the next step, so the bits that would have vanished get a second chance to count. It is bookkeeping, not magic. On ten thousand copies of <code>0.1</code>, the naive sum was off by <code>0.097</code> and Kahan brought the error down to <code>0.000014</code>, about six thousand times closer to the true total.</p>
+    <p>When a small number joins a large running total, the bottom bits of the small number fall off the end and vanish. Kahan summation keeps a second variable whose only job is to remember exactly those discarded bits, and adds them back in before the next step, so the bits that would have been lost get a second chance to count. It is bookkeeping, not magic. On ten thousand copies of <code>0.1</code>, the naive sum was off by <code>0.097</code> and Kahan brought the error down to <code>0.000014</code>, about six thousand times better, using nothing but one extra float of memory.</p>
   </div>
 
 
@@ -346,7 +346,7 @@ printf(<span class="str">"discrepancy = %f\n"</span>, asc - desc);</code></pre>
 
   <p>The edges matter because they are where a program does not just compute a slightly wrong answer, it falls over. Anyone who has trained a model has watched the loss suddenly print <code>nan</code> and every number afterward turn to garbage; that failure lives in this phase. Values that explode run into infinity at the top, values that vanish underflow to zero at the bottom, and a single undefined operation produces NaN, which then spreads to everything it touches. Phase&nbsp;3 walks the float off both edges and meets the value that refuses to behave like a number.</p>
 
-  <h3>Probe 3.1 — overflow saturates to infinity</h3>
+  <h3>Probe 3.1: overflow saturates to infinity</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>There is a largest finite float. Doubling past it should not wrap or error; it should saturate to a reserved value, <code>+infinity</code>, encoded as an all-ones exponent with a zero mantissa.</p>
@@ -365,7 +365,7 @@ printf(<span class="str">"discrepancy = %f\n"</span>, asc - desc);</code></pre>
   <span class="plabel v">Verdict</span>
   <p><strong>Confirmed.</strong> The largest finite float has exponent <code>11111110</code> and an all-ones mantissa. One doubling later the exponent becomes all ones and the mantissa goes to zero, the reserved code for infinity. Infinity behaves like a limit: <code>infinity + 1</code> stays infinity, while <code>infinity − infinity</code> produces NaN, which sets up the last probe in this phase.</p>
 
-  <h3>Probe 3.2 — underflow ramps down through the subnormals</h3>
+  <h3>Probe 3.2: underflow ramps down through the subnormals</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>Below the smallest <em>normal</em> float, the format does not jump straight to zero. It enters the subnormal range, switching off the hidden 1 and losing one bit of precision per step, until it finally flushes to zero.</p>
@@ -400,7 +400,7 @@ printf(<span class="str">"discrepancy = %f\n"</span>, asc - desc);</code></pre>
 
   <p>The fix was to yield the processor briefly between heavy probes so the idle task, and therefore the watchdog, stays satisfied. The lesson was the more useful takeaway: on this chip, "just add some floats in a loop" is not free, and the absence of an FPU reaches all the way up to the scheduler.</p>
 
-  <h3>Probe 3.3 — NaN is not equal to itself</h3>
+  <h3>Probe 3.3: NaN is not equal to itself</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>The result of an undefined operation like <code>0.0/0.0</code> is NaN, a value that fails its own equality test, is unordered against everything, and contaminates any arithmetic it touches.</p>
@@ -426,9 +426,9 @@ printf(<span class="str">"nan == nan ? %d\n"</span>, (nan == nan));</code></pre>
   <!-- SECTION 7 -->
   <h2 id="phase4">Phase 4: underneath the float, the integers</h2>
 
-  <p>Floats are the expensive guest on this hardware; integers are native and fast. That gap is the whole reason quantized models exist: to run a network on a chip like this, you convert its floats into small integers and do the arithmetic in integer units, trading a little accuracy for a large amount of speed and memory. So the integer's own quirks are not a side topic, they are how efficient inference actually computes. Phase&nbsp;4 drops to the integer world, which has edges of its own, and ends with the result that stuck with me most.</p>
+  <p>Floats are the expensive guest on this hardware; integers are native and fast. That gap is the entire reason quantized models exist: to run a network on a chip like this, you convert its floats into small integers and do the arithmetic in integer units, trading a little accuracy for a lot of speed and memory. So the integer's own quirks aren't a side topic. They are how efficient inference actually computes. Phase&nbsp;4 drops into the integer world, which has sharp edges of its own, and ends with the strangest result in the whole project.</p>
 
-  <h3>Probe 4.1 — signed integers wrap, they do not saturate</h3>
+  <h3>Probe 4.1: signed integers wrap, they do not saturate</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>A signed 8-bit integer holds &minus;128 to 127. Pushing past the top should not saturate like the float did; it should wrap around to the most negative value.</p>
@@ -453,7 +453,7 @@ printf(<span class="str">"128 as int8 = %d (0x%02X)\n"</span>, v, (<span class="
     <p>Signed integers are stored in two's complement, which lets one ordinary adder handle both positive and negative numbers without special cases. The bit patterns are arranged so that counting past the largest positive value rolls over to the most negative one; the arithmetic is really being done modulo <code>2ⁿ</code>, like a clock face whose top half is labelled negative. So <code>100 + 50</code> genuinely is <code>150</code> inside the byte, but <code>150</code> in eight bits is <code>0x96</code>, and that pattern <em>means</em> &minus;106 when read as signed. The bits are right; the interpretation is what surprises you.</p>
   </div>
 
-  <h3>Probe 4.2 — integer division truncates toward zero</h3>
+  <h3>Probe 4.2: integer division truncates toward zero</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>Integer division rounds toward zero rather than toward negative infinity, the remainder takes the sign of the dividend, and the identity <code>quotient × divisor + remainder == dividend</code> always holds.</p>
@@ -471,7 +471,7 @@ printf(<span class="str">"128 as int8 = %d (0x%02X)\n"</span>, v, (<span class="
   <span class="plabel v">Verdict</span>
   <p><strong>Confirmed.</strong> <code>-7 / 2</code> is <code>-3</code>, not the <code>-4</code> you would get from rounding down, and <code>-1 / 2</code> is <code>0</code>, the case that quietly breaks hand-rolled indexing and hashing. The reconstructing identity held in all four sign quadrants, so the rules are consistent; they are simply not the rules most people assume.</p>
 
-  <h3>Probe 4.3 — the chip and the compiler disagree</h3>
+  <h3>Probe 4.3: the chip and the compiler disagree</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>Signed integer overflow is undefined behaviour, not a defined wrap. So the same expression can give one answer when the hardware is forced to run it and a different answer when the optimizer is free to assume overflow never happens.</p>
@@ -505,7 +505,7 @@ printf(<span class="str">"128 as int8 = %d (0x%02X)\n"</span>, v, (<span class="
   <!-- SECTION 8 -->
   <h2 id="phase5">Phase 5: fixed-point, the engineered answer</h2>
 
-  <p>Every phase so far showed a number system misbehaving. Fixed-point is the deliberate response, and it is worth understanding because it is essentially what a quantized model does: keep the speed of integers while recovering the ability to represent fractions, by agreeing on a hidden scale. On a chip with no FPU this is not an academic alternative to floating-point, it is the practical way to do fractional math at all. The question this phase answers is the one the whole project has been circling: given everything wrong with floats, why not always use fixed-point instead?</p>
+  <p>Every phase so far showed a number system misbehaving. Fixed-point is the deliberate response, and it matters because it is essentially what a quantized model does: keep the speed of integers, recover the ability to hold fractions, by agreeing on a hidden scale. On a chip with no FPU this isn't an academic alternative to floating-point. It is the practical way to do fractional math at all. This phase answers the question the whole project has been circling: given everything we've seen, what does the trade actually look like?</p>
 
   <div class="explainer">
     <span class="explainer-label">Concept explainer</span>
@@ -513,7 +513,7 @@ printf(<span class="str">"128 as int8 = %d (0x%02X)\n"</span>, v, (<span class="
     <p>In Q16.16 you fix a scale of <code>2¹⁶</code> (65536) and agree that the integer you store represents the real value times that scale. To store <code>3.5</code> you keep <code>3.5 × 65536 = 229376</code>; to read it back you divide by 65536. The decimal point is never stored, it lives in your agreement about the scale. Adding two values is just an integer add, since both share the scale; multiplying is an integer multiply followed by a shift right by 16 to remove the doubled scale. No floating-point instruction is involved, so on this chip there is no slow software emulation: it is the fast, native path to fractional math.</p>
   </div>
 
-  <h3>Probe 5.1 — fixed-point's 0.1 is worse than the float's</h3>
+  <h3>Probe 5.1: fixed-point's 0.1 is worse than the float's</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>Storing <code>0.1</code> in Q16.16 will also produce an error, since one-tenth is not a clean multiple of <code>1/65536</code> either. The interesting question is how that error compares to the float's.</p>
@@ -530,7 +530,7 @@ printf(<span class="str">"128 as int8 = %d (0x%02X)\n"</span>, v, (<span class="
   <span class="plabel v">Verdict</span>
   <p><strong>Confirmed, and surprising.</strong> Fixed-point's error on <code>0.1</code> is about six thousand times <em>larger</em> than the float's. That feels backwards until you remember the grid figure from Phase&nbsp;1: near zero, the float's marks are extraordinarily fine, far finer than Q16.16's fixed step of <code>1/65536</code>. The next probe shows the price the float pays for that.</p>
 
-  <h3>Probe 5.2 — uniform grid versus uneven grid</h3>
+  <h3>Probe 5.2: uniform grid versus uneven grid</h3>
 
   <span class="plabel">Hypothesis</span>
   <p>The float's grid spacing grows with magnitude, while Q16.16's spacing is constant everywhere. Neither is strictly better; they trade range against uniformity.</p>
@@ -572,7 +572,7 @@ printf(<span class="str">"128 as int8 = %d (0x%02X)\n"</span>, v, (<span class="
 
   <p>That is what doing this on hardware gave me that writing the unit did not. The math in Unit&nbsp;1 is correct, but correctness on paper does not make you feel that a tenth costs precision differently at a hundred than at a hundred thousand, or that an ordinary loop can reset the board, or that <code>INT_MAX + 1</code> has two legal answers depending on who you ask. The chip already knew all of that. I just had to build the instrument and ask.</p>
 
-  <p>Pulling it together, the five phases are one story told from different angles. A finite number of bits forces a trade between range, precision, and speed, and every quirk in this project is that single trade showing its hand. The float reaches enormous magnitudes and pays with uneven precision and dramatic edges. The integer is exact and fast but small, and wraps without warning. Fixed-point splits the difference, uniform and quick but boxed into a narrow range. These are not separate curiosities; they are the same constraint seen from three sides, and they are exactly the choices that sit under every model: floating-point for training, where range matters most, and integers or fixed-point for inference on hardware like this, where speed and size matter most.</p>
+  <p>Pulling it together, the five phases are one story told from five angles. A finite number of bits forces a trade between range, precision, and speed, and every quirk in this project is that single trade showing its hand. The float reaches enormous magnitudes and pays with uneven precision and dramatic edges. The integer is exact and fast but small, and wraps without warning. Fixed-point splits the difference, uniform and quick but boxed into a narrow range. These aren't separate curiosities. They are the same constraint wearing three different costumes.</p>
 
   <p>That is also why this was worth building rather than only writing. The whole premise of <em>The Mathematics ML Runs On</em> is that the math is not abstract; it runs on real silicon with real limits. A chip with no FPU makes those limits impossible to look past, and turning each claim into a probe turned a unit I had written into something I had actually seen happen. If you have a board sitting in a drawer, I would recommend the exercise. It is humbling in the best way, and you come away trusting the numbers a little less and understanding them a lot more.</p>
 
