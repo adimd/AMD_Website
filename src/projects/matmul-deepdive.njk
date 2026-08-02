@@ -1,0 +1,464 @@
+---
+layout: base.njk
+title: Matmul Deepdive on ESP32-S3
+---
+
+{% raw %}
+<!-- BREADCRUMB -->
+<nav class="breadcrumb anim-rise delay-1">
+  <a href="/projects/">Projects</a>
+  <span style="color:var(--muted)">/</span>
+  <span style="color:var(--body)">Matmul Deepdive on ESP32-S3</span>
+</nav>
+
+<!-- HERO -->
+<header class="article-hero anim-rise delay-2">
+  <span class="hero-chip">✓ Complete</span>
+  <h1>Matmul Deepdive on ESP32-S3</h1>
+  <span class="hero-subtitle">Does the $3 AI chip actually do AI?</span>
+  <div class="article-meta">
+    <span>⚙️ ESP32-S3R8 · XH-S3E N16R8</span>
+    <span>📏 Cycle-accurate benchmarking</span>
+    <span class="tag">C</span>
+    <span class="tag">ESP-IDF v5.5.3</span>
+    <span class="tag">SIMD</span>
+    <span class="tag">Cache</span>
+    <span class="tag">TinyML</span>
+  </div>
+</header>
+
+<!-- ARTICLE -->
+<article class="article-body anim-rise delay-3">
+
+  <div class="callout note">
+    <strong>Before you read:</strong> This reflects my current understanding. I am still learning and may have gotten things wrong. If something looks off, I would genuinely appreciate the correction.
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <span class="toc-label">What's in this page</span>
+    <ol>
+      <li><a href="#question">The question I started with</a></li>
+      <li><a href="#matmul">What is matrix multiplication and why does AI care about it</a></li>
+      <li><a href="#hardware">The hardware and why memory is everything</a></li>
+      <li><a href="#implementations">The four implementations, explained from scratch</a></li>
+      <li><a href="#results">Results and benchmark tables</a></li>
+      <li><a href="#findings">What the numbers actually say</a></li>
+      <li><a href="#conclusion">What this means for the AI claim</a></li>
+      <li><a href="#mistakes">The things that went wrong</a></li>
+    </ol>
+  </div>
+
+
+  <!-- SECTION 1 -->
+  <h2 id="question">The question I started with</h2>
+
+  <p>Espressif makes a chip called the ESP32-S3. It costs about three dollars. It goes into smart home devices, IoT sensors, small robots, and a thousand other things. In their marketing, Espressif calls it an AI-capable chip. They point to a hardware feature called PIE (Processor Instruction Extensions) that can process eight 16-bit multiplications simultaneously in a single clock cycle.</p>
+
+  <p>That sounds impressive. But I wanted to know if it actually matters. Does that hardware acceleration translate into a real speedup on real code? And if so, at what point does it stop helping? What are the limits of calling this chip "AI-capable"?</p>
+
+  <p>The way to answer this properly is to benchmark the operation that AI relies on most: matrix multiplication. Build it four different ways, from the naive schoolbook version all the way up to using the dedicated hardware, measure each one on the actual chip, and see what the numbers say.</p>
+
+  <p>That is what this project is.</p>
+
+
+  <!-- SECTION 2 -->
+  <h2 id="matmul">What is matrix multiplication and why does AI care about it</h2>
+
+  <p>A matrix is just a grid of numbers. Matrix multiplication takes two of these grids and produces a third one. If you have matrix A and matrix B, multiplying them gives you C. Each number in C is computed by taking an entire row from A, an entire column from B, multiplying them element-by-element, and summing up all those products. This operation is called a dot product.</p>
+
+  <p>Here is the simplest possible version of the code:</p>
+
+<pre><code><span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i &lt; n; i++)         <span class="cm">// for each row of A</span>
+  <span class="kw">for</span> (<span class="kw">int</span> j = <span class="num">0</span>; j &lt; n; j++)       <span class="cm">// for each column of B</span>
+    <span class="kw">for</span> (<span class="kw">int</span> k = <span class="num">0</span>; k &lt; n; k++)     <span class="cm">// dot product</span>
+      C[i][j] += A[i][k] * B[k][j];</code></pre>
+
+  <p>Three nested loops. For an n×n matrix, this does n³ multiplications. Double n, and you do eight times as much work. This is why large matrix multiplications are expensive.</p>
+
+  <p>Now, why does AI care? A neural network is, at its core, a series of matrix multiplications. Every layer of a neural network takes an input vector, multiplies it by a weight matrix, and passes the result to the next layer. The "learning" in machine learning is the process of finding the right values for all those weight matrices. When you run a trained model to make a prediction, you are multiplying your input through every layer's weight matrix in sequence.</p>
+
+  <p>This means that if a chip can do matrix multiplication fast, it can run neural networks fast. If it struggles with matrix multiplication, it struggles with everything AI-related. Matrix multiplication is the benchmark that matters.</p>
+
+
+  <!-- SECTION 3 -->
+  <h2 id="hardware">The hardware and why memory is everything</h2>
+
+  <p>The ESP32-S3 is a small microcontroller chip built around two Xtensa LX7 processor cores running at up to 240 MHz. On the chip itself there is 512 KB of SRAM. This is the chip's internal memory, fast and immediately accessible. There is also 8 MB of external PSRAM connected to the chip via a high-speed bus. This is much larger but meaningfully slower to access.</p>
+
+  <div class="hw-grid">
+    <div class="hw-item"><span class="hw-key">Chip</span><span class="hw-val">ESP32-S3R8 · LX7</span></div>
+    <div class="hw-item"><span class="hw-key">Clock speed</span><span class="hw-val">240 MHz</span></div>
+    <div class="hw-item"><span class="hw-key">Internal SRAM</span><span class="hw-val">512 KB</span></div>
+    <div class="hw-item"><span class="hw-key">External PSRAM</span><span class="hw-val">8 MB · Octal @ 80 MHz</span></div>
+    <div class="hw-item"><span class="hw-key">L1 Data Cache</span><span class="hw-val">32 KB · 8-way</span></div>
+    <div class="hw-item"><span class="hw-key">Cache line size</span><span class="hw-val">32 bytes</span></div>
+  </div>
+
+  <p>The most important thing to understand about this chip, and honestly about most chips, is the memory hierarchy. The CPU can compute at 240 million cycles per second. But the data it operates on has to come from somewhere, and where that data lives makes an enormous difference to how fast things actually run.</p>
+
+  <div class="explainer">
+    <span class="explainer-label">Concept explainer</span>
+    <h4>What is a cache and why does it exist?</h4>
+    <p>Imagine the CPU as a chef working in a kitchen. The CPU registers (where actual computation happens) are like the chef's hands. Whatever the chef is currently working with is right there, instantly. The L1 cache is like the countertop. Small, right in front of the chef, very fast to grab from. Internal SRAM is like a shelf across the room, a little slower to walk to but still in the same kitchen. PSRAM is like a storage room down the hallway. More space, but every trip takes real time.</p>
+    <p>A cache works by keeping recently or frequently used data on the countertop so you don't have to keep walking to the storage room. When the CPU needs a piece of data, it first checks the cache. If it is there (a cache hit) it gets it instantly. If it is not there (a cache miss) it has to fetch it from slower memory, which takes many more cycles. The art of writing fast code on memory-constrained hardware is largely the art of making sure the data you need is already in cache when you need it.</p>
+  </div>
+
+  <p>On the ESP32-S3, the data cache is 32 KB. This was confirmed by inspecting the <code>sdkconfig</code> file. It is configurable between 16 KB and 32 KB and defaults to 32 KB in ESP-IDF v5.x. The cache line size is 32 bytes, meaning that when the CPU fetches a piece of data that is not in cache, it loads 32 consecutive bytes at a time from slower memory.</p>
+
+  <p>Here is the memory hierarchy laid out with the speed difference that matters for this benchmark:</p>
+
+  <div class="memory-diagram">
+    <div class="mem-level l1">
+      <span class="mem-icon">⚡</span>
+      <div class="mem-info">
+        <div class="mem-name">L1 Data Cache, 32 KB</div>
+        <div class="mem-desc">On-chip. Automatically managed by hardware. This is where hot data lives.</div>
+      </div>
+      <span class="mem-speed">~1 cycle</span>
+    </div>
+    <div class="mem-level sram">
+      <span class="mem-icon">💾</span>
+      <div class="mem-info">
+        <div class="mem-name">Internal SRAM, 512 KB</div>
+        <div class="mem-desc">On-chip. Fast. But most of this is used by FreeRTOS, stack, and code. Not much left for data.</div>
+      </div>
+      <span class="mem-speed">~4 cycles</span>
+    </div>
+    <div class="mem-level psram">
+      <span class="mem-icon">🐢</span>
+      <div class="mem-info">
+        <div class="mem-name">External PSRAM, 8 MB</div>
+        <div class="mem-desc">Off-chip. Connected via Octal SPI bus at 80 MHz. Where large matrices live. Very slow.</div>
+      </div>
+      <span class="mem-speed">~40 cycles</span>
+    </div>
+  </div>
+
+  <p>That 40-cycle penalty for a PSRAM access is the number that drives everything in this benchmark. The CPU can do a multiplication in 1 cycle. But if the data it needs is in PSRAM, it sits idle for 40 cycles waiting. This means that for memory-bound workloads, the chip is running at roughly 2.5% of its theoretical compute speed. 40 cycles of waiting for every 1 cycle of work.</p>
+
+  <div class="explainer">
+    <span class="explainer-label">Concept explainer</span>
+    <h4>What is PIE SIMD and what does it actually do?</h4>
+    <p>SIMD stands for Single Instruction, Multiple Data. Normally, one multiplication instruction multiplies two numbers and produces one result. A SIMD instruction multiplies many pairs of numbers simultaneously in a single clock cycle using wider registers in the CPU.</p>
+    <p>The ESP32-S3's PIE extension includes 128-bit vector registers. Since a 16-bit integer takes 16 bits, you can fit 8 of them into one 128-bit register. The instruction <code>EE.VMULAS.S16.QACC</code> takes two of these packed registers, multiplies all 8 pairs simultaneously, and accumulates the results. This is what "8-wide SIMD" means. One instruction does the work of eight.</p>
+    <p>The theoretical speedup from this is 8×. But whether you actually get 8× depends entirely on whether the CPU can be fed with fresh data fast enough. A SIMD unit that is waiting for data from PSRAM is no faster than a scalar unit waiting for the same data. The hardware is only as fast as the pipeline feeding it.</p>
+  </div>
+
+
+  <!-- SECTION 4 -->
+  <h2 id="implementations">The four implementations, explained from scratch</h2>
+
+  <p>Each implementation isolates exactly one variable. The goal is to see the contribution of each layer individually: the compiler, the memory access pattern, and the dedicated hardware. All matrices were allocated in PSRAM since that is where you would have to put them for any realistically sized model. Internal SRAM is far too small.</p>
+
+  <div class="impl-block">
+    <div class="impl-header">
+      <span class="impl-num">01</span>
+      <span class="impl-title">matmul_naive, the honest baseline</span>
+      <span class="impl-flag">-O0</span>
+    </div>
+    <div class="impl-body">
+      <p>The textbook three-loop implementation. No tricks, no restructuring. The compiler is told explicitly to do nothing with <code>-O0</code>. No loop unrolling, no register reuse, no reordering of operations. This is what you get if you copy the algorithm out of a textbook and run it.</p>
+      <p>The critical problem with this implementation is how it accesses matrix B. In the inner loop, we read <code>B[k][j]</code>. As <code>k</code> increases, we are jumping across rows of B, reading memory locations that are far apart from each other. Each step in the inner loop touches a piece of memory 2×n bytes away from the previous one. For large matrices this means almost every access is a cache miss, and every cache miss is a 40-cycle trip to PSRAM. The CPU is mostly waiting.</p>
+<pre><code><span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i &lt; n; i++) {
+  <span class="kw">for</span> (<span class="kw">int</span> j = <span class="num">0</span>; j &lt; n; j++) {
+    <span class="kw">int32_t</span> acc = <span class="num">0</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> k = <span class="num">0</span>; k &lt; n; k++) {
+      acc += (<span class="kw">int32_t</span>)A[i*n+k] * (<span class="kw">int32_t</span>)B[k*n+j]; <span class="cm">// B[k][j]: jumping rows = cache miss</span>
+    }
+    C[i*n+j] = (<span class="kw">int16_t</span>)acc;
+  }
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="impl-block">
+    <div class="impl-header">
+      <span class="impl-num">02</span>
+      <span class="impl-title">matmul_opt, let the compiler try</span>
+      <span class="impl-flag">-O3</span>
+    </div>
+    <div class="impl-body">
+      <p>Identical code, compiled with <code>-O3</code>. This tells GCC to apply every optimization it knows: unroll loops so you do multiple iterations in one pass, schedule instructions so the CPU pipeline stays busy, keep values in registers as long as possible, and eliminate redundant work. The algorithm has not changed. Only the compiler's output has.</p>
+      <p>This isolates the compiler's contribution cleanly. Any difference between naive and opt is purely the compiler's work. Any remaining gap between opt and the other implementations is the algorithmic work that the compiler cannot do on its own.</p>
+      <p>The key insight this implementation teaches: the compiler is very good at instruction-level optimization, but it cannot fix a bad memory access pattern. If your data is in PSRAM and you are accessing it in a stride-jumping pattern, the compiler cannot reorganize your algorithm well enough to change that fundamental bottleneck.</p>
+    </div>
+  </div>
+
+  <div class="impl-block">
+    <div class="impl-header">
+      <span class="impl-num">03</span>
+      <span class="impl-title">matmul_tiled, working with the cache instead of against it</span>
+      <span class="impl-flag">-O3 · T=32</span>
+    </div>
+    <div class="impl-body">
+      <p>This is where things get interesting. The idea is simple: instead of iterating over the full matrices in one pass, break them into small sub-matrices called tiles, and process one tile-triple at a time. Choose a tile size that fits in the L1 cache, and now all the data for the inner computation is already resident in cache. No PSRAM trips during the hot inner loop.</p>
+
+      <div class="explainer" style="margin: 1.2rem 0;">
+        <span class="explainer-label">How tiling works</span>
+        <h4>The intuition behind cache-blocking</h4>
+        <p>Think about the naive algorithm. For each output element C[i][j], you touch one entire row of A and one entire column of B. For a 256×256 matrix, a single column of B is 256 elements × 2 bytes = 512 bytes. The full matrix B is 256 × 512 bytes = 128 KB. This does not fit in a 32 KB cache. So as you compute each output element, you are repeatedly fetching the same data from PSRAM over and over.</p>
+        <p>Tiling reorders the computation. Instead of finishing all of C before moving on, you compute a small block of C at a time, called a tile. The key property is that while computing one tile of C, you only need a tile of A and a tile of B. If those three tiles together fit in the cache, every element gets loaded once from PSRAM, used many times in cache, and that is it. The PSRAM traffic is dramatically reduced.</p>
+      </div>
+
+<pre><code><span class="kw">#define</span> TILE <span class="num">32</span>  <span class="cm">// 3 tiles x 32^2 x 2 bytes = 6 KB total, fits well in 32 KB cache</span>
+
+<span class="kw">for</span> (<span class="kw">int</span> ii = <span class="num">0</span>; ii &lt; n; ii += TILE)
+  <span class="kw">for</span> (<span class="kw">int</span> jj = <span class="num">0</span>; jj &lt; n; jj += TILE)
+    <span class="kw">for</span> (<span class="kw">int</span> kk = <span class="num">0</span>; kk &lt; n; kk += TILE)
+      <span class="cm">// inner 3 loops work on one 32x32 block each, all in cache</span>
+      <span class="kw">for</span> (<span class="kw">int</span> i = ii; i &lt; ii+TILE; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> j = jj; j &lt; jj+TILE; j++) {
+          <span class="kw">int32_t</span> acc = C[i*n+j];
+          <span class="kw">for</span> (<span class="kw">int</span> k = kk; k &lt; kk+TILE; k++)
+            acc += (<span class="kw">int32_t</span>)A[i*n+k] * (<span class="kw">int32_t</span>)B[k*n+j];
+          C[i*n+j] = (<span class="kw">int16_t</span>)acc;
+        }</code></pre>
+
+      <p>The tile size T=32 is not arbitrary. Three 32×32 tiles of i16 (16-bit integers) use 3 × 32² × 2 bytes = 6 KB. That fits comfortably inside the 32 KB cache, leaving plenty of room for the stack and code.</p>
+
+      <p>I also tried T=64, which looked good on paper. 24 KB fits within 32 KB. It was 2.3× <em>slower</em> at n=256. The reason: the 32 KB cache is not exclusively yours. FreeRTOS, the benchmark harness code, the call stack, and program instructions all share the same cache. The actual amount of cache available for your matrix data is considerably less than 32 KB. T=32 fits reliably because it is conservative enough to survive the competition. T=64 was right on the edge and lost. This is exactly why you measure instead of calculate.</p>
+    </div>
+  </div>
+
+  <div class="impl-block">
+    <div class="impl-header">
+      <span class="impl-num">04</span>
+      <span class="impl-title">matmul_espdsp, using the PIE SIMD hardware</span>
+      <span class="impl-flag">-O3 · PIE i16</span>
+    </div>
+    <div class="impl-body">
+      <p>This implementation uses Espressif's <code>esp-dsp</code> library, which provides a hand-optimized dot product function <code>dsps_dotprod_s16</code> that internally uses the <code>EE.VMULAS.S16.QACC</code> PIE instruction. This is the 8-wide SIMD instruction that processes eight 16-bit multiplications simultaneously.</p>
+
+      <p>Before the multiplication, matrix B is transposed into a temporary matrix Bt. This is important: the dot product function needs both row vectors to be contiguous in memory. One row of A and one row of Bt (which represents a column of B). By transposing B first, every access in the inner loop is sequential, which is exactly what the SIMD unit needs to stay fed.</p>
+
+      <p>Only i16 (16-bit integers) benefit from this path. The PIE unit has no equivalent instruction for 32-bit integers or floats. For those types, this implementation falls back to the same scalar code as opt_O3, which is why the i32 and f32 numbers are identical between the two.</p>
+
+      <div class="callout note">
+        <strong>A detour worth mentioning:</strong> The original plan was to write custom PIE assembly directly in the source file. This turned out to be harder than expected. The Xtensa assembler rejects the <code>.option</code> directive. That is RISC-V syntax and does not exist in the Xtensa toolchain. GCC's inline assembly constraint system does not recognize Q registers (the PIE vector registers) as named clobbers, because they are TIE extension registers that exist outside GCC's standard model of the machine. After several failed attempts, the decision was made to use Espressif's own <code>esp-dsp</code> library, which wraps all of this correctly and is what Espressif themselves recommend for production use. The file is called <code>matmul_espdsp.c</code> rather than <code>matmul_asm.c</code> to be honest about what it actually does.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SECTION 5 -->
+  <h2 id="results">Results</h2>
+
+  <p>All measurements were taken at 240 MHz. Each data point is the median of 10 runs. Timing was done using the CCOUNT register, a hardware cycle counter that increments every clock cycle, cross-validated against <code>esp_timer</code>, which confirmed a calibration of 239.8 cycles per microsecond.</p>
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <span class="stat-number">22.8×</span>
+      <span class="stat-label">Total speedup</span>
+      <span class="stat-sub">naive → SIMD at 128×128 i16</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number">18.9 ms</span>
+      <span class="stat-label">128×128 i16 with SIMD</span>
+      <span class="stat-sub">real-time capable</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number">23.5×</span>
+      <span class="stat-label">PSRAM cliff factor</span>
+      <span class="stat-sub">128→256 scaling (expected 8×)</span>
+    </div>
+  </div>
+
+  <h3>i16 benchmark, raw cycles</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>n</th><th>naive_O0</th><th>opt_O3</th><th>tiled_O3</th><th>espdsp</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>8×8</td><td>25,288</td><td>5,994</td><td>4,441</td><td>6,648</td></tr>
+        <tr><td>16×16</td><td>190,248</td><td>41,458</td><td>26,745</td><td>22,256</td></tr>
+        <tr><td>32×32</td><td>1,481,994</td><td>312,066</td><td>187,321</td><td>98,248</td></tr>
+        <tr><td>64×64</td><td>11,694,619</td><td>2,427,644</td><td>1,498,096</td><td>516,551</td></tr>
+        <tr><td>128×128</td><td>103,655,528</td><td>29,446,056</td><td>13,270,140</td><td class="good">4,541,825</td></tr>
+        <tr><td>256×256</td><td>2,438,528,277</td><td class="bad">2,058,759,211</td><td class="good">106,912,458</td><td>148,902,291</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Speedup over naive_O0 (i16)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>n</th><th>opt_O3</th><th>tiled_O3</th><th>espdsp</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>8×8</td><td>4.2×</td><td>5.7×</td><td>3.8×</td></tr>
+        <tr><td>16×16</td><td>4.6×</td><td>7.1×</td><td>8.5×</td></tr>
+        <tr><td>32×32</td><td>4.7×</td><td>7.9×</td><td>15.1×</td></tr>
+        <tr><td>64×64</td><td>4.8×</td><td>7.8×</td><td>22.6×</td></tr>
+        <tr><td>128×128</td><td>3.5×</td><td>7.8×</td><td class="hi">22.8×</td></tr>
+        <tr><td>256×256</td><td class="bad">1.2×</td><td class="hi">22.8×</td><td>16.4×</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>The opt_O3 speedup collapsing from 4.8× at n=64 down to 1.2× at n=256 is the most telling single number in the whole benchmark. The compiler did not get worse. The hardware changed. The data left the cache.</p>
+
+  <h3>Speedup breakdown at 128×128 i16, the sweet spot</h3>
+
+  <div class="chart-wrap">
+    <div class="chart-title">Cycles at n=128 i16, lower is better</div>
+    <div class="bar-chart">
+      <div class="bar-row">
+        <span class="bar-label">naive_O0</span>
+        <div class="bar-track">
+          <div class="bar-fill naive" style="width:100%">103.7M</div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">opt_O3</span>
+        <div class="bar-track">
+          <div class="bar-fill opt" style="width:28.4%">29.4M</div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">tiled_O3</span>
+        <div class="bar-track">
+          <div class="bar-fill tiled" style="width:12.8%">13.3M</div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">espdsp</span>
+        <div class="bar-track">
+          <div class="bar-fill simd" style="width:4.4%">4.5M</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>256×256 across all data types</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>impl</th><th>i16</th><th>i32</th><th>f32</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>naive_O0</td><td>2,438M</td><td>2,715M</td><td>2,439M</td></tr>
+        <tr><td>opt_O3</td><td>2,058M</td><td>2,072M</td><td>2,060M</td></tr>
+        <tr><td>tiled_O3</td><td class="good">106M</td><td>442M</td><td>430M</td></tr>
+        <tr><td>espdsp</td><td>148M</td><td class="bad">2,072M</td><td class="bad">2,072M</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Notice that i32 and i16 are nearly identical for naive and opt. At 256×256 all variants are bottlenecked by PSRAM and the data type does not matter when you are spending most of your time waiting for memory. For tiled, i16 is 4× faster than i32 and f32 because the smaller element size means more elements fit in a tile, giving better cache utilization per byte. For espdsp, i32 and f32 have no SIMD path at all. They run exactly as fast as opt_O3.</p>
+
+
+  <!-- SECTION 6 -->
+  <h2 id="findings">What the numbers actually say</h2>
+
+  <div class="finding-block">
+    <span class="finding-num">Finding 01</span>
+    <h3>The compiler is powerful, until the data leaves the cache</h3>
+    <p>From n=8 up to n=64, <code>-O3</code> delivers a consistent 4.7–4.8× speedup. This is real and meaningful. Loop unrolling, instruction scheduling, and register allocation all contribute. The compiler is doing genuine work.</p>
+    <p>Then at n=128 the speedup drops to 3.5x. At n=256 it is 1.2x. The compiler has not gotten worse. What changed is that the three matrices at 256×256 together occupy 192 KB of memory, far more than the 32 KB cache, and more than the 512 KB internal SRAM. Every access to B in the inner loop has to fetch from PSRAM, taking about 40 cycles. The CPU is stalled waiting for data roughly 97% of the time.</p>
+    <p>The lesson: compiler optimization operates on instructions. When the bottleneck is memory latency, no amount of instruction-level cleverness can compensate. The compiler cannot rewrite your algorithm to have a better memory access pattern. That is the programmer's job.</p>
+  </div>
+
+  <div class="finding-block">
+    <span class="finding-num">Finding 02</span>
+    <h3>Memory layout mattered more than hardware acceleration</h3>
+    <p>This was the most surprising result. Tiling delivers 22.8× over naive and 19× over <code>-O3</code> alone at 256×256. The dedicated SIMD hardware maxes out at 22.8× over naive at its best. They end up at the same headline number, but tiling gets there by addressing the memory bottleneck, while SIMD gets there only when the memory bottleneck is already absent.</p>
+    <p>Put differently: if you could only apply one optimization to a large matrix multiplication on this chip, the right answer is cache-blocking, not SIMD. No new hardware required. Just reorganize the computation to respect the memory hierarchy.</p>
+    <p>This is a specific instance of a general principle called the memory wall. The gap between CPU compute speed and memory bandwidth has been widening for decades, and on memory-constrained embedded hardware like this, memory access patterns dominate performance more than anything else.</p>
+  </div>
+
+  <div class="finding-block">
+    <span class="finding-num">Finding 03</span>
+    <h3>There is a cliff at 256×256 that looks nothing like normal scaling</h3>
+    <p>Matrix multiplication is an O(n³) algorithm. Double the matrix dimension and the work goes up by 8×. This is exactly what we see for every size transition up to 128×128. The naive implementation scales at 7.5–8.9×, right on theoretical prediction. At the 128 to 256 transition, it scales 23.5×. Nearly three times worse than theory.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Transition</th><th>Actual scaling (naive i16)</th><th>Theoretical (O(n³))</th></tr></thead>
+        <tbody>
+          <tr><td>8 → 16</td><td>7.5×</td><td>8×</td></tr>
+          <tr><td>16 → 32</td><td>7.8×</td><td>8×</td></tr>
+          <tr><td>32 → 64</td><td>7.9×</td><td>8×</td></tr>
+          <tr><td>64 → 128</td><td>8.9×</td><td>8×</td></tr>
+          <tr><td>128 → 256</td><td class="bad">23.5×</td><td>8×</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The 128×128 matrices (three of them) fit just inside the 512 KB SRAM. The 256×256 matrices do not fit. They spill entirely into PSRAM. This is the memory cliff. It is visible in every implementation except tiled, because tiled was designed specifically to avoid it. The cliff does not represent the algorithm getting worse. It represents the hardware's memory hierarchy becoming the dominant factor.</p>
+  </div>
+
+  <div class="finding-block">
+    <span class="finding-num">Finding 04</span>
+    <h3>PIE SIMD gives 2.9x over tiling, but only when data is in cache</h3>
+    <p>At n=64 and n=128, where the tiled working set fits in cache and the SIMD unit can be fed continuously, espdsp is 2.9× faster than tiled. This is a real and meaningful hardware advantage. At 128×128 this is 4.5M cycles vs 13.3M, completing in 18.9 ms at 240 MHz. Fast enough for keyword detection, gesture classification, and small sensor-based inference in real time.</p>
+    <p>The theoretical maximum from 8-wide SIMD is 8×. The actual speedup is 2.9×, which is 37% efficiency. The gap comes from several real costs: B must be transposed before the computation (adding overhead that scales with n²), the dot product function is called once per output element (n² calls total), each call has function call overhead, and the loop boundaries around the SIMD instructions add extra work per tile. For a more efficient implementation you would want a kernel that batches many output elements together. But even at 37% efficiency, the hardware is clearly doing real work.</p>
+  </div>
+
+  <div class="finding-block">
+    <span class="finding-num">Finding 05</span>
+    <h3>SIMD loses to tiling at 256×256, and this is worth understanding</h3>
+    <p>At n=256, espdsp (148M cycles) is noticeably slower than tiled (106M cycles). This seems counterintuitive. Shouldn't hardware SIMD always help? But it makes complete sense once you think about what is happening.</p>
+    <p>At n=256, the matrices are in PSRAM. The espdsp implementation calls the dot product function 65,536 times (once per output element of a 256×256 matrix). Each call incurs overhead: function prologue and epilogue, argument passing, the transpose access pattern. And crucially, the SIMD unit is still stalling on PSRAM fetches, just like the scalar code. The vector unit can multiply 8 numbers at once, but it cannot hide the 40-cycle PSRAM latency any better than a scalar multiply can.</p>
+    <p>Tiling, by contrast, reorganizes the computation so that PSRAM is accessed as infrequently as possible. It wins because it addressed the root cause. SIMD accelerated the compute but left the memory bottleneck intact.</p>
+    <p><em>A SIMD engine is only as fast as the data pipeline feeding it.</em></p>
+  </div>
+
+
+  <!-- SECTION 7 -->
+  <h2 id="conclusion">What this means for the AI claim</h2>
+
+  <p>Espressif says the ESP32-S3 is AI-capable. Based on these measurements, that claim is accurate, but the accuracy comes with real limits that are worth understanding clearly.</p>
+
+  <p>For matrix sizes up to 128×128 with i16 data, the chip delivers 22.8× over a naive baseline and completes a full multiplication in under 20 ms. That is fast enough for:</p>
+
+  <ul style="margin: 1.2rem 0 1.2rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 1.05rem; font-weight: 300;">
+    <li>Keyword spotting (small audio classification models)</li>
+    <li>Gesture detection (IMU-based, lightweight)</li>
+    <li>Anomaly detection on sensor streams</li>
+    <li>Small image classifiers on low-resolution inputs</li>
+  </ul>
+
+  <p>Beyond 128×128, the chip hits a fundamental memory wall. PSRAM bandwidth cannot feed the CPU fast enough regardless of how the code is structured. At 256×256 the best implementation (tiled) is still 22.8x faster than naive, but the absolute numbers are much worse, and real models with larger layers will compound this.</p>
+
+  <p>The ESP32-S3 is not a competitor to dedicated inference accelerators, to the Raspberry Pi, or to anything designed to run modern computer vision or language models. It was never meant to be. It was designed for small, always-on inference at milliwatt power levels and three-dollar price points. At that job, the hardware earns its label honestly.</p>
+
+  <div class="callout finding">
+    <strong>The bottom line:</strong> "AI-capable" means small AI, meaning models with layers ≤128×128. The chip is genuinely good at keyword spotting, gesture detection, and lightweight sensor inference. It cannot run MobileNet, anything resembling a language model, or modern image classification. Both things are true.
+  </div>
+
+  <p>The deeper lesson from this benchmark has nothing to do with the ESP32-S3 specifically. It is a general principle that shows up everywhere in systems programming: on hardware with a significant gap between compute speed and memory bandwidth, the bottleneck is almost never the CPU. Optimizing memory access patterns gave a larger speedup than hardware SIMD acceleration. Writing code that respects the memory hierarchy, thinking carefully about where data lives and how it moves, is the most important performance skill on memory-constrained hardware.</p>
+
+
+  <!-- SECTION 8 -->
+  <h2 id="mistakes">The things that went wrong</h2>
+
+  <p>Two things slowed this project down more than the actual benchmarking work. Both are worth documenting because they are the kind of thing you do not find in tutorials.</p>
+
+  <h3>GCC 14.2.0 internal compiler error</h3>
+
+  <p>Early in the project, the build would crash with an internal compiler error deep inside GCC's IRA (Integrated Register Allocator) pass, triggered by <code>esp_lcd_panel_rgb.c</code>. This only happened with a specific combination of flags: <code>-mdisable-hardware-atomics</code> (required for octal PSRAM), combined with <code>-Og</code> (debug optimization), combined with having the <code>esp_lcd</code> component included in the build.</p>
+
+  <p>The fix was to exclude <code>esp_lcd</code> entirely from the build in <code>CMakeLists.txt</code>, since the project does not use it. This is a known bug in that version of the Xtensa GCC toolchain. It is not a project configuration error. The compiler itself is crashing. The lesson was to always check whether a build error is coming from your code or from the toolchain, and to not spend hours debugging your own files when the problem is in a component you do not even use.</p>
+
+  <h3>Xtensa PIE inline assembly turned out to be a dead end</h3>
+
+  <p>The original plan was to write the SIMD implementation using custom inline assembly, calling the PIE instructions directly. This hit two walls immediately. First, the Xtensa assembler does not understand the <code>.option</code> directive. That directive is RISC-V syntax and simply does not exist in the Xtensa toolchain. Second, GCC's inline assembly constraint system requires you to declare which registers your assembly code reads and writes. The PIE vector registers (Q0–Q7) are TIE extension registers that exist completely outside GCC's standard machine description. There is no valid constraint string for them. GCC simply does not know they exist.</p>
+
+  <p>After trying several approaches, standalone assembly files, compiler intrinsics, different versions of the toolchain, the conclusion was clear: using Espressif's own <code>esp-dsp</code> library was the right answer all along. The library is production-tested, actively maintained, and wraps the PIE instructions correctly. The final implementation is named <code>matmul_espdsp.c</code> specifically to be honest about this: it uses the library, not hand-written assembly.</p>
+
+  <a href="https://github.com/adimd/Matmul_Deepdive_on_ESP32S3" class="github-bar" target="_blank" rel="noopener">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="color:var(--muted);flex-shrink:0"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+    <div class="github-bar-text">
+      <strong>View source on GitHub</strong>
+      <span>Full code, sdkconfig, raw benchmark output, and build notes</span>
+    </div>
+    <span class="github-bar-arrow">→</span>
+  </a>
+
+  <div class="callout note" style="margin-top: 0;">
+    <strong>Environment:</strong> ESP-IDF v5.5.3 · xtensa-esp-elf GCC 14.2.0 · esp-dsp ^1.0.0 · Board: XH-S3E N16R8 · Target: esp32s3
+  </div>
+
+</article>
+{% endraw %}
