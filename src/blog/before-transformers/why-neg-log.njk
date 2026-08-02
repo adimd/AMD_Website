@@ -150,6 +150,7 @@ chapterSlug: why-neg-log
   <p>Fix a single training example. The corpus has handed us a real pair like (my, dog). The model has produced a probability for the correct context: \(p = P_{\text{model}}(\text{dog} \mid \text{my})\). This one number expresses the model's belief about this specific event.</p>
 
   <p>We want to convert \(p\) into a penalty \(f(p)\). The properties we want are easy to state.</p>
+<p>Before writing down requirements, feel the design problem. The corpus hands us (my, dog), and dog really did appear. Model A had said “dog: 0.9”. Model B had said “dog: 0.0001”. Both were technically assigning probabilities; both just watched the same event happen. How much should each one hurt? Your instinct already knows: A should barely feel it, and B should feel it badly, far more than nine thousand times worse than a model that said 0.9. Whatever function we pick has to agree with that instinct.</p>
 
   <p>When the model is right and confident, with \(p\) close to 1, the penalty should be near zero. When the model is right but hesitant, the penalty should be modest. When the model is confidently wrong about the truth, with \(p\) near zero, the penalty should be severe. It has to be smooth, because gradient descent needs continuous feedback, not step functions. And critically, it should treat different regions of \(p\) asymmetrically. Going from 0.9 to 0.8 shouldn't hurt much. Going from 0.1 to 0.001 should hurt a lot more, even though the numerical change is smaller.</p>
 
@@ -193,7 +194,7 @@ chapterSlug: why-neg-log
   <p>The function \(f(p) = -\log p\) does exactly what we need. At \(p = 1\) it's zero. At \(p = 0.5\) it's about 0.69. At \(p = 0.1\) it's 2.3. At \(p = 0.01\) it's 4.6. As \(p\) approaches zero it goes to infinity, smoothly, without any nasty numerical cliffs.</p>
 <figure class="fig">
   <svg viewBox="0 0 660 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four candidate penalty curves plotted over probability from zero to one. One minus p and its square hit a ceiling, one over p is wrong at p equals one, and minus log p vanishes at one and grows without bound near zero.">
-    <line x1="80" y1="258" x2="620" y2="258" stroke="#c5c0b4" stroke-width="1.5"/>
+    <line x1="80" y1="215" x2="620" y2="215" stroke="#f2ead9" stroke-width="1"/><line x1="80" y1="172" x2="620" y2="172" stroke="#f2ead9" stroke-width="1"/><line x1="80" y1="129" x2="620" y2="129" stroke="#f2ead9" stroke-width="1"/><line x1="80" y1="86" x2="620" y2="86" stroke="#f2ead9" stroke-width="1"/><line x1="80" y1="258" x2="620" y2="258" stroke="#c5c0b4" stroke-width="1.5"/>
     <line x1="80" y1="258" x2="80" y2="36" stroke="#c5c0b4" stroke-width="1.5"/>
     <text x="620" y="280" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#8a8172">p = 1 (model was sure, and right)</text>
     <text x="80" y="280" font-family="JetBrains Mono" font-size="10" fill="#8a8172">p &#8594; 0</text>
@@ -224,6 +225,7 @@ chapterSlug: why-neg-log
 
 
   <p>Information theory has a name for this quantity. It's the <em>surprise</em> of an event with probability \(p\). An event that was almost certain is unsurprising when it happens. An event that was almost impossible is shocking when it happens. \(-\log p\) quantifies that shock.</p>
+<p>The logarithm also has a signature worth noticing: halve the probability and the surprise rises by the same fixed step, every time, whether you're going from 0.5 to 0.25 or from 0.002 to 0.001. Improbability multiplies; surprise adds. That additivity is exactly how we'd want independent shocks to combine, and no polynomial can offer it.</p>
 
   <div class="callout">\(-\log p\) is the surprise of the truth, given what the model believed.</div>
 
@@ -253,7 +255,10 @@ chapterSlug: why-neg-log
 <figure class="fig">
   <svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ten training events plotted as surprise spikes over time. Most are small, two are tall shocks. A dashed line marks the average: the cross-entropy.">
     <line x1="50" y1="200" x2="630" y2="200" stroke="#c5c0b4" stroke-width="1.5"/>
-    <text x="50" y="222" font-family="JetBrains Mono" font-size="10" fill="#8a8172">training pairs, as they stream past</text>
+    <text x="70" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">p=.61</text>
+    <text x="294" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">p=.055</text>
+    <text x="518" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">p=.027</text>
+    <text x="50" y="238" font-family="JetBrains Mono" font-size="10" fill="#8a8172">training pairs, as they stream past</text>
     <text x="46" y="52" font-family="JetBrains Mono" font-size="10" fill="#8a8172">surprise</text>
     <line x1="70" y1="200" x2="70" y2="178" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><text x="70" y="166" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#0a7d52">expected</text><line x1="126" y1="200" x2="126" y2="187" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="182" y1="200" x2="182" y2="174" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="238" y1="200" x2="238" y2="182" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="294" y1="200" x2="294" y2="72" stroke="#a83c2c" stroke-width="6" stroke-linecap="round"/><text x="294" y="60" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">shock</text><line x1="350" y1="200" x2="350" y2="178" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="406" y1="200" x2="406" y2="185" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="462" y1="200" x2="462" y2="176" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/><line x1="518" y1="200" x2="518" y2="42" stroke="#a83c2c" stroke-width="6" stroke-linecap="round"/><text x="518" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">shock</text><line x1="574" y1="200" x2="574" y2="180" stroke="#0a7d52" stroke-width="6" stroke-linecap="round"/>
     <line x1="50" y1="155" x2="630" y2="155" stroke="#57503f" stroke-width="2" stroke-dasharray="7 5"/>
@@ -261,6 +266,29 @@ chapterSlug: why-neg-log
   </svg>
   <figcaption>Cross-entropy is not a new object. It is the running average of the same per-example surprise, weighted by how often reality serves each event.</figcaption>
 </figure>
+<div class="viz-block">
+  <div class="viz-header"><span class="viz-title">Draw from the corpus. Feel the surprise. Watch it average.</span></div>
+  <div class="viz-body">
+    <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center; margin-bottom:0.9rem;">
+      <button id="srDrawBtn" style="font-family:var(--mono); font-size:0.85rem; background:var(--accent); color:#fff; border:0; border-radius:8px; padding:0.5rem 1rem; cursor:pointer;">draw one pair</button>
+      <button id="srTenBtn" style="font-family:var(--mono); font-size:0.85rem; background:#fff; color:var(--ink); border:1.5px solid var(--border-strong); border-radius:8px; padding:0.5rem 1rem; cursor:pointer;">draw ten</button>
+      <button id="srResetBtn" style="font-family:var(--mono); font-size:0.85rem; background:#fff; color:var(--muted); border:1.5px solid var(--border); border-radius:8px; padding:0.5rem 1rem; cursor:pointer;">reset</button>
+    </div>
+    <div style="display:flex; gap:1.4rem; flex-wrap:wrap; margin-bottom:0.9rem;">
+      <div style="min-width:180px;"><span style="font-family:var(--mono); font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em;">drawn</span>
+        <div id="srWord" style="font-family:var(--mono); font-size:1.3rem; color:var(--ink); margin-top:0.2rem;">&mdash;</div></div>
+      <div style="min-width:180px;"><span style="font-family:var(--mono); font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em;">this surprise: &minus;log p</span>
+        <div id="srStamp" style="font-family:var(--mono); font-size:1.3rem; color:var(--accent); margin-top:0.2rem;">&mdash;</div></div>
+      <div style="min-width:200px;"><span style="font-family:var(--mono); font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em;">running average</span>
+        <div id="srAvg" style="font-family:var(--mono); font-size:1.3rem; color:var(--green); margin-top:0.2rem;">&mdash;</div></div>
+    </div>
+    <div id="srStrip" style="display:flex; align-items:flex-end; gap:4px; height:110px; border-bottom:1.5px solid var(--border-strong); padding:0 2px; position:relative;">
+      <div id="srTrue" style="position:absolute; left:0; right:0; border-top:2px dashed var(--muted); pointer-events:none;"></div>
+    </div>
+    <p class="viz-note">The model believes: dog 0.45, cat 0.30, love 0.12, pizza 0.10, rock 0.03. The corpus actually serves: dog half the time, cat and love a quarter each. Keep drawing. The running average settles toward the dashed line, the true cross-entropy of 1.23, without anyone ever computing a table. Notice which draws hurt: "love" arrives a quarter of the time, but the model only saved 0.12 of belief for it.</p>
+  </div>
+</div>
+
 
 
   <!-- VIZ 2: cross-entropy comparator -->
@@ -301,6 +329,7 @@ chapterSlug: why-neg-log
   <h2>From cross-entropy to a familiar single-term expression</h2>
 
   <p>Cross-entropy in its general form is a sum over all possible outcomes:</p>
+<p>It's fair to ask why we need the general form at all if we already have the single-example loss. Two reasons. The name and the connections live here: this sum is what information theory calls cross-entropy, and seeing it in full is what links our little training loss to a much older body of ideas. And the general form quietly covers cases we'll meet later, where the truth isn't one-hot but genuinely spread across outcomes.</p>
 
   <p style="text-align:center;">\(\displaystyle H(q, p) = -\sum_{k=1}^{K} q_k \log p_k\)</p>
 
@@ -778,5 +807,40 @@ function renderOH(){
 }
 renderOH();
 
+
+/* ---- draw-and-average surprise widget ---- */
+(function(){
+  var P={dog:0.45,cat:0.30,love:0.12,pizza:0.10,rock:0.03};
+  var D=[['dog',0.5],['cat',0.25],['love',0.25]];
+  var COL={dog:'#0a7d52',cat:'#2e5a7d',love:'#a83c2c'};
+  var strip=document.getElementById('srStrip'), avgEl=document.getElementById('srAvg');
+  var wordEl=document.getElementById('srWord'), stampEl=document.getElementById('srStamp');
+  var trueLine=document.getElementById('srTrue');
+  if(!strip) return;
+  var total=0, count=0, SCALE=34;
+  trueLine.style.bottom=(1.23*SCALE)+'px';
+  function draw(){
+    var r=Math.random(), acc=0, w='dog';
+    for(var k=0;k<D.length;k++){acc+=D[k][1]; if(r<=acc){w=D[k][0]; break;}}
+    var p=P[w], v=-Math.log(p);
+    total+=v; count++;
+    wordEl.textContent='(my, '+w+')';
+    stampEl.textContent=v.toFixed(2);
+    stampEl.style.color = v>1.8 ? '#a83c2c' : 'var(--accent)';
+    avgEl.textContent=(total/count).toFixed(3)+'  after '+count;
+    var bar=document.createElement('div');
+    bar.style.cssText='width:12px;border-radius:3px 3px 0 0;background:'+COL[w]+';height:'+(v*SCALE)+'px;flex:0 0 auto;';
+    bar.title=w+': '+v.toFixed(2);
+    strip.appendChild(bar);
+    while(strip.children.length>38){ strip.removeChild(strip.children[1]); }
+  }
+  document.getElementById('srDrawBtn').addEventListener('click',draw);
+  document.getElementById('srTenBtn').addEventListener('click',function(){for(var k=0;k<10;k++)draw();});
+  document.getElementById('srResetBtn').addEventListener('click',function(){
+    total=0;count=0;
+    wordEl.textContent='\u2014';stampEl.textContent='\u2014';avgEl.textContent='\u2014';
+    while(strip.children.length>1){strip.removeChild(strip.children[1]);}
+  });
+})();
 </script>
 {% endraw %}
