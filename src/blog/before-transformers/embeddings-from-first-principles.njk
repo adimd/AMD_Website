@@ -402,6 +402,126 @@ chapterSlug: embeddings-from-first-principles
 
 
 <script>
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: CORPUS BUILDER + LIVE MATRIX + GRAPH
+// ═══════════════════════════════════════════════════════════════════════════
+const PRESETS={
+  default:['I love my dog','I love my cat','You love my dog','You love my cat'],
+  pets:['I love my dog','I love my cat','You love my dog','You love my cat','I love my rabbit','You love my rabbit','I love my hamster','You love my hamster'],
+  food:['I love my pizza','I love my pasta','You love my pizza','You love my pasta'],
+  clear:[]
+};
+let sentences=[...PRESETS.default];
+let windowSize=1;
+
+function tokenise(s){
+  return s.trim().split(/\s+/).filter(Boolean);
+}
+// Build vocab preserving first-seen order
+function buildVocab(sents){
+  const seen=new Map(); // lower -> original case
+  const order=[];
+  sents.forEach(s=>{
+    tokenise(s).forEach(w=>{
+      const k=w.toLowerCase();
+      if(!seen.has(k)){seen.set(k,w);order.push(k);}
+    });
+  });
+  return{order,display:k=>seen.get(k)};
+}
+function buildCooc(sents,vocab,win){
+  const n=vocab.order.length;
+  const M=Array.from({length:n},()=>new Array(n).fill(0));
+  const idx=new Map(vocab.order.map((w,i)=>[w,i]));
+  sents.forEach(s=>{
+    const toks=tokenise(s).map(t=>t.toLowerCase());
+    for(let i=0;i<toks.length;i++){
+      const ii=idx.get(toks[i]);
+      if(ii===undefined)continue;
+      const maxJ=win>=99?toks.length-1:Math.min(toks.length-1,i+win);
+      for(let j=i+1;j<=maxJ;j++){
+        const jj=idx.get(toks[j]);
+        if(jj===undefined)continue;
+        M[ii][jj]++;M[jj][ii]++;
+      }
+    }
+  });
+  return M;
+}
+function colorClass(v,max){
+  if(v===0)return'c0';
+  if(max<=1)return v>0?'c1':'c0';
+  const r=v/max;
+  if(r>=0.9)return'c4';
+  if(r>=0.65)return'c3';
+  if(r>=0.35)return'c2';
+  return'c1';
+}
+function findTwins(M,vocab){
+  // groups of words with identical rows (only returns groups of size >= 2)
+  const n=vocab.order.length;
+  const groups=new Map(); // key=row signature -> [word indices]
+  for(let i=0;i<n;i++){
+    const key=M[i].join(',');
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(i);
+  }
+  const twins=[];
+  groups.forEach((arr,key)=>{
+    if(arr.length>=2&&key!==new Array(n).fill(0).join(','))twins.push(arr);
+  });
+  return twins;
+}
+function renderMatrix(){
+  const vocab=buildVocab(sentences);
+  const M=buildCooc(sentences,vocab,windowSize);
+  const host=document.getElementById('matrixHost');
+  if(vocab.order.length===0){
+    host.innerHTML='<div style="padding:2rem;text-align:center;color:var(--muted);font-style:italic">No sentences yet.</div>';
+    renderGraph(vocab,M,[]);
+    document.getElementById('matrixInsight').className='matrix-insight none';
+    document.getElementById('matrixInsight').textContent='Add some sentences to see the structure appear.';
+    return;
+  }
+  let max=0;
+  for(let i=0;i<M.length;i++)for(let j=0;j<M[i].length;j++)if(i!==j&&M[i][j]>max)max=M[i][j];
+  const twins=findTwins(M,vocab);
+  const twinSet=new Set();
+  twins.forEach(g=>g.forEach(i=>twinSet.add(i)));
+
+  // header
+  let html='<table class="cooc-matrix"><thead><tr><th></th>';
+  vocab.order.forEach(w=>{html+=`<th>${vocab.display(w)}</th>`;});
+  html+='</tr></thead><tbody>';
+  vocab.order.forEach((w,i)=>{
+    const twinClass=twinSet.has(i)?'twin':'';
+    html+=`<tr class="${twinClass}"><th>${vocab.display(w)}</th>`;
+    M[i].forEach(v=>{
+      html+=`<td class="${colorClass(v,max)}">${v}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  host.innerHTML=html;
+
+  // insight
+  const ins=document.getElementById('matrixInsight');
+  if(twins.length>0){
+    const parts=twins.map(g=>g.map(i=>`"${vocab.display(vocab.order[i])}"`).join(' / '));
+    ins.className='matrix-insight';
+    ins.innerHTML=`<span class="twin-badge">identical rows</span>${parts.join('<br><span class="twin-badge">identical rows</span>')} — these words are neighbour-twins. Nothing told the machine they're similar. They behave the same way in the corpus.`;
+  }else if(vocab.order.length<2){
+    ins.className='matrix-insight none';
+    ins.textContent='Add more sentences to start seeing patterns.';
+  }else{
+    ins.className='matrix-insight none';
+    ins.textContent='No two words have exactly the same row. Try adding a sentence that uses a new word in the same position as an existing one.';
+  }
+
+  renderGraph(vocab,M,twinSet);
+}
+
+
 // ── Graph renderer ──────────────────────────────────────────────────────────
 const gCanvas=document.getElementById('graphCanvas');
 function renderGraph(vocab,M,twinSet){
