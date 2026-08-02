@@ -1,0 +1,627 @@
+---
+layout: chapter.njk
+title: "From Words to Spaces"
+seriesKey: before-transformers
+chapterSlug: embeddings-from-first-principles
+---
+
+{% raw %}
+<style>
+.chapter-scope *, .chapter-scope *::before, .chapter-scope *::after {margin:0;padding:0;box-sizing:border-box}
+.chapter-scope a {color:var(--accent);text-decoration:none;transition:all .25s}
+.chapter-scope a:hover {color:#b5541c}
+@keyframes rise {from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.chapter-scope .anim {animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+.chapter-scope .d1 {animation-delay:.08s}
+.chapter-scope .d2 {animation-delay:.18s}
+.chapter-scope .nav-container {max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+.chapter-scope .nav-links {display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+.chapter-scope .nav-links a {color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+.chapter-scope .nav-links a::after {content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+.chapter-scope .nav-links a:hover {color:var(--ink)}
+.chapter-scope .nav-links a:hover::after {width:100%}
+.chapter-scope .dropbtn {background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+.chapter-scope .dropbtn:hover {color:var(--ink)}
+.chapter-scope /* article */
+    .article {background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+.chapter-scope .article::before {content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+.chapter-scope .series-tag {display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+.chapter-scope .series-dot {width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.chapter-scope .article h1 {font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+.chapter-scope .blog-subtitle {font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+.chapter-scope .article h2 {font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+.chapter-scope .article h3 {font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+.chapter-scope .article p {font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+.chapter-scope .article strong {color:var(--ink);font-weight:500}
+.chapter-scope .article em {color:var(--ink)}
+.chapter-scope .article code {font-size:.9em;background:rgba(237,232,224,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+.chapter-scope .article ul {padding-left:1.3rem;margin:.4rem 0 1.2rem}
+.chapter-scope .article li {font-size:1.1rem;font-weight:300;margin:.35rem 0}
+.chapter-scope .callout {margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+.chapter-scope .sep {border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+.chapter-scope /* sidebar */
+    .sidebar-card {background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+.chapter-scope .sidebar-title {font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+.chapter-scope .sidebar-link {display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+.chapter-scope .sidebar-link+.sidebar-link {margin-top:.15rem}
+.chapter-scope .sidebar-link:hover {background:var(--accent-dim);transform:translateX(2px)}
+.chapter-scope .sidebar-link-title {font-size:.88rem;font-weight:500;color:var(--ink)}
+.chapter-scope .sidebar-link-note {font-size:.73rem;color:var(--muted);margin-top:.12rem}
+.chapter-scope .sidebar-link.active-topic {background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+.chapter-scope /* viz */
+    .viz-block {margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chapter-scope .viz-header {padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+.chapter-scope .viz-title {font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+.chapter-scope .viz-body {padding:1.6rem}
+.chapter-scope .viz-note {font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+.chapter-scope /* ── VIZ 1: corpus builder + matrix ───────────────────────────────────── */
+    .corpus-wrap {display:grid;grid-template-columns:1fr 1fr;gap:1.3rem;align-items:start}
+@media(max-width:840px) { .chapter-scope .corpus-wrap {grid-template-columns:1fr} }
+.chapter-scope .corpus-col {display:flex;flex-direction:column;gap:.8rem;min-width:0}
+.chapter-scope .corpus-section-label {font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.1rem}
+.chapter-scope .sentence-input-row {display:flex;gap:.5rem}
+.chapter-scope .sentence-input {flex:1;padding:.65rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--ink);font-size:.95rem;outline:none;font-family:inherit}
+.chapter-scope .sentence-input:focus {border-color:var(--accent)}
+.chapter-scope .btn-add {padding:.65rem 1.1rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);cursor:pointer;font-size:.95rem;font-family:inherit;font-weight:500;transition:all .2s;white-space:nowrap}
+.chapter-scope .btn-add:hover {background:rgba(232,168,76,.2)}
+.chapter-scope .btn-add:disabled {opacity:.4;cursor:not-allowed}
+.chapter-scope .sentence-list {display:flex;flex-direction:column;gap:.4rem;max-height:240px;overflow-y:auto;padding:.2rem}
+.chapter-scope .sentence-chip {display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.55rem .85rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+.chapter-scope .sentence-text {font-family:'Courier New',monospace;font-size:.92rem;color:var(--body);flex:1;word-break:break-word}
+.chapter-scope .sentence-remove {background:none;border:none;color:var(--muted);cursor:pointer;padding:.25rem .5rem;border-radius:4px;font-size:1.1rem;line-height:1;transition:all .15s;font-family:inherit}
+.chapter-scope .sentence-remove:hover {background:rgba(255,107,107,.15);color:var(--red)}
+.chapter-scope .preset-row {display:flex;gap:.4rem;flex-wrap:wrap}
+.chapter-scope .preset-btn {padding:.35rem .8rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.78rem;cursor:pointer;transition:all .2s;font-family:inherit}
+.chapter-scope .preset-btn:hover {border-color:var(--accent);color:var(--accent)}
+.chapter-scope .window-control {display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+.chapter-scope .window-btn {padding:.3rem .75rem;border-radius:6px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--muted);font-size:.82rem;cursor:pointer;transition:all .2s;font-family:inherit}
+.chapter-scope .window-btn.active {background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.chapter-scope /* matrix */
+    .matrix-wrap {overflow:auto;padding:.3rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px}
+.chapter-scope .cooc-matrix {border-collapse:separate;border-spacing:4px;margin:0 auto;font-variant-numeric:tabular-nums}
+.chapter-scope .cooc-matrix th, .chapter-scope .cooc-matrix td {text-align:center;padding:6px 8px;border-radius:6px;min-width:42px;font-size:.85rem;transition:all .2s}
+.chapter-scope .cooc-matrix thead th {color:var(--ink);font-weight:600;background:rgba(232,168,76,.1);border:1px solid rgba(232,168,76,.2)}
+.chapter-scope .cooc-matrix tbody th {color:var(--ink);font-weight:600;background:rgba(232,168,76,.06);text-align:left;padding-left:10px;border:1px solid rgba(232,168,76,.15)}
+.chapter-scope .cooc-matrix td {background:rgba(237,232,224,.03);border:1px solid var(--border);color:var(--muted);font-family:'Courier New',monospace}
+.chapter-scope .cooc-matrix td.c0 {color:rgba(125,118,107,.5)}
+.chapter-scope .cooc-matrix td.c1 {background:rgba(232,168,76,.1);color:var(--ink)}
+.chapter-scope .cooc-matrix td.c2 {background:rgba(232,168,76,.22);color:var(--ink);font-weight:600}
+.chapter-scope .cooc-matrix td.c3 {background:rgba(232,168,76,.38);color:#fff;font-weight:700}
+.chapter-scope .cooc-matrix td.c4 {background:rgba(232,168,76,.55);color:#fff;font-weight:700}
+.chapter-scope .cooc-matrix tr.row-hi th, .chapter-scope .cooc-matrix tr.row-hi td {outline:1.5px solid rgba(127,255,107,.5)}
+.chapter-scope .cooc-matrix tr.twin th, .chapter-scope .cooc-matrix tr.twin td {background:rgba(127,255,107,.08)!important;outline:1.5px solid rgba(127,255,107,.35)}
+.chapter-scope .matrix-insight {padding:.85rem 1rem;background:rgba(127,255,107,0.06);border:1px solid rgba(127,255,107,0.2);border-radius:8px;font-size:.9rem;color:var(--body);line-height:1.6;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+.chapter-scope .matrix-insight.none {background:var(--bg-card);border-color:var(--border);color:var(--muted);font-style:italic}
+.chapter-scope .twin-badge {display:inline-block;padding:.15rem .55rem;border-radius:999px;background:rgba(127,255,107,.15);color:var(--green);font-size:.72rem;font-weight:600;letter-spacing:.05em;margin-right:.3rem}
+.chapter-scope /* ── VIZ 2: graph render ──────────────────────────────────────────────── */
+    .graph-canvas {width:100%;height:auto;background:#ffffff;border-radius:10px;border:1px solid var(--border);display:block}
+.chapter-scope /* ── VIZ 3: sparse vs dense scale ─────────────────────────────────────── */
+    .scale-wrap {display:grid;grid-template-columns:1fr 1fr;gap:1.3rem;margin-top:.5rem}
+@media(max-width:720px) { .chapter-scope .scale-wrap {grid-template-columns:1fr} }
+.chapter-scope .scale-card {background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.1rem;display:flex;flex-direction:column;gap:.6rem;position:relative;overflow:hidden}
+.chapter-scope .scale-card.sparse {border-left:3px solid var(--red)}
+.chapter-scope .scale-card.dense {border-left:3px solid var(--green)}
+.chapter-scope .scale-label {font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.chapter-scope .scale-title {font-family:var(--display);font-size:1.25rem;color:var(--ink)}
+.chapter-scope .scale-shape {font-family:'Courier New',monospace;font-size:.9rem;color:var(--accent)}
+.chapter-scope .scale-bar-wrap {height:24px;background:rgba(237,232,224,.04);border-radius:4px;overflow:hidden;position:relative}
+.chapter-scope .scale-bar {height:100%;border-radius:4px;transition:width .9s cubic-bezier(.22,1,.36,1)}
+.chapter-scope .scale-bar.sparse {background:linear-gradient(90deg,rgba(255,107,107,.7),rgba(255,107,107,.4))}
+.chapter-scope .scale-bar.dense {background:linear-gradient(90deg,var(--green),rgba(127,255,107,.5))}
+.chapter-scope .scale-size {font-family:'Courier New',monospace;font-size:.88rem;color:var(--body)}
+.chapter-scope .scale-size strong {color:var(--accent)}
+.chapter-scope .scale-size.small {color:var(--green)}
+.chapter-scope .scale-size.small strong {color:var(--green)}
+.chapter-scope .scale-size.big {color:var(--red)}
+.chapter-scope .scale-size.big strong {color:var(--red)}
+.chapter-scope .scale-controls {display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+.chapter-scope .scale-slider-group {display:flex;flex-direction:column;gap:.3rem}
+.chapter-scope .scale-slider-label {font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.chapter-scope .scale-slider {width:160px;accent-color:var(--accent)}
+.chapter-scope .scale-val {font-family:'Courier New',monospace;color:var(--accent);font-size:.9rem}
+.chapter-scope .scale-viz-matrix {display:grid;gap:1px;aspect-ratio:1;margin-top:.3rem;background:rgba(237,232,224,.03);border-radius:4px;overflow:hidden;max-height:140px}
+.chapter-scope .scale-viz-cell {background:var(--bg-elevated)}
+.chapter-scope .scale-viz-cell.lit {background:var(--accent)}
+.chapter-scope .scale-viz-dense {display:flex;gap:2px;margin-top:.3rem;height:40px;align-items:flex-end}
+.chapter-scope .scale-viz-dbar {flex:1;background:linear-gradient(to top,rgba(127,255,107,.7),rgba(127,255,107,.2));border-radius:2px;min-height:4px}
+.chapter-scope /* comments */
+    .comments-section {margin-top:2.5rem}
+.chapter-scope .comments-section h2 {font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+@media(max-width:640px) { .chapter-scope .nav-links {display:none} .chapter-scope .article {padding:2rem 1.4rem} .chapter-scope .article h1 {font-size:1.9rem} }
+</style>
+
+
+
+  <span class="series-tag"><span class="series-dot"></span>Before Transformers: How Embeddings Learn Meaning</span>
+  <h1>From Words to Spaces</h1>
+  <p class="blog-subtitle">How language becomes geometry: the mathematical foundations that make embeddings, similarity, and attention possible.</p>
+
+  <h2>Meaning is behaviour, not definition</h2>
+
+  <p>Ask a philosopher where the meaning of a word lives and they might say it lives inside the word itself. "Dog" means dog. That sounds comforting, like meaning is neatly sealed inside each word like a label on a jar. The moment you try to build a machine that works with language, that idea becomes useless. A computer has no childhood memory of being chased by a dog. No sense of fur. No smell. All it sees is <code>"d"</code>, <code>"o"</code>, <code>"g"</code> and some numbers behind them.</p>
+
+  <p>If meaning isn't hiding inside the word, where does it come from? The answer is less mystical and more practical: we understand words because of the situations they show up in and the company they keep. You didn't learn what "dog" means by staring at the letters. You learned it because "dog" kept appearing near "walk", "bark", "leash", "pet". "Cat" builds its own orbit: "purr", "climb", "couch ownership" (which, let's be honest, is the most accurate description of cats). And some phrases, like "quantum field theory", have a very strong habit of never appearing anywhere near "cute Instagram story".</p>
+
+  <div class="callout">We understand words because of the situations they appear in and the neighbours they keep.</div>
+
+  <p>Linguists noticed this long before machine learning existed. Zellig Harris hinted at it. J. R. Firth gave it its most famous form: <em>"You shall know a word by the company it keeps."</em> A huge chunk of modern NLP is basically an industrial-scale attempt to turn that one sentence into maths.</p>
+
+  <div class="callout">Distributional hypothesis: words that occur in similar contexts tend to have similar meanings.</div>
+
+  <hr class="sep">
+
+  <h2>A tiny universe of six words</h2>
+
+  <p>To see the idea working rather than argue about it, imagine our entire corpus is just four sentences:</p>
+
+  <ul>
+    <li>I love my dog</li>
+    <li>I love my cat</li>
+    <li>You love my dog</li>
+    <li>You love my cat</li>
+  </ul>
+
+  <p>Six words total. Even before we do any maths, your brain is already spotting structure. "Dog" and "cat" feel similar. "I" and "You" play the same role. "Love my" feels welded together. The challenge is making a machine notice the same things without giving it any outside knowledge. No dictionary. No labels. No "dog and cat are both pets". The only thing the machine observes is who tends to sit next to whom.</p>
+
+  <div class="callout">The only thing we let the machine see is neighbours. Nothing else.</div>
+
+  <hr class="sep">
+
+  <h2>Defining neighbours</h2>
+
+  <p>"Context" can mean lots of things: same sentence, within five words, same paragraph. We'll go strict: two words are neighbours if they're adjacent. Window size of 1.</p>
+
+  <p>In <code>I love my dog</code>, the adjacent pairs are (I, love), (love, my), (my, dog). For every pair (a, b), we count both directions: (a, b) and (b, a). This gives us a symmetric matrix. We don't care about order yet. Just who bumps into whom.</p>
+
+  <p>Do this for all four sentences and add up the counts. Now we have something a machine can work with.</p>
+
+  <!-- VIZ 1: Corpus builder with live matrix + graph -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Build a tiny corpus. Watch the matrix appear.</span></div>
+    <div class="viz-body">
+
+      <div class="corpus-wrap">
+        <div class="corpus-col">
+          <div class="corpus-section-label">Sentences in the corpus</div>
+          <div class="sentence-input-row">
+            <input type="text" class="sentence-input" id="sentenceInput" placeholder="Type a sentence, e.g. I love my book" maxlength="60">
+            <button class="btn-add" id="btnAdd">Add</button>
+          </div>
+          <div class="preset-row">
+            <button class="preset-btn" data-preset="default">Original 4 sentences</button>
+            <button class="preset-btn" data-preset="pets">Add pets</button>
+            <button class="preset-btn" data-preset="food">Switch to food</button>
+            <button class="preset-btn" data-preset="clear">Clear all</button>
+          </div>
+          <div class="sentence-list" id="sentenceList"></div>
+          <div style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;margin-top:.3rem">
+            <span class="corpus-section-label" style="margin:0">Window size</span>
+            <div class="window-control">
+              <button class="window-btn active" data-window="1">1 (adjacent)</button>
+              <button class="window-btn" data-window="2">2</button>
+              <button class="window-btn" data-window="99">whole sentence</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="corpus-col">
+          <div class="corpus-section-label">Co-occurrence matrix</div>
+          <div class="matrix-wrap">
+            <div id="matrixHost"></div>
+          </div>
+          <div class="corpus-section-label" style="margin-top:.3rem">Neighbour graph</div>
+          <canvas id="graphCanvas" class="graph-canvas" width="560" height="340"></canvas>
+          <div class="matrix-insight" id="matrixInsight">Add some sentences to see the structure appear.</div>
+        </div>
+      </div>
+
+      <p class="viz-note">Start with the original four sentences and notice that "dog" and "cat" get highlighted as twins, their rows are identical. Now try adding <em>both</em> "I love my pizza" and "You love my pizza". Pizza joins the twin group. The machine wasn't told these words are similar. Their behaviour in the corpus forced them into the same place. Switch the window size and watch the structure shift: with a wider window, more distant words start to matter.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>What the matrix actually says</h2>
+
+  <p>With the original four sentences, the rows for <code>dog</code> and <code>cat</code> are identical: <code>[0, 0, 0, 2, 0, 0]</code>. The rows for <code>I</code> and <code>You</code> are identical too: <code>[0, 0, 2, 0, 0, 0]</code>. Meanwhile <code>love</code> and <code>my</code> sit in the middle as bridges that connect subjects to pets.</p>
+
+  <p>Nobody told the machine that "dog" and "cat" are similar. It was shown only neighbour behaviour, and the similarity appeared as a structural fact. Just from adjacency.</p>
+
+  <div class="callout">Without any dictionary, the matrix quietly learned that "dog" and "cat" behave the same way.</div>
+
+  <hr class="sep">
+
+  <h2>Meaning as geometry</h2>
+
+  <p>Something subtle happened in that table. Each row is a vector. That means each word now has a location in 6-dimensional space. Not because we designed a geometry, but because behaviour <em>became</em> geometry once we represented it as counts.</p>
+
+  <p><code>dog</code> is the vector <code>[0, 0, 0, 2, 0, 0]</code>. <code>cat</code> is the same vector. They sit on top of each other. <code>I</code> and <code>You</code> sit together somewhere else. <code>love</code> and <code>my</code> are the busy intersections because they touch many neighbours.</p>
+<figure class="fig">
+  <svg viewBox="0 0 660 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The six-by-six co-occurrence matrix with the dog and cat rows highlighted as identical, next to a map where dog and cat share one location, I and You share another, and love and my sit in the middle.">
+    <text x="78" y="75" text-anchor="end" font-family="JetBrains Mono" font-size="11" fill="#57503f">I</text><text x="100" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">I</text><text x="78" y="105" text-anchor="end" font-family="JetBrains Mono" font-size="11" fill="#57503f">You</text><text x="130" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">You</text><text x="78" y="135" text-anchor="end" font-family="JetBrains Mono" font-size="11" fill="#57503f">love</text><text x="160" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">love</text><text x="78" y="165" text-anchor="end" font-family="JetBrains Mono" font-size="11" fill="#57503f">my</text><text x="190" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">my</text><text x="78" y="195" text-anchor="end" font-family="JetBrains Mono" font-size="11" fill="#0a7d52">dog</text><text x="220" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">dog</text><text x="78" y="225" text-anchor="end" font-family="JetBrains Mono" font-size="11" fill="#0a7d52">cat</text><text x="250" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">cat</text><rect x="86" y="56" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="116" y="56" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="146" y="56" width="28" height="28" rx="4" fill="#241f18" opacity="0.9" stroke="#ece4d6" stroke-width="0.8"/><text x="160" y="75" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ffffff">2</text><rect x="176" y="56" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="206" y="56" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="236" y="56" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="86" y="86" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="116" y="86" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="146" y="86" width="28" height="28" rx="4" fill="#241f18" opacity="0.9" stroke="#ece4d6" stroke-width="0.8"/><text x="160" y="105" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ffffff">2</text><rect x="176" y="86" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="206" y="86" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="236" y="86" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="86" y="116" width="28" height="28" rx="4" fill="#241f18" opacity="0.9" stroke="#ece4d6" stroke-width="0.8"/><text x="100" y="135" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ffffff">2</text><rect x="116" y="116" width="28" height="28" rx="4" fill="#241f18" opacity="0.9" stroke="#ece4d6" stroke-width="0.8"/><text x="130" y="135" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ffffff">2</text><rect x="146" y="116" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="176" y="116" width="28" height="28" rx="4" fill="#241f18" opacity="0.9" stroke="#ece4d6" stroke-width="0.8"/><text x="190" y="135" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ffffff">4</text><rect x="206" y="116" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="236" y="116" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="86" y="146" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="116" y="146" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="146" y="146" width="28" height="28" rx="4" fill="#241f18" opacity="0.9" stroke="#ece4d6" stroke-width="0.8"/><text x="160" y="165" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ffffff">4</text><rect x="176" y="146" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="206" y="146" width="28" height="28" rx="4" fill="#241f18" opacity="0.9" stroke="#ece4d6" stroke-width="0.8"/><text x="220" y="165" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ffffff">2</text><rect x="236" y="146" width="28" height="28" rx="4" fill="#241f18" opacity="0.9" stroke="#ece4d6" stroke-width="0.8"/><text x="250" y="165" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ffffff">2</text><rect x="86" y="176" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="116" y="176" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="146" y="176" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="176" y="176" width="28" height="28" rx="4" fill="#0a7d52" opacity="0.9" stroke="#ece4d6" stroke-width="0.8"/><text x="190" y="195" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ffffff">2</text><rect x="206" y="176" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="236" y="176" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="86" y="206" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="116" y="206" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="146" y="206" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="176" y="206" width="28" height="28" rx="4" fill="#0a7d52" opacity="0.9" stroke="#ece4d6" stroke-width="0.8"/><text x="190" y="225" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#ffffff">2</text><rect x="206" y="206" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/><rect x="236" y="206" width="28" height="28" rx="4" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="0.8"/>
+    <rect x="84" y="174" width="182" height="60" rx="5" fill="none" stroke="#0a7d52" stroke-width="2"/>
+    <text x="176" y="252" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">identical rows</text>
+    <line x1="292" y1="140" x2="336" y2="140" stroke="#b5541c" stroke-width="2.5"/>
+    <path d="M331 134 L340 140 L331 146" fill="none" stroke="#b5541c" stroke-width="2.5"/>
+    <rect x="352" y="40" width="290" height="196" rx="12" fill="#ffffff" stroke="#ece4d6" stroke-width="1.5"/>
+    <circle cx="560" cy="90" r="8" fill="#0a7d52"/>
+    <circle cx="566" cy="96" r="8" fill="#0a7d52" opacity="0.55"/>
+    <text x="563" y="72" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#0a7d52">dog, cat</text>
+    <text x="563" y="122" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">same row, same point</text>
+    <circle cx="420" cy="190" r="8" fill="#2e5a7d"/>
+    <circle cx="426" cy="196" r="8" fill="#2e5a7d" opacity="0.55"/>
+    <text x="423" y="172" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">I, You</text>
+    <circle cx="490" cy="140" r="8" fill="#b5541c"/>
+    <text x="490" y="122" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#b5541c">love, my</text>
+    <text x="497" y="226" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">behaviour became location</text>
+  </svg>
+  <figcaption>Nobody told the machine anything. The dog and cat rows came out identical, and identical rows are the same point in space.</figcaption>
+</figure>
+
+
+  <div class="callout">Similar words have similar vectors. Similar vectors live near each other in space.</div>
+
+  <p>This is the first glimpse of what we'll eventually call an <strong>embedding space</strong>. It's tiny and clumsy here, six dimensions from four sentences. But the conceptual shift is already visible: meaning looks less like a definition and more like a location. Where a word lives, relative to other words, based on how it's used.</p>
+
+  <hr class="sep">
+
+  <h2>Why this doesn't scale</h2>
+
+  <p>In real NLP, your vocabulary isn't 6. It might be 50,000 or 200,000. The co-occurrence matrix grows as \(V \times V\). For 50,000 words that's 2.5 billion cells. The Excel sheet that makes your laptop cry.</p>
+<figure class="fig">
+  <svg viewBox="0 0 660 270" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A small dense six-by-six matrix beside a huge matrix that is almost entirely empty, showing that real vocabularies produce enormous, mostly zero matrices.">
+    <text x="126" y="50" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#57503f">6 words: 36 cells</text>
+    <rect x="60" y="70" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="82" y="70" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="104" y="70" width="21" height="21" rx="3" fill="#241f18" stroke="#ece4d6" stroke-width="0.7"/><rect x="126" y="70" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="148" y="70" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="170" y="70" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="60" y="92" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="82" y="92" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="104" y="92" width="21" height="21" rx="3" fill="#241f18" stroke="#ece4d6" stroke-width="0.7"/><rect x="126" y="92" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="148" y="92" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="170" y="92" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="60" y="114" width="21" height="21" rx="3" fill="#241f18" stroke="#ece4d6" stroke-width="0.7"/><rect x="82" y="114" width="21" height="21" rx="3" fill="#241f18" stroke="#ece4d6" stroke-width="0.7"/><rect x="104" y="114" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="126" y="114" width="21" height="21" rx="3" fill="#241f18" stroke="#ece4d6" stroke-width="0.7"/><rect x="148" y="114" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="170" y="114" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="60" y="136" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="82" y="136" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="104" y="136" width="21" height="21" rx="3" fill="#241f18" stroke="#ece4d6" stroke-width="0.7"/><rect x="126" y="136" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="148" y="136" width="21" height="21" rx="3" fill="#241f18" stroke="#ece4d6" stroke-width="0.7"/><rect x="170" y="136" width="21" height="21" rx="3" fill="#241f18" stroke="#ece4d6" stroke-width="0.7"/><rect x="60" y="158" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="82" y="158" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="104" y="158" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="126" y="158" width="21" height="21" rx="3" fill="#241f18" stroke="#ece4d6" stroke-width="0.7"/><rect x="148" y="158" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="170" y="158" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="60" y="180" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="82" y="180" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="104" y="180" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="126" y="180" width="21" height="21" rx="3" fill="#241f18" stroke="#ece4d6" stroke-width="0.7"/><rect x="148" y="180" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/><rect x="170" y="180" width="21" height="21" rx="3" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.7"/>
+    <text x="126" y="232" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">small and busy</text>
+    <rect x="292" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="58" width="16" height="16" rx="2" fill="#241f18" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="58" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="292" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="75" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="292" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="92" width="16" height="16" rx="2" fill="#241f18" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="92" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="292" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="109" width="16" height="16" rx="2" fill="#241f18" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="109" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="292" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="126" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="292" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="143" width="16" height="16" rx="2" fill="#241f18" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="143" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="292" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="160" width="16" height="16" rx="2" fill="#241f18" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="160" width="16" height="16" rx="2" fill="#241f18" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="160" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="292" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="177" width="16" height="16" rx="2" fill="#241f18" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="177" width="16" height="16" rx="2" fill="#241f18" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="177" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="292" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="194" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="194" width="16" height="16" rx="2" fill="#241f18" stroke="#ece4d6" stroke-width="0.6"/><rect x="292" y="211" width="16" height="16" rx="2" fill="#241f18" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="211" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="292" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="309" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="326" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="343" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="360" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="377" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="394" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="411" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="428" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="445" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="462" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="479" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="496" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="513" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="530" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="547" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="564" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="581" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="598" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/><rect x="615" y="228" width="16" height="16" rx="2" fill="#fdf9f3" stroke="#ece4d6" stroke-width="0.6"/>
+    <text x="460" y="50" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#57503f">50,000 words: 2.5 billion cells</text>
+    <text x="460" y="266" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#a83c2c">enormous and almost entirely zero</text>
+  </svg>
+  <figcaption>Same idea, real vocabulary. The matrix doesn't just get big. It gets big and empty, and both problems get worse with every word you add.</figcaption>
+</figure>
+
+
+  <p>The problems pile up fast. The matrix is mostly zeros because most word pairs never sit next to each other. Rare words produce tiny, noisy counts. Each row is a 50,000-dimensional vector, which makes similarity calculations expensive. Co-occurrence captures something real about meaning, but it captures it in a form that's computationally awful. It's like keeping your entire life's knowledge as raw CCTV footage. Everything you care about is in there somewhere. It's just not a format you want to work with.</p>
+
+  <!-- VIZ 3: Sparse vs dense -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">The same meaning, two very different shapes</span></div>
+    <div class="viz-body">
+      <div class="scale-controls">
+        <div class="scale-slider-group">
+          <span class="scale-slider-label">Vocabulary size V: <span class="scale-val" id="vVal">50,000</span></span>
+          <input type="range" id="vSlider" class="scale-slider" min="6" max="200000" value="50000" step="1000">
+        </div>
+        <div class="scale-slider-group">
+          <span class="scale-slider-label">Embedding dim d: <span class="scale-val" id="dVal">300</span></span>
+          <input type="range" id="dSlider" class="scale-slider" min="50" max="1024" value="300" step="10">
+        </div>
+      </div>
+      <div class="scale-wrap">
+        <div class="scale-card sparse">
+          <span class="scale-label">Sparse co-occurrence (one row)</span>
+          <div class="scale-title">V-dimensional vector</div>
+          <div class="scale-shape" id="sparseShape">shape: (50000,)</div>
+          <div class="scale-viz-matrix" id="sparseMatrix"></div>
+          <div class="scale-bar-wrap"><div class="scale-bar sparse" id="sparseBar" style="width:100%"></div></div>
+          <div class="scale-size big"><strong id="sparseSize">200 KB</strong> per word, mostly zeros</div>
+        </div>
+        <div class="scale-card dense">
+          <span class="scale-label">Dense embedding</span>
+          <div class="scale-title">d-dimensional vector</div>
+          <div class="scale-shape" id="denseShape">shape: (300,)</div>
+          <div class="scale-viz-dense" id="denseBars"></div>
+          <div class="scale-bar-wrap"><div class="scale-bar dense" id="denseBar" style="width:0.6%"></div></div>
+          <div class="scale-size small"><strong id="denseSize">1.2 KB</strong> per word, every value meaningful</div>
+        </div>
+      </div>
+      <p class="viz-note">Drag V. Drag d. Both vectors claim to represent the same word. The sparse version carries most of its weight in empty space; the dense one packs every coordinate with information earned through training. At V=50,000 and d=300, the dense vector is roughly 0.6% the size per word but arguably richer. That ratio is why every modern language model lives on dense vectors.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>From sparse counts to dense embeddings</h2>
+
+  <p>So the next question writes itself: do we actually need all 50,000 numbers in each word’s vector?</p>
+
+  <p>We don't. We don't need the full high-dimensional fingerprint. We need a compressed version that still preserves the important relationships: which contexts this word lives in, and how that compares to other words. So instead of a giant sparse vector like</p>
+
+  <p>\[\text{dog}_{\text{sparse}} = [0, 0, 0, 2, 0, 0, \dots, 0] \in \mathbb{R}^{V},\]</p>
+
+  <p>we want a much smaller dense vector:</p>
+
+  <p>\[\text{dog}_{\text{embed}} = [0.72,\; -0.11,\; 0.83,\; 0.21,\; \dots] \in \mathbb{R}^{d},\]</p>
+
+  <p>where \(d\) might be 50, 100, or 300. Dramatically smaller than \(V\), expressive enough to keep the similarity structure.</p>
+
+  <div class="callout">These smaller, dense vectors are what we call word embeddings.</div>
+
+  <p>They still encode "the company a word keeps", but in a form a computer can actually work with. From a matrix perspective, this is approximating the huge matrix \(M\) with a low-rank factorisation:</p>
+
+  <p>\[M \approx W C^{\top},\]</p>
+
+  <p>where \(W \in \mathbb{R}^{V \times d}\) holds one embedding per word and \(C \in \mathbb{R}^{V \times d}\) holds one context vector per word, with \(d \ll V\).</p>
+<figure class="fig">
+  <svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The huge V-by-V matrix approximated as a tall thin matrix W times a short wide matrix C transpose, with d much smaller than V.">
+    <rect x="40" y="46" width="150" height="150" rx="8" fill="#fdf9f3" stroke="#57503f" stroke-width="2"/>
+    <text x="115" y="126" text-anchor="middle" font-family="JetBrains Mono" font-size="16" fill="#241f18">M</text>
+    <text x="115" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">V &#215; V &#183; sparse &#183; huge</text>
+    <text x="222" y="128" text-anchor="middle" font-family="JetBrains Mono" font-size="16" fill="#57503f">&#8776;</text>
+    <rect x="254" y="46" width="44" height="150" rx="8" fill="#0a7d52" opacity="0.14" stroke="#0a7d52" stroke-width="2"/>
+    <text x="276" y="126" text-anchor="middle" font-family="JetBrains Mono" font-size="15" fill="#0a7d52">W</text>
+    <text x="276" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">V &#215; d</text>
+    <text x="330" y="128" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#57503f">&#215;</text>
+    <rect x="362" y="100" width="150" height="44" rx="8" fill="#2e5a7d" opacity="0.14" stroke="#2e5a7d" stroke-width="2"/>
+    <text x="437" y="127" text-anchor="middle" font-family="JetBrains Mono" font-size="15" fill="#2e5a7d">C&#7488;</text>
+    <text x="437" y="164" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2e5a7d">d &#215; V</text>
+    <text x="588" y="98" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#57503f">one row of W =</text>
+    <text x="588" y="114" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#57503f">one word's</text>
+    <text x="588" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#0a7d52">embedding</text>
+    <text x="588" y="158" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#8a8172">d &#8810; V</text>
+  </svg>
+  <figcaption>The compression, drawn. Two thin matrices stand in for one enormous one, and each row of W is a word's dense vector.</figcaption>
+</figure>
+
+
+  <p>In practice nobody actually builds \(M\) and factors it. That would defeat the point. Methods like Word2Vec learn \(W\) and \(C\) directly by turning neighbour structure into a prediction game: given a word, predict its neighbours. The gradients do the compression, and the geometry emerges as a side effect of learning to predict context.</p>
+
+  <div class="callout">Co-occurrence gave us "meaning as a vector." Embeddings make that idea computationally tractable.</div>
+
+  <hr class="sep">
+
+  <h2>Where this is going</h2>
+
+  <p>Early in the series, we watched text become numbers: ASCII, Unicode, tokenisation. The triumph there was representability, not meaning. In Part 2 we borrowed geometry from images to show what a learning system actually needs. Here we made a different move. We treated meaning as behaviour, let behaviour solidify into counts, and watched similarity appear as a structural fact in a tiny universe. Then we hit the real-world constraint: the naive approach works conceptually but collapses at scale.</p>
+
+  <div class="callout">Meaning = patterns of usage, compressed into vectors.</div>
+
+  <p>What we haven't done yet is show how those dense vectors are actually learned from real text. How "neighbourhood" becomes a prediction task. How a simple model turns repeated exposure into geometry. How gradients slowly sculpt an embedding space where similarity becomes measurable. That's next. We'll turn "who are my neighbours?" into a game the machine can play, and watch the space of meaning emerge as structure the model earns through prediction.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+
+
+<script>
+// ── Graph renderer ──────────────────────────────────────────────────────────
+const gCanvas=document.getElementById('graphCanvas');
+function renderGraph(vocab,M,twinSet){
+  const dpr=window.devicePixelRatio||1;
+  const W=gCanvas.clientWidth||560,H=340;
+  gCanvas.width=W*dpr;gCanvas.height=H*dpr;gCanvas.style.height=H+'px';
+  const ctx=gCanvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+
+  const n=vocab.order.length;
+  if(n===0){
+    ctx.fillStyle='rgba(125,118,107,0.5)';
+    ctx.font='italic 13px "Source Sans 3",sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('No words yet.',W/2,H/2);
+    return;
+  }
+
+  // compute node degrees for radius and layout
+  const degree=M.map(row=>row.reduce((a,b)=>a+b,0));
+  // Place nodes on a circle, sorted by degree (hubs toward center would be ideal,
+  // but a circle keeps layout stable & predictable for the pedagogical point)
+  const positions=[];
+  const cx=W/2,cy=H/2;
+  const minDim=Math.min(W,H);
+  const radius=minDim*0.36;
+  for(let i=0;i<n;i++){
+    const ang=-Math.PI/2+(i/n)*Math.PI*2;
+    positions.push({x:cx+Math.cos(ang)*radius,y:cy+Math.sin(ang)*radius});
+  }
+
+  // find max weight for edge styling
+  let maxW=0;
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)if(M[i][j]>maxW)maxW=M[i][j];
+
+  // draw edges
+  for(let i=0;i<n;i++){
+    for(let j=i+1;j<n;j++){
+      if(M[i][j]===0)continue;
+      const w=M[i][j];
+      const alpha=0.25+0.55*(w/Math.max(maxW,1));
+      const thick=2+6*(w/Math.max(maxW,1));
+      ctx.strokeStyle=`rgba(232,168,76,${alpha})`;
+      ctx.lineWidth=thick;
+      ctx.beginPath();
+      ctx.moveTo(positions[i].x,positions[i].y);
+      ctx.lineTo(positions[j].x,positions[j].y);
+      ctx.stroke();
+      // weight label
+      if(n<=12){
+        const mx=(positions[i].x+positions[j].x)/2;
+        const my=(positions[i].y+positions[j].y)/2;
+        ctx.fillStyle='rgba(237,232,224,0.55)';
+        ctx.font='600 11px "Courier New",monospace';
+        ctx.textAlign='center';
+        ctx.fillText(w,mx,my-2);
+      }
+    }
+  }
+
+  // draw nodes
+  const maxDeg=Math.max(...degree,1);
+  for(let i=0;i<n;i++){
+    const p=positions[i];
+    const isHub=degree[i]/maxDeg>0.7;
+    const isTwin=twinSet.has(i);
+    const nodeR=Math.max(14,Math.min(26,14+10*(degree[i]/maxDeg)));
+    // fill
+    if(isTwin){
+      ctx.fillStyle='rgba(127,255,107,0.18)';
+      ctx.strokeStyle='rgba(127,255,107,0.55)';
+    }else if(isHub){
+      ctx.fillStyle='rgba(232,168,76,0.2)';
+      ctx.strokeStyle='rgba(232,168,76,0.55)';
+    }else{
+      ctx.fillStyle='rgba(237,232,224,0.06)';
+      ctx.strokeStyle='rgba(237,232,224,0.22)';
+    }
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,nodeR,0,Math.PI*2);
+    ctx.fill();ctx.stroke();
+    // label
+    ctx.fillStyle='#57503f';
+    ctx.font='600 12px "Source Sans 3",sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    const label=vocab.display(vocab.order[i]);
+    // truncate long labels
+    const displayLabel=label.length>10?label.slice(0,9)+'…':label;
+    ctx.fillText(displayLabel,p.x,p.y);
+  }
+}
+
+// ── list of sentence chips ──────────────────────────────────────────────────
+function renderList(){
+  const host=document.getElementById('sentenceList');
+  if(sentences.length===0){
+    host.innerHTML='<div style="padding:.8rem;color:var(--muted);font-style:italic;font-size:.9rem">No sentences yet. Type one above or pick a preset.</div>';
+    return;
+  }
+  host.innerHTML=sentences.map((s,i)=>
+    `<div class="sentence-chip"><span class="sentence-text">${s.replace(/</g,'&lt;')}</span><button class="sentence-remove" data-idx="${i}" title="Remove">×</button></div>`
+  ).join('');
+  host.querySelectorAll('.sentence-remove').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const i=parseInt(b.dataset.idx);
+      sentences.splice(i,1);
+      renderAll();
+    });
+  });
+}
+function renderAll(){renderList();renderMatrix();}
+
+// input wiring
+const inp=document.getElementById('sentenceInput');
+const btnAdd=document.getElementById('btnAdd');
+function tryAdd(){
+  const v=inp.value.trim();
+  if(!v)return;
+  if(tokenise(v).length===0)return;
+  sentences.push(v);
+  inp.value='';
+  renderAll();
+}
+btnAdd.addEventListener('click',tryAdd);
+inp.addEventListener('keydown',e=>{if(e.key==='Enter')tryAdd();});
+
+document.querySelectorAll('.preset-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const p=b.dataset.preset;
+    if(p==='pets')sentences=[...PRESETS.pets];
+    else if(p==='food')sentences=[...PRESETS.food];
+    else if(p==='clear')sentences=[];
+    else sentences=[...PRESETS.default];
+    renderAll();
+  });
+});
+document.querySelectorAll('.window-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.window-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    windowSize=parseInt(b.dataset.window);
+    renderMatrix();
+  });
+});
+
+renderAll();
+window.addEventListener('resize',()=>renderMatrix());
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: sparse vs dense
+// ═══════════════════════════════════════════════════════════════════════════
+const vSlider=document.getElementById('vSlider');
+const dSlider=document.getElementById('dSlider');
+const vVal=document.getElementById('vVal');
+const dVal=document.getElementById('dVal');
+
+function fmt(n){
+  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(0)+'K';
+  return n.toString();
+}
+function bytes(n){
+  // assume 4 bytes per float
+  const b=n*4;
+  if(b>=1024*1024)return(b/1024/1024).toFixed(1)+' MB';
+  if(b>=1024)return(b/1024).toFixed(1)+' KB';
+  return b+' B';
+}
+
+// build a small sparse matrix viz (12x12 grid)
+function renderSparseMatrix(){
+  const host=document.getElementById('sparseMatrix');
+  const SZ=16;
+  host.style.gridTemplateColumns=`repeat(${SZ},1fr)`;
+  host.innerHTML='';
+  // density: ~3-5% of cells lit, matches real sparse co-occurrence
+  const total=SZ*SZ;
+  const litCount=Math.floor(total*0.04);
+  const lit=new Set();
+  while(lit.size<litCount)lit.add(Math.floor(Math.random()*total));
+  for(let i=0;i<total;i++){
+    const d=document.createElement('div');
+    d.className='scale-viz-cell'+(lit.has(i)?' lit':'');
+    host.appendChild(d);
+  }
+}
+function renderDenseBars(){
+  const host=document.getElementById('denseBars');
+  host.innerHTML='';
+  const n=24;
+  for(let i=0;i<n;i++){
+    const b=document.createElement('div');
+    b.className='scale-viz-dbar';
+    const h=20+Math.random()*80;
+    b.style.height=h+'%';
+    host.appendChild(b);
+  }
+}
+
+function updateScale(){
+  const v=parseInt(vSlider.value);
+  const d=parseInt(dSlider.value);
+  vVal.textContent=v.toLocaleString();
+  dVal.textContent=d.toLocaleString();
+  document.getElementById('sparseShape').textContent=`shape: (${v.toLocaleString()},)`;
+  document.getElementById('denseShape').textContent=`shape: (${d.toLocaleString()},)`;
+  document.getElementById('sparseSize').textContent=bytes(v);
+  document.getElementById('denseSize').textContent=bytes(d);
+  // bars: sparse is always 100% relative to itself, dense relative to sparse
+  document.getElementById('sparseBar').style.width='100%';
+  const ratio=Math.max(0.5,Math.min(100,(d/v)*100));
+  document.getElementById('denseBar').style.width=ratio+'%';
+}
+vSlider.addEventListener('input',updateScale);
+dSlider.addEventListener('input',updateScale);
+updateScale();
+renderSparseMatrix();
+renderDenseBars();
+
+</script>
+{% endraw %}
