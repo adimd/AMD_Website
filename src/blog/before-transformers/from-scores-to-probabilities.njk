@@ -1,0 +1,640 @@
+---
+layout: chapter.njk
+title: "Why Raw Dot Products Aren't Enough"
+seriesKey: before-transformers
+chapterSlug: from-scores-to-probabilities
+---
+
+{% raw %}
+<style>
+.chapter-scope *, .chapter-scope *::before, .chapter-scope *::after {margin:0;padding:0;box-sizing:border-box}
+.chapter-scope a {color:var(--accent);text-decoration:none;transition:all .25s}
+.chapter-scope a:hover {color:#b5541c}
+@keyframes rise {from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.chapter-scope .anim {animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+.chapter-scope .d1 {animation-delay:.08s}
+.chapter-scope .d2 {animation-delay:.18s}
+.chapter-scope .nav-container {max-width:1320px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+.chapter-scope .nav-links {display:flex;align-items:center;gap:1.6rem;font-size:.92rem}
+.chapter-scope .nav-links a {color:var(--muted);text-decoration:none;transition:color .25s;position:relative}
+.chapter-scope .nav-links a::after {content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+.chapter-scope .nav-links a:hover {color:var(--ink)}
+.chapter-scope .nav-links a:hover::after {width:100%}
+.chapter-scope .dropbtn {background:none;border:none;font:inherit;font-size:.92rem;color:var(--muted);cursor:pointer;transition:color .25s}
+.chapter-scope .dropbtn:hover {color:var(--ink)}
+.chapter-scope /* article */
+    .article {background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+.chapter-scope .article::before {content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+.chapter-scope .series-tag {display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+.chapter-scope .series-dot {width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.chapter-scope .article h1 {font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+.chapter-scope .blog-subtitle {font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+.chapter-scope .article h2 {font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+.chapter-scope .article h3 {font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+.chapter-scope .article p {font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+.chapter-scope .article strong {color:var(--ink);font-weight:500}
+.chapter-scope .article em {color:var(--ink)}
+.chapter-scope .article code {font-size:.9em;background:rgba(138,129,114,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+.chapter-scope .callout {margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+.chapter-scope .sep {border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+.chapter-scope /* sidebar */
+    .sidebar-card {background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+.chapter-scope .sidebar-title {font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+.chapter-scope .sidebar-link {display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+.chapter-scope .sidebar-link+.sidebar-link {margin-top:.15rem}
+.chapter-scope .sidebar-link:hover {background:var(--accent-dim);transform:translateX(2px)}
+.chapter-scope .sidebar-link-title {font-size:.88rem;font-weight:500;color:var(--ink)}
+.chapter-scope .sidebar-link-note {font-size:.73rem;color:var(--muted);margin-top:.12rem}
+.chapter-scope .sidebar-link.active-topic {background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+.chapter-scope /* viz */
+    .viz-block {margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chapter-scope .viz-header {padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+.chapter-scope .viz-title {font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+.chapter-scope .viz-body {padding:1.6rem}
+.chapter-scope .viz-note {font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+.chapter-scope /* ── VIZ 1: Softmax pipeline builder ─────────────────────────────────── */
+    .pipe-wrap {display:flex;flex-direction:column;gap:1.3rem}
+.chapter-scope .pipe-sliders {display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem}
+.chapter-scope .pipe-slider-row {display:flex;flex-direction:column;gap:.3rem;padding:.65rem .85rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px}
+.chapter-scope .pipe-slider-label {display:flex;justify-content:space-between;align-items:center;font-family:'Courier New',monospace;font-size:.82rem;color:var(--muted)}
+.chapter-scope .pipe-slider-word {color:var(--ink);font-weight:600;font-family:var(--display);font-size:1.05rem}
+.chapter-scope .pipe-slider-val {color:var(--accent);font-family:'Courier New',monospace;font-size:.92rem}
+.chapter-scope .pipe-slider {width:100%;accent-color:var(--accent)}
+.chapter-scope .pipe-panels {display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;align-items:stretch}
+@media(max-width:820px) { .chapter-scope .pipe-panels {grid-template-columns:1fr} }
+.chapter-scope .pipe-panel {background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:.6rem;position:relative}
+.chapter-scope .pipe-panel-title {font-family:var(--display);font-size:1.1rem;color:var(--ink)}
+.chapter-scope .pipe-panel-formula {font-family:'Courier New',monospace;font-size:.78rem;color:var(--muted);margin-top:-.2rem}
+.chapter-scope .pipe-panel-bars {display:flex;flex-direction:column;gap:.35rem;margin-top:.3rem}
+.chapter-scope .pipe-bar-row {display:flex;align-items:center;gap:.5rem;font-family:'Courier New',monospace;font-size:.78rem}
+.chapter-scope .pipe-bar-word {color:var(--body);min-width:56px;text-align:right}
+.chapter-scope .pipe-bar-track {flex:1;height:18px;background:rgba(138,129,114,.04);border-radius:4px;position:relative;overflow:hidden}
+.chapter-scope .pipe-bar-zero {position:absolute;top:0;bottom:0;width:1px;background:rgba(138,129,114,.25);z-index:1}
+.chapter-scope .pipe-bar-fill {position:absolute;top:0;bottom:0;border-radius:3px;transition:all .3s cubic-bezier(.22,1,.36,1)}
+.chapter-scope .pipe-bar-val {color:var(--ink);min-width:50px;font-size:.76rem;font-weight:600;text-align:right}
+.chapter-scope .pipe-z-line {display:flex;justify-content:space-between;padding:.55rem .8rem;background:rgba(10,125,82,.06);border:1px solid rgba(10,125,82,.2);border-radius:6px;font-family:'Courier New',monospace;font-size:.82rem;color:var(--body);margin-top:auto}
+.chapter-scope .pipe-z-line strong {color:var(--green);font-weight:700}
+.chapter-scope .pipe-sum-line {display:flex;justify-content:space-between;padding:.55rem .8rem;background:rgba(181,84,28,.06);border:1px solid rgba(181,84,28,.3);border-radius:6px;font-family:'Courier New',monospace;font-size:.82rem;color:var(--body);margin-top:auto}
+.chapter-scope .pipe-sum-line strong {color:var(--accent);font-weight:700}
+.chapter-scope .pipe-arrow {display:none}
+@media(min-width:820px) { .chapter-scope .pipe-panel:not(:last-child)::after {
+        content:'→';position:absolute;right:-.6rem;top:50%;transform:translate(50%,-50%);
+        background:var(--bg-elevated);color:var(--accent);font-size:1.4rem;padding:0 .3rem;z-index:2
+      } }
+.chapter-scope .pipe-presets {display:flex;gap:.45rem;flex-wrap:wrap}
+.chapter-scope .pipe-preset {padding:.35rem .85rem;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-hover);color:var(--body);font-size:.8rem;cursor:pointer;transition:all .2s;font-family:inherit}
+.chapter-scope .pipe-preset:hover {border-color:var(--accent);color:var(--accent)}
+.chapter-scope /* ── VIZ 2: Temperature slider ────────────────────────────────────────── */
+    .temp-wrap {display:flex;flex-direction:column;gap:1rem}
+.chapter-scope .temp-control {display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.chapter-scope .temp-slider-wrap {flex:1;min-width:240px;display:flex;flex-direction:column;gap:.3rem}
+.chapter-scope .temp-slider-label {display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted)}
+.chapter-scope .temp-slider-label strong {color:var(--accent);font-family:'Courier New',monospace}
+.chapter-scope .temp-slider {width:100%;accent-color:var(--accent)}
+.chapter-scope .temp-mode {padding:.55rem .9rem;border-radius:8px;font-size:.85rem;font-family:'Courier New',monospace;background:var(--bg-card);border:1px solid var(--border)}
+.chapter-scope .temp-mode.soft {border-color:rgba(46,90,125,.4);color:var(--blue)}
+.chapter-scope .temp-mode.peaked {border-color:rgba(181,84,28,.4);color:var(--accent)}
+.chapter-scope #tempCanvas {width:100%;height:auto;background:#ffffff;border-radius:10px;border:1px solid var(--border);display:block}
+.chapter-scope .temp-entropy {padding:.55rem .9rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-family:'Courier New',monospace;font-size:.85rem;color:var(--body);display:flex;justify-content:space-between}
+.chapter-scope .temp-entropy strong {color:var(--accent)}
+.chapter-scope /* ── VIZ 3: Redistributive pressure ───────────────────────────────────── */
+    .redist-wrap {display:flex;flex-direction:column;gap:1rem}
+.chapter-scope .redist-control {display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.chapter-scope .redist-slider-wrap {flex:1;min-width:260px;display:flex;flex-direction:column;gap:.3rem}
+.chapter-scope .redist-slider-label {display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted)}
+.chapter-scope .redist-slider-label strong {color:var(--accent);font-family:'Courier New',monospace}
+.chapter-scope .redist-slider {width:100%;accent-color:var(--accent)}
+.chapter-scope .redist-panel {padding:1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px}
+.chapter-scope .redist-rows {display:flex;flex-direction:column;gap:.45rem}
+.chapter-scope .redist-row {display:flex;align-items:center;gap:.6rem;font-family:'Courier New',monospace;font-size:.82rem}
+.chapter-scope .redist-word {min-width:68px;text-align:right;color:var(--body)}
+.chapter-scope .redist-word.target {color:var(--accent);font-weight:700}
+.chapter-scope .redist-bar-track {flex:1;height:22px;background:rgba(138,129,114,.04);border-radius:4px;position:relative;overflow:hidden}
+.chapter-scope .redist-bar-fill {position:absolute;top:0;bottom:0;left:0;border-radius:3px;background:rgba(181,84,28,.4);transition:all .4s cubic-bezier(.22,1,.36,1)}
+.chapter-scope .redist-bar-fill.target {background:var(--accent)}
+.chapter-scope .redist-bar-delta {position:absolute;top:0;bottom:0;border-radius:3px;transition:all .4s cubic-bezier(.22,1,.36,1)}
+.chapter-scope .redist-val {min-width:54px;text-align:right;color:var(--ink);font-weight:600}
+.chapter-scope .redist-delta {min-width:52px;text-align:right;font-size:.72rem;font-family:'Courier New',monospace}
+.chapter-scope .redist-delta.up {color:var(--green)}
+.chapter-scope .redist-delta.down {color:var(--red)}
+.chapter-scope .redist-sum {margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-family:'Courier New',monospace;font-size:.82rem;color:var(--body)}
+.chapter-scope .redist-sum strong {color:var(--green)}
+.chapter-scope /* comments */
+    .comments-section {margin-top:2.5rem}
+.chapter-scope .comments-section h2 {font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+@media(max-width:640px) { .chapter-scope .nav-links {display:none} .chapter-scope .article {padding:2rem 1.4rem} .chapter-scope .article h1 {font-size:1.9rem} }
+</style>
+
+
+
+  <span class="series-tag"><span class="series-dot"></span>Before Transformers: How Embeddings Learn Meaning</span>
+  <h1>Why Raw Dot Products Aren't Enough</h1>
+  <p class="blog-subtitle">How scores become probabilities that let contexts compete.</p>
+
+  <h2>Picking up the thread</h2>
+
+  <p>Last time we got the dot product working as a compatibility signal between centre and context vectors. Larger values suggest stronger association. As sentences accumulate, vectors drift and meaning appears as structure. It feels like learning.</p>
+
+  <p>The raw dot product is a surprisingly awkward object to build learning around. Three problems surface the moment you look closely.</p>
+
+  <p><strong>First, the score is unbounded.</strong> No ceiling, no floor. If vector magnitudes grow, the score grows automatically. The model can inflate its numbers just by stretching the geometry, even if the underlying relationships stay poorly structured.</p>
+
+  <p><strong>Second, the sign is ambiguous.</strong> The score freely crosses zero. What does a negative value actually mean? Active opposition? Weak association? How much worse is −3 than −1? The number itself doesn't answer.</p>
+
+  <p><strong>Third, and deepest: scores are independent.</strong> When we compute the score between a centre word and one context word, that calculation has no awareness of any other possible context. Nothing forces different contexts to compete. Nothing says that increasing the plausibility of one should decrease the plausibility of another.</p>
+
+  <p>The score tells us whether two vectors align, but it doesn't tell us which context should be <em>preferred</em> among all possibilities. There's no distribution. No conservation of plausibility. Each score floats on its own.</p>
+
+  <div class="callout">A dot product is unbounded, sign-ambiguous, and isolated. It can react to data, but it can't support judgment or learning.</div>
+
+  <hr class="sep">
+
+  <h2>Fixing the sign: why scores must become positive</h2>
+
+  <p>If we want scores to act as plausibility signals, they need to live on a single, interpretable scale. They need to be positive. Not because negativity is mathematically invalid, but because learning needs a notion of <em>strength</em>, not opposition.</p>
+
+  <p>The fix is the exponential function. We take the raw dot product and pass it through \(\exp(\cdot)\). Two properties make this almost unavoidable. First, it maps every real number to a positive value. No matter how negative the score, the output is still greater than zero. Second, it preserves relative differences. If one score exceeds another by a fixed amount, the exponential guarantees a fixed multiplicative ratio between their outputs. A gap of 1 unit always means a factor of \(e\), regardless of where on the number line it occurs.</p>
+
+  <div class="callout">Exponentials convert additive differences into multiplicative preference.</div>
+
+  <p>After this transformation every score is positive. Negative scores become small plausibility; positive scores become large plausibility. The sign ambiguity is gone. Notice what hasn't happened though: these values still don't compete. Each exponentiated score exists on its own. Fixing that requires looking at all contexts together.</p>
+<figure class="fig">
+  <svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Raw scores including a negative pass through the exponential and come out as positive bars. The ordering is preserved and the gaps grow multiplicatively.">
+    <text x="68" y="46" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#8a8172">raw scores</text>
+    <line x1="30" y1="150" x2="108" y2="150" stroke="#c5c0b4" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="118" y="154" font-family="JetBrains Mono" font-size="9" fill="#8a8172">zero</text>
+    <rect x="40" y="168" width="56" height="30" rx="8" fill="#241f18"/><text x="68" y="188" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#e07856">-2</text><rect x="40" y="128" width="56" height="30" rx="8" fill="#241f18"/><text x="68" y="148" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#57503f">0</text><rect x="40" y="108" width="56" height="30" rx="8" fill="#241f18"/><text x="68" y="128" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#57503f">1</text><rect x="40" y="68" width="56" height="30" rx="8" fill="#241f18"/><text x="68" y="88" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#57503f">3</text>
+    <path d="M 170 190 C 240 188 280 160 320 70" fill="none" stroke="#b5541c" stroke-width="2.5"/>
+    <text x="252" y="120" font-family="JetBrains Mono" font-size="13" fill="#b5541c">exp</text>
+    <line x1="336" y1="126" x2="392" y2="126" stroke="#8a8172" stroke-width="2"/>
+    <path d="M387 120 L396 126 L387 132" fill="none" stroke="#8a8172" stroke-width="2"/>
+    <text x="524" y="46" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#8a8172">all positive, gaps amplified</text>
+    <line x1="410" y1="198" x2="648" y2="198" stroke="#c5c0b4" stroke-width="1.5"/>
+    <rect x="420" y="195" width="44" height="3" rx="5" fill="#0a7d52" opacity="0.45"/><text x="442" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">0.14</text><text x="442" y="232" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">e^-2</text><rect x="478" y="186" width="44" height="12" rx="5" fill="#0a7d52" opacity="0.61"/><text x="500" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">1.0</text><text x="500" y="232" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">e^0</text><rect x="536" y="166" width="44" height="32" rx="5" fill="#0a7d52" opacity="0.77"/><text x="558" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">2.72</text><text x="558" y="232" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">e^1</text><rect x="594" y="48" width="44" height="150" rx="5" fill="#0a7d52" opacity="0.9299999999999999"/><text x="616" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">20.1</text><text x="616" y="232" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">e^3</text>
+  </svg>
+  <figcaption>Every score lands positive, even the negative one. The order survives, and the gaps stop being additive and become multiplicative.</figcaption>
+</figure>
+
+
+  <hr class="sep">
+
+  <h2>When contexts begin to compete</h2>
+
+  <p>Consider <code>I love my dog</code>. When "love" appears, many context words are theoretically possible. "My" is plausible. "The" is plausible. In the actual sentence, only "my" appears. Its presence is also an exclusion. Every observed word implicitly says: <em>this happened, and everything else did not.</em></p>
+
+  <div class="callout">Language creates meaning by choosing one alternative and rejecting many others.</div>
+
+  <p>As long as our scores are independent, this tension can't exist. The model can assign high plausibility to "my", "the", "a" and "your" simultaneously. Nothing forces preference. So instead of asking whether a single context fits, we ask: given a fixed centre word, how should plausibility be <em>distributed</em> across all possible context words?</p>
+
+  <p>Take all exponentiated scores and sum them:</p>
+
+  <p style="text-align:center;">\(Z(\mathbf{v}) = \sum_{j=1}^{V} \exp(\mathbf{v} \cdot \mathbf{c}_j)\)</p>
+
+  <p>This total forces the model to look at the entire vocabulary at once. Now each context must be read as a fraction of the whole:</p>
+
+  <p style="text-align:center;">\(P(i \mid \mathbf{v}) = \frac{\exp(\mathbf{v} \cdot \mathbf{c}_i)}{Z(\mathbf{v})}\)</p>
+
+  <!-- VIZ 1: Pipeline builder -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Drag the scores. Watch them become probabilities.</span></div>
+    <div class="viz-body">
+      <div class="pipe-wrap">
+        <div class="pipe-sliders" id="pipeSliders"></div>
+        <div class="pipe-presets">
+          <button class="pipe-preset" data-preset="balanced">Balanced</button>
+          <button class="pipe-preset" data-preset="one-winner">One clear winner</button>
+          <button class="pipe-preset" data-preset="two-rivals">Two rivals</button>
+          <button class="pipe-preset" data-preset="all-negative">All negative</button>
+        </div>
+        <div class="pipe-panels">
+          <div class="pipe-panel">
+            <div class="pipe-panel-title">Raw scores</div>
+            <div class="pipe-panel-formula">v · c<sub>i</sub></div>
+            <div class="pipe-panel-bars" id="panelRaw"></div>
+            <div class="pipe-sum-line">range: <strong id="pipeRawRange">-</strong></div>
+          </div>
+          <div class="pipe-panel">
+            <div class="pipe-panel-title">After exp</div>
+            <div class="pipe-panel-formula">exp(v · c<sub>i</sub>)</div>
+            <div class="pipe-panel-bars" id="panelExp"></div>
+            <div class="pipe-z-line">Z = Σ exp(…) = <strong id="pipeZ">-</strong></div>
+          </div>
+          <div class="pipe-panel">
+            <div class="pipe-panel-title">After ÷ Z</div>
+            <div class="pipe-panel-formula">exp(…) / Z</div>
+            <div class="pipe-panel-bars" id="panelProb"></div>
+            <div class="pipe-z-line">Σ P = <strong id="pipeSum">1.00</strong></div>
+          </div>
+        </div>
+      </div>
+      <p class="viz-note">Drag the sliders. The first panel shows raw dot products, can be negative, unbounded. The second panel shows them after exp, all positive, but they don't add up to anything meaningful yet. The third panel divides by Z, and suddenly the bars fit inside a fixed budget of 1. Push one slider up and watch the other probabilities shrink. That shrinking is the whole point: plausibility is no longer free.</p>
+    </div>
+  </div>
+
+  <p>This single division introduces dependency. If "love"–"my" compatibility increases, the numerator grows, but the denominator grows too, and the share available to "the", "a" and "your" shrinks. To favour one context, the model must implicitly disfavour others. Plausibility is no longer free. It's conserved.</p>
+<figure class="fig">
+  <svg viewBox="0 0 660 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two stacked probability bars, each summing to one. After the score for my increases, its share grows and every other context's share visibly shrinks.">
+    <text x="50" y="36" font-family="JetBrains Mono" font-size="11" fill="#8a8172">before</text><rect x="50" y="46" width="224" height="40" fill="#0a7d52" opacity="0.85"/><text x="162" y="71" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#ffffff">my 0.40</text><rect x="274" y="46" width="151" height="40" fill="#2e5a7d" opacity="0.85"/><text x="350" y="71" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#ffffff">the 0.27</text><rect x="425" y="46" width="112" height="40" fill="#b5541c" opacity="0.85"/><text x="481" y="71" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#ffffff">a 0.20</text><rect x="537" y="46" width="73" height="40" fill="#8a8172" opacity="0.85"/><text x="574" y="71" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#ffffff">your 0.13</text><text x="618" y="71" font-family="JetBrains Mono" font-size="10" fill="#57503f">= 1</text>
+    <text x="50" y="130" font-family="JetBrains Mono" font-size="11" fill="#8a8172">after the score for "my" rises</text><rect x="50" y="140" width="347" height="40" fill="#0a7d52" opacity="0.85"/><text x="224" y="165" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#ffffff">my 0.62</text><rect x="397" y="140" width="101" height="40" fill="#2e5a7d" opacity="0.85"/><text x="448" y="165" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#ffffff">the 0.18</text><rect x="498" y="140" width="73" height="40" fill="#b5541c" opacity="0.85"/><text x="534" y="165" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#ffffff">a 0.13</text><rect x="571" y="140" width="39" height="40" fill="#8a8172" opacity="0.85"/><text x="618" y="165" font-family="JetBrains Mono" font-size="10" fill="#57503f">= 1</text>
+    <path d="M 160 96 L 160 126" stroke="#57503f" stroke-width="2"/>
+    <path d="M155 121 L160 130 L165 121" fill="none" stroke="#57503f" stroke-width="2"/>
+    <text x="330" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">the total is pinned. one context's gain is everyone else's loss.</text>
+  </svg>
+  <figcaption>Probability is conserved. The only way for "my" to gain belief is for "the", "a" and "your" to lose exactly that much of it.</figcaption>
+</figure>
+
+
+  <div class="callout">Preference emerges only when plausibility is shared.</div>
+
+  <!-- VIZ 3: Redistributive pressure (placed here where the prose discusses it) -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Push "my" up. Watch everyone else shrink.</span></div>
+    <div class="viz-body">
+      <div class="redist-wrap">
+        <div class="redist-control">
+          <div class="redist-slider-wrap">
+            <div class="redist-slider-label">Raw score for <strong>my</strong>: <strong id="redistScore">1.0</strong></div>
+            <input type="range" id="redistSlider" class="redist-slider" min="-30" max="60" step="1" value="10">
+          </div>
+        </div>
+        <div class="redist-panel">
+          <div class="redist-rows" id="redistRows"></div>
+          <div class="redist-sum">Σ P = <strong id="redistSum">1.00</strong> (always)</div>
+        </div>
+      </div>
+      <p class="viz-note">Only one score moves. All five probabilities update. As "my" climbs, its probability rises, but so does the denominator, so every other probability shrinks proportionally. The green deltas show each word gaining, the red deltas show each losing. The sum stays at exactly 1. Plausibility moved from the losers into the winner. Nothing was created.</p>
+    </div>
+  </div>
+
+  <p>As score gaps widen, the context with the largest dot product claims a larger share. In the extreme, if one score dominates, its probability approaches 1 while the rest approach 0. They never reach exactly zero though. Near alternatives retain nonzero probability. Uncertainty is preserved. This is why the transformation is called a <em>soft</em> maximum: it prefers without committing absolutely.</p>
+
+  <!-- VIZ 2: Temperature slider -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Soft or sharp? The same scores, dialled up and down.</span></div>
+    <div class="viz-body">
+      <div class="temp-wrap">
+        <div class="temp-control">
+          <div class="temp-slider-wrap">
+            <div class="temp-slider-label">Score multiplier β: <strong id="tempVal">1.0</strong></div>
+            <input type="range" id="tempSlider" class="temp-slider" min="1" max="80" step="1" value="10">
+          </div>
+          <div class="temp-mode" id="tempMode">balanced</div>
+        </div>
+        <canvas id="tempCanvas" width="700" height="240"></canvas>
+        <div class="temp-entropy">
+          <span>entropy H(P) = <strong id="tempH">-</strong> bits</span>
+          <span>max entry P<sub>max</sub> = <strong id="tempPmax">-</strong></span>
+        </div>
+      </div>
+      <p class="viz-note">Same five scores. All we do is multiply them by β before softmax. At β near 0 the distribution is nearly flat, every context looks equally plausible. At large β it collapses onto whichever score was highest. Entropy, a measure of how much uncertainty remains, drops toward zero as β grows. The softmax approaches an argmax but never quite commits. Non-winners stay at tiny but nonzero probabilities. That "softness" is what keeps learning smooth.</p>
+    </div>
+  </div>
+
+  <p>Each \(P(i \mid \mathbf{v})\) is non-negative, and they sum to 1:</p>
+
+  <p style="text-align:center;">\(\sum_{i=1}^{V} P(i \mid \mathbf{v}) = 1\)</p>
+
+  <p>Without setting out to do so, we've crossed into probability. For a fixed centre word, these values form a probability mass function over the vocabulary. Probability mass is conserved. It can only move from one context word to another as the geometry changes. Meaning now lives not in individual scores, but in how belief is distributed across alternatives.</p>
+
+  <hr class="sep">
+
+  <h2>Walking through a small example</h2>
+
+  <p>Three possible context words. Dot products with the centre vector:</p>
+
+  <p style="text-align:center;">\(\mathbf{v} \cdot \mathbf{c}_1 = 2, \quad \mathbf{v} \cdot \mathbf{c}_2 = 1, \quad \mathbf{v} \cdot \mathbf{c}_3 = 0\)</p>
+
+  <p>After exponentiation:</p>
+
+  <p style="text-align:center;">\(\exp(2) \approx 7.39, \quad \exp(1) \approx 2.72, \quad \exp(0) = 1\)</p>
+
+  <p>The total:</p>
+
+  <p style="text-align:center;">\(Z = 7.39 + 2.72 + 1 = 11.11\)</p>
+
+  <p>Divide each by \(Z\):</p>
+
+  <p style="text-align:center;">\(P(1 \mid \mathbf{v}) \approx 0.66, \quad P(2 \mid \mathbf{v}) \approx 0.24, \quad P(3 \mid \mathbf{v}) \approx 0.09\)</p>
+
+  <p>The ordering hasn't changed. The strongest match is still strongest. What's changed is the interpretation. These numbers express <em>belief</em>. They describe how plausibility is distributed, not just how large a score happens to be. And they sum to 1, which means increasing one must decrease the others.</p>
+
+  <div class="callout">Probability appears because plausibility is forced to be shared.</div>
+
+  <p>The model is no longer producing raw scores. It's expressing a conditional probability distribution over the vocabulary. Distributions can be compared to reality. That comparison is where learning truly begins.</p>
+
+  <hr class="sep">
+
+  <h2>Where we go next</h2>
+
+  <p>We started with a raw dot product. Each transformation was motivated by a problem we ran into. Removing sign ambiguity. Forcing comparison. Expressing belief in a shared form. We arrived at a probability distribution over context words.</p>
+
+  <p>The next post asks how these probabilities should behave when they meet real data, and how disagreement between belief and observation creates the pressure that drives learning.</p>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+
+
+<script>
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SHARED: softmax helper
+// ═══════════════════════════════════════════════════════════════════════════
+function softmax(scores){
+  // Compute probabilities stably with the max-subtraction trick,
+  // but also return TRUE Z and TRUE exps (unshifted) so the displayed
+  // numbers match the mathematical definitions users see in the prose.
+  const m=Math.max(...scores);
+  const shiftedExps=scores.map(s=>Math.exp(s-m));
+  const shiftedZ=shiftedExps.reduce((a,b)=>a+b,0);
+  const probs=shiftedExps.map(e=>e/shiftedZ);
+  const scale=Math.exp(m);
+  const exps=shiftedExps.map(e=>e*scale);
+  const Z=shiftedZ*scale;
+  return{probs,Z,exps,shift:m};
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: Softmax pipeline builder
+// ═══════════════════════════════════════════════════════════════════════════
+const PIPE_WORDS=[
+  {word:'my',    score:2.4},
+  {word:'dog',   score:1.8},
+  {word:'friends',score:0.9},
+  {word:'music', score:0.0},
+  {word:'pizza', score:-1.2}
+];
+let pipeScores=PIPE_WORDS.map(w=>w.score);
+
+const PIPE_PRESETS={
+  balanced:   [1.0,0.8,0.5,0.2,-0.3],
+  'one-winner':[3.5,0.5,0.3,0.1,-0.5],
+  'two-rivals':[2.2,2.0,0.2,-0.5,-1.0],
+  'all-negative':[-0.3,-0.8,-1.2,-1.8,-2.5]
+};
+
+function renderPipeSliders(){
+  const host=document.getElementById('pipeSliders');
+  host.innerHTML='';
+  PIPE_WORDS.forEach((w,i)=>{
+    const row=document.createElement('div');
+    row.className='pipe-slider-row';
+    row.innerHTML=`
+      <div class="pipe-slider-label">
+        <span class="pipe-slider-word">${w.word}</span>
+        <span class="pipe-slider-val" id="pipeSlVal${i}">${pipeScores[i].toFixed(1)}</span>
+      </div>
+      <input type="range" class="pipe-slider" data-idx="${i}" min="-40" max="40" step="1" value="${pipeScores[i]*10}">
+    `;
+    host.appendChild(row);
+  });
+  host.querySelectorAll('input').forEach(s=>{
+    s.addEventListener('input',e=>{
+      const idx=parseInt(e.target.dataset.idx);
+      pipeScores[idx]=parseFloat(e.target.value)/10;
+      renderPipe();
+    });
+  });
+}
+
+function renderPipe(){
+  // update slider readouts
+  pipeScores.forEach((s,i)=>{
+    const el=document.getElementById('pipeSlVal'+i);
+    if(el)el.textContent=s.toFixed(1);
+    // update the actual slider position (for presets)
+    const input=document.querySelector(`.pipe-slider[data-idx="${i}"]`);
+    if(input)input.value=s*10;
+  });
+
+  const {probs,Z,exps}=softmax(pipeScores);
+  // raw
+  renderPipePanel('panelRaw',pipeScores,'raw');
+  renderPipePanel('panelExp',exps,'exp');
+  renderPipePanel('panelProb',probs,'prob');
+  // readouts
+  const mn=Math.min(...pipeScores),mx=Math.max(...pipeScores);
+  document.getElementById('pipeRawRange').textContent=`[${mn.toFixed(1)}, ${mx.toFixed(1)}]`;
+  document.getElementById('pipeZ').textContent=Z.toFixed(2);
+  document.getElementById('pipeSum').textContent=probs.reduce((a,b)=>a+b,0).toFixed(2);
+}
+function renderPipePanel(hostId,values,mode){
+  const host=document.getElementById(hostId);
+  host.innerHTML='';
+  // scale bars relative to max abs value in this panel
+  const absMax=Math.max(...values.map(v=>Math.abs(v)),1e-6);
+  values.forEach((v,i)=>{
+    const row=document.createElement('div');
+    row.className='pipe-bar-row';
+    // For raw panel, bars can be negative; render centred on the zero line.
+    // For exp and prob, all non-negative, render from left.
+    const word=PIPE_WORDS[i].word;
+    let trackInner='';
+    if(mode==='raw'){
+      trackInner=`<div class="pipe-bar-zero" style="left:50%"></div>`;
+      const pct=Math.abs(v)/absMax*48; // half-width
+      if(v>=0){
+        trackInner+=`<div class="pipe-bar-fill" style="left:50%;width:${pct}%;background:var(--accent)"></div>`;
+      }else{
+        trackInner+=`<div class="pipe-bar-fill" style="right:50%;width:${pct}%;background:var(--red)"></div>`;
+      }
+    }else if(mode==='exp'){
+      const pct=v/absMax*98;
+      trackInner=`<div class="pipe-bar-fill" style="left:0;width:${pct}%;background:var(--blue)"></div>`;
+    }else{
+      // prob 0..1
+      const pct=v*100;
+      trackInner=`<div class="pipe-bar-fill" style="left:0;width:${pct}%;background:var(--green)"></div>`;
+    }
+    const valStr=mode==='raw'?v.toFixed(1):mode==='exp'?v.toFixed(2):(v*100).toFixed(0)+'%';
+    row.innerHTML=`
+      <span class="pipe-bar-word">${word}</span>
+      <div class="pipe-bar-track">${trackInner}</div>
+      <span class="pipe-bar-val">${valStr}</span>
+    `;
+    host.appendChild(row);
+  });
+}
+
+document.querySelectorAll('.pipe-preset').forEach(b=>{
+  b.addEventListener('click',()=>{
+    pipeScores=[...PIPE_PRESETS[b.dataset.preset]];
+    renderPipe();
+  });
+});
+renderPipeSliders();
+renderPipe();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: Temperature / sharpening
+// ═══════════════════════════════════════════════════════════════════════════
+const TEMP_WORDS=['my','dog','friends','music','pizza'];
+const TEMP_SCORES=[2.0,1.5,0.8,0.2,-0.5];
+const TEMP_COLORS=['#b5541c','#2e5a7d','#0a7d52','#7c4dbc','#a83c2c'];
+
+function renderTemp(){
+  const beta=parseFloat(document.getElementById('tempSlider').value)/10;
+  document.getElementById('tempVal').textContent=beta.toFixed(1);
+  const scaled=TEMP_SCORES.map(s=>s*beta);
+  const {probs}=softmax(scaled);
+
+  // update mode label
+  const modeEl=document.getElementById('tempMode');
+  const pmax=Math.max(...probs);
+  if(pmax>0.9){modeEl.className='temp-mode peaked';modeEl.textContent='→ approaches argmax';}
+  else if(pmax>0.55){modeEl.className='temp-mode peaked';modeEl.textContent='peaked';}
+  else if(pmax>0.35){modeEl.className='temp-mode';modeEl.textContent='balanced';}
+  else{modeEl.className='temp-mode soft';modeEl.textContent='nearly uniform';}
+
+  // entropy in bits
+  let H=0;
+  probs.forEach(p=>{if(p>1e-12)H+=-p*Math.log2(p);});
+  document.getElementById('tempH').textContent=H.toFixed(2);
+  document.getElementById('tempPmax').textContent=pmax.toFixed(3);
+
+  drawTempChart(probs);
+}
+function drawTempChart(probs){
+  const canvas=document.getElementById('tempCanvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth||700,H=240;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+
+  // grid
+  ctx.strokeStyle='rgba(138,129,114,.06)';ctx.lineWidth=1;
+  for(let i=1;i<10;i++){const y=30+i*(H-70)/10;ctx.beginPath();ctx.moveTo(50,y);ctx.lineTo(W-30,y);ctx.stroke();}
+
+  // baseline
+  ctx.strokeStyle='rgba(138,129,114,.2)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(50,H-40);ctx.lineTo(W-30,H-40);ctx.stroke();
+
+  // "1" line
+  ctx.strokeStyle='rgba(10,125,82,.5)';ctx.lineWidth=1.5;
+  ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(50,30);ctx.lineTo(W-30,30);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(10,125,82,.8)';
+  ctx.font='11px "Courier New",monospace';
+  ctx.textAlign='right';
+  ctx.fillText('P = 1',W-35,24);
+
+  // y-axis labels
+  ctx.fillStyle='rgba(138,129,114,.6)';
+  ctx.font='10px "Courier New",monospace';
+  ctx.textAlign='right';
+  ctx.fillText('1.0',44,34);
+  ctx.fillText('0.5',44,(30+H-40)/2+3);
+  ctx.fillText('0.0',44,H-36);
+
+  // bars
+  const n=probs.length;
+  const gap=14;
+  const barW=(W-80-gap*(n-1))/n;
+  probs.forEach((p,i)=>{
+    const x=60+i*(barW+gap);
+    const barH=p*(H-70);
+    const y=H-40-barH;
+    ctx.fillStyle=TEMP_COLORS[i]+'cc';
+    ctx.strokeStyle=TEMP_COLORS[i];
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    if(ctx.roundRect)ctx.roundRect(x,y,barW,barH,6);
+    else ctx.rect(x,y,barW,barH);
+    ctx.fill();ctx.stroke();
+    // label
+    ctx.fillStyle='#57503f';
+    ctx.font='600 11px "Source Sans 3",sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(TEMP_WORDS[i],x+barW/2,H-22);
+    // value
+    ctx.fillStyle=TEMP_COLORS[i];
+    ctx.font='600 11px "Courier New",monospace';
+    const valTxt=p>=0.01?p.toFixed(2):p.toExponential(1);
+    ctx.fillText(valTxt,x+barW/2,y-6);
+  });
+}
+document.getElementById('tempSlider').addEventListener('input',renderTemp);
+renderTemp();
+window.addEventListener('resize',renderTemp);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: Redistributive pressure
+// ═══════════════════════════════════════════════════════════════════════════
+const REDIST_WORDS=['my','dog','friends','music','pizza'];
+// fixed baseline scores for all other words
+const REDIST_BASE=[1.0,0.5,0.0,-0.5];  // dog, friends, music, pizza
+let redistBaseline=null; // snapshot of probs when slider is at default
+
+function redistCompute(myScore){
+  const scores=[myScore,...REDIST_BASE];
+  return softmax(scores).probs;
+}
+
+function renderRedist(){
+  const raw=parseFloat(document.getElementById('redistSlider').value)/10;
+  document.getElementById('redistScore').textContent=raw.toFixed(1);
+  const probs=redistCompute(raw);
+
+  // initialise baseline on first call
+  if(!redistBaseline)redistBaseline=[...probs];
+
+  const host=document.getElementById('redistRows');
+  host.innerHTML='';
+  probs.forEach((p,i)=>{
+    const base=redistBaseline[i];
+    const delta=p-base;
+    const isTarget=i===0;
+    const row=document.createElement('div');
+    row.className='redist-row';
+    const pct=p*100;
+    // Delta arrow / text
+    let deltaStr='';
+    let deltaClass='';
+    if(Math.abs(delta)<0.003){
+      deltaStr='0.0%';
+      deltaClass='';
+    }else if(delta>0){
+      deltaStr='+'+(delta*100).toFixed(1)+'%';
+      deltaClass='up';
+    }else{
+      deltaStr=(delta*100).toFixed(1)+'%';
+      deltaClass='down';
+    }
+    row.innerHTML=`
+      <span class="redist-word ${isTarget?'target':''}">${REDIST_WORDS[i]}</span>
+      <div class="redist-bar-track">
+        <div class="redist-bar-fill ${isTarget?'target':''}" style="width:${pct}%"></div>
+      </div>
+      <span class="redist-val">${pct.toFixed(1)}%</span>
+      <span class="redist-delta ${deltaClass}">${deltaStr}</span>
+    `;
+    host.appendChild(row);
+  });
+  document.getElementById('redistSum').textContent=probs.reduce((a,b)=>a+b,0).toFixed(2);
+}
+document.getElementById('redistSlider').addEventListener('input',renderRedist);
+renderRedist();
+
+</script>
+{% endraw %}
