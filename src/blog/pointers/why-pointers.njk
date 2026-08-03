@@ -185,6 +185,27 @@ chapterSlug: why-pointers
   </svg>
   <figcaption>The whole motivation in one comparison. The record can be any size; its address is always eight bytes, and it always means the original.</figcaption>
 </figure>
+<p>The classic party trick that makes this concrete is <code>swap</code>. Try writing a function that exchanges two integers, without pointers:</p>
+<div class="codeblock"><span class="kw">void</span> swap(<span class="kw">int</span> a, <span class="kw">int</span> b) {
+    <span class="kw">int</span> tmp = a;
+    a = b;
+    b = tmp;
+}
+
+<span class="kw">int</span> x = 3, y = 7;
+swap(x, y);
+<span class="cm">// x is still 3. y is still 7.</span></div>
+<p>The function worked perfectly, on its own private copies. The originals never heard about any of it. Now hand it addresses instead:</p>
+<div class="codeblock"><span class="kw">void</span> swap(<span class="kw">int</span>* a, <span class="kw">int</span>* b) {
+    <span class="kw">int</span> tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+swap(&amp;x, &amp;y);
+<span class="cm">// x is 7. y is 3.</span></div>
+<p>Same algorithm, three extra characters, completely different reach. That's the entire trade in miniature: a pointer is the difference between talking about a copy of a thing and touching the thing itself. Everything else in this series is a grown-up version of this swap.</p>
+
 
 
   <div class="callout">A pointer is a tiny arrow that says "the thing is over there, go work on it."</div>
@@ -399,6 +420,31 @@ chapterSlug: why-pointers
   <p>Who owns this memory? And how long does it live?</p>
 
   <p>In a garbage-collected language, the runtime answers both for you, usually fine, occasionally catastrophically. In C, you answer them yourself, every time. Every <code>malloc</code> is a promise about who will eventually free it. Every returned pointer implicitly says "this will still be valid when you read it." Every struct that holds a pointer inherits a responsibility.</p>
+<figure class="fig">
+  <svg viewBox="0 0 660 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A heap-allocated block wears two question tags: who owns me, and when do I die. Below, a lifetime line runs from malloc to free, and reading past the end is marked as villain territory.">
+    <rect x="240" y="34" width="180" height="62" rx="11" fill="#2e5a7d" opacity="0.13" stroke="#2e5a7d" stroke-width="2"/>
+    <text x="330" y="61" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">a malloc'd block</text>
+    <text x="330" y="80" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">somewhere on the heap</text>
+    <path d="M 254 40 L 218 24" stroke="#8a8172" stroke-width="1.5"/>
+    <rect x="96" y="6" width="124" height="26" rx="6" fill="#d9a441" opacity="0.22" stroke="#b5541c" stroke-width="1.5" transform="rotate(-5 158 19)"/>
+    <text x="158" y="24" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#b5541c" transform="rotate(-5 158 19)">who owns me?</text>
+    <path d="M 408 40 L 446 24" stroke="#8a8172" stroke-width="1.5"/>
+    <rect x="442" y="6" width="128" height="26" rx="6" fill="#d9a441" opacity="0.22" stroke="#b5541c" stroke-width="1.5" transform="rotate(5 506 19)"/>
+    <text x="506" y="24" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#b5541c" transform="rotate(5 506 19)">when do I die?</text>
+    <line x1="80" y1="160" x2="420" y2="160" stroke="#0a7d52" stroke-width="3"/>
+    <line x1="80" y1="150" x2="80" y2="170" stroke="#0a7d52" stroke-width="2.5"/>
+    <text x="80" y="190" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">malloc</text>
+    <line x1="420" y1="150" x2="420" y2="170" stroke="#0a7d52" stroke-width="2.5"/>
+    <text x="420" y="190" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">free</text>
+    <text x="250" y="148" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#0a7d52">the lifetime: reads through the pointer are safe here</text>
+    <line x1="420" y1="160" x2="620" y2="160" stroke="#a83c2c" stroke-width="2" stroke-dasharray="6 5"/>
+    <circle cx="530" cy="160" r="6" fill="#a83c2c"/>
+    <text x="530" y="190" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">reading here: meet villain #3, part 5</text>
+    <text x="330" y="226" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">every pointer silently claims: "my block is still inside its lifetime." C never checks the claim.</text>
+  </svg>
+  <figcaption>The two questions every malloc opens. Get either wrong and the program doesn't complain; it just quietly stops meaning what you wrote.</figcaption>
+</figure>
+
 
   <p>If you get these wrong, you don't usually get a clean error. You get something worse. The program keeps running, corrupting things quietly, until it crashes in some completely unrelated place fifteen minutes later. Or it leaks memory slowly until it dies at 3am. Or it gets exploited, because most security vulnerabilities you've ever heard of, Heartbleed, Shellshock, countless browser zero-days, are pointer bugs at their core. Microsoft and Google have both independently reported that about 70% of their critical security bugs are memory safety issues.</p>
 
