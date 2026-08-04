@@ -167,9 +167,9 @@ chapterSlug: why-pointers
     <text x="255" y="86" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2e5a7d">the copy</text>
     <text x="255" y="104" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">another 500 bytes</text>
     <text x="255" y="150" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#a83c2c">edits land here</text>
-    <line x1="255" y1="156" x2="255" y2="132" stroke="#a83c2c" stroke-width="1.5"/>
+    <line x1="255" y1="130" x2="255" y2="140" stroke="#a83c2c" stroke-width="1.5"/>
     <text x="167" y="196" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#a83c2c">the caller never sees the change</text>
-    <text x="167" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">and you paid 500 bytes for the privilege</text>
+    <text x="167" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">at the cost of copying 500 bytes</text>
     <rect x="338" y="14" width="310" height="228" rx="12" fill="#ffffff" stroke="#ece4d6" stroke-width="1.5"/>
     <text x="493" y="38" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#8a8172">pass the address</text>
     <rect x="362" y="56" width="110" height="70" rx="9" fill="#0a7d52" opacity="0.14" stroke="#0a7d52" stroke-width="2"/>
@@ -177,15 +177,15 @@ chapterSlug: why-pointers
     <text x="417" y="104" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">the only one</text>
     <rect x="530" y="72" width="92" height="38" rx="9" fill="#241f18"/>
     <text x="576" y="96" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#e0c06a">0x7ffe...</text>
-    <text x="576" y="126" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">8 bytes, always</text>
+    <text x="576" y="66" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">8 bytes, always</text>
     <path d="M 576 114 Q 576 176 480 132" fill="none" stroke="#0a7d52" stroke-width="2"/>
     <path d="M488 126 L476 130 L484 140" fill="none" stroke="#0a7d52" stroke-width="2"/>
     <text x="560" y="176" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#0a7d52">reaches back, edits the original</text>
-    <text x="493" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">one record. no ambiguity. no shuffling.</text>
+    <text x="493" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">one record, and both sides see it</text>
   </svg>
-  <figcaption>The whole motivation in one comparison. The record can be any size; its address is always eight bytes, and it always means the original.</figcaption>
+  <figcaption>Passing the record copies all 500 bytes, and the function edits the copy. Passing the address moves eight bytes, and the function edits the one real record.</figcaption>
 </figure>
-<p>The classic party trick that makes this concrete is <code>swap</code>. Try writing a function that exchanges two integers, without pointers:</p>
+<p>The standard first example of this is <code>swap</code>. Try writing a function that exchanges two integers, without pointers:</p>
 <div class="codeblock"><span class="kw">void</span> swap(<span class="kw">int</span> a, <span class="kw">int</span> b) {
     <span class="kw">int</span> tmp = a;
     a = b;
@@ -195,7 +195,7 @@ chapterSlug: why-pointers
 <span class="kw">int</span> x = 3, y = 7;
 swap(x, y);
 <span class="cm">// x is still 3. y is still 7.</span></div>
-<p>The function worked perfectly, on its own private copies. The originals never heard about any of it. Now hand it addresses instead:</p>
+<p>The function did its job, but on its own copies. <code>x</code> and <code>y</code> back in the caller never change. Now hand it addresses instead:</p>
 <div class="codeblock"><span class="kw">void</span> swap(<span class="kw">int</span>* a, <span class="kw">int</span>* b) {
     <span class="kw">int</span> tmp = *a;
     *a = *b;
@@ -204,7 +204,7 @@ swap(x, y);
 
 swap(&amp;x, &amp;y);
 <span class="cm">// x is 7. y is 3.</span></div>
-<p>Same algorithm, three extra characters, completely different reach. That's the entire trade in miniature: a pointer is the difference between talking about a copy of a thing and touching the thing itself. Everything else in this series is a grown-up version of this swap.</p>
+<p>Same algorithm, but now the function works on the caller's variables instead of copies of them. That difference is the whole point of pointers, and most of this series is that one idea showing up in different places.</p>
 
 
 
@@ -265,12 +265,12 @@ swap(&amp;x, &amp;y);
   <p>A pointer is the moment that fiction drops away. When you write <code>int* p = &amp;x</code>, you're saying "forget the label, give me the actual address. I want to work at the level the machine works at." That sounds dramatic but it's the honest description. Pointers aren't a weird extra feature bolted onto C. They're C admitting out loud what every program was already doing in secret.</p>
 <figure class="fig">
   <svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A row of memory cells with hexadecimal addresses beneath. One holds the value five and wears a paper tag reading x. A separate pointer cell holds that cell's address, with an arrow back to it.">
-    <rect x="60" y="90" width="80" height="52" rx="8" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="1.2"/><text x="100" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a10</text><rect x="148" y="90" width="80" height="52" rx="8" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="1.2"/><text x="188" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a14</text><rect x="236" y="90" width="80" height="52" rx="8" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="1.2"/><text x="276" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a18</text><rect x="324" y="90" width="80" height="52" rx="8" fill="#0a7d52" opacity="0.16" stroke="#0a7d52" stroke-width="2"/><text x="364" y="122" text-anchor="middle" font-family="JetBrains Mono" font-size="16" fill="#0a7d52">5</text><text x="364" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a20</text><rect x="412" y="90" width="80" height="52" rx="8" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="1.2"/><text x="452" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a1c</text><rect x="500" y="90" width="80" height="52" rx="8" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="1.2"/><text x="540" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a24</text>
-    <path d="M 316 60 L 300 90" stroke="#8a8172" stroke-width="1.5"/>
-    <rect x="298" y="34" width="42" height="26" rx="5" fill="#b5541c" opacity="0.16" stroke="#b5541c" stroke-width="1.5" transform="rotate(-8 319 47)"/>
-    <text x="319" y="52" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#b5541c" transform="rotate(-8 319 47)">x</text>
-    <text x="648" y="36" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#8a8172">the label is for you.</text>
-    <text x="648" y="50" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#8a8172">the machine keeps only the address.</text>
+    <rect x="60" y="90" width="80" height="52" rx="8" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="1.2"/><text x="100" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a10</text><rect x="148" y="90" width="80" height="52" rx="8" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="1.2"/><text x="188" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a14</text><rect x="236" y="90" width="80" height="52" rx="8" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="1.2"/><text x="276" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a18</text><rect x="324" y="90" width="80" height="52" rx="8" fill="#0a7d52" opacity="0.16" stroke="#0a7d52" stroke-width="2"/><text x="364" y="122" text-anchor="middle" font-family="JetBrains Mono" font-size="16" fill="#0a7d52">5</text><text x="364" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a1c</text><rect x="412" y="90" width="80" height="52" rx="8" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="1.2"/><text x="452" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a20</text><rect x="500" y="90" width="80" height="52" rx="8" fill="#fdf9f3" opacity="1" stroke="#ece4d6" stroke-width="1.2"/><text x="540" y="162" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">...4a24</text>
+    <path d="M 352 60 L 356 90" stroke="#8a8172" stroke-width="1.5"/>
+    <rect x="322" y="34" width="42" height="26" rx="5" fill="#b5541c" opacity="0.16" stroke="#b5541c" stroke-width="1.5" transform="rotate(-8 343 47)"/>
+    <text x="343" y="52" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#b5541c" transform="rotate(-8 343 47)">x</text>
+    <text x="648" y="36" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#8a8172">the name x lives in your source code;</text>
+    <text x="648" y="50" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#8a8172">at runtime there is only the address.</text>
     <text x="60" y="80" font-family="JetBrains Mono" font-size="9" fill="#8a8172">six int-sized boxes, 4 bytes apart</text>
     <rect x="128" y="192" width="120" height="42" rx="9" fill="#241f18"/>
     <text x="188" y="212" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#e0c06a">...4a1c</text>
@@ -279,7 +279,7 @@ swap(&amp;x, &amp;y);
     <path d="M322 156 L328 144 L335 155" fill="none" stroke="#b5541c" stroke-width="2"/>
     <text x="330" y="228" font-family="JetBrains Mono" font-size="9" fill="#b5541c">a box holding another box's number</text>
   </svg>
-  <figcaption>int x = 5, honestly drawn. The name is a sticker; the address is the reality. A pointer just stores that reality in a box of its own.</figcaption>
+  <figcaption>What <code>int x = 5</code> actually creates: four bytes at address ...4a1c. The name <code>x</code> never exists at runtime, only the address does. A pointer <code>p</code> is one more variable whose value is that address.</figcaption>
 </figure>
 
 
@@ -335,9 +335,9 @@ swap(&amp;x, &amp;y);
     <rect x="210" y="40" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><rect x="184" y="84" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><rect x="238" y="84" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><line x1="218" y1="60" x2="196" y2="82" stroke="#b5541c" stroke-width="1.6"/><path d="M199 76 L196 82 L202 79" fill="none" stroke="#b5541c" stroke-width="1.6"/><line x1="228" y1="60" x2="250" y2="82" stroke="#b5541c" stroke-width="1.6"/><path d="M244 79 L250 82 L247 76" fill="none" stroke="#b5541c" stroke-width="1.6"/><text x="216" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">tree</text>
     <rect x="330" y="44" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><rect x="376" y="44" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><rect x="330" y="92" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><rect x="376" y="92" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><line x1="356" y1="54" x2="374" y2="54" stroke="#b5541c" stroke-width="1.6"/><path d="M368 57 L374 54 L368 51" fill="none" stroke="#b5541c" stroke-width="1.6"/><line x1="343" y1="64" x2="343" y2="90" stroke="#b5541c" stroke-width="1.6"/><path d="M340 84 L343 90 L346 84" fill="none" stroke="#b5541c" stroke-width="1.6"/><line x1="356" y1="100" x2="374" y2="100" stroke="#b5541c" stroke-width="1.6"/><path d="M368 103 L374 100 L368 97" fill="none" stroke="#b5541c" stroke-width="1.6"/><line x1="386" y1="64" x2="386" y2="90" stroke="#b5541c" stroke-width="1.6"/><path d="M383 84 L386 90 L389 84" fill="none" stroke="#b5541c" stroke-width="1.6"/><text x="358" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">graph</text>
     <rect x="490" y="44" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><rect x="536" y="44" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><rect x="582" y="44" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><rect x="490" y="92" width="26" height="20" rx="5" fill="none" stroke="#57503f" stroke-width="1.8"/><line x1="516" y1="54" x2="534" y2="54" stroke="#b5541c" stroke-width="1.6"/><path d="M528 57 L534 54 L528 51" fill="none" stroke="#b5541c" stroke-width="1.6"/><line x1="562" y1="54" x2="580" y2="54" stroke="#b5541c" stroke-width="1.6"/><path d="M574 57 L580 54 L574 51" fill="none" stroke="#b5541c" stroke-width="1.6"/><line x1="503" y1="64" x2="503" y2="90" stroke="#b5541c" stroke-width="1.6"/><path d="M500 84 L503 90 L506 84" fill="none" stroke="#b5541c" stroke-width="1.6"/><text x="536" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#8a8172">hash chain</text>
-    <text x="330" y="154" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">four chapters of your DSA syllabus. one drawing, rearranged.</text>
+    <text x="330" y="154" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">a list, a tree, a graph, a hash chain: the same boxes and arrows, wired differently</text>
   </svg>
-  <figcaption>All of it is boxes and arrows. A data structure is just a policy about where the arrows are allowed to point.</figcaption>
+  <figcaption>A linked list, a tree, a graph, and a hash table are all built from the same two parts: boxes that hold values and pointers that say where the next box is.</figcaption>
 </figure>
 
 
@@ -365,11 +365,11 @@ swap(&amp;x, &amp;y);
     <line x1="40" y1="126" x2="300" y2="126" stroke="#0a7d52" stroke-width="2"/>
     <path d="M294 120 L304 126 L294 132" fill="none" stroke="#0a7d52" stroke-width="2"/>
     <text x="172" y="146" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#0a7d52">the cache prefetches ahead of you</text>
-    <text x="500" y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#8a8172">linked nodes: wherever malloc felt like it</text>
+    <text x="500" y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#8a8172">linked nodes: scattered across the heap</text>
     <rect x="392" y="52" width="36" height="26" rx="6" fill="none" stroke="#a83c2c" stroke-width="1.8"/><rect x="560" y="120" width="36" height="26" rx="6" fill="none" stroke="#a83c2c" stroke-width="1.8"/><rect x="430" y="150" width="36" height="26" rx="6" fill="none" stroke="#a83c2c" stroke-width="1.8"/><rect x="610" y="54" width="36" height="26" rx="6" fill="none" stroke="#a83c2c" stroke-width="1.8"/><path d="M 428 65 Q 506.0 46.0 560 133" fill="none" stroke="#a83c2c" stroke-width="1.5" stroke-dasharray="5 4"/><path d="M 596 133 Q 525.0 95.0 430 163" fill="none" stroke="#a83c2c" stroke-width="1.5" stroke-dasharray="5 4"/><path d="M 466 163 Q 550.0 62.0 610 67" fill="none" stroke="#a83c2c" stroke-width="1.5" stroke-dasharray="5 4"/>
     <text x="500" y="196" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">every hop is a potential trip to RAM</text>
   </svg>
-  <figcaption>Big-O counts operations. The cache counts distance. The same pointer that makes the list possible is the reason it loses the race.</figcaption>
+  <figcaption>Array elements sit next to each other, so the cache loads several at once. List nodes are spread across the heap, so each hop can be a cache miss. Same O(n), very different wall-clock time.</figcaption>
 </figure>
 
 
@@ -441,10 +441,10 @@ swap(&amp;x, &amp;y);
     <text x="250" y="148" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#0a7d52">the lifetime: reads through the pointer are safe here</text>
     <line x1="420" y1="160" x2="620" y2="160" stroke="#a83c2c" stroke-width="2" stroke-dasharray="6 5"/>
     <circle cx="530" cy="160" r="6" fill="#a83c2c"/>
-    <text x="530" y="190" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">reading here: meet villain #3, part 5</text>
-    <text x="330" y="226" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">every pointer silently claims: "my block is still inside its lifetime." C never checks the claim.</text>
+    <text x="530" y="190" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">reading here is a dangling pointer (part 5)</text>
+    <text x="330" y="226" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">using a pointer assumes the block is still alive. C never checks that assumption.</text>
   </svg>
-  <figcaption>The two questions every malloc opens. Get either wrong and the program doesn't complain; it just quietly stops meaning what you wrote.</figcaption>
+  <figcaption>Every <code>malloc</code> raises the same two questions: who is responsible for freeing this block, and until when is it safe to use. The language never enforces an answer, which is where the bugs in part 5 come from.</figcaption>
 </figure>
 
 
