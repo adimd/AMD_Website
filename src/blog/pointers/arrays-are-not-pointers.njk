@@ -1,0 +1,1335 @@
+---
+layout: chapter.njk
+title: "Arrays Are Not Pointers"
+seriesKey: pointers
+chapterSlug: arrays-are-not-pointers
+---
+
+{% raw %}
+<style>
+@keyframes rise {from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.chapter-scope .anim {animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+.chapter-scope .d1 {animation-delay:.08s}
+.chapter-scope .d2 {animation-delay:.18s}
+.chapter-scope .page-wrap {max-width:1320px;margin:0 auto;padding:3rem 2rem 5rem}
+.chapter-scope .blog-layout {display:flex;gap:2.5rem;align-items:flex-start}
+.chapter-scope .blog-main {flex:3.5;min-width:0}
+.chapter-scope .blog-sidebar {flex:1;display:flex;flex-direction:column;gap:1.3rem;position:sticky;top:5.5rem}
+.chapter-scope .article {background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 3.5rem;position:relative;overflow:hidden}
+.chapter-scope .article::before {content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+.chapter-scope .series-tag {display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:var(--accent-dim);font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+.chapter-scope .series-dot {width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.chapter-scope .article h1 {font-family:var(--display);font-weight:400;font-size:2.6rem;color:var(--ink);letter-spacing:-.02em;margin:.3rem 0 .6rem}
+.chapter-scope .blog-subtitle {font-size:1.15rem;color:var(--muted);font-weight:300;margin-bottom:2.2rem;line-height:1.6}
+.chapter-scope .article h2 {font-family:var(--display);font-weight:400;font-size:1.72rem;color:var(--ink);margin:2.8rem 0 .85rem}
+.chapter-scope .article h3 {font-family:var(--display);font-weight:400;font-size:1.32rem;color:var(--accent);margin:2.2rem 0 .7rem}
+.chapter-scope .article p {font-size:1.13rem;font-weight:300;margin-bottom:1.3rem;line-height:1.82}
+.chapter-scope .article strong {color:var(--ink);font-weight:500}
+.chapter-scope .article em {color:var(--ink)}
+.chapter-scope .article code {font-size:.9em;background:rgba(138,129,114,.08);padding:.18rem .45rem;border-radius:4px;color:var(--ink);font-family:'Courier New',monospace}
+.chapter-scope .article ul {padding-left:1.3rem;margin:.4rem 0 1.2rem}
+.chapter-scope .article li {font-size:1.1rem;font-weight:300;margin:.35rem 0}
+.chapter-scope .callout {margin:2rem 0;padding:1.4rem 1.8rem;border-left:3px solid var(--accent);background:var(--accent-dim);border-radius:0 var(--radius) var(--radius) 0;font-family:var(--display);font-size:1.28rem;font-style:italic;color:var(--ink);line-height:1.5}
+.chapter-scope .sep {border:none;height:1px;background:linear-gradient(90deg,transparent,var(--border-hover) 20%,var(--border-hover) 80%,transparent);margin:2.6rem 0}
+.chapter-scope .codeblock {background:#ffffff;border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.3rem;margin:1.3rem 0;font-family:'Courier New',monospace;font-size:.92rem;line-height:1.7;overflow-x:auto;color:var(--body)}
+.chapter-scope .codeblock .kw {color:#7c4dbc}
+.chapter-scope .codeblock .tp {color:#a83c2c}
+.chapter-scope .codeblock .nm {color:#b5541c}
+.chapter-scope .codeblock .vl {color:#0a7d52}
+.chapter-scope .codeblock .cm {color:var(--muted);font-style:italic}
+.chapter-scope .codeblock .op {color:#2e5a7d}
+.chapter-scope .codeblock .st {color:#0a7d52}
+.chapter-scope .code-side {display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.3rem 0}
+@media(max-width:800px) {
+.chapter-scope .code-side {grid-template-columns:1fr}
+}
+.chapter-scope .code-col {display:flex;flex-direction:column;gap:.4rem}
+.chapter-scope .code-col-tag {font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding-left:.2rem}
+.chapter-scope .code-col-tag.c {color:var(--blue)}
+.chapter-scope .code-col-tag.cpp {color:var(--purple)}
+.chapter-scope .code-col-tag.good {color:var(--green)}
+.chapter-scope .code-col-tag.bad {color:var(--red)}
+.chapter-scope .code-col .codeblock {margin:0}
+.chapter-scope .sidebar-card {background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem}
+.chapter-scope .sidebar-title {font-family:var(--display);font-size:1.05rem;color:var(--ink);margin:0 0 .8rem}
+.chapter-scope .sidebar-link {display:block;padding:.5rem .6rem;border-radius:8px;text-decoration:none;transition:background .2s,transform .15s}
+.chapter-scope .sidebar-link+.sidebar-link {margin-top:.15rem}
+.chapter-scope .sidebar-link:hover {background:var(--accent-dim);transform:translateX(2px)}
+.chapter-scope .sidebar-link-title {font-size:.88rem;font-weight:500;color:var(--ink)}
+.chapter-scope .sidebar-link-note {font-size:.73rem;color:var(--muted);margin-top:.12rem}
+.chapter-scope .sidebar-link.active-topic {background:var(--accent-dim);border-left:2px solid var(--accent);padding-left:.8rem}
+.chapter-scope .viz-block {margin:2.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chapter-scope .viz-header {padding:.85rem 1.5rem;border-bottom:1px solid var(--border)}
+.chapter-scope .viz-title {font-family:var(--hand);font-size:1.18rem;color:var(--accent)}
+.chapter-scope .viz-body {padding:1.6rem}
+.chapter-scope .viz-note {font-size:.88rem;color:var(--muted);margin-top:1.1rem;font-style:italic;line-height:1.65}
+.chapter-scope .btn {padding:.5rem 1.05rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);cursor:pointer;font-size:.88rem;font-family:inherit;transition:all .2s}
+.chapter-scope .btn:hover {border-color:var(--accent);color:var(--accent)}
+.chapter-scope .btn.active {background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.chapter-scope .btn.primary {background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.chapter-scope .btn.primary:hover {background:rgba(181,84,28,.22)}
+.chapter-scope .v1-lanes {display:flex;flex-direction:column;gap:1rem}
+.chapter-scope .v1-lane {background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.7rem}
+.chapter-scope .v1-lane.arr {border-left:3px solid var(--green)}
+.chapter-scope .v1-lane.ptr {border-left:3px solid var(--accent)}
+.chapter-scope .v1-lane-head {display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.5rem}
+.chapter-scope .v1-lane-title {font-family:var(--display);font-size:1.18rem;color:var(--ink)}
+.chapter-scope .v1-lane-title .sub {font-family:var(--sans);font-size:.82rem;color:var(--muted);font-weight:300;margin-left:.5rem}
+.chapter-scope .v1-lane-code {font-family:'Courier New',monospace;font-size:.82rem;color:var(--muted);background:rgba(138,129,114,.04);padding:.15rem .5rem;border-radius:4px}
+.chapter-scope .v1-lane-code .hl {color:var(--accent)}
+.chapter-scope .v1-canvas {width:100%;display:block;background:#ffffff;border:1px solid var(--border);border-radius:6px}
+.chapter-scope .v1-legend {display:flex;gap:1.2rem;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:.3rem;justify-content:center}
+.chapter-scope .v1-legend-dot {display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.35rem;vertical-align:middle}
+.chapter-scope .v2-context {background:#ffffff;border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;font-family:'Courier New',monospace;font-size:.88rem;line-height:1.8;margin-bottom:1rem}
+.chapter-scope .v2-context .cm {color:var(--muted);font-style:italic}
+.chapter-scope .v2-context .tp {color:#a83c2c}
+.chapter-scope .v2-context .nm {color:#b5541c}
+.chapter-scope .v2-context .vl {color:#0a7d52}
+.chapter-scope .v2-context .op {color:#2e5a7d}
+.chapter-scope .v2-exprs {display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.5rem;margin-bottom:1rem}
+.chapter-scope .v2-expr-btn {padding:.7rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--body);cursor:pointer;font-family:'Courier New',monospace;font-size:.92rem;transition:all .2s;text-align:center}
+.chapter-scope .v2-expr-btn:hover {border-color:var(--accent);color:var(--accent)}
+.chapter-scope .v2-expr-btn.active {background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.chapter-scope .v2-result {background:#ffffff;border:1px solid var(--border);border-radius:10px;padding:1.2rem;min-height:130px;font-family:'Courier New',monospace;display:flex;flex-direction:column;gap:.6rem}
+.chapter-scope .v2-result-row {display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.chapter-scope .v2-result-label {color:var(--muted);font-size:.85rem}
+.chapter-scope .v2-result-expr {color:var(--accent);font-size:1rem;font-weight:600}
+.chapter-scope .v2-result-arrow {color:var(--muted)}
+.chapter-scope .v2-result-val {color:var(--green);font-size:1.1rem;font-weight:700}
+.chapter-scope .v2-result-explain {font-family:var(--sans);font-size:.95rem;color:var(--body);line-height:1.7;margin-top:.3rem;padding-top:.7rem;border-top:1px solid var(--border)}
+.chapter-scope .v2-result-explain strong {color:var(--ink)}
+.chapter-scope .v2-result-explain .warn {color:var(--red)}
+.chapter-scope .run-block {margin:1.5rem 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chapter-scope .run-grid {display:grid;grid-template-columns:1fr 1fr;gap:0}
+@media(max-width:900px) {
+.chapter-scope .run-grid {grid-template-columns:1fr}
+}
+.chapter-scope .run-col {display:flex;flex-direction:column;min-width:0}
+.chapter-scope .run-col+.run-col {border-left:1px solid var(--border)}
+@media(max-width:900px) {
+.chapter-scope .run-col+.run-col {border-left:none;border-top:1px solid var(--border)}
+}
+.chapter-scope .run-col-head {padding:.7rem 1.1rem;background:rgba(138,129,114,.03);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
+.chapter-scope .run-col-label {font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+.chapter-scope .run-col-label .tag {display:inline-block;padding:.1rem .5rem;border-radius:999px;margin-left:.4rem;font-size:.7rem}
+.chapter-scope .run-col-label .tag.c {background:rgba(46,90,125,.15);color:var(--blue)}
+.chapter-scope .run-col-label .tag.out {background:rgba(10,125,82,.12);color:var(--green)}
+.chapter-scope .run-copy-btn {background:none;border:1px solid var(--border-hover);color:var(--muted);font-family:inherit;font-size:.75rem;padding:.25rem .7rem;border-radius:6px;cursor:pointer;transition:all .2s}
+.chapter-scope .run-copy-btn:hover {border-color:var(--accent);color:var(--accent)}
+.chapter-scope .run-copy-btn.copied {border-color:var(--green);color:var(--green)}
+.chapter-scope .run-code {padding:1.1rem 1.3rem;font-family:'Courier New',monospace;font-size:.84rem;line-height:1.65;overflow-x:auto;color:var(--body);background:#ffffff;flex:1;margin:0;white-space:pre}
+.chapter-scope .run-code .kw {color:#7c4dbc}
+.chapter-scope .run-code .tp {color:#a83c2c}
+.chapter-scope .run-code .nm {color:#b5541c}
+.chapter-scope .run-code .vl {color:#0a7d52}
+.chapter-scope .run-code .cm {color:var(--muted);font-style:italic}
+.chapter-scope .run-code .op {color:#2e5a7d}
+.chapter-scope .run-code .st {color:#0a7d52}
+.chapter-scope .run-output {padding:1.1rem 1.3rem;font-family:'Courier New',monospace;font-size:.82rem;line-height:1.7;color:var(--body);background:#ffffff;flex:1;white-space:pre;overflow-x:auto;margin:0}
+.chapter-scope .run-output .prompt {color:var(--muted)}
+.chapter-scope .run-output .addr {color:var(--accent)}
+.chapter-scope .run-output .highlight {color:var(--green);font-weight:600}
+.chapter-scope .run-output .section {color:var(--muted);font-style:italic}
+.chapter-scope .run-footer {padding:.6rem 1.1rem;background:rgba(138,129,114,.02);border-top:1px solid var(--border);font-size:.78rem;color:var(--muted);font-style:italic}
+.chapter-scope .run-footer code {background:rgba(138,129,114,.06);padding:.1rem .4rem;border-radius:3px;color:var(--ink);font-size:.88em;font-style:normal}
+.chapter-scope .v3-controls {display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap}
+@media(max-width:640px) {
+.chapter-scope .v3-controls {grid-template-columns:1fr}
+}
+.chapter-scope .v3-type-row {display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+.chapter-scope .v3-type-row .v3-type-label {font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-right:.3rem}
+.chapter-scope .v3-slider-group {display:flex;flex-direction:column;gap:.3rem}
+.chapter-scope .v3-slider-label {font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.chapter-scope .v3-slider-label strong {color:var(--accent);font-family:'Courier New',monospace;font-size:.95rem}
+.chapter-scope .v3-slider {width:100%;accent-color:var(--accent);max-width:320px}
+.chapter-scope .v3-readout {background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:.6rem .9rem;font-family:'Courier New',monospace;font-size:.92rem;text-align:center;min-width:200px}
+.chapter-scope .v3-readout .expr {color:var(--accent);font-weight:600}
+.chapter-scope .v3-readout .eq {color:var(--muted);margin:0 .3rem}
+.chapter-scope .v3-readout .addr {color:var(--green);font-weight:600}
+.chapter-scope .v3-readout .calc {font-size:.8rem;color:var(--muted);margin-top:.3rem;display:block}
+.chapter-scope .v3-canvas {width:100%;display:block;background:#ffffff;border:1px solid var(--border);border-radius:10px}
+.chapter-scope .quiz-intro {font-size:1.05rem;color:var(--body);margin-bottom:1.4rem;line-height:1.7}
+.chapter-scope .quiz-intro strong {color:var(--ink)}
+.chapter-scope .quiz-card {background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem 1.8rem;margin:1.3rem 0;position:relative;overflow:hidden}
+.chapter-scope .quiz-card::before {content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent 60%)}
+.chapter-scope .quiz-num {font-family:var(--hand);font-size:1.4rem;color:var(--accent);line-height:1;margin-bottom:.4rem;display:inline-block}
+.chapter-scope .quiz-q {font-family:var(--display);font-size:1.28rem;color:var(--ink);line-height:1.5;margin-bottom:1rem}
+.chapter-scope .quiz-code {background:#ffffff;border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;margin:.8rem 0;font-family:'Courier New',monospace;font-size:.9rem;line-height:1.7;overflow-x:auto}
+.chapter-scope .quiz-options {display:flex;flex-direction:column;gap:.5rem;margin:.8rem 0}
+.chapter-scope .quiz-option {display:flex;align-items:flex-start;gap:.7rem;padding:.7rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;cursor:pointer;transition:all .2s;font-size:.98rem;color:var(--body);text-align:left;font-family:inherit}
+.chapter-scope .quiz-option:hover {border-color:var(--accent);color:var(--ink)}
+.chapter-scope .quiz-option.selected {border-color:var(--accent);background:var(--accent-dim);color:var(--ink)}
+.chapter-scope .quiz-option.correct {border-color:var(--green);background:var(--green-dim);color:var(--ink)}
+.chapter-scope .quiz-option.incorrect {border-color:var(--red);background:var(--red-dim);color:var(--ink);opacity:.8}
+.chapter-scope .quiz-option-letter {font-family:'Courier New',monospace;font-weight:700;color:var(--accent);min-width:1.3rem}
+.chapter-scope .quiz-option.correct .quiz-option-letter {color:var(--green)}
+.chapter-scope .quiz-option.incorrect .quiz-option-letter {color:var(--red)}
+.chapter-scope .quiz-reveal {margin-top:.8rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.chapter-scope .quiz-btn {padding:.5rem 1.1rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);cursor:pointer;font-size:.9rem;font-family:inherit;font-weight:500;transition:all .2s}
+.chapter-scope .quiz-btn:hover {background:rgba(181,84,28,.22)}
+.chapter-scope .quiz-answer {margin-top:1rem;padding:1rem 1.2rem;background:rgba(10,125,82,.06);border:1px solid rgba(10,125,82,.25);border-left:3px solid var(--green);border-radius:0 8px 8px 0;font-size:1rem;color:var(--body);line-height:1.7;display:none;animation:rise .3s cubic-bezier(.22,1,.36,1) both}
+.chapter-scope .quiz-answer.show {display:block}
+.chapter-scope .quiz-answer strong {color:var(--ink)}
+.chapter-scope .quiz-answer code {background:rgba(138,129,114,.08);padding:.1rem .4rem;border-radius:3px;font-family:'Courier New',monospace;color:var(--ink);font-size:.88em}
+.chapter-scope .quiz-answer .verdict {font-family:var(--display);font-size:1.1rem;color:var(--green);margin-bottom:.4rem;display:block}
+.chapter-scope .quiz-textarea {width:100%;min-height:80px;padding:.7rem .9rem;background:var(--bg-card);border:1px solid var(--border-hover);border-radius:8px;color:var(--ink);font-size:.95rem;outline:none;font-family:inherit;resize:vertical;line-height:1.6}
+.chapter-scope .quiz-textarea:focus {border-color:var(--accent)}
+.chapter-scope .quiz-scorecard {margin-top:2rem;padding:1.4rem 1.8rem;background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);text-align:center}
+.chapter-scope .quiz-scorecard-title {font-family:var(--display);font-size:1.35rem;color:var(--ink);margin-bottom:.4rem}
+.chapter-scope .quiz-scorecard-msg {font-size:1rem;color:var(--body);line-height:1.6}
+.chapter-scope .comments-section {margin-top:2.5rem}
+.chapter-scope .comments-section h2 {font-family:var(--display);font-size:1.5rem;color:var(--ink);margin-bottom:1rem}
+@media(max-width:960px) {
+.chapter-scope .blog-layout {flex-direction:column}
+.chapter-scope .blog-sidebar {position:static}
+}
+@media(max-width:640px) {
+.chapter-scope .page-wrap {padding:2rem 1.2rem 3rem}
+.chapter-scope .article {padding:2rem 1.4rem}
+.chapter-scope .article h1 {font-size:1.9rem}
+}
+</style>
+
+
+  <span class="series-tag"><span class="series-dot"></span>Pointers: Thinking in Memory</span>
+  <h1>Arrays Are Not Pointers</h1>
+  <p class="blog-subtitle">They look the same, they feel the same, they even compile to almost the same machine code. But confusing them is one of the most productive sources of bugs in C, and the day you see clearly why is the day a lot of mysterious things stop being mysterious.</p>
+
+  <h2>The comfortable lie</h2>
+
+  <p>At some point early in your C journey, somebody told you that arrays and pointers are basically the same thing. It was a forgivable thing to say. Most of the time, the language behaves as if it were true. You can use array indexing on a pointer. You can use pointer arithmetic on an array. You can pass an array to a function and it quietly becomes a pointer. Everything seems fine.</p>
+
+  <p>It isn't fine. It's a convenient half-truth that works most of the time and then blows up in your face at exactly the moments that matter. When you call <code>sizeof</code>. When you pass an array to a function. When you think you're checking bounds but you aren't. When you free memory, or when you try to reason about memory layout. The point of this post is to make the distinction sharp enough that you never get fooled again.</p>
+
+  <div class="callout">Arrays and pointers are not the same thing. They're two different things that often dress like each other.</div>
+
+  <hr class="sep">
+
+  <h2>What an array actually is</h2>
+
+  <p>When you write <code>int arr[5]</code>, you're asking the compiler to set aside a contiguous block of memory big enough to hold five ints. On a typical system that's 20 bytes, laid out as one unbroken strip. The name <code>arr</code> doesn't refer to any single one of those ints. It refers to the whole block, with a specific type: "array of 5 ints."</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">5</span>] <span class="op">=</span> {<span class="vl">10</span>, <span class="vl">20</span>, <span class="vl">30</span>, <span class="vl">40</span>, <span class="vl">50</span>};
+<span class="cm">// 20 bytes in one contiguous strip</span>
+<span class="cm">// arr has type "int[5]", which is different from "int*"</span></pre>
+
+  <p>The type <code>int[5]</code> is distinct from <code>int*</code>. An array type carries its size around with it at compile time. The compiler knows, when it sees <code>arr</code>, that this thing has five ints in it. That knowledge is why <code>sizeof(arr)</code> can tell you "20 bytes" without having to look anything up at runtime.</p>
+
+  <p>A pointer, on the other hand, is just a variable that holds an address. It doesn't know anything about how much memory lives at that address. <code>int* p</code> could point at a single int, at the middle of a giant buffer, at nothing at all, or at an array of 10,000 ints. The pointer itself cannot tell. Its type says "points to an int", full stop.</p>
+
+  <div class="callout">An array is a region. A pointer is a finger. They're related but not the same.</div>
+
+  <!-- VIZ 1: contiguity vs pointing-to -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">See the difference in memory.</span></div>
+    <div class="viz-body">
+
+      <div class="v1-lanes">
+        <div class="v1-lane arr">
+          <div class="v1-lane-head">
+            <div class="v1-lane-title">Array <span class="sub">a contiguous region of memory</span></div>
+            <div class="v1-lane-code"><span class="tp">int</span> <span class="hl">arr</span>[<span class="vl">5</span>] <span class="op">=</span> {<span class="vl">10</span>,<span class="vl">20</span>,<span class="vl">30</span>,<span class="vl">40</span>,<span class="vl">50</span>};</div>
+          </div>
+          <canvas id="v1Arr" class="v1-canvas" height="120"></canvas>
+        </div>
+
+        <div class="v1-lane ptr">
+          <div class="v1-lane-head">
+            <div class="v1-lane-title">Pointer <span class="sub">a single address, pointing somewhere</span></div>
+            <div class="v1-lane-code"><span class="tp">int*</span> <span class="hl">p</span> <span class="op">=</span> <span class="op">&amp;</span><span class="nm">arr</span>[<span class="vl">0</span>];</div>
+          </div>
+          <canvas id="v1Ptr" class="v1-canvas" height="120"></canvas>
+        </div>
+
+        <div class="v1-legend">
+          <span><span class="v1-legend-dot" style="background:rgba(10,125,82,.4);border:1px solid var(--green)"></span>the array (one region, 20 bytes)</span>
+          <span><span class="v1-legend-dot" style="background:rgba(181,84,28,.4);border:1px solid var(--accent)"></span>the pointer (itself 8 bytes, holds one address)</span>
+          <span><span class="v1-legend-dot" style="background:rgba(46,90,125,.3);border:1px dashed var(--blue)"></span>what the pointer is aimed at</span>
+        </div>
+      </div>
+
+      <p class="viz-note">The array box is <em>the thing itself</em>. All 20 bytes of it. The pointer box is a tiny 8-byte container that happens to hold an address. They look interchangeable in code because the pointer is aimed at the array's first element. They are not the same object. One owns its memory; the other just knows where to find someone else's.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>Array-to-pointer decay</h2>
+
+  <p>Here's the rule that causes all the confusion. In almost every context where you use an array's name, C silently converts it to a pointer to its first element. This is called <strong>array-to-pointer decay</strong>, and it's the single most important mechanic in this whole post.</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">5</span>] <span class="op">=</span> {<span class="vl">10</span>, <span class="vl">20</span>, <span class="vl">30</span>, <span class="vl">40</span>, <span class="vl">50</span>};
+<span class="tp">int*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">arr</span>;   <span class="cm">// arr decays to &arr[0], an int*</span>
+
+<span class="nm">p</span>[<span class="vl">2</span>];      <span class="cm">// 30. you can index a pointer just like an array.</span>
+<span class="nm">arr</span>[<span class="vl">2</span>];    <span class="cm">// 30. same result.</span>
+<span class="op">*</span>(<span class="nm">p</span> <span class="op">+</span> <span class="vl">2</span>);  <span class="cm">// 30. pointer arithmetic works on both.</span>
+<span class="op">*</span>(<span class="nm">arr</span> <span class="op">+</span> <span class="vl">2</span>); <span class="cm">// 30. arr decayed here too.</span></pre>
+
+  <p>The decay is why all those expressions look equivalent. When you write <code>arr[i]</code>, what's actually happening under the hood is <code>*(arr + i)</code>, and the <code>arr</code> in that expression has already decayed into a pointer. Array indexing is defined in terms of pointer arithmetic, not the other way around. Which, as a fun aside, is why <code>0[arr]</code> is valid C and gives you the same thing as <code>arr[0]</code>. Commutative. Horrifying. True.</p>
+
+  <p>But decay isn't always silent. There are a few contexts where the array keeps its identity:</p>
+
+  <ul>
+    <li><code>sizeof(arr)</code>. The compiler needs the type, so no decay happens.</li>
+    <li><code>&amp;arr</code>. Gives you a pointer to the whole array (<code>int (*)[5]</code>), not to its first element. More on this in a moment.</li>
+    <li><code>typeof(arr)</code> or <code>decltype(arr)</code> in C++. The real type is preserved.</li>
+  </ul>
+
+  <p>Everywhere else, the moment the array name appears in an expression, it decays. You didn't ask for it. You can't stop it. It just happens.</p>
+
+  <div class="callout">Arrays decay into pointers in almost every expression. The places they don't are where the bugs live.</div>
+
+<figure class="fig">
+  <svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An array of five ints written as arr appears in an expression and decays into a pointer to its first element. Three contexts resist the decay: sizeof, address-of the whole array, and declarations.">
+    <text x="150" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#57503f">int arr[5]</text>
+    <text x="150" y="45" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">type: int[5], 20 bytes</text>
+    <rect x="40" y="58" width="44" height="40" rx="6" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="84" y="58" width="44" height="40" rx="6" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="128" y="58" width="44" height="40" rx="6" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="172" y="58" width="44" height="40" rx="6" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="216" y="58" width="44" height="40" rx="6" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <text x="62" y="82" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">10</text>
+    <text x="106" y="82" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">20</text>
+    <text x="150" y="82" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">30</text>
+    <text x="194" y="82" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">40</text>
+    <text x="238" y="82" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">50</text>
+    <text x="62" y="112" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">+0</text>
+    <text x="106" y="112" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">+4</text>
+    <text x="150" y="112" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">+8</text>
+    <text x="194" y="112" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">+12</text>
+    <text x="238" y="112" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">+16</text>
+    <line x1="280" y1="78" x2="360" y2="78" stroke="#b5541c" stroke-width="2"/>
+    <path d="M354 72 L364 78 L354 84" fill="none" stroke="#b5541c" stroke-width="2"/>
+    <text x="320" y="66" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#b5541c">decays in an expression</text>
+    <rect x="378" y="52" width="150" height="52" rx="8" fill="#b5541c" opacity="0.1" stroke="#b5541c" stroke-width="1.5"/>
+    <text x="453" y="74" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#b5541c">&amp;arr[0]</text>
+    <text x="453" y="92" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">type: int*, 8 bytes</text>
+    <line x1="24" y1="140" x2="636" y2="140" stroke="#ece4d6" stroke-width="1.5"/>
+    <text x="330" y="164" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">where the array keeps its identity (no decay)</text>
+    <rect x="70" y="180" width="150" height="44" rx="8" fill="#ffffff" stroke="#0a7d52" stroke-width="1.5"/>
+    <text x="145" y="198" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">sizeof(arr)</text>
+    <text x="145" y="215" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">whole array: 20</text>
+    <rect x="255" y="180" width="150" height="44" rx="8" fill="#ffffff" stroke="#0a7d52" stroke-width="1.5"/>
+    <text x="330" y="198" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">&amp;arr</text>
+    <text x="330" y="215" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">int (*)[5]</text>
+    <rect x="440" y="180" width="150" height="44" rx="8" fill="#ffffff" stroke="#0a7d52" stroke-width="1.5"/>
+    <text x="515" y="198" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">int arr[5];</text>
+    <text x="515" y="215" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">the declaration</text>
+  </svg>
+  <figcaption>Decay is the default: the moment <code>arr</code> shows up in an expression, it becomes a pointer to its first element. The three green boxes are the exceptions, and every classic bug in this chapter lives near one of them.</figcaption>
+</figure>
+
+
+  <hr class="sep">
+
+  <h2>The sizeof trap</h2>
+
+  <p>This is the most famous place the two diverge, and the one that's burned every C programmer at least once. Let's look at it with no commentary first and then unpack.</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">5</span>] <span class="op">=</span> {<span class="vl">10</span>, <span class="vl">20</span>, <span class="vl">30</span>, <span class="vl">40</span>, <span class="vl">50</span>};
+<span class="tp">int*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">arr</span>;
+
+<span class="nm">sizeof</span>(<span class="nm">arr</span>);   <span class="cm">// 20. the whole array.</span>
+<span class="nm">sizeof</span>(<span class="nm">p</span>);     <span class="cm">// 8. just a pointer.</span>
+<span class="nm">sizeof</span>(<span class="nm">arr</span>[<span class="vl">0</span>]); <span class="cm">// 4. one int.</span></pre>
+
+  <p>Why the difference? Because <code>sizeof</code> is a compile-time operator. It looks at the <em>type</em> of its argument, not the runtime value. <code>arr</code> has type <code>int[5]</code>, so the compiler returns 20. <code>p</code> has type <code>int*</code>, so the compiler returns the size of a pointer on your platform (8 on 64-bit). The pointer doesn't know how many ints live at its target, so neither does <code>sizeof</code>.</p>
+
+  <p>This is why <code>sizeof(arr) / sizeof(arr[0])</code> is the classic idiom for "how many elements in this array." It's 20 / 4 = 5. Bulletproof, as long as <code>arr</code> is a real array in scope. The moment it decays, the idiom breaks silently.</p>
+
+  <!-- VIZ 2: sizeof trap REPL -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Try sizeof on different things.</span></div>
+    <div class="viz-body">
+
+      <div class="v2-context">
+<span class="cm">// Our setup:</span>
+<span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">5</span>] <span class="op">=</span> {<span class="vl">10</span>, <span class="vl">20</span>, <span class="vl">30</span>, <span class="vl">40</span>, <span class="vl">50</span>};
+<span class="tp">int*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">arr</span>;
+<span class="tp">char</span> <span class="nm">s</span>[] <span class="op">=</span> <span class="vl">"hello"</span>;  <span class="cm">// 6 chars including the null terminator</span>
+<span class="tp">char*</span> <span class="nm">sp</span> <span class="op">=</span> <span class="nm">s</span>;
+      </div>
+
+      <div class="v2-exprs" id="v2Exprs">
+        <button class="v2-expr-btn" data-expr="sizeof(arr)">sizeof(arr)</button>
+        <button class="v2-expr-btn" data-expr="sizeof(p)">sizeof(p)</button>
+        <button class="v2-expr-btn" data-expr="sizeof(arr[0])">sizeof(arr[0])</button>
+        <button class="v2-expr-btn" data-expr="sizeof(*p)">sizeof(*p)</button>
+        <button class="v2-expr-btn" data-expr="sizeof(s)">sizeof(s)</button>
+        <button class="v2-expr-btn" data-expr="sizeof(sp)">sizeof(sp)</button>
+        <button class="v2-expr-btn" data-expr="sizeof(&amp;arr)">sizeof(&amp;arr)</button>
+        <button class="v2-expr-btn" data-expr="sizeof(arr) / sizeof(arr[0])">sizeof(arr)/sizeof(arr[0])</button>
+      </div>
+
+      <div class="v2-result" id="v2Result">
+        <div style="color:var(--muted);font-style:italic;font-family:var(--sans)">Click an expression above to see what it evaluates to and why.</div>
+      </div>
+
+      <p class="viz-note">Click through each expression and pay attention to when you get the whole thing and when you get just 8. Any expression involving <code>p</code> or <code>sp</code> gives you pointer size, because that's what they are. Any expression on <code>arr</code> or <code>s</code> gives you the whole array, because <code>sizeof</code> is the rare place where arrays don't decay. This single rule explains 90% of C sizeof confusion.</p>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <h2>The function parameter lie</h2>
+
+  <p>Now we come to the cruelest part of the language. When you declare a function parameter as an array, C does something sneaky: it secretly converts it to a pointer. Look closely.</p>
+
+<pre class="codeblock"><span class="cm">// These three declarations are IDENTICAL to the compiler:</span>
+<span class="kw">void</span> <span class="nm">print_array</span>(<span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">5</span>])  { <span class="cm">/* ... */</span> }
+<span class="kw">void</span> <span class="nm">print_array</span>(<span class="tp">int</span> <span class="nm">arr</span>[])   { <span class="cm">/* ... */</span> }
+<span class="kw">void</span> <span class="nm">print_array</span>(<span class="tp">int</span><span class="op">*</span> <span class="nm">arr</span>)   { <span class="cm">/* ... */</span> }</pre>
+
+  <p>Inside all three, <code>arr</code> is a plain <code>int*</code>. The <code>[5]</code> is a documentation-only lie. The compiler accepts it, then silently throws away the size. It's as if you wrote <code>int*</code> the whole time. This is called <strong>parameter decay</strong>, and it's the reason the following code is one of the classic C bug traps.</p>
+
+<pre class="codeblock"><span class="kw">void</span> <span class="nm">print_array</span>(<span class="tp">int</span> <span class="nm">arr</span>[]) {
+    <span class="tp">int</span> <span class="nm">n</span> <span class="op">=</span> <span class="nm">sizeof</span>(<span class="nm">arr</span>) <span class="op">/</span> <span class="nm">sizeof</span>(<span class="nm">arr</span>[<span class="vl">0</span>]);  <span class="cm">// BUG</span>
+    <span class="kw">for</span> (<span class="tp">int</span> <span class="nm">i</span> <span class="op">=</span> <span class="vl">0</span>; <span class="nm">i</span> <span class="op">&lt;</span> <span class="nm">n</span>; <span class="nm">i</span><span class="op">++</span>) {
+        <span class="nm">printf</span>(<span class="st">"%d\n"</span>, <span class="nm">arr</span>[<span class="nm">i</span>]);
+    }
+}
+
+<span class="tp">int</span> <span class="nm">main</span>(<span class="kw">void</span>) {
+    <span class="tp">int</span> <span class="nm">data</span>[<span class="vl">5</span>] <span class="op">=</span> {<span class="vl">10</span>, <span class="vl">20</span>, <span class="vl">30</span>, <span class="vl">40</span>, <span class="vl">50</span>};
+    <span class="nm">print_array</span>(<span class="nm">data</span>);  <span class="cm">// prints... what?</span>
+}</pre>
+
+  <p>Inside <code>print_array</code>, <code>sizeof(arr)</code> is 8 (pointer size), and <code>sizeof(arr[0])</code> is 4. So <code>n</code> is 2. The function prints the first two elements and stops, and if you didn't know about parameter decay, you spend an hour staring at this wondering where the other three went.</p>
+
+  <p>The fix is the one every serious C codebase uses: pass the size alongside the pointer. Always.</p>
+
+  <div class="code-side">
+    <div class="code-col">
+      <span class="code-col-tag bad">Broken</span>
+<pre class="codeblock"><span class="kw">void</span> <span class="nm">print_array</span>(<span class="tp">int</span> <span class="nm">arr</span>[]) {
+    <span class="tp">int</span> <span class="nm">n</span> <span class="op">=</span> <span class="nm">sizeof</span>(<span class="nm">arr</span>) <span class="op">/</span> <span class="nm">sizeof</span>(<span class="tp">int</span>);
+    <span class="kw">for</span> (<span class="tp">int</span> <span class="nm">i</span><span class="op">=</span><span class="vl">0</span>; <span class="nm">i</span><span class="op">&lt;</span><span class="nm">n</span>; <span class="nm">i</span><span class="op">++</span>)
+        <span class="nm">printf</span>(<span class="st">"%d\n"</span>, <span class="nm">arr</span>[<span class="nm">i</span>]);
+}</pre>
+    </div>
+    <div class="code-col">
+      <span class="code-col-tag good">Correct</span>
+<pre class="codeblock"><span class="kw">void</span> <span class="nm">print_array</span>(<span class="tp">int</span><span class="op">*</span> <span class="nm">arr</span>, <span class="tp">size_t</span> <span class="nm">n</span>) {
+    <span class="kw">for</span> (<span class="tp">size_t</span> <span class="nm">i</span><span class="op">=</span><span class="vl">0</span>; <span class="nm">i</span><span class="op">&lt;</span><span class="nm">n</span>; <span class="nm">i</span><span class="op">++</span>)
+        <span class="nm">printf</span>(<span class="st">"%d\n"</span>, <span class="nm">arr</span>[<span class="nm">i</span>]);
+}
+<span class="cm">// call site:</span>
+<span class="nm">print_array</span>(<span class="nm">data</span>, <span class="vl">5</span>);</pre>
+    </div>
+  </div>
+
+  <p>This pattern, a pointer paired with a length, is the universal currency of C array-handling. <code>memcpy</code>, <code>fread</code>, <code>fwrite</code>, <code>strncpy</code>, <code>qsort</code>. Every POSIX call that takes a buffer follows this shape. All of them take the pointer and size separately, because inside a function, the pointer has no idea how big the array was.</p>
+
+  <div class="callout">Once an array is passed to a function, its size is gone. Pass the size yourself, or live with the consequences.</div>
+
+<figure class="fig">
+  <svg viewBox="0 0 660 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="At the call site a 20 byte array exists, but only an 8 byte address crosses the function boundary. Inside the function, sizeof sees a pointer and the element count comes out as 2 instead of 5.">
+    <rect x="16" y="20" width="290" height="200" rx="12" fill="#ffffff" stroke="#ece4d6" stroke-width="1.5"/>
+    <text x="161" y="44" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#57503f">main: the caller</text>
+    <text x="161" y="72" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2e5a7d">int data[5]</text>
+    <rect x="51" y="84" width="44" height="36" rx="5" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="95" y="84" width="44" height="36" rx="5" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="139" y="84" width="44" height="36" rx="5" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="183" y="84" width="44" height="36" rx="5" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="227" y="84" width="44" height="36" rx="5" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <text x="73" y="107" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2e5a7d">10</text>
+    <text x="117" y="107" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2e5a7d">20</text>
+    <text x="161" y="107" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2e5a7d">30</text>
+    <text x="205" y="107" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2e5a7d">40</text>
+    <text x="249" y="107" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#2e5a7d">50</text>
+    <text x="161" y="140" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">sizeof(data) = 20, so n = 5</text>
+    <text x="161" y="170" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">print_array(data);</text>
+    <text x="161" y="188" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">data decays before the call</text>
+    <line x1="306" y1="120" x2="348" y2="120" stroke="#b5541c" stroke-width="2"/>
+    <path d="M342 114 L352 120 L342 126" fill="none" stroke="#b5541c" stroke-width="2"/>
+    <text x="329" y="106" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#b5541c">8 bytes</text>
+    <text x="329" y="138" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#b5541c">cross</text>
+    <rect x="356" y="20" width="288" height="200" rx="12" fill="#ffffff" stroke="#ece4d6" stroke-width="1.5"/>
+    <text x="500" y="44" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#57503f">print_array(int arr[])</text>
+    <rect x="424" y="60" width="152" height="42" rx="8" fill="#b5541c" opacity="0.1" stroke="#b5541c" stroke-width="1.5"/>
+    <text x="500" y="78" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#b5541c">arr is just int*</text>
+    <text x="500" y="95" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">the [5] was thrown away</text>
+    <text x="500" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">sizeof(arr) = 8, sizeof(arr[0]) = 4</text>
+    <rect x="424" y="146" width="152" height="42" rx="8" fill="#a83c2c" opacity="0.1" stroke="#a83c2c" stroke-width="1.5"/>
+    <text x="500" y="164" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#a83c2c">n = 8 / 4 = 2</text>
+    <text x="500" y="181" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">prints 10 20, stops</text>
+  </svg>
+  <figcaption>The size never crosses the boundary. Twenty bytes of array exist at the call site, but only an eight byte address arrives inside, so the sizeof idiom quietly computes 2 instead of 5.</figcaption>
+</figure>
+
+
+  <p>In C++, this is where you start to appreciate <code>std::array&lt;int, 5&gt;</code>, <code>std::vector&lt;int&gt;</code>, and <code>std::span&lt;int&gt;</code>. All three preserve size information across function boundaries because they're objects, not raw arrays. Modern C++ code avoids raw arrays for this exact reason. We'll meet these later in the series, but if you're writing new C++, prefer them.</p>
+
+  <hr class="sep">
+
+  <h2>Pointer arithmetic</h2>
+
+  <p>Pointer arithmetic is the other place where "arrays and pointers behave the same" comes from. You can do it on both, and the rules are identical: arithmetic is measured in <em>elements</em>, not bytes.</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">5</span>] <span class="op">=</span> {<span class="vl">10</span>, <span class="vl">20</span>, <span class="vl">30</span>, <span class="vl">40</span>, <span class="vl">50</span>};
+<span class="tp">int*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">arr</span>;      <span class="cm">// p points at arr[0]</span>
+
+<span class="nm">p</span> <span class="op">+</span> <span class="vl">1</span>;               <span class="cm">// advances by sizeof(int) bytes, i.e. 4. points at arr[1].</span>
+<span class="nm">p</span> <span class="op">+</span> <span class="vl">3</span>;               <span class="cm">// advances by 12 bytes. points at arr[3].</span>
+<span class="op">*</span>(<span class="nm">p</span> <span class="op">+</span> <span class="vl">2</span>);            <span class="cm">// 30. equivalent to arr[2].</span></pre>
+
+  <p>When you write <code>p + 1</code>, the compiler doesn't add literal 1 to the address. It adds <code>sizeof(*p)</code> to the address. For <code>int*</code> that's 4 bytes. For <code>char*</code> it's 1 byte. For <code>double*</code> it's 8 bytes. The stride is determined by the pointer's type.</p>
+
+  <p>This is why <code>char*</code> is the universal choice for byte-level work. Incrementing a <code>char*</code> moves exactly one byte, which is what you want when you're poking around in raw memory.</p>
+
+  <!-- VIZ 3: pointer arithmetic ruler -->
+  <div class="viz-block">
+    <div class="viz-header"><span class="viz-title">Drag the slider. Watch the stride change with the type.</span></div>
+    <div class="viz-body">
+
+      <div class="v3-controls">
+        <div class="v3-type-row">
+          <span class="v3-type-label">Pointer type:</span>
+          <button class="btn active" data-type="char">char*</button>
+          <button class="btn" data-type="int">int*</button>
+          <button class="btn" data-type="double">double*</button>
+        </div>
+        <div class="v3-slider-group">
+          <span class="v3-slider-label">Offset k: <strong id="v3K">0</strong></span>
+          <input type="range" id="v3Slider" class="v3-slider" min="0" max="8" value="0" step="1">
+        </div>
+        <div class="v3-readout">
+          <span class="expr">p + <span id="v3KR">0</span></span><span class="eq"> → </span><span class="addr" id="v3Addr">0x1000</span>
+          <span class="calc" id="v3Calc">= 0x1000 + 0 × 1 bytes</span>
+        </div>
+      </div>
+
+      <canvas id="v3Canvas" class="v3-canvas" height="180"></canvas>
+
+      <p class="viz-note">Pick a pointer type, then drag the offset slider. Notice how the same <code>p + 3</code> lands on wildly different addresses depending on whether <code>p</code> is a <code>char*</code>, <code>int*</code>, or <code>double*</code>. Pointer arithmetic speaks in elements. The type is what tells the compiler how big one element is.</p>
+    </div>
+  </div>
+
+  <p>Subtraction between two pointers is also defined, and it returns the number of elements between them, not bytes:</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">5</span>];
+<span class="tp">int*</span> <span class="nm">first</span> <span class="op">=</span> <span class="op">&amp;</span><span class="nm">arr</span>[<span class="vl">0</span>];
+<span class="tp">int*</span> <span class="nm">last</span>  <span class="op">=</span> <span class="op">&amp;</span><span class="nm">arr</span>[<span class="vl">4</span>];
+
+<span class="nm">last</span> <span class="op">-</span> <span class="nm">first</span>;       <span class="cm">// 4, not 16. elements, not bytes.</span></pre>
+
+  <hr class="sep">
+
+  <h2>The one-past-the-end fence</h2>
+
+  <p>Here's a rule that most tutorials skip or bury in a footnote, and which catches almost every C programmer at least once. Pointer arithmetic isn't a free-for-all. There's a fence, and crossing it is undefined behaviour even if you never actually touch the memory.</p>
+
+  <p>The C standard defines pointer arithmetic only inside an array, plus exactly one position past the end. That one-past-the-end position is legal to form and legal to compare against. Dereferencing it, however, is still undefined behaviour. That "one past the end" exists specifically so this iteration idiom works:</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">5</span>] <span class="op">=</span> {<span class="vl">10</span>, <span class="vl">20</span>, <span class="vl">30</span>, <span class="vl">40</span>, <span class="vl">50</span>};
+
+<span class="kw">for</span> (<span class="tp">int</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">arr</span>; <span class="nm">p</span> <span class="op">&lt;</span> <span class="nm">arr</span> <span class="op">+</span> <span class="vl">5</span>; <span class="nm">p</span><span class="op">++</span>) {
+    <span class="nm">printf</span>(<span class="st">"%d "</span>, <span class="op">*</span><span class="nm">p</span>);
+}
+<span class="cm">// arr + 5 is the fence. p reaches it, the loop ends, nothing gets dereferenced.</span></pre>
+
+  <p>Here's where the trap opens up. You might think that computing an address beyond the fence is fine as long as you don't dereference it. After all, the CPU just does integer addition. Nothing should go wrong. But the C standard is stricter than the hardware. Look at this:</p>
+
+<pre class="codeblock"><span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">5</span>];
+
+<span class="nm">arr</span> <span class="op">+</span> <span class="vl">0</span>;   <span class="cm">// valid. points at arr[0].</span>
+<span class="nm">arr</span> <span class="op">+</span> <span class="vl">4</span>;   <span class="cm">// valid. points at arr[4].</span>
+<span class="nm">arr</span> <span class="op">+</span> <span class="vl">5</span>;   <span class="cm">// valid. the one-past-the-end sentinel.</span>
+<span class="nm">arr</span> <span class="op">+</span> <span class="vl">6</span>;   <span class="cm">// UNDEFINED BEHAVIOUR. even just forming this is illegal.</span>
+<span class="nm">arr</span> <span class="op">+</span> <span class="vl">10</span>;  <span class="cm">// UB. doesn't matter if you dereference or not.</span></pre>
+
+  <p>This feels wrong the first time you see it. The code runs. The output looks fine. But the standard says the compiler is allowed to assume you never step past the fence, and modern compilers actively exploit that assumption when optimising. A compiler that sees <code>arr + k</code> can reason "<code>k</code> must be between 0 and 5, or the code would be UB, so I can skip some bounds checks." If your runtime value happens to be 10, the program's behaviour is undefined and the optimizer was well within its rights to delete code that would have caught the problem.</p>
+
+  <div class="callout">Pointer arithmetic has a fence at one-past-the-end. Even forming a pointer beyond that fence is undefined, not just dereferencing it.</div>
+
+<figure class="fig">
+  <svg viewBox="0 0 660 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five array cells from arr+0 to arr+4 are valid to form and dereference. The position arr+5 is the one-past-the-end fence, legal to form but not to dereference. Beyond it, arr+6 is undefined behaviour even without a dereference.">
+    <rect x="40" y="60" width="80" height="52" rx="6" fill="#0a7d52" opacity="0.1" stroke="#0a7d52" stroke-width="1.5"/>
+    <rect x="120" y="60" width="80" height="52" rx="6" fill="#0a7d52" opacity="0.1" stroke="#0a7d52" stroke-width="1.5"/>
+    <rect x="200" y="60" width="80" height="52" rx="6" fill="#0a7d52" opacity="0.1" stroke="#0a7d52" stroke-width="1.5"/>
+    <rect x="280" y="60" width="80" height="52" rx="6" fill="#0a7d52" opacity="0.1" stroke="#0a7d52" stroke-width="1.5"/>
+    <rect x="360" y="60" width="80" height="52" rx="6" fill="#0a7d52" opacity="0.1" stroke="#0a7d52" stroke-width="1.5"/>
+    <text x="80" y="90" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#0a7d52">10</text>
+    <text x="160" y="90" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#0a7d52">20</text>
+    <text x="240" y="90" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#0a7d52">30</text>
+    <text x="320" y="90" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#0a7d52">40</text>
+    <text x="400" y="90" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#0a7d52">50</text>
+    <text x="80" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">arr+0</text>
+    <text x="160" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">arr+1</text>
+    <text x="240" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">arr+2</text>
+    <text x="320" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">arr+3</text>
+    <text x="400" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">arr+4</text>
+    <line x1="440" y1="40" x2="440" y2="132" stroke="#b5541c" stroke-width="3" stroke-dasharray="6 4"/>
+    <text x="440" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#b5541c">the fence</text>
+    <text x="480" y="80" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#b5541c">arr+5</text>
+    <text x="480" y="96" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">form: ok</text>
+    <text x="480" y="110" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">deref: UB</text>
+    <rect x="520" y="60" width="80" height="52" rx="6" fill="#a83c2c" opacity="0.1" stroke="#a83c2c" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="560" y="84" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#a83c2c">arr+6</text>
+    <text x="560" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#a83c2c">even forming</text>
+    <text x="560" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">UB</text>
+    <text x="240" y="170" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">for (p = arr; p &lt; arr + 5; p++)</text>
+    <text x="240" y="190" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">the loop leans on the fence: p reaches arr+5, compares, never dereferences it</text>
+  </svg>
+  <figcaption>The standard draws the line one element past the end. <code>arr+5</code> may be formed and compared, never read. One step further and the pointer itself is undefined, dereference or not.</figcaption>
+</figure>
+
+
+  <p>The same rule applies to subtraction. You can take the difference of two pointers as long as they both live in the same array (or one is the one-past-the-end of that array). Subtract pointers to two completely unrelated objects and you're in UB territory, even though the machine would happily give you an answer. This is why tools like AddressSanitizer and UBSan exist. They catch this kind of silent corruption before it ships.</p>
+
+  <p>If you take one thing away from this section, take this: pointer arithmetic lives inside arrays. The fence is at one-past-the-end. Stay inside the fence or accept that the compiler might do anything.</p>
+
+  <hr class="sep">
+
+  <h2>arr, &amp;arr[0], and &amp;arr</h2>
+
+  <p>Before we close out, one more distinction that trips up almost everyone the first time they meet it. Given <code>int arr[5]</code>, you might reasonably call any of these "the address of the array":</p>
+
+  <ul>
+    <li><code>arr</code>. The array name, which decays to a pointer to the first element.</li>
+    <li><code>&amp;arr[0]</code>. Explicitly, the address of element zero. Same as above, just spelled out.</li>
+    <li><code>&amp;arr</code>. The address of the whole array as a single object.</li>
+  </ul>
+
+  <p>Numerically, all three are the same address. They all point at the first byte of the array. But the C type system treats them differently, and that difference bites the moment you do arithmetic.</p>
+
+<pre class="codeblock"><span class="nm">arr</span>      <span class="cm">// type: int*          pointer to one int</span>
+<span class="op">&amp;</span><span class="nm">arr</span>[<span class="vl">0</span>]  <span class="cm">// type: int*          same</span>
+<span class="op">&amp;</span><span class="nm">arr</span>     <span class="cm">// type: int (*)[5]    pointer to an ARRAY of 5 ints</span></pre>
+
+  <p>That last type, <code>int (*)[5]</code>, reads right-to-left as "pointer to an array of 5 ints." The parentheses matter. Without them, <code>int* [5]</code> would mean "array of 5 pointers to int", which is a completely different thing.</p>
+
+  <p>The only time this distinction actually does something observable is during pointer arithmetic. <code>+ 1</code> advances by the size of whatever the pointer points at. For <code>arr</code>, that's one int (4 bytes). For <code>&amp;arr</code>, that's one entire array of 5 ints (20 bytes). Don't take my word for it. Run the code and watch the numbers.</p>
+
+  <div class="run-block">
+    <div class="run-grid">
+      <div class="run-col">
+        <div class="run-col-head">
+          <span class="run-col-label">Code<span class="tag c">C</span></span>
+          <button class="run-copy-btn" id="copyCodeBtn">Copy</button>
+        </div>
+<pre class="run-code" id="codeSrc"><span class="cm">#include &lt;stdio.h&gt;</span>
+
+<span class="tp">int</span> <span class="nm">main</span>(<span class="kw">void</span>) {
+    <span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">5</span>] <span class="op">=</span> {<span class="vl">10</span>, <span class="vl">20</span>, <span class="vl">30</span>, <span class="vl">40</span>, <span class="vl">50</span>};
+
+    <span class="cm">// 1. Same numeric address from all three</span>
+    <span class="nm">printf</span>(<span class="st">"arr       = %p\n"</span>, (<span class="kw">void</span><span class="op">*</span>)<span class="nm">arr</span>);
+    <span class="nm">printf</span>(<span class="st">"&amp;arr[0]   = %p\n"</span>, (<span class="kw">void</span><span class="op">*</span>)<span class="op">&amp;</span><span class="nm">arr</span>[<span class="vl">0</span>]);
+    <span class="nm">printf</span>(<span class="st">"&amp;arr      = %p\n\n"</span>, (<span class="kw">void</span><span class="op">*</span>)<span class="op">&amp;</span><span class="nm">arr</span>);
+
+    <span class="cm">// 2. But sizeof reveals different types</span>
+    <span class="nm">printf</span>(<span class="st">"sizeof(arr)     = %zu\n"</span>, <span class="nm">sizeof</span>(<span class="nm">arr</span>));
+    <span class="nm">printf</span>(<span class="st">"sizeof(&amp;arr[0]) = %zu\n"</span>, <span class="nm">sizeof</span>(<span class="op">&amp;</span><span class="nm">arr</span>[<span class="vl">0</span>]));
+    <span class="nm">printf</span>(<span class="st">"sizeof(&amp;arr)    = %zu\n\n"</span>, <span class="nm">sizeof</span>(<span class="op">&amp;</span><span class="nm">arr</span>));
+
+    <span class="cm">// 3. Pointer arithmetic is the real tell</span>
+    <span class="nm">printf</span>(<span class="st">"arr + 1      = %p  (+4 bytes: one int)\n"</span>,
+           (<span class="kw">void</span><span class="op">*</span>)(<span class="nm">arr</span> <span class="op">+</span> <span class="vl">1</span>));
+    <span class="nm">printf</span>(<span class="st">"&amp;arr + 1     = %p  (+20 bytes: one whole array!)\n\n"</span>,
+           (<span class="kw">void</span><span class="op">*</span>)(<span class="op">&amp;</span><span class="nm">arr</span> <span class="op">+</span> <span class="vl">1</span>));
+
+    <span class="cm">// 4. Confirm the byte distance</span>
+    <span class="tp">long</span> <span class="nm">d1</span> <span class="op">=</span> (<span class="tp">char</span><span class="op">*</span>)(<span class="nm">arr</span> <span class="op">+</span> <span class="vl">1</span>) <span class="op">-</span> (<span class="tp">char</span><span class="op">*</span>)<span class="nm">arr</span>;
+    <span class="tp">long</span> <span class="nm">d2</span> <span class="op">=</span> (<span class="tp">char</span><span class="op">*</span>)(<span class="op">&amp;</span><span class="nm">arr</span> <span class="op">+</span> <span class="vl">1</span>) <span class="op">-</span> (<span class="tp">char</span><span class="op">*</span>)<span class="op">&amp;</span><span class="nm">arr</span>;
+    <span class="nm">printf</span>(<span class="st">"arr+1  - arr   = %ld bytes\n"</span>, <span class="nm">d1</span>);
+    <span class="nm">printf</span>(<span class="st">"&amp;arr+1 - &amp;arr  = %ld bytes\n"</span>, <span class="nm">d2</span>);
+
+    <span class="kw">return</span> <span class="vl">0</span>;
+}</pre>
+      </div>
+      <div class="run-col">
+        <div class="run-col-head">
+          <span class="run-col-label">Output<span class="tag out">on a 64-bit Linux machine</span></span>
+        </div>
+<pre class="run-output"><span class="prompt">$ gcc -Wall -o demo demo.c && ./demo</span>
+
+<span class="section"># 1. Same numeric address from all three</span>
+arr       = <span class="addr">0x7ffd2e4a8ab0</span>
+&arr[0]   = <span class="addr">0x7ffd2e4a8ab0</span>
+&arr      = <span class="addr">0x7ffd2e4a8ab0</span>
+
+<span class="section"># 2. But sizeof reveals different types</span>
+sizeof(arr)     = <span class="highlight">20</span>
+sizeof(&arr[0]) = <span class="highlight">8</span>
+sizeof(&arr)    = <span class="highlight">8</span>
+
+<span class="section"># 3. Pointer arithmetic is the real tell</span>
+arr + 1      = <span class="addr">0x7ffd2e4a8ab4</span>  (+4 bytes: one int)
+&arr + 1     = <span class="addr">0x7ffd2e4a8ac4</span>  (+20 bytes: one whole array!)
+
+<span class="section"># 4. Confirm the byte distance</span>
+arr+1  - arr   = <span class="highlight">4</span> bytes
+&arr+1 - &arr  = <span class="highlight">20</span> bytes</pre>
+      </div>
+    </div>
+    <div class="run-footer">
+      Save as <code>demo.c</code>, compile with <code>gcc -Wall -o demo demo.c</code>, run with <code>./demo</code>. The absolute addresses will differ each run because of address-space-layout randomisation, but the relative jumps of 4 bytes vs 20 bytes are always the same. That's the type system doing its job.
+    </div>
+  </div>
+
+  <p>Read the output top to bottom. Section 1 confirms all three expressions point at the same byte. Section 2 shows that even though they're addresses of the same thing, <code>sizeof(arr)</code> sees the full array (20 bytes), while the other two are plain 8-byte pointers. Section 3 is the punchline. <code>arr + 1</code> walks one int forward (4 bytes), but <code>&amp;arr + 1</code> walks an entire array forward (20 bytes), because each "step" of an <code>int (*)[5]</code> is the size of the whole array. Section 4 confirms the byte math directly.</p>
+
+  <div class="callout">Same starting address, different stride. The type is what tells <code>+ 1</code> how far to jump.</div>
+
+<figure class="fig">
+  <svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="arr, address of arr[0], and address of arr all start at address 0x...4ab0. Adding one to arr moves 4 bytes to 0x...4ab4 because it points at one int. Adding one to address of arr moves 20 bytes to 0x...4ac4 because it points at the whole array.">
+    <rect x="40" y="52" width="88" height="46" rx="6" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="128" y="52" width="88" height="46" rx="6" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="216" y="52" width="88" height="46" rx="6" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="304" y="52" width="88" height="46" rx="6" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <rect x="392" y="52" width="88" height="46" rx="6" fill="#2e5a7d" opacity="0.12" stroke="#2e5a7d" stroke-width="1.5"/>
+    <text x="84" y="80" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">10</text>
+    <text x="172" y="80" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">20</text>
+    <text x="260" y="80" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">30</text>
+    <text x="348" y="80" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">40</text>
+    <text x="436" y="80" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2e5a7d">50</text>
+    <text x="84" y="115" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">...4ab0</text>
+    <text x="172" y="115" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">...4ab4</text>
+    <text x="260" y="115" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">...4ab8</text>
+    <text x="348" y="115" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">...4abc</text>
+    <text x="436" y="115" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">...4ac0</text>
+    <text x="524" y="115" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">...4ac4</text>
+    <circle cx="40" cy="36" r="4" fill="#241f18"/>
+    <text x="52" y="40" font-family="JetBrains Mono" font-size="9" fill="#241f18">arr, &amp;arr[0], &amp;arr all start here</text>
+    <line x1="40" y1="40" x2="40" y2="52" stroke="#241f18" stroke-width="1.5"/>
+    <path d="M84 124 C 100 148, 156 148, 168 128" fill="none" stroke="#0a7d52" stroke-width="2"/>
+    <path d="M164 121 L170 130 L158 132" fill="none" stroke="#0a7d52" stroke-width="2"/>
+    <text x="126" y="168" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">arr + 1</text>
+    <text x="126" y="184" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">one int: +4 bytes</text>
+    <path d="M92 126 C 200 235, 440 235, 520 128" fill="none" stroke="#b5541c" stroke-width="2"/>
+    <path d="M515 121 L522 130 L510 133" fill="none" stroke="#b5541c" stroke-width="2"/>
+    <text x="330" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#b5541c">&amp;arr + 1</text>
+    <text x="330" y="240" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">one whole array: +20 bytes, lands one past the end</text>
+  </svg>
+  <figcaption>Same starting byte, different step size. <code>arr + 1</code> hops one int; <code>&amp;arr + 1</code> hops the entire 20 byte array. The type behind the pointer decides how far <code>+ 1</code> travels.</figcaption>
+</figure>
+
+
+  <p>The only everyday use for <code>&amp;arr</code> is when you're working with 2D arrays, where each "element" of the outer array actually is a whole inner array. We'll get to that in a later post. For now, what you need to remember is simple. <code>arr</code> and <code>&amp;arr[0]</code> are the same thing. <code>&amp;arr</code> is a different type that happens to share the same starting address.</p>
+
+  <hr class="sep">
+
+  <h2>A small tour of what this all explains</h2>
+
+  <p>Now that you have the decay rule and pointer arithmetic clear, a bunch of C idioms that looked arbitrary start to make sense. Consider string handling.</p>
+
+<pre class="codeblock"><span class="tp">char</span> <span class="nm">s</span>[] <span class="op">=</span> <span class="vl">"hello"</span>;     <span class="cm">// array of 6 chars (including '\0')</span>
+<span class="tp">char*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">s</span>;             <span class="cm">// decays to &s[0]</span>
+
+<span class="kw">while</span> (<span class="op">*</span><span class="nm">p</span>) {                 <span class="cm">// loop until we hit '\0'</span>
+    <span class="nm">putchar</span>(<span class="op">*</span><span class="nm">p</span>);
+    <span class="nm">p</span><span class="op">++</span>;                      <span class="cm">// advance by sizeof(char) = 1 byte</span>
+}</pre>
+
+  <p>This is how <code>strlen</code>, <code>strcpy</code>, and every classic string function work internally. They take a <code>char*</code>, they walk through memory one byte at a time using pointer arithmetic, and they stop at the null terminator. They don't know the length up front because they can't. All they got is a pointer. This is also why buffer overflows exist. If the caller passed in a buffer that isn't null-terminated, or one that's smaller than the function assumes, the loop keeps going into memory it shouldn't touch.</p>
+
+  <p>Same pattern for traversing any buffer:</p>
+
+<pre class="codeblock"><span class="kw">void</span> <span class="nm">sum</span>(<span class="tp">int</span><span class="op">*</span> <span class="nm">arr</span>, <span class="tp">size_t</span> <span class="nm">n</span>) {
+    <span class="tp">int</span> <span class="nm">total</span> <span class="op">=</span> <span class="vl">0</span>;
+    <span class="kw">for</span> (<span class="tp">int</span><span class="op">*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">arr</span>; <span class="nm">p</span> <span class="op">&lt;</span> <span class="nm">arr</span> <span class="op">+</span> <span class="nm">n</span>; <span class="nm">p</span><span class="op">++</span>) {
+        <span class="nm">total</span> <span class="op">+=</span> <span class="op">*</span><span class="nm">p</span>;
+    }
+}</pre>
+
+  <p><code>arr + n</code> is the one-past-the-end fence we just talked about. Legal to form, not legal to dereference. This is the standard C iteration idiom, and it's exactly how <code>std::begin</code> and <code>std::end</code> work in C++. A pointer to the start and a pointer to one-past-the-end. Two pointers describe a range, and arithmetic walks you through it.</p>
+
+  <div class="callout">A lot of C is just "walk a pointer through memory until you hit a sentinel or a bound." Once you see that, half the standard library writes itself.</div>
+
+  <hr class="sep">
+
+  <h2>The C++ note</h2>
+
+  <p>C++ inherits all of this, but pushes you toward safer alternatives. Raw arrays and pointers still work exactly the same way. Array-to-pointer decay still happens. The <code>sizeof</code> trap still applies. The one-past-the-end fence is still the same fence. All of it.</p>
+
+  <p>But C++ gives you tools that preserve size information and optionally bounds-check:</p>
+
+  <ul>
+    <li><code>std::array&lt;int, 5&gt;</code>. A fixed-size array that's a real object. It doesn't decay. <code>arr.size()</code> always works.</li>
+    <li><code>std::vector&lt;int&gt;</code>. A dynamic array. Knows its size at runtime.</li>
+    <li><code>std::span&lt;int&gt;</code>. A non-owning view (pointer + length). The safer replacement for raw <code>(int*, size_t)</code> parameters.</li>
+  </ul>
+
+  <p>If you're writing modern C++, reach for these first. Raw C arrays are appropriate for tight performance code, interop with C, and low-level systems work. For everything else, the standard library has a better option.</p>
+
+  <hr class="sep">
+
+  <h2>Summing up</h2>
+
+  <p>An array is a contiguous block of memory with a type that remembers its size. A pointer is a variable holding one address, and its type says nothing about how much memory sits at that address. They look interchangeable because arrays decay into pointers in most contexts, and because indexing is defined in terms of pointer arithmetic. The exceptions are <code>sizeof</code>, <code>&amp;</code>, and declarations. That's where the distinction bites.</p>
+
+  <p>The specific things to never forget:</p>
+
+  <ul>
+    <li><code>sizeof(arr)</code> is the whole array. <code>sizeof(p)</code> is always 8 (or whatever your pointer size is). They are not the same.</li>
+    <li>Function parameters declared as <code>int arr[5]</code> are secretly <code>int*</code>. The size is a lie. Always pass size alongside.</li>
+    <li>Pointer arithmetic is in elements, not bytes. <code>p + 1</code> advances by <code>sizeof(*p)</code>.</li>
+    <li>Pointer arithmetic has a fence at one-past-the-end. Even forming a pointer beyond the fence is undefined behaviour.</li>
+    <li>Array-to-pointer decay happens in almost every expression. The places it doesn't are where bugs hide.</li>
+  </ul>
+
+  <hr class="sep">
+
+  <h2>What's next</h2>
+
+  <p>So far we've treated memory as something that just exists, without asking where it came from or when it goes away. That's the next step. Some memory lives on the stack, tied to function calls. Some lives on the heap, allocated and freed by you. Getting this wrong is the single biggest source of pointer bugs in real code. Next post: the stack, the heap, and what "lifetime" actually means.</p>
+
+  <div class="callout">Every pointer points at <em>something</em>. That something has a lifetime. That's next.</div>
+
+  <hr class="sep">
+
+  <h2>Test yourself</h2>
+
+  <p class="quiz-intro">Six questions on what you just read. Try them before peeking. The first four test the core ideas; the last two are traps that catch almost everyone the first time.</p>
+
+  <!-- Q1 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q1</span>
+    <div class="quiz-q">What does this print, and why?</div>
+<pre class="quiz-code"><span class="tp">int</span> <span class="nm">arr</span>[<span class="vl">10</span>];
+<span class="tp">int*</span> <span class="nm">p</span> <span class="op">=</span> <span class="nm">arr</span>;
+<span class="nm">printf</span>(<span class="st">"%zu %zu\n"</span>, <span class="nm">sizeof</span>(<span class="nm">arr</span>), <span class="nm">sizeof</span>(<span class="nm">p</span>));</pre>
+    <div class="quiz-options" data-quiz="q1" data-answer="c">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span><code>10 10</code></span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span><code>40 40</code></span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span><code>40 8</code></span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span><code>8 8</code></span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a1">Reveal answer</button></div>
+    <div class="quiz-answer" id="a1">
+      <span class="verdict">Answer: C (40 8 on a 64-bit system)</span>
+      <code>sizeof(arr)</code> sees an array of 10 ints and returns <code>10 * sizeof(int) = 40</code>. <code>sizeof(p)</code> sees a pointer and returns the size of a pointer (8 on 64-bit, 4 on 32-bit). <code>p</code> doesn't remember where it came from. It's just an address.
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q2</span>
+    <div class="quiz-q">What's wrong with this function, and what will it print when called with a 5-element array?</div>
+<pre class="quiz-code"><span class="kw">void</span> <span class="nm">print_all</span>(<span class="tp">int</span> <span class="nm">arr</span>[]) {
+    <span class="tp">int</span> <span class="nm">n</span> <span class="op">=</span> <span class="nm">sizeof</span>(<span class="nm">arr</span>) <span class="op">/</span> <span class="nm">sizeof</span>(<span class="nm">arr</span>[<span class="vl">0</span>]);
+    <span class="kw">for</span> (<span class="tp">int</span> <span class="nm">i</span> <span class="op">=</span> <span class="vl">0</span>; <span class="nm">i</span> <span class="op">&lt;</span> <span class="nm">n</span>; <span class="nm">i</span><span class="op">++</span>)
+        <span class="nm">printf</span>(<span class="st">"%d "</span>, <span class="nm">arr</span>[<span class="nm">i</span>]);
+}</pre>
+    <textarea class="quiz-textarea" placeholder="What's wrong? What gets printed?"></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a2">Reveal answer</button></div>
+    <div class="quiz-answer" id="a2">
+      <span class="verdict">Parameter decay. It prints 2 elements on a 64-bit system.</span>
+      Inside the function, <code>arr</code> is an <code>int*</code>, not an array. The <code>[]</code> in the parameter is a lie the compiler tolerates. So <code>sizeof(arr)</code> is 8 (pointer size) and <code>sizeof(arr[0])</code> is 4 (int). <code>n = 2</code>. The loop prints only the first two elements. <strong>Fix:</strong> pass the size as a separate parameter. This is why every standard C function that takes a buffer also takes a length.
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q3</span>
+    <div class="quiz-q">Given <code>int arr[5]</code> and <code>int* p = arr</code>, what does <code>p + 2</code> give you, and how many <em>bytes</em> forward does it move in memory?</div>
+    <textarea class="quiz-textarea" placeholder="What does p+2 point to? How many bytes is that?"></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a3">Reveal answer</button></div>
+    <div class="quiz-answer" id="a3">
+      <span class="verdict"><code>p + 2</code> points to <code>arr[2]</code>, which is 8 bytes forward.</span>
+      Pointer arithmetic is in <em>elements</em>, not bytes. <code>p + 2</code> means "advance by 2 elements of <code>*p</code>'s type." Since <code>*p</code> is an <code>int</code> (typically 4 bytes), the address moves forward by <code>2 * 4 = 8</code> bytes. If <code>p</code> were a <code>char*</code>, <code>p + 2</code> would move 2 bytes. If it were a <code>double*</code>, 16 bytes. The type is what sets the stride.
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q4</span>
+    <div class="quiz-q">Which of these statements are true? Select all that apply.</div>
+    <div class="quiz-options multi" data-quiz="q4" data-answer="a,c,d">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span>An array's name decays into a pointer to its first element in most expressions.</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span><code>int arr[5]</code> and <code>int* p</code> have the same type, just different spellings.</span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span><code>sizeof</code> is one of the contexts where arrays do <em>not</em> decay.</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span>Inside a function, a parameter declared as <code>int arr[5]</code> is actually an <code>int*</code>.</span></button>
+    </div>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a4">Reveal answer</button></div>
+    <div class="quiz-answer" id="a4">
+      <span class="verdict">Answers: A, C, D</span>
+      <strong>A</strong> is true. That's array-to-pointer decay, the rule that makes them look interchangeable.<br>
+      <strong>B is false.</strong> They have different types. <code>int[5]</code> vs <code>int*</code>. <code>sizeof</code> sees the difference, and so does anything that inspects the type (<code>typeof</code>, <code>decltype</code>, template deduction).<br>
+      <strong>C</strong> is true. <code>sizeof</code>, <code>&amp;arr</code>, and declarations are the three places arrays keep their identity.<br>
+      <strong>D</strong> is true. The <code>[5]</code> in a parameter is stripped away. The compiler treats it as <code>int*</code> regardless of what size you write.
+    </div>
+  </div>
+
+  <!-- Q5 (trap) -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q5</span>
+    <div class="quiz-q">Given <code>int arr[5]</code>, what's the difference between <code>arr</code>, <code>&amp;arr[0]</code>, and <code>&amp;arr</code>? Which two are the same, and how does the third one differ?</div>
+    <textarea class="quiz-textarea" placeholder="Same address? Same type? Explain."></textarea>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a5">Reveal answer</button></div>
+    <div class="quiz-answer" id="a5">
+      <span class="verdict">Same address, different types.</span>
+      All three evaluate to the same numeric address, which is the start of the array. But they have <strong>different types</strong>.<br>
+      <code>arr</code> (when it decays) is <code>int*</code>, a pointer to the first int.<br>
+      <code>&amp;arr[0]</code> is also <code>int*</code>, the same thing spelled out.<br>
+      <code>&amp;arr</code> is <code>int (*)[5]</code>, a pointer to the whole array of 5 ints.<br>
+      The difference bites when you do arithmetic. <code>arr + 1</code> moves forward by one int (4 bytes). <code>&amp;arr + 1</code> moves forward by one whole array (20 bytes), landing just past the end. If you skipped the runnable demo above, go back and run it. The output shows this concretely.
+    </div>
+  </div>
+
+  <!-- Q6 (one-past-the-end fence) -->
+  <div class="quiz-card">
+    <span class="quiz-num">Q6</span>
+    <div class="quiz-q">Given <code>int arr[5] = {10, 20, 30, 40, 50};</code>, which of these are valid C, and which are undefined behaviour?</div>
+    <div class="quiz-options multi" data-quiz="q6" data-answer="a">
+      <button class="quiz-option" data-val="a"><span class="quiz-option-letter">A</span><span><code>arr + 5</code> (just forming the pointer, not dereferencing)</span></button>
+      <button class="quiz-option" data-val="b"><span class="quiz-option-letter">B</span><span><code>*(arr + 5)</code></span></button>
+      <button class="quiz-option" data-val="c"><span class="quiz-option-letter">C</span><span><code>arr + 10</code> (just forming the pointer, not dereferencing)</span></button>
+      <button class="quiz-option" data-val="d"><span class="quiz-option-letter">D</span><span><code>*(arr + 10)</code></span></button>
+    </div>
+    <p style="font-size:.85rem;color:var(--muted);margin:.3rem 0 0;font-style:italic">Select the expressions that are <em>valid</em> C. Leave the UB ones unselected.</p>
+    <div class="quiz-reveal"><button class="quiz-btn" data-reveal="a6">Reveal answer</button></div>
+    <div class="quiz-answer" id="a6">
+      <span class="verdict">Only A is valid. B, C, and D are all UB.</span>
+      <strong>A</strong> is valid. <code>arr + 5</code> is the one-past-the-end sentinel. You can form it, hold it, and compare against it. This is the whole reason loop idioms like <code>for (p = arr; p &lt; arr + n; p++)</code> work.<br>
+      <strong>B</strong> is UB. The pointer is valid but dereferencing it reads memory you don't own.<br>
+      <strong>C</strong> is the one that catches most people. Even <em>forming</em> a pointer beyond one-past-the-end is undefined behaviour, not just dereferencing it. The C standard draws the fence at one past the last element. Step beyond it and the compiler is free to assume you never did, which can produce surprising bugs when optimisers exploit that assumption.<br>
+      <strong>D</strong> is UB twice over. Pointer formation is UB, dereferencing would be UB. Either would sink you.
+    </div>
+  </div>
+
+  <div class="quiz-scorecard">
+    <div class="quiz-scorecard-title">How did you do?</div>
+    <div class="quiz-scorecard-msg">
+      5 or 6 correct? You've got arrays and pointers locked in. Move on to Part 4. Got tripped up by Q5 or Q6? Those are the advanced corners, and they stick with another read-through.
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <section id="comments" class="comments-section">
+    <h2>Comments</h2>
+    <script src="https://giscus.app/client.js"
+            data-repo="adimd/AMD_Website"
+            data-repo-id="R_kgDOQlniOw"
+            data-category="General"
+            data-category-id="DIC_kwDOQlniO84CzoR1"
+            data-mapping="pathname"
+            data-strict="0"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="dark"
+            data-lang="en"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+
+<script>
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 1: Contiguity vs pointing-to
+// ═══════════════════════════════════════════════════════════════════════════
+const v1ArrCanvas=document.getElementById('v1Arr');
+const v1PtrCanvas=document.getElementById('v1Ptr');
+
+function setupCanvas(c, height){
+  const dpr=window.devicePixelRatio||1;
+  const rect=c.getBoundingClientRect();
+  const W=Math.max(320,rect.width);
+  const H=height;
+  c.width=W*dpr;c.height=H*dpr;
+  c.style.height=H+'px';
+  const ctx=c.getContext('2d');
+  ctx.setTransform(1,0,0,1,0,0);ctx.scale(dpr,dpr);
+  return{ctx,W,H};
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function drawV1Arr(){
+  const{ctx,W,H}=setupCanvas(v1ArrCanvas,120);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+
+  // Draw array as one green region with 5 cells
+  const padL=24, padR=24;
+  const regionW=W-padL-padR;
+  const cellW=regionW/5;
+  const cellY=32, cellH=50;
+  const values=[10,20,30,40,50];
+
+  // overall region glow
+  ctx.fillStyle='rgba(10,125,82,0.08)';
+  roundRect(ctx, padL-4, cellY-4, regionW+8, cellH+8, 8);
+  ctx.fill();
+
+  for(let i=0;i<5;i++){
+    const x=padL+i*cellW;
+    ctx.fillStyle='rgba(10,125,82,0.22)';
+    ctx.strokeStyle='rgba(10,125,82,0.7)';
+    ctx.lineWidth=1.5;
+    roundRect(ctx, x+2, cellY, cellW-4, cellH, 4);
+    ctx.fill();ctx.stroke();
+    ctx.fillStyle='#0a7d52';
+    ctx.font='600 14px "Courier New",monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(values[i], x+cellW/2, cellY+cellH/2);
+    // address below
+    ctx.fillStyle='rgba(138,129,114,0.5)';
+    ctx.font='400 10px "Courier New",monospace';
+    ctx.fillText('0x'+(0x1000+i*4).toString(16), x+cellW/2, cellY+cellH+14);
+  }
+
+  // label on top
+  ctx.fillStyle='rgba(10,125,82,0.9)';
+  ctx.font='italic 11px "Source Sans 3",sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('arr  (type: int[5], size: 20 bytes, one contiguous region)', W/2, 10);
+
+  // braces showing the whole region
+  ctx.strokeStyle='rgba(10,125,82,0.6)';
+  ctx.lineWidth=1.5;
+  const bY=cellY+cellH+24;
+  ctx.beginPath();
+  ctx.moveTo(padL,bY);ctx.lineTo(padL,bY+6);ctx.lineTo(W-padR,bY+6);ctx.lineTo(W-padR,bY);
+  ctx.stroke();
+  ctx.fillStyle='rgba(10,125,82,0.8)';
+  ctx.font='600 10px "Courier New",monospace';
+  ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('sizeof(arr) = 20', W/2, bY+9);
+}
+
+function drawV1Ptr(){
+  const{ctx,W,H}=setupCanvas(v1PtrCanvas,120);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+
+  // Draw pointer on left (small amber box), arrow to array on the right
+  const padL=24, padR=24;
+  const ptrW=84, ptrH=50;
+  const ptrX=padL, ptrY=32;
+  // pointer box
+  ctx.fillStyle='rgba(181,84,28,0.2)';
+  ctx.strokeStyle='rgba(181,84,28,0.8)';
+  ctx.lineWidth=1.5;
+  roundRect(ctx, ptrX, ptrY, ptrW, ptrH, 6);
+  ctx.fill();ctx.stroke();
+  ctx.fillStyle='#b5541c';
+  ctx.font='600 12px "Courier New",monospace';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('p', ptrX+ptrW/2, ptrY+16);
+  ctx.font='600 11px "Courier New",monospace';
+  ctx.fillStyle='rgba(181,84,28,0.9)';
+  ctx.fillText('0x1000', ptrX+ptrW/2, ptrY+34);
+  ctx.fillStyle='rgba(138,129,114,0.5)';
+  ctx.font='400 10px "Courier New",monospace';
+  ctx.fillText('8 bytes', ptrX+ptrW/2, ptrY+ptrH+14);
+
+  // Array on right side (dimmed, dashed border since the pointer "just knows about it")
+  const arrStart=ptrX+ptrW+80;
+  const regionW=W-padR-arrStart;
+  const cellW=regionW/5;
+  const cellY=32, cellH=50;
+  const values=[10,20,30,40,50];
+
+  for(let i=0;i<5;i++){
+    const x=arrStart+i*cellW;
+    ctx.fillStyle='rgba(46,90,125,0.1)';
+    ctx.strokeStyle='rgba(46,90,125,0.45)';
+    ctx.lineWidth=1.2;
+    ctx.setLineDash([3,2]);
+    roundRect(ctx, x+2, cellY, cellW-4, cellH, 4);
+    ctx.fill();ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(138,129,114,0.8)';
+    ctx.font='600 13px "Courier New",monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(values[i], x+cellW/2, cellY+cellH/2);
+  }
+
+  // arrow from p to arr[0]
+  const sx=ptrX+ptrW, sy=ptrY+ptrH/2;
+  const ex=arrStart+2, ey=cellY+cellH/2;
+  ctx.strokeStyle='rgba(181,84,28,0.85)';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(sx,sy);
+  ctx.bezierCurveTo(sx+30,sy,ex-30,ey,ex,ey);
+  ctx.stroke();
+  // arrowhead
+  ctx.fillStyle='rgba(181,84,28,0.9)';
+  ctx.beginPath();
+  ctx.moveTo(ex,ey);
+  ctx.lineTo(ex-8,ey-5);
+  ctx.lineTo(ex-8,ey+5);
+  ctx.closePath();
+  ctx.fill();
+
+  // label
+  ctx.fillStyle='rgba(181,84,28,0.9)';
+  ctx.font='italic 11px "Source Sans 3",sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('p  (type: int*, size: 8 bytes, holds an address)', W/2, 10);
+
+  ctx.fillStyle='rgba(46,90,125,0.7)';
+  ctx.font='italic 10px "Source Sans 3",sans-serif';
+  ctx.fillText('p doesn\'t know this is an array of 5. Could be 1, could be 10000.', W/2, cellY+cellH+14);
+}
+drawV1Arr();drawV1Ptr();
+window.addEventListener('resize',()=>{drawV1Arr();drawV1Ptr();});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 2: sizeof REPL
+// ═══════════════════════════════════════════════════════════════════════════
+const v2ResultEl=document.getElementById('v2Result');
+const v2Data={
+  'sizeof(arr)':{val:'20 bytes', explain:'<code>arr</code> has type <code>int[5]</code>. <code>sizeof</code> sees the real array type and returns <code>5 * sizeof(int) = 20</code>. This is one of the rare places arrays don\'t decay.'},
+  'sizeof(p)':{val:'8 bytes', explain:'<code>p</code> has type <code>int*</code>. <code>sizeof</code> returns the size of a pointer, 8 on 64-bit systems. <strong>It does not matter</strong> that <code>p</code> happens to point at a 5-element array. <code>p</code> is just 8 bytes.'},
+  'sizeof(arr[0])':{val:'4 bytes', explain:'<code>arr[0]</code> is one int. <code>sizeof(int)</code> is 4 on most systems. This is why <code>sizeof(arr) / sizeof(arr[0])</code> = 5 gives you the element count for a real array.'},
+  'sizeof(*p)':{val:'4 bytes', explain:'<code>*p</code> has type <code>int</code>. So <code>sizeof(*p)</code> is <code>sizeof(int)</code> = 4. Note this works even though <code>p</code> is a pointer. <code>sizeof</code> uses the <em>type</em>, and the type of <code>*p</code> is <code>int</code>.'},
+  'sizeof(s)':{val:'6 bytes', explain:'<code>s</code> is declared as <code>char s[] = "hello"</code>, which gives it type <code>char[6]</code>, five letters plus the null terminator. So <code>sizeof(s)</code> is 6.'},
+  'sizeof(sp)':{val:'8 bytes', explain:'<code>sp</code> is a <code>char*</code>. <code>sizeof</code> returns the size of a pointer, 8. <span class="warn">This is why <code>sizeof(string_argument)</code> inside a function doesn\'t give you the string length. It gives you 8.</span> Use <code>strlen</code> for runtime string length.'},
+  'sizeof(&arr)':{val:'8 bytes', explain:'<code>&amp;arr</code> is a pointer to the whole array, with type <code>int (*)[5]</code>. It\'s still a pointer, so <code>sizeof</code> returns 8. But its <em>type</em> is different from <code>int*</code>. Arithmetic on it jumps by 20 bytes at a time, not 4.'},
+  'sizeof(arr) / sizeof(arr[0])':{val:'5', explain:'The classic idiom for array length. 20 / 4 = 5. <strong>Works only when <code>arr</code> is a real array in scope.</strong> If you pass <code>arr</code> to a function, it decays to <code>int*</code>, and this becomes 8 / 4 = 2. Broken.'},
+};
+document.querySelectorAll('.v2-expr-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.v2-expr-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    // convert &amp; back in dataset
+    const key=b.dataset.expr.replace(/&amp;/g,'&');
+    const data=v2Data[key];
+    if(!data)return;
+    v2ResultEl.innerHTML=`
+      <div class="v2-result-row">
+        <span class="v2-result-expr">${key}</span>
+        <span class="v2-result-arrow">→</span>
+        <span class="v2-result-val">${data.val}</span>
+      </div>
+      <div class="v2-result-explain">${data.explain}</div>
+    `;
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIZ 3: pointer arithmetic ruler
+// ═══════════════════════════════════════════════════════════════════════════
+const v3Canvas=document.getElementById('v3Canvas');
+const v3Slider=document.getElementById('v3Slider');
+const v3K=document.getElementById('v3K');
+const v3KR=document.getElementById('v3KR');
+const v3Addr=document.getElementById('v3Addr');
+const v3Calc=document.getElementById('v3Calc');
+
+const TYPE_SIZES={char:1, int:4, double:8};
+let v3Type='char';
+let v3Offset=0;
+
+function drawV3(){
+  const{ctx,W,H}=setupCanvas(v3Canvas,180);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+
+  // Draw 32 byte cells across
+  const BYTES=32;
+  const pad=20;
+  const availW=W-pad*2;
+  const cellW=availW/BYTES;
+  const cellY=60, cellH=44;
+  const baseAddr=0x1000;
+
+  // draw byte cells
+  for(let i=0;i<BYTES;i++){
+    const x=pad+i*cellW;
+    ctx.fillStyle='rgba(138,129,114,0.04)';
+    ctx.strokeStyle='rgba(138,129,114,0.1)';
+    ctx.lineWidth=0.5;
+    ctx.fillRect(x,cellY,cellW-0.5,cellH);
+    ctx.strokeRect(x,cellY,cellW-0.5,cellH);
+  }
+
+  // Group cells into elements based on type
+  const stride=TYPE_SIZES[v3Type];
+  const elements=Math.floor(BYTES/stride);
+  for(let i=0;i<elements;i++){
+    const x=pad+i*cellW*stride;
+    const elW=cellW*stride-1;
+    ctx.fillStyle=`rgba(46,90,125,${i===v3Offset?0.35:0.1})`;
+    ctx.strokeStyle=`rgba(46,90,125,${i===v3Offset?0.9:0.4})`;
+    ctx.lineWidth=i===v3Offset?2:1;
+    roundRect(ctx, x+1, cellY+1, elW-2, cellH-2, 3);
+    ctx.fill();ctx.stroke();
+    // element index
+    ctx.fillStyle=i===v3Offset?'#2e5a7d':'rgba(138,129,114,0.55)';
+    ctx.font=`600 ${i===v3Offset?13:11}px "Courier New",monospace`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(`[${i}]`, x+elW/2, cellY+cellH/2);
+  }
+
+  // Draw base pointer at element 0
+  const p0X=pad+cellW*stride*0;
+  const p0W=cellW*stride;
+  ctx.fillStyle='rgba(181,84,28,0.3)';
+  ctx.strokeStyle='var(--accent)';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(p0X+p0W/2, cellY-16);
+  ctx.lineTo(p0X+p0W/2-6, cellY-6);
+  ctx.lineTo(p0X+p0W/2+6, cellY-6);
+  ctx.closePath();
+  ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(181,84,28,0.9)';
+  ctx.font='600 11px "Courier New",monospace';
+  ctx.textAlign='center';ctx.textBaseline='bottom';
+  ctx.fillText('p', p0X+p0W/2, cellY-18);
+
+  // Draw p+k with an arrow
+  if(v3Offset>0 && v3Offset<elements){
+    const pkX=pad+cellW*stride*v3Offset;
+    // arrow above
+    ctx.fillStyle='rgba(10,125,82,0.4)';
+    ctx.strokeStyle='var(--green)';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(pkX+p0W/2, cellY-16);
+    ctx.lineTo(pkX+p0W/2-6, cellY-6);
+    ctx.lineTo(pkX+p0W/2+6, cellY-6);
+    ctx.closePath();
+    ctx.fill();ctx.stroke();
+    ctx.fillStyle='rgba(10,125,82,0.95)';
+    ctx.font='600 11px "Courier New",monospace';
+    ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText(`p+${v3Offset}`, pkX+p0W/2, cellY-18);
+
+    // jump indicator - bracket showing byte distance
+    ctx.strokeStyle='rgba(10,125,82,0.55)';
+    ctx.lineWidth=1;
+    const brY=cellY+cellH+16;
+    ctx.beginPath();
+    ctx.moveTo(p0X+p0W/2, brY);
+    ctx.lineTo(p0X+p0W/2, brY+5);
+    ctx.lineTo(pkX+p0W/2, brY+5);
+    ctx.lineTo(pkX+p0W/2, brY);
+    ctx.stroke();
+    ctx.fillStyle='rgba(10,125,82,0.8)';
+    ctx.font='600 11px "Courier New",monospace';
+    ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(`${v3Offset * stride} bytes`, (p0X+pkX)/2+p0W/2, brY+8);
+  }
+
+  // Type label at top
+  ctx.fillStyle='rgba(138,129,114,0.65)';
+  ctx.font='600 12px "Courier New",monospace';
+  ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText(`${v3Type}* p;  // sizeof(*p) = ${stride}`, pad, 14);
+
+  // Show one-byte grid labels at the bottom (subtle)
+  ctx.fillStyle='rgba(138,129,114,0.25)';
+  ctx.font='400 8px "Courier New",monospace';
+  ctx.textAlign='center';ctx.textBaseline='top';
+  for(let i=0;i<=BYTES;i+=4){
+    ctx.fillText('+'+i, pad+i*cellW, cellY+cellH+36);
+  }
+}
+
+function updateV3Readout(){
+  const stride=TYPE_SIZES[v3Type];
+  const maxElements=Math.floor(32/stride);
+  v3Slider.max=maxElements-1;
+  if(v3Offset>maxElements-1)v3Offset=maxElements-1;
+  v3K.textContent=v3Offset;
+  v3KR.textContent=v3Offset;
+  const addr=0x1000 + v3Offset * stride;
+  v3Addr.textContent='0x'+addr.toString(16);
+  v3Calc.textContent=`= 0x1000 + ${v3Offset} × ${stride} byte${stride>1?'s':''} = +${v3Offset*stride} bytes`;
+}
+
+v3Slider.addEventListener('input',()=>{
+  v3Offset=parseInt(v3Slider.value);
+  updateV3Readout();
+  drawV3();
+});
+document.querySelectorAll('[data-type]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-type]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    v3Type=b.dataset.type;
+    // reset offset to 0 to avoid overshoot
+    v3Offset=0;
+    v3Slider.value=0;
+    updateV3Readout();
+    drawV3();
+  });
+});
+updateV3Readout();
+drawV3();
+window.addEventListener('resize',drawV3);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Copy-to-clipboard for runnable code block
+// ═══════════════════════════════════════════════════════════════════════════
+const copyBtn=document.getElementById('copyCodeBtn');
+const codeSrc=document.getElementById('codeSrc');
+if(copyBtn && codeSrc){
+  copyBtn.addEventListener('click',()=>{
+    const text=codeSrc.innerText;
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(()=>{
+      copyBtn.textContent='Copied!';
+      copyBtn.classList.add('copied');
+      setTimeout(()=>{copyBtn.textContent='Copy';copyBtn.classList.remove('copied');},1800);
+    }).catch(()=>{
+      // Fallback for older browsers
+      const ta=document.createElement('textarea');
+      ta.value=text;document.body.appendChild(ta);
+      ta.select();document.execCommand('copy');document.body.removeChild(ta);
+      copyBtn.textContent='Copied!';
+      setTimeout(()=>{copyBtn.textContent='Copy';},1800);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.quiz-options').forEach(group=>{
+  const isMulti=group.classList.contains('multi');
+  group.querySelectorAll('.quiz-option').forEach(opt=>{
+    opt.addEventListener('click',()=>{
+      if(isMulti){
+        opt.classList.toggle('selected');
+      }else{
+        group.querySelectorAll('.quiz-option').forEach(o=>o.classList.remove('selected'));
+        opt.classList.add('selected');
+      }
+    });
+  });
+});
+document.querySelectorAll('[data-reveal]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const id=btn.dataset.reveal;
+    const answer=document.getElementById(id);
+    if(!answer)return;
+    answer.classList.toggle('show');
+    btn.textContent=answer.classList.contains('show')?'Hide answer':'Reveal answer';
+    const card=btn.closest('.quiz-card');
+    if(card){
+      const group=card.querySelector('.quiz-options');
+      if(group && answer.classList.contains('show')){
+        const correct=group.dataset.answer.split(',');
+        group.querySelectorAll('.quiz-option').forEach(opt=>{
+          const val=opt.dataset.val;
+          const isSelected=opt.classList.contains('selected');
+          const isCorrect=correct.includes(val);
+          if(isCorrect)opt.classList.add('correct');
+          else if(isSelected)opt.classList.add('incorrect');
+        });
+      }else if(group && !answer.classList.contains('show')){
+        group.querySelectorAll('.quiz-option').forEach(opt=>{
+          opt.classList.remove('correct','incorrect');
+        });
+      }
+    }
+  });
+});
+
+</script>
+{% endraw %}
