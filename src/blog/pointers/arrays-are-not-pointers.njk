@@ -301,7 +301,7 @@ chapterSlug: arrays-are-not-pointers
     <text x="238" y="112" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#8a8172">+16</text>
     <line x1="280" y1="78" x2="360" y2="78" stroke="#b5541c" stroke-width="2"/>
     <path d="M354 72 L364 78 L354 84" fill="none" stroke="#b5541c" stroke-width="2"/>
-    <text x="320" y="66" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#b5541c">decays in an expression</text>
+    <text x="320" y="60" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#b5541c">decays in an expression</text>
     <rect x="378" y="52" width="150" height="52" rx="8" fill="#b5541c" opacity="0.1" stroke="#b5541c" stroke-width="1.5"/>
     <text x="453" y="74" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#b5541c">&amp;arr[0]</text>
     <text x="453" y="92" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">type: int*, 8 bytes</text>
@@ -317,7 +317,7 @@ chapterSlug: arrays-are-not-pointers
     <text x="515" y="198" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">int arr[5];</text>
     <text x="515" y="215" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">the declaration</text>
   </svg>
-  <figcaption>Decay is the default: the moment <code>arr</code> shows up in an expression, it becomes a pointer to its first element. The three green boxes are the exceptions, and every classic bug in this chapter lives near one of them.</figcaption>
+  <figcaption>In almost any expression, <code>arr</code> is converted to a pointer to its first element. The three green boxes are the contexts where it stays a real array, and each of them comes up later in this chapter.</figcaption>
 </figure>
 
 
@@ -455,7 +455,7 @@ chapterSlug: arrays-are-not-pointers
     <text x="500" y="164" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#a83c2c">n = 8 / 4 = 2</text>
     <text x="500" y="181" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">prints 10 20, stops</text>
   </svg>
-  <figcaption>The size never crosses the boundary. Twenty bytes of array exist at the call site, but only an eight byte address arrives inside, so the sizeof idiom quietly computes 2 instead of 5.</figcaption>
+  <figcaption>The caller has a 20 byte array, but the function only receives an 8 byte address. Inside, <code>sizeof(arr)</code> is the size of a pointer, so the element-count idiom computes 8 / 4 = 2 instead of 5.</figcaption>
 </figure>
 
 
@@ -570,9 +570,9 @@ chapterSlug: arrays-are-not-pointers
     <text x="560" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#a83c2c">even forming</text>
     <text x="560" y="130" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a83c2c">UB</text>
     <text x="240" y="170" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#57503f">for (p = arr; p &lt; arr + 5; p++)</text>
-    <text x="240" y="190" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">the loop leans on the fence: p reaches arr+5, compares, never dereferences it</text>
+    <text x="240" y="190" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">p reaches arr+5 on the last step; it is compared, never dereferenced</text>
   </svg>
-  <figcaption>The standard draws the line one element past the end. <code>arr+5</code> may be formed and compared, never read. One step further and the pointer itself is undefined, dereference or not.</figcaption>
+  <figcaption>Pointer arithmetic is defined up to one element past the end. <code>arr+5</code> may be formed and compared but not dereferenced, and <code>arr+6</code> is undefined behaviour even if you never read through it.</figcaption>
 </figure>
 
 
@@ -694,7 +694,7 @@ arr+1  - arr   = <span class="highlight">4</span> bytes
     <circle cx="40" cy="36" r="4" fill="#241f18"/>
     <text x="52" y="40" font-family="JetBrains Mono" font-size="9" fill="#241f18">arr, &amp;arr[0], &amp;arr all start here</text>
     <line x1="40" y1="40" x2="40" y2="52" stroke="#241f18" stroke-width="1.5"/>
-    <path d="M84 124 C 100 148, 156 148, 168 128" fill="none" stroke="#0a7d52" stroke-width="2"/>
+    <path d="M96 126 C 108 148, 156 148, 168 128" fill="none" stroke="#0a7d52" stroke-width="2"/>
     <path d="M164 121 L170 130 L158 132" fill="none" stroke="#0a7d52" stroke-width="2"/>
     <text x="126" y="168" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#0a7d52">arr + 1</text>
     <text x="126" y="184" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">one int: +4 bytes</text>
@@ -703,7 +703,7 @@ arr+1  - arr   = <span class="highlight">4</span> bytes
     <text x="330" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#b5541c">&amp;arr + 1</text>
     <text x="330" y="240" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8a8172">one whole array: +20 bytes, lands one past the end</text>
   </svg>
-  <figcaption>Same starting byte, different step size. <code>arr + 1</code> hops one int; <code>&amp;arr + 1</code> hops the entire 20 byte array. The type behind the pointer decides how far <code>+ 1</code> travels.</figcaption>
+  <figcaption>All three expressions start at the same byte, but <code>arr + 1</code> moves 4 bytes (one int) while <code>&amp;arr + 1</code> moves 20 bytes (one whole array). How far <code>+ 1</code> moves is decided by the type of the pointer.</figcaption>
 </figure>
 
 
