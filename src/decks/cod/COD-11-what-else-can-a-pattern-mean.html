@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 11 · What else can a pattern mean?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&family=Noto+Sans+Tamil:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --indic:'Noto Sans Devanagari','Noto Sans Kannada','Noto Sans Tamil',sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:76px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+.dev{font-family:var(--indic)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.prog{display:grid;grid-template-columns:1.02fr .98fr;gap:34px;align-items:start}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+
+pre{background:#14181f;border-radius:10px;padding:18px 22px;font-family:var(--mono);font-size:15px;
+  line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre.xs{font-size:13.5px;line-height:1.45}
+pre .c{color:#7f8896} pre .k{color:#ff96a2}
+pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.term{background:#0f1319;border-radius:10px;padding:16px 20px;font-family:var(--mono);
+  font-size:16px;line-height:1.6;color:#9fe8b8;box-shadow:0 10px 24px rgba(20,22,28,.18);white-space:pre;overflow:hidden}
+.term.xs{font-size:13px;line-height:1.5}
+.term.xxs{font-size:11.5px;line-height:1.55}
+.term .dim{color:#7f8896} .term .hit{color:#ffd47e;font-weight:700}
+.term .bad{color:#ff96a2;font-weight:700} .term .ok{color:#7fe6ad}
+.term .dv{font-family:var(--indic),var(--mono)}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+
+.glyphs{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.gcard{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 20px;text-align:center;min-width:132px}
+.gcard .g{font-family:var(--indic);font-size:46px;color:var(--ink);line-height:1.25}
+.gcard .u{font-family:var(--mono);font-size:12.5px;color:var(--accent);margin-top:6px}
+.gcard .n{font-family:var(--mono);font-size:11px;color:var(--soft);margin-top:3px;letter-spacing:.1em}
+
+.utf{display:flex;gap:4px;justify-content:center;margin:10px 0}
+.utf .b{border-radius:7px;padding:10px 14px;text-align:center;font-family:var(--mono)}
+.utf .b .h{font-size:19px;font-weight:700}
+.utf .b .l{font-size:11px;letter-spacing:.1em;margin-top:4px}
+.utf .b.lead{background:var(--accent-soft);border:1px solid #c3cee6;color:var(--accent)}
+.utf .b.cont{background:var(--amber-soft);border:1px solid #e8d3ab;color:var(--amber)}
+
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 11</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 11 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 11 · hour eleven of fifty</div>
+    <h1>What else can<br>a pattern mean?</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Ten hours on schemes for holding numbers. Most of the bytes on your machine are not numbers at all.</p>
+  </div>
+  <div class="cue">Seven programs. This is the other half of the board line from Class 1.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="01 · four ways" data-act="program 1">
+  <div>
+    <h2>You saw this on the first day.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="c">/* 01-fourways.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;string.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">unsigned</span> pattern = <span class="s">0x434F4421</span>;
+    <span class="f">int</span>   i;  <span class="f">float</span> f;  <span class="f">char</span> c[<span class="s">5</span>] = { <span class="s">0</span> };
+
+    memcpy(&amp;i, &amp;pattern, <span class="s">4</span>);
+    memcpy(&amp;f, &amp;pattern, <span class="s">4</span>);
+    memcpy(c, &amp;pattern, <span class="s">4</span>);
+
+    printf(<span class="s">"as hex        0x%08X\n"</span>, pattern);
+    printf(<span class="s">"as an int     %d\n"</span>, i);
+    printf(<span class="s">"as a float    %g\n"</span>, f);
+    printf(<span class="s">"as text       %c%c%c%c\n"</span>,
+           c[<span class="s">3</span>], c[<span class="s">2</span>], c[<span class="s">1</span>], c[<span class="s">0</span>]);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">the same 32 bits, read four ways
+
+as hex        0x434F4421
+as an int     1129268257
+as a float    207.266
+as text       <span class="hit">COD!</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Four readings, all correct. Nothing in those bits says which one is intended.</li>
+            <li>The last one is not a number in any sense. It is four characters, and the number 1129268257 is meaningless for it.</li>
+            <li>Everything in this arc so far has answered "which four billion numbers". This hour is about patterns that answer a different question entirely.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Class 1, eleven sessions ago. Ask if anyone remembers what the fourth reading spelled.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="02 · ASCII" data-act="program 2">
+  <div>
+    <h2>So somebody had to write down which number means which letter.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 02-ascii.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">char</span> c[] = { <span class="s">'0'</span>, <span class="s">'9'</span>, <span class="s">'A'</span>, <span class="s">'Z'</span>,
+                 <span class="s">'a'</span>, <span class="s">'z'</span>, <span class="s">' '</span>, <span class="s">'~'</span> };
+
+    printf(<span class="s">"char   value   hex    bits\n"</span>);
+
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt; <span class="s">8</span>; i++) {
+        printf(<span class="s">"  %c    %5d   0x%02X   "</span>, c[i], c[i], c[i]);
+        <span class="k">for</span> (<span class="f">int</span> b = <span class="s">7</span>; b &gt;= <span class="s">0</span>; b--)
+            putchar(c[i] &gt;&gt; b &amp; <span class="s">1</span> ? <span class="s">'1'</span> : <span class="s">'0'</span>);
+        putchar(<span class="s">'\n'</span>);
+    }
+
+    printf(<span class="s">"\n'A' is %d and 'a' is %d. "</span>
+           <span class="s">"the difference is %d.\n"</span>, <span class="s">'A'</span>, <span class="s">'a'</span>, <span class="s">'a'</span> - <span class="s">'A'</span>);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">char   value   hex    bits
+  0       48   0x30   00110000
+  9       57   0x39   00111001
+  A       65   0x41   0<span class="hit">1</span>000001
+  Z       90   0x5A   0<span class="hit">1</span>011010
+  a       97   0x61   0<span class="hit">11</span>00001
+  z      122   0x7A   0<span class="hit">11</span>11010
+         32   0x20   00100000
+  ~      126   0x7E   01111110
+
+'A' is 65 and 'a' is 97. the difference is <span class="hit">32</span>.</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>ASCII, 1963. Seven bits, so 128 characters, which was enough for American English and nothing else.</li>
+            <li>The layout is not arbitrary. Digits are contiguous, so <code>c - '0'</code> gives the value.</li>
+            <li>The alphabets are contiguous too, so ranges and sorting work with plain comparison.</li>
+            <li>Upper and lower case are exactly 32 apart, which is one bit.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask why '0' is 48 rather than 0. Because 0 was already taken by the null character, and control codes came first.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="03 · one bit" data-act="program 3">
+  <div>
+    <h2>Which makes changing case a single bit flip.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 03-case.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;ctype.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">char</span> c[] = { <span class="s">'A'</span>, <span class="s">'Z'</span>, <span class="s">'a'</span>, <span class="s">'z'</span>,
+                 <span class="s">'0'</span>, <span class="s">'5'</span>, <span class="s">' '</span>, <span class="s">'@'</span> };
+
+    printf(<span class="s">"char   value   flip bit 5   becomes\n"</span>);
+
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt; <span class="s">8</span>; i++) {
+        <span class="f">int</span> x = c[i] ^ <span class="s">32</span>;
+        printf(<span class="s">"  %c    %5d   %10d   %c\n"</span>,
+               c[i], c[i], x, isprint(x) ? x : <span class="s">'?'</span>);
+    }
+
+    printf(<span class="s">"\nfor letters, one bit is the whole difference "</span>
+           <span class="s">"between\nupper and lower case. "</span>
+           <span class="s">"for anything else it is nonsense.\n"</span>);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">char   value   flip bit 5   becomes
+  A       65           97   <span class="ok">a</span>
+  Z       90          122   <span class="ok">z</span>
+  a       97           65   <span class="ok">A</span>
+  z      122           90   <span class="ok">Z</span>
+  0       48           16   <span class="bad">?</span>
+  5       53           21   <span class="bad">?</span>
+         32            0   <span class="bad">?</span>
+  @       64           96   `</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>A deliberate design decision in 1963, so that case conversion cost one instruction.</li>
+            <li>It works only because the two alphabets were placed exactly 32 apart on purpose.</li>
+            <li>It works only for ASCII letters. Try it on anything else and you get a control character.</li>
+            <li>Most scripts in the world have no case at all, so this trick does not generalise even slightly.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This is why old code is full of xor 32. It is fast, and it is wrong the moment your text is not English.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="04 · hexadecimal" data-act="program 4">
+  <div>
+    <h2>And a notation for talking about patterns rather than quantities.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 04-hex.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">unsigned</span> v = <span class="s">0xB4C2</span>;
+
+    printf(<span class="s">"value 0x%04X\n\n"</span>, v);
+    printf(<span class="s">"hex digit   four bits\n"</span>);
+
+    <span class="k">for</span> (<span class="f">int</span> shift = <span class="s">12</span>; shift &gt;= <span class="s">0</span>; shift -= <span class="s">4</span>) {
+        <span class="f">unsigned</span> nib = v &gt;&gt; shift &amp; <span class="s">0xF</span>;
+        printf(<span class="s">"    %X       "</span>, nib);
+        <span class="k">for</span> (<span class="f">int</span> b = <span class="s">3</span>; b &gt;= <span class="s">0</span>; b--)
+            putchar(nib &gt;&gt; b &amp; <span class="s">1</span> ? <span class="s">'1'</span> : <span class="s">'0'</span>);
+        putchar(<span class="s">'\n'</span>);
+    }
+
+    printf(<span class="s">"\nall sixteen bits:  "</span>);
+    <span class="k">for</span> (<span class="f">int</span> b = <span class="s">15</span>; b &gt;= <span class="s">0</span>; b--)
+        putchar(v &gt;&gt; b &amp; <span class="s">1</span> ? <span class="s">'1'</span> : <span class="s">'0'</span>);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">value 0xB4C2
+
+hex digit   four bits
+    B       1011
+    4       0100
+    C       1100
+    2       0010
+
+all sixteen bits:  1011010011000010</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Sixteen is two to the fourth, so one hex digit is exactly four bits. Always, with no carrying and no remainder.</li>
+            <li>Converting is a lookup, not arithmetic. Read the bits in fours and write down the digit.</li>
+            <li>That is the only reason hex exists. It is a shorthand for bit patterns, not a base anybody computes in.</li>
+            <li>Base 10 has no such relationship with base 2, which is why nobody writes memory addresses in decimal.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This is why hex arrives now rather than in Class 4. It belongs to patterns, not to quantities.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="The eighth bit" data-act="history">
+  <div>
+    <h2>Then everyone else needed their own letters.</h2>
+    <div class="split" style="margin-top:6px">
+      <div class="stack">
+        <p>ASCII used seven bits of an eight bit byte, leaving 128 spare patterns. Every country claimed them, and every country claimed them differently.</p>
+        <p class="frag">India built its own: <strong>ISCII</strong>, IS 13194:1991, one eight bit table covering Devanagari, Bengali, Gurmukhi, Gujarati, Odia, Tamil, Telugu, Kannada and Malayalam.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">remember</div>
+        <ul>
+          <li>ISCII fit nine scripts into one table because they all descend from Brahmi and have parallel structure. The same code means the same sound across scripts.</li>
+          <li>That was elegant, and it still did not solve anything, because a file gave no clue which table it was written in.</li>
+          <li>Open a Hindi file with the wrong table and you get confident nonsense, not an error.</li>
+          <li>The board line from Class 1, again. The bytes do not say what they mean.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Anyone who used Indian language computing before about 2005 has seen this. Ask.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Unicode" data-act="history">
+  <div>
+    <h2>So give every character in every script one number, forever.</h2>
+    <div class="glyphs">
+      <div class="gcard"><div class="g">A</div><div class="u">U+0041</div><div class="n">LATIN A</div></div>
+      <div class="gcard"><div class="g dev">क</div><div class="u">U+0915</div><div class="n">DEVANAGARI KA</div></div>
+      <div class="gcard"><div class="g dev">ಕ</div><div class="u">U+0C95</div><div class="n">KANNADA KA</div></div>
+      <div class="gcard"><div class="g dev">க</div><div class="u">U+0B95</div><div class="n">TAMIL KA</div></div>
+      <div class="gcard"><div class="g dev">ক</div><div class="u">U+0995</div><div class="n">BENGALI KA</div></div>
+      <div class="gcard"><div class="g">₹</div><div class="u">U+20B9</div><div class="n">RUPEE SIGN</div></div>
+    </div>
+    <div class="rem" style="margin-top:14px;max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>A code point is just a number assigned to a character. Nothing about storage, nothing about bytes.</li>
+        <li>Notice the Indic blocks are laid out in parallel. Devanagari KA is U+0915, Bengali KA is U+0995, Kannada KA is U+0C95. That ordering came from ISCII.</li>
+        <li>Over 150,000 characters have numbers now, so one byte was never going to be enough.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The offsets are 0x80 apart per script, deliberately. India's 1991 standard is still visible inside Unicode today.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="05 · the bytes" data-act="program 5">
+  <div>
+    <h2>Which leaves the question of how to store a number that big.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 05-utf8.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;string.h&gt;</span>
+
+<span class="f">void</span> dump(<span class="f">char</span> *label, <span class="f">char</span> *s)
+{
+    printf(<span class="s">"%-10s %2zu bytes   "</span>, label, strlen(s));
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; s[i]; i++)
+        printf(<span class="s">"%02X "</span>, (<span class="f">unsigned</span> <span class="f">char</span>)s[i]);
+    printf(<span class="s">"\n"</span>);
+}
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    dump(<span class="s">"hello"</span>,   <span class="s">"hello"</span>);
+    dump(<span class="s">"namaste"</span>, <span class="s">"नमस्ते"</span>);
+    dump(<span class="s">"kannada"</span>, <span class="s">"ಕನ್ನಡ"</span>);
+    dump(<span class="s">"tamil"</span>,   <span class="s">"தமிழ்"</span>);
+    dump(<span class="s">"rupee"</span>,   <span class="s">"₹"</span>);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xxs frag">hello       5 bytes   68 65 6C 6C 6F
+namaste    18 bytes   E0 A4 A8 E0 A4 AE E0 A4 B8 E0 A5 8D E0 A4 A4 E0 A5 87
+kannada    15 bytes   E0 B2 95 E0 B2 A8 E0 B3 8D E0 B2 A8 E0 B2 A1
+tamil      15 bytes   E0 AE A4 E0 AE AE E0 AE BF E0 AE B4 E0 AF 8D
+rupee       3 bytes   E2 82 B9</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>This is UTF-8. English costs one byte a character, Indian scripts cost three.</li>
+            <li>Every byte of "hello" is under 0x80, so ASCII text is already valid UTF-8. Fifty years of files did not need converting.</li>
+            <li>Every Devanagari character here starts E0 A4 or E0 A5. The pattern is visible with the naked eye.</li>
+            <li>Six letters of Hindi take eighteen bytes. Storage and bandwidth are not language neutral.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Worth saying out loud: a Hindi SMS cost more than an English one for years, and this is why.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="How UTF-8 works" data-act="program 5">
+  <div>
+    <h2>The first bits of each byte say how long the character is.</h2>
+    <div class="utf">
+      <div class="b lead"><div class="h">0xxxxxxx</div><div class="l">ONE BYTE · ASCII</div></div>
+      <div class="b lead"><div class="h">110xxxxx</div><div class="l">START OF TWO</div></div>
+      <div class="b lead"><div class="h">1110xxxx</div><div class="l">START OF THREE</div></div>
+      <div class="b lead"><div class="h">11110xxx</div><div class="l">START OF FOUR</div></div>
+      <div class="b cont"><div class="h">10xxxxxx</div><div class="l">CONTINUATION</div></div>
+    </div>
+    <div class="split" style="margin-top:14px">
+      <div class="stack">
+        <p><span class="dev" style="font-size:30px">न</span> is <code>E0 A4 A8</code>, which is <code>1110</code>0000, <code>10</code>100100, <code>10</code>101000.</p>
+        <p class="small">A three byte start, then two continuations. Any byte beginning 10 is never the start of anything.</p>
+      </div>
+      <div class="rem" style="margin-top:0">
+        <div class="h">remember</div>
+        <ul>
+          <li>You can land anywhere in a UTF-8 file and find the next character boundary by skipping bytes that start with 10.</li>
+          <li>This is why a corrupted byte damages one character, not the rest of the file.</li>
+          <li>Designed by Thompson and Pike in 1992, reportedly on a diner placemat.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Self synchronising is the property. Compare with the Class 2 problem of not knowing where one number ends and the next begins.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="06 · how many letters" data-act="program 6">
+  <div>
+    <h2>So how long is a piece of text?</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 06-count.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;string.h&gt;</span>
+
+<span class="f">int</span> points(<span class="f">char</span> *s)          <span class="c">/* count start bytes */</span>
+{
+    <span class="f">int</span> n = <span class="s">0</span>;
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; s[i]; i++)
+        <span class="k">if</span> (((<span class="f">unsigned</span> <span class="f">char</span>)s[i] &amp; <span class="s">0xC0</span>) != <span class="s">0x80</span>) n++;
+    <span class="k">return</span> n;
+}
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">char</span> *t[] = { <span class="s">"hello"</span>, <span class="s">"भारत"</span>, <span class="s">"नमस्ते"</span>,
+                  <span class="s">"क्ष"</span>, <span class="s">"ಕನ್ನಡ"</span> };
+    <span class="f">int</span>  eye[] = { <span class="s">5</span>, <span class="s">3</span>, <span class="s">3</span>, <span class="s">1</span>, <span class="s">3</span> };  <span class="c">/* what a reader counts */</span>
+
+    printf(<span class="s">"text       bytes   code points   letters you see\n"</span>);
+
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt; <span class="s">5</span>; i++)
+        printf(<span class="s">"%-10s %5zu   %11d   %d\n"</span>,
+               t[i], strlen(t[i]), points(t[i]), eye[i]);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">text       bytes   code points   letters you see
+hello          5             5   5
+<span class="dv">भारत</span>    12             4   <span class="hit">3</span>
+<span class="dv">नमस्ते</span>    18             6   <span class="hit">3</span>
+<span class="dv">क्ष</span>      9             3   <span class="hit">1</span>
+<span class="dv">ಕನ್ನಡ</span>    15             5   <span class="hit">3</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Three different answers to "how long is it", and all three are correct for some purpose.</li>
+            <li><span class="dev">क्ष</span> is nine bytes, three code points, and one letter. It is <span class="dev">क</span> plus a virama plus <span class="dev">ष</span>, drawn as a single conjunct.</li>
+            <li>Look at the columns in the output. They do not line up, because printf pads by counting bytes.</li>
+            <li>Even the alignment in this program is wrong, and it is wrong for exactly the reason the program is about.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The broken alignment is the best thing on this slide and it was not planned. Point at it.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="07 · the rupee sign" data-act="program 7">
+  <div>
+    <h2>One last character, and a recent one.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 07-rupee.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;string.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="f">char</span> *old = <span class="s">"Rs. 1500"</span>;
+    <span class="f">char</span> *new = <span class="s">"₹1500"</span>;
+
+    printf(<span class="s">"%-10s %2zu bytes\n"</span>, old, strlen(old));
+    printf(<span class="s">"%-10s %2zu bytes\n\n"</span>, new, strlen(new));
+
+    printf(<span class="s">"the rupee sign is one character, U+20B9, "</span>
+           <span class="s">"three bytes in UTF-8:\n  "</span>);
+    <span class="k">for</span> (<span class="f">int</span> i = <span class="s">0</span>; i &lt; <span class="s">3</span>; i++)
+        printf(<span class="s">"%02X "</span>, (<span class="f">unsigned</span> <span class="f">char</span>)new[i]);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">Rs. 1500    8 bytes
+₹1500       7 bytes
+
+the rupee sign is one character, U+20B9,
+three bytes in UTF-8:
+  <span class="hit">E2 82 B9</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>India adopted the symbol in July 2010. Unicode 6.0 gave it the number U+20B9 in October 2010.</li>
+            <li>Before that there was no way to write it. Not a font problem, not a keyboard problem. The character had no number, so no machine could hold it.</li>
+            <li>Fonts, keyboards and phones took years to catch up after the number existed.</li>
+            <li>A character is not real to a computer until a committee assigns it an integer. That is the whole of this hour in one sentence.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Most of the room was alive for this. Ask who remembers typing Rs. because the symbol would not render.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Close" data-act="close">
+  <div class="center">
+    <h2 style="font-size:44px;margin-bottom:22px">A pattern means whatever<br>reads it, and nothing else.</h2>
+    <p class="big" style="max-width:54ch;color:var(--soft)">Unsigned, two's complement, fixed point, IEEE 754, ASCII, UTF-8. Six agreements about the same bits, and the bits are identical in all six.</p>
+    <p class="big frag" style="margin-top:22px;max-width:50ch">Next session closes the arc. Everything you can now write down, and the one thing you still cannot do with any of it.</p>
+  </div>
+  <div class="cue">Send off: take a word in your own language, print its bytes, and come back able to say why it is that long. Then find one that is longer than you expected.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
