@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 14 · What is a gate, actually?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12;
+  --hi:#e8952b; --lo:#3a7bd5;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:52px 74px 84px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:24px;left:74px;font-family:var(--mono);font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:24px;right:74px;font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:74px;right:74px;bottom:26px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:74px;bottom:48px;font-family:var(--mono);font-size:12.5px;color:var(--soft);z-index:5}
+#help{position:absolute;left:74px;bottom:48px;font-family:var(--mono);font-size:11.5px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+h1{font-family:var(--display);font-weight:600;font-size:70px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:31px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:8px}
+p{font-size:21px;line-height:1.44;max-width:36ch}
+p+p{margin-top:9px}
+.big{font-size:26px;line-height:1.3;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:16.5px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center}
+.stack>*+*{margin-top:9px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 12px}
+.bench{display:flex;gap:22px;align-items:center;justify-content:center}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:10px 14px;margin-top:9px}
+.rem .h{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.rem ul{list-style:none}
+.rem li{font-size:16.5px;line-height:1.34;color:var(--ink);padding:3px 0 3px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+
+/* the header strip on every gate slide */
+.gtop{display:flex;gap:34px;align-items:center;justify-content:center;
+  background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 26px;margin-bottom:10px}
+.gtop .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);text-align:center;margin-bottom:4px}
+.gtop .cnt{font-family:var(--display);font-size:38px;font-weight:600;line-height:1;text-align:center}
+.gtop .cnt small{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--soft);font-weight:400;margin-top:3px}
+.gtop .sep{width:1px;align-self:stretch;background:var(--rule)}
+
+.tt{border-collapse:collapse;font-family:var(--mono);font-size:16px}
+.tt th{font-size:10px;letter-spacing:.14em;color:var(--soft);font-weight:400;padding:0 11px 4px;border-bottom:1px solid var(--rule2)}
+.tt td{padding:4px 11px;text-align:center;border-bottom:1px solid var(--rule);color:var(--body)}
+.tt tr.now td{background:var(--accent-soft);color:var(--ink);font-weight:700}
+.tt td.hi{color:var(--hi)}
+.tt tr:last-child td{border-bottom:none}
+
+.btn{font-family:var(--mono);font-size:13.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:6px 11px;cursor:pointer}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+.cost{width:100%;border-collapse:collapse;font-size:19px}
+.cost th{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);
+  font-weight:400;text-align:left;padding:0 11px 7px 0;border-bottom:1px solid var(--rule2)}
+.cost td{padding:9px 11px 9px 0;border-bottom:1px solid var(--rule)}
+.cost td:first-child{font-family:var(--mono);font-weight:700;color:var(--ink);width:11%}
+.cost td.n{font-family:var(--mono);font-weight:700;font-size:23px;width:11%}
+.cost td.why{color:var(--soft);font-size:16.5px}
+.cost tr.cheap td.n{color:var(--ok)} .cost tr.dear td.n{color:var(--fail)}
+.cost tr:last-child td{border-bottom:none}
+
+.era{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.era .c{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:14px 16px}
+.era .c .t{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--soft)}
+.era .c .n{font-family:var(--display);font-size:26px;font-weight:600;color:var(--ink);margin:3px 0 1px}
+.era .c .s{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);margin-bottom:6px}
+.era .c .d{font-size:15.5px;color:var(--body);line-height:1.4}
+
+svg text{font-family:'JetBrains Mono',monospace}
+@keyframes flowdash{ to { stroke-dashoffset:-20; } }
+.flow{stroke-dasharray:11 9;animation:flowdash .55s linear infinite}
+.arm{transform-box:view-box;transform-origin:300px 70px;transition:transform .42s cubic-bezier(.34,1.28,.5,1)}
+.arm.pulled{transform:rotate(3.5deg)}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+@media (prefers-reduced-motion:reduce){.flow{animation:none}.arm{transition:none}.slide.on{animation:none}.frag{transition:none}}
+
+.cue{position:absolute;left:74px;right:74px;bottom:70px;display:none;padding:8px 12px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:15.5px;line-height:1.38;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:46px 74px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:11px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:54px}
+#jump li{padding:4px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:16px;color:var(--body);display:flex;gap:12px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:32px}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 14</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 14 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<section class="slide" data-t="Title" data-act="1 · a switch with no finger">
+  <div>
+    <div class="kicker">class 14 · hour fourteen of fifty</div>
+    <h1>What is a gate,<br>actually?</h1>
+    <p class="big" style="margin-top:22px;max-width:46ch">Last session ended on a lamp that cannot flip a switch. Today we fix that, and then build every gate there is out of transistors.</p>
+  </div>
+  <div class="cue">Collect the send off. Somebody should have a truth table from their own life.</div>
+</section>
+
+<section class="slide" data-t="The relay" data-act="1 · a switch with no finger">
+  <div>
+    <div class="kicker">press the button. watch the arm.</div>
+    <h2 style="font-size:27px">Wrap a coil round some iron and let the magnet pull the switch.</h2>
+    <figure><svg viewBox="0 0 1300 440" width="100%" role="img" aria-label="A relay"><g id="figRelay"></g></svg></figure>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Current through the coil makes the iron a magnet, and the magnet pulls the arm down.</li>
+        <li>The arm carries a bar bridging two contacts on a <strong>completely separate circuit</strong>. The only thing crossing between the two is a piece of metal, not a wire.</li>
+        <li>So electricity now operates a switch, and one circuit can drive the next with no hand in between.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Press it a few times. The separation of the two loops is the invention, not the magnet.</div>
+</section>
+
+<section class="slide" data-t="Why not relays" data-act="1 · a switch with no finger">
+  <div>
+    <h2>So why is there not one of these inside your phone?</h2>
+    <div class="era" style="margin-top:4px">
+      <div class="c"><div class="t">RELAY &#183; 1835</div><div class="n">a moving arm</div><div class="s">~1 millisecond</div>
+        <div class="d">Large, loud, and it wears out because something actually moves. A thousand operations a second at best.</div></div>
+      <div class="c frag"><div class="t">VACUUM TUBE &#183; 1904</div><div class="n">a heated wire</div><div class="s">~1 microsecond</div>
+        <div class="d">A thousand times faster and nothing moves, but it is a light bulb, so it runs hot and burns out. ENIAC had 17,000 and lost several a week.</div></div>
+      <div class="c frag"><div class="t">TRANSISTOR &#183; 1947</div><div class="n">a piece of crystal</div><div class="s">~1 picosecond</div>
+        <div class="d">Nothing moves, nothing is heated, nothing burns out. A million times faster again, and small enough to put billions on a fingernail.</div></div>
+    </div>
+    <p class="big frag" style="margin-top:12px;max-width:none;font-size:23px">Bardeen, Brattain and Shockley, Bell Labs, December 1947.</p>
+  </div>
+  <div class="cue">Each step is about a thousand times faster than the last. Nine orders of magnitude across the row.</div>
+</section>
+
+<section class="slide" data-t="A voltage operated switch" data-act="2 · what a transistor is">
+  <div>
+    <div class="kicker">click the picture</div>
+    <h2 style="font-size:27px">Three terminals. One decides whether the other two are joined.</h2>
+    <div class="bench">
+      <div class="panel"><div id="fet1"></div></div>
+      <div style="max-width:34ch">
+        <p>Put a voltage on the <strong>gate</strong> and a channel forms in the crystal underneath, joining the other two terminals.</p>
+        <p class="small" style="margin-top:6px">Remove it and the channel disappears. The gate carries no current itself. It only has to sit at a voltage.</p>
+        <div class="rem" style="margin-top:8px"><div class="h">remember</div><ul>
+          <li>A switch controlled by a voltage instead of a finger or a magnet.</li>
+          <li>Nothing moves. The channel is a region of crystal that becomes conductive.</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This one is NMOS. Conducts when the gate is high. There is a second flavour and it matters enormously.</div>
+</section>
+
+<section class="slide" data-t="Two flavours" data-act="2 · what a transistor is">
+  <div>
+    <div class="kicker">one input, driving both</div>
+    <h2 style="font-size:27px">They come in two kinds, and they are exact opposites.</h2>
+    <div class="bench">
+      <div class="panel"><div id="fet2"></div></div>
+      <div style="max-width:32ch">
+        <div class="rem" style="margin-top:0"><div class="h">remember</div><ul>
+          <li><strong>NMOS</strong> conducts when its gate is <span style="color:var(--hi);font-weight:700">high</span>.</li>
+          <li><strong>PMOS</strong> conducts when its gate is <span style="color:var(--lo);font-weight:700">low</span>. The small circle on the gate is how you spot one.</li>
+          <li>Feed both the same input and exactly one conducts. Always. Never both, never neither.</li>
+          <li>Both are cheap to make side by side on one piece of silicon, and that fact shapes everything after this slide.</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Toggle it a few times. The always exactly one property is what the next slide is built on.</div>
+</section>
+
+<section class="slide" data-t="The rule" data-act="3 · the rule">
+  <div>
+    <h2>So every gate is built the same way: a network above, a network below.</h2>
+    <figure><svg viewBox="0 0 1300 270" width="100%" role="img" aria-label="The CMOS template"><g id="figRule"></g></svg></figure>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>PMOS above, to pull the output <strong>up</strong> to the supply. NMOS below, to pull it <strong>down</strong> to ground.</li>
+        <li>Both connected at once is a direct path from supply to ground. That is a short, and the gate becomes a heater.</li>
+        <li>Neither connected leaves the output floating at no particular voltage, and the next gate reads noise.</li>
+        <li>So the two networks must be exact opposites, which falls out for free because NMOS and PMOS are opposites.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The C in CMOS is complementary and it means precisely this. Essentially every chip you own is built this way.</div>
+</section>
+
+<!-- ===== the six gates ===== -->
+
+<section class="slide" data-t="NOT" data-act="4 · build them all">
+  <div>
+    <div class="kicker">gate one of six &#183; click the input box, or the button</div>
+    <div class="gtop">
+      <div><div class="lbl">symbol</div><svg viewBox="0 0 150 90" width="132" height="79"><g id="sNot"></g></svg></div>
+      <div class="sep"></div>
+      <div><div class="lbl">truth table</div><table class="tt" id="tNot"></table></div>
+      <div class="sep"></div>
+      <div><div class="cnt" style="color:var(--ok)">2<small>TRANSISTORS</small></div></div>
+    </div>
+    <div style="text-align:center"><div id="gNot" style="display:inline-block"></div></div>
+    <div class="rem" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Input low: the PMOS conducts, the output joins the supply, and it reads high. Input high: the NMOS conducts and it joins ground.</li>
+        <li>Exactly one path is live at a time. Follow the orange.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is NOT from Class 13, the switch across the lamp, rebuilt in crystal.</div>
+</section>
+
+<section class="slide" data-t="NAND" data-act="4 · build them all">
+  <div>
+    <div class="kicker">gate two of six &#183; click either input box, or the buttons</div>
+    <div class="gtop">
+      <div><div class="lbl">symbol</div><svg viewBox="0 0 150 90" width="132" height="79"><g id="sNand"></g></svg></div>
+      <div class="sep"></div>
+      <div><div class="lbl">truth table</div><table class="tt" id="tNand"></table></div>
+      <div class="sep"></div>
+      <div><div class="cnt" style="color:var(--ok)">4<small>TRANSISTORS</small></div></div>
+    </div>
+    <div style="text-align:center"><div id="gNand" style="display:inline-block"></div></div>
+    <div class="rem" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Two NMOS <strong>in series</strong> below, so the output is pulled down only when both inputs are high.</li>
+        <li>Two PMOS <strong>in parallel</strong> above, so it is pulled up when either input is low. Series and parallel, exactly as with the switches.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Point at the series stack. That is the in-a-row arrangement from the switch bench, in silicon.</div>
+</section>
+
+<section class="slide" data-t="NOR" data-act="4 · build them all">
+  <div>
+    <div class="kicker">gate three of six &#183; the mirror image</div>
+    <div class="gtop">
+      <div><div class="lbl">symbol</div><svg viewBox="0 0 150 90" width="132" height="79"><g id="sNor"></g></svg></div>
+      <div class="sep"></div>
+      <div><div class="lbl">truth table</div><table class="tt" id="tNor"></table></div>
+      <div class="sep"></div>
+      <div><div class="cnt" style="color:var(--ok)">4<small>TRANSISTORS</small></div></div>
+    </div>
+    <div style="text-align:center"><div id="gNor" style="display:inline-block"></div></div>
+    <div class="rem" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>PMOS <strong>in series</strong> above, NMOS <strong>in parallel</strong> below. Swap the two networks and you get a different gate at the same price.</li>
+        <li>Pulled down when either input is high, so the output is low unless both inputs are low.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Ask them to predict the table from the NAND by symmetry before flipping anything.</div>
+</section>
+
+<section class="slide" data-t="Why no plain AND" data-act="4 · build them all">
+  <div>
+    <h2>Now build AND. It ought to be easier than NAND.</h2>
+    <div class="split" style="margin-top:2px">
+      <div class="stack">
+        <p>You want the output high when both inputs are high, so put the series stack on top and the parallel one below, and you are done.</p>
+        <p class="frag" style="color:var(--fail)">You cannot. A network reaching down to ground can only ever produce a low, and one reaching up to the supply can only ever produce a high.</p>
+        <p class="frag">The network that senses the inputs is the pull down one, and pulling down means outputting a zero. <strong>The structure inverts by construction.</strong></p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">so every non inverting gate is built in two stages</div>
+        <ul>
+          <li>Make the inverted version first, because that is what the silicon will give you.</li>
+          <li>Then put an inverter on the output to undo it.</li>
+          <li>Two extra transistors, every time, on every gate whose symbol has no bubble.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Let them try to design it for a minute before you say it cannot be done. The reason is worth arriving at.</div>
+</section>
+
+<section class="slide" data-t="AND" data-act="4 · build them all">
+  <div>
+    <div class="kicker">gate four of six &#183; a NAND with its answer undone</div>
+    <div class="gtop">
+      <div><div class="lbl">symbol</div><svg viewBox="0 0 150 90" width="132" height="79"><g id="sAnd"></g></svg></div>
+      <div class="sep"></div>
+      <div><div class="lbl">truth table</div><table class="tt" id="tAnd"></table></div>
+      <div class="sep"></div>
+      <div><div class="cnt" style="color:var(--fail)">6<small>TRANSISTORS</small></div></div>
+    </div>
+    <div style="text-align:center"><div id="gAnd" style="display:inline-block"></div></div>
+    <div class="rem" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Four transistors for the NAND, two more for the inverter that flips its answer back.</li>
+        <li>Watch the middle wire. It carries the opposite of what you asked for, all the way until the last pair.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Trace the middle wire with a finger for each input pair. That wire is the whole argument.</div>
+</section>
+
+<section class="slide" data-t="OR" data-act="4 · build them all">
+  <div>
+    <div class="kicker">gate five of six &#183; the same trick again</div>
+    <div class="gtop">
+      <div><div class="lbl">symbol</div><svg viewBox="0 0 150 90" width="132" height="79"><g id="sOr"></g></svg></div>
+      <div class="sep"></div>
+      <div><div class="lbl">truth table</div><table class="tt" id="tOr"></table></div>
+      <div class="sep"></div>
+      <div><div class="cnt" style="color:var(--fail)">6<small>TRANSISTORS</small></div></div>
+    </div>
+    <div style="text-align:center"><div id="gOr" style="display:inline-block"></div></div>
+    <div class="rem" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Identical structure to AND, with a NOR in front instead of a NAND.</li>
+        <li>Both of the gates you would have called fundamental turn out to be two stage constructions.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Quick slide. The point is the symmetry, and that they have now seen the pattern twice.</div>
+</section>
+
+<section class="slide" data-t="XOR" data-act="4 · build them all">
+  <div>
+    <div class="kicker">gate six of six &#183; four NANDs, sixteen transistors</div>
+    <div class="gtop">
+      <div><div class="lbl">symbol</div><svg viewBox="0 0 150 90" width="132" height="79"><g id="sXor"></g></svg></div>
+      <div class="sep"></div>
+      <div><div class="lbl">truth table</div><table class="tt" id="tXor"></table></div>
+      <div class="sep"></div>
+      <div><div class="cnt" style="color:var(--fail)">16<small>TRANSISTORS</small></div></div>
+    </div>
+    <div style="text-align:center"><div id="gXor" style="display:inline-block"></div></div>
+    <div class="rem" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>No single pull up and pull down pair produces XOR, so it has to be assembled from whole gates. Each box below holds the four transistors you built two slides ago.</li>
+        <li>A dedicated design gets it to twelve, and pass transistor tricks reach six by giving other things up. Even at its best it is the dearest gate on the list.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Flip inputs slowly and watch n1, the shared middle signal. That one wire is what makes the trick work.</div>
+</section>
+
+<section class="slide" data-t="The price list" data-act="5 · what that cost">
+  <div>
+    <h2>Six gates, built. Now put the bill on one page.</h2>
+    <table class="cost" style="margin-top:0">
+      <tr><th>gate</th><th>transistors</th><th>how you just built it</th></tr>
+      <tr class="cheap"><td>NOT</td><td class="n">2</td><td class="why">one PMOS above, one NMOS below</td></tr>
+      <tr class="cheap"><td>NAND</td><td class="n">4</td><td class="why">two NMOS in series, two PMOS in parallel</td></tr>
+      <tr class="cheap"><td>NOR</td><td class="n">4</td><td class="why">two NMOS in parallel, two PMOS in series</td></tr>
+      <tr class="dear"><td>AND</td><td class="n">6</td><td class="why">a NAND, then an inverter to undo it</td></tr>
+      <tr class="dear"><td>OR</td><td class="n">6</td><td class="why">a NOR, then an inverter to undo it</td></tr>
+      <tr class="dear"><td>XOR</td><td class="n">16</td><td class="why">four NANDs, and twelve if you design it properly</td></tr>
+    </table>
+    <p class="big frag" style="margin-top:10px;max-width:none;font-size:23px">The gates that feel primitive are the expensive ones. <strong>Every gate without a bubble costs two transistors more than the one with it.</strong></p>
+  </div>
+  <div class="cue">This is why real chips are full of NAND and NOR and almost devoid of plain AND.</div>
+</section>
+
+<section class="slide" data-t="XOR, twice" data-act="5 · what that cost">
+  <div>
+    <h2>And notice XOR has now been expensive twice, in two different materials.</h2>
+    <div class="split" style="margin-top:2px">
+      <div class="stack">
+        <p><strong>Class 13, with switches.</strong> It would not come out of series or parallel at all. It needed a better kind of switch and twice the wire.</p>
+        <p class="frag"><strong>Class 14, in silicon.</strong> No single network gives it, so it takes four whole gates.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">remember</div>
+        <ul>
+          <li>XOR asks <em>are these two different</em>, and difference cannot be answered by one path of switches. Something has to compare.</li>
+          <li>That is exactly what one column of an addition needs, which is why the adder in Class 19 costs what it does.</li>
+          <li>When a design turns out surprisingly expensive, look for an XOR hiding in it.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Two encounters with one fact. They will not have connected them, so say it.</div>
+</section>
+
+<section class="slide" data-t="The boundary" data-act="6 · the abstraction">
+  <div>
+    <h2>And now we stop drawing transistors.</h2>
+    <div class="split" style="margin-top:2px">
+      <div class="stack">
+        <p>We stop asking how a channel forms in doped silicon, and start asking only what a box does to its inputs.</p>
+        <p class="frag">Everything below that line still exists and still matters. It is simply no longer our problem.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">remember</div>
+        <ul>
+          <li>That line is an abstraction boundary, and crossing one is the main move in this whole subject.</li>
+          <li>You will cross several more: gates to circuits, circuits to an ALU, an ALU to instructions, instructions to C.</li>
+          <li>Each works the same way. You get a box with a promise, and you stop looking inside.</li>
+          <li>The boundary leaks when the promise is not quite true, which is what every failure in Arc 1 turned out to be.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Students who never notice they crossed a line keep reaching back for the physics in Class 17.</div>
+</section>
+
+<section class="slide" data-t="Close" data-act="6 · the abstraction">
+  <div class="center">
+    <h2 style="font-size:36px;margin-bottom:18px">You now have six kinds of gate,<br>and you know what each one costs.</h2>
+    <p class="big" style="max-width:54ch;color:var(--soft)">Class 13 showed there are exactly sixteen functions of two inputs. Three inputs give 256. Four give 65,536.</p>
+    <p class="big frag" style="margin-top:18px;max-width:48ch">Next session: is a small box of parts enough to build <em>any</em> of them?</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: build NAND and NOR from transistors in Logisim, then build AND from your own NAND and count the parts.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||
+                      e.target.closest('button')||e.target.closest('svg')||e.target.closest('[id^=g]'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= helpers ================= */
+  var GREY='#c6c3ba', HI='#e8952b', LO='#3a7bd5', INK='#15171b', DEAD='#d8d5cd';
+  function col(st){ return st==='hi'?HI : st==='lo'?LO : GREY; }
+  function W(st){ return st?5:3; }
+
+  function v(x,y1,y2,st){                       /* vertical wire */
+    return '<line x1="'+x+'" y1="'+y1+'" x2="'+x+'" y2="'+y2+'" stroke="'+col(st)+
+           '" stroke-width="'+W(st)+'" stroke-linecap="round"'+(st?' class="flow"':'')+'/>';
+  }
+  function h(y,x1,x2,st,hops){                  /* horizontal wire, arcing over hops */
+    var c=col(st), wd=W(st), dir=x2>x1?1:-1, s='', cur=x1;
+    var pts=(hops||[]).filter(function(hx){
+      return hx>Math.min(x1,x2)+4 && hx<Math.max(x1,x2)-4;
+    }).sort(function(p,q){ return dir>0 ? p-q : q-p; });
+    pts.forEach(function(hx){
+      s+='<line x1="'+cur+'" y1="'+y+'" x2="'+(hx-11*dir)+'" y2="'+y+'" stroke="'+c+
+         '" stroke-width="'+wd+'" stroke-linecap="round"'+(st?' class="flow"':'')+'/>';
+      s+='<path d="M'+(hx-11*dir)+' '+y+' A 11 11 0 0 '+(dir>0?1:0)+' '+(hx+11*dir)+' '+y+
+         '" fill="none" stroke="'+c+'" stroke-width="'+wd+'"/>';
+      cur=hx+11*dir;
+    });
+    s+='<line x1="'+cur+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="'+c+
+       '" stroke-width="'+wd+'" stroke-linecap="round"'+(st?' class="flow"':'')+'/>';
+    return s;
+  }
+  function dot(x,y){ return '<circle cx="'+x+'" cy="'+y+'" r="4.5" fill="'+INK+'"/>'; }
+  function txt(x,y,t,sz,c,anc,bold){
+    return '<text x="'+x+'" y="'+y+'" font-size="'+(sz||13)+'" fill="'+(c||'#8b9096')+'"'+
+           (anc?' text-anchor="'+anc+'"':'')+(bold?' font-weight="700"':'')+'>'+t+'</text>';
+  }
+  /* MOSFET: gate lead ends at x-52, terminals at x+16, stubs at y-22 and y+22 */
+  function fet(x,y,kind,on,label){
+    var ch=on?HI:DEAD, s='';
+    s+='<line x1="'+(x-16)+'" y1="'+(y-22)+'" x2="'+(x-16)+'" y2="'+(y+22)+'" stroke="'+INK+'" stroke-width="3.5"/>';
+    if(kind==='p'){
+      s+='<circle cx="'+(x-26)+'" cy="'+y+'" r="6" fill="#fff" stroke="'+INK+'" stroke-width="2.5"/>';
+      s+='<line x1="'+(x-32)+'" y1="'+y+'" x2="'+(x-52)+'" y2="'+y+'" stroke="'+INK+'" stroke-width="3"/>';
+    } else {
+      s+='<line x1="'+(x-16)+'" y1="'+y+'" x2="'+(x-52)+'" y2="'+y+'" stroke="'+INK+'" stroke-width="3"/>';
+    }
+    [[-22,-8],[-5,5],[8,22]].forEach(function(g){
+      s+='<line x1="'+(x-6)+'" y1="'+(y+g[0])+'" x2="'+(x-6)+'" y2="'+(y+g[1])+'" stroke="'+ch+'" stroke-width="4.5"/>';
+    });
+    s+='<line x1="'+(x-6)+'" y1="'+(y-22)+'" x2="'+(x+16)+'" y2="'+(y-22)+'" stroke="'+INK+'" stroke-width="3"/>';
+    s+='<line x1="'+(x-6)+'" y1="'+(y+22)+'" x2="'+(x+16)+'" y2="'+(y+22)+'" stroke="'+INK+'" stroke-width="3"/>';
+    if(label) s+=txt(x+24,y+5,label,12,on?HI:'#a9a69d');
+    return s;
+  }
+  function pin(x,y,val,lab,hit){
+    var s='<rect x="'+(x-20)+'" y="'+(y-16)+'" width="40" height="32" rx="7" fill="'+(val?'#fbf0dc':'#eaeef7')+
+          '" stroke="'+(val?'#b06a12':'#c3cee6')+'" stroke-width="2"/>';
+    s+=txt(x,y+6,val,16,val?HI:LO,'middle',true);
+    if(lab) s+=txt(x,y-22,lab,12,'#8b9096','middle');
+    if(hit) s+='<rect id="'+hit+'" x="'+(x-26)+'" y="'+(y-30)+'" width="52" height="60" rx="9" fill="transparent" style="cursor:pointer"/>';
+    return s;
+  }
+  function flipBtn(id,x,y,label){
+    return '<rect id="'+id+'" x="'+x+'" y="'+y+'" width="96" height="30" rx="7" fill="#fff" stroke="'+GREY+'" style="cursor:pointer"/>'+
+           '<text x="'+(x+48)+'" y="'+(y+20)+'" font-size="14" fill="#23408f" text-anchor="middle" style="pointer-events:none">'+label+'</text>';
+  }
+  function st(x){ return x?'hi':'lo'; }
+
+  /* ---- gate symbols, for the header strips ---- */
+  function symbolInto(id,kind){
+    var e=document.getElementById(id); if(!e) return;
+    var s='', x=40, y=45;
+    function bub(bx){ return '<circle cx="'+bx+'" cy="'+y+'" r="6" fill="#fff" stroke="'+INK+'" stroke-width="2.2"/>'; }
+    if(kind==='not'){
+      s+='<path d="M'+x+' '+(y-20)+' L'+(x+38)+' '+y+' L'+x+' '+(y+20)+' z" fill="#fff" stroke="'+INK+'" stroke-width="2.2"/>';
+      s+=bub(x+44);
+      s+='<line x1="'+(x-26)+'" y1="'+y+'" x2="'+x+'" y2="'+y+'" stroke="'+INK+'" stroke-width="2.2"/>';
+      s+='<line x1="'+(x+50)+'" y1="'+y+'" x2="'+(x+78)+'" y2="'+y+'" stroke="'+INK+'" stroke-width="2.2"/>';
+    } else {
+      var curved = (kind==='or'||kind==='nor'||kind==='xor');
+      if(curved){
+        s+='<path d="M'+(x-4)+' '+(y-22)+' Q'+(x+18)+' '+y+' '+(x-4)+' '+(y+22)+
+           ' Q'+(x+24)+' '+(y+20)+' '+(x+44)+' '+y+' Q'+(x+24)+' '+(y-20)+' '+(x-4)+' '+(y-22)+' z"'+
+           ' fill="#fff" stroke="'+INK+'" stroke-width="2.2"/>';
+        if(kind==='xor') s+='<path d="M'+(x-14)+' '+(y-22)+' Q'+(x+8)+' '+y+' '+(x-14)+' '+(y+22)+
+           '" fill="none" stroke="'+INK+'" stroke-width="2.2"/>';
+      } else {
+        s+='<path d="M'+x+' '+(y-22)+' L'+(x+18)+' '+(y-22)+' A 22 22 0 0 1 '+(x+18)+' '+(y+22)+
+           ' L'+x+' '+(y+22)+' z" fill="#fff" stroke="'+INK+'" stroke-width="2.2"/>';
+      }
+      var ox = curved ? x+44 : x+40;
+      if(kind==='nand'||kind==='nor'){ s+=bub(ox+6); ox+=12; }
+      s+='<line x1="'+ox+'" y1="'+y+'" x2="'+(ox+30)+'" y2="'+y+'" stroke="'+INK+'" stroke-width="2.2"/>';
+      s+='<line x1="'+(x-26)+'" y1="'+(y-11)+'" x2="'+(x+ (curved?6:0))+'" y2="'+(y-11)+'" stroke="'+INK+'" stroke-width="2.2"/>';
+      s+='<line x1="'+(x-26)+'" y1="'+(y+11)+'" x2="'+(x+ (curved?6:0))+'" y2="'+(y+11)+'" stroke="'+INK+'" stroke-width="2.2"/>';
+    }
+    e.innerHTML=s;
+  }
+  ['sNot','not','sNand','nand','sNor','nor','sAnd','and','sOr','or','sXor','xor']
+    .forEach(function(_,k,arr){ if(k%2===0) symbolInto(arr[k],arr[k+1]); });
+
+  /* ---- header truth tables ---- */
+  function fillTable(id,fn,one,A,B){
+    var el=document.getElementById(id); if(!el) return;
+    var rows = one?[[0],[1]]:[[0,0],[0,1],[1,0],[1,1]];
+    var s = one?'<tr><th>in</th><th>out</th></tr>':'<tr><th>a</th><th>b</th><th>out</th></tr>';
+    rows.forEach(function(r){
+      var o = one?fn(r[0]):fn(r[0],r[1]);
+      var now = one?(r[0]===A):(r[0]===A&&r[1]===B);
+      s+='<tr class="'+(now?'now':'')+'"><td>'+r[0]+'</td>'+(one?'':'<td>'+r[1]+'</td>')+
+         '<td class="'+(o?'hi':'')+'">'+o+'</td></tr>';
+    });
+    el.innerHTML=s;
+  }
+
+  /* ================= relay ================= */
+  var fr=document.getElementById('figRelay');
+  if(fr){
+    var energised=0, s='';
+    s+='<rect x="40" y="150" width="620" height="212" rx="14" fill="#fbfaf7" stroke="#e2e0d9" stroke-dasharray="6 6"/>';
+    s+=txt(60,176,'CONTROL CIRCUIT',13);
+    s+='<rect x="700" y="150" width="560" height="212" rx="14" fill="#fbfaf7" stroke="#e2e0d9" stroke-dasharray="6 6"/>';
+    s+=txt(720,176,'SWITCHED CIRCUIT',13);
+    s+='<text x="680" y="300" font-size="12" fill="#a8231f" text-anchor="middle" transform="rotate(-90 680 300)">NO COPPER CROSSES HERE</text>';
+    s+='<line x1="76" y1="196" x2="112" y2="196" stroke="'+INK+'" stroke-width="6"/>';
+    s+='<line x1="84" y1="214" x2="104" y2="214" stroke="'+INK+'" stroke-width="3"/>';
+    s+='<line x1="76" y1="232" x2="112" y2="232" stroke="'+INK+'" stroke-width="6"/>';
+    s+=txt(94,266,'cell',13,null,'middle');
+    s+='<g id="rCtrlWire">';
+    s+='<path d="M94 196 L94 122 L176 122" fill="none" stroke="'+GREY+'" stroke-width="3" stroke-linecap="round"/>';
+    s+='<path d="M248 122 L386 122" fill="none" stroke="'+GREY+'" stroke-width="3" stroke-linecap="round"/>';
+    s+='<path d="M536 122 L610 122 L610 320 L94 320 L94 232" fill="none" stroke="'+GREY+'" stroke-width="3" stroke-linecap="round"/>';
+    s+='</g>'+dot(176,122)+dot(248,122);
+    s+='<line id="rBlade" x1="176" y1="122" x2="244" y2="98" stroke="'+INK+'" stroke-width="4.5" stroke-linecap="round"/>';
+    s+=txt(212,152,'control switch',13,null,'middle');
+    s+='<g id="rCoil">';
+    for(var k=0;k<6;k++) s+='<path d="M'+(386+k*25)+' 122 a 12.5 15 0 0 1 25 0" fill="none" stroke="'+GREY+'" stroke-width="4"/>';
+    s+='</g>';
+    s+='<rect id="rCore" x="398" y="130" width="124" height="40" rx="4" fill="#efece5" stroke="'+GREY+'" stroke-width="2"/>';
+    s+=txt(460,156,'iron',13,null,'middle');
+    s+='<g id="rPull" opacity="0"><path d="M430 124 L430 102 M424 108 l6 -8 l6 8" fill="none" stroke="#b06a12" stroke-width="2.5"/>';
+    s+='<path d="M492 124 L492 102 M486 108 l6 -8 l6 8" fill="none" stroke="#b06a12" stroke-width="2.5"/></g>';
+    s+='<g id="rArm" class="arm">';
+    s+='<line x1="300" y1="70" x2="900" y2="70" stroke="'+INK+'" stroke-width="7" stroke-linecap="round"/>';
+    s+='<rect x="400" y="72" width="120" height="14" rx="3" fill="#d8d5cd" stroke="#8b9096" stroke-width="1.5"/>'+txt(460,66,'soft iron',12,null,'middle');
+    s+='<rect id="rBridge" x="778" y="72" width="94" height="14" rx="3" fill="#b98f4a" stroke="#8a6a34" stroke-width="1.5"/>'+txt(825,66,'bridging bar',12,null,'middle');
+    s+='</g><circle cx="300" cy="70" r="9" fill="#fff" stroke="'+INK+'" stroke-width="3"/>'+txt(300,46,'pivot',13,null,'middle');
+    s+='<circle cx="790" cy="118" r="5" fill="'+INK+'"/><circle cx="860" cy="118" r="5" fill="'+INK+'"/>'+txt(825,146,'contacts',13,null,'middle');
+    s+='<g id="rSwWire"><path d="M790 118 L744 118 L744 320 L1176 320 L1176 258" fill="none" stroke="'+GREY+'" stroke-width="3" stroke-linecap="round"/>';
+    s+='<path d="M860 118 L1176 118 L1176 178" fill="none" stroke="'+GREY+'" stroke-width="3" stroke-linecap="round"/></g>';
+    s+='<line x1="1160" y1="236" x2="1192" y2="236" stroke="'+INK+'" stroke-width="6"/>';
+    s+='<line x1="1168" y1="252" x2="1184" y2="252" stroke="'+INK+'" stroke-width="3"/>'+txt(1210,248,'cell',13);
+    s+='<circle id="rLamp" cx="1176" cy="208" r="30" fill="#eeece6" stroke="'+GREY+'" stroke-width="3"/><g id="rRays" opacity="0">';
+    for(var j=0;j<8;j++){ var a=j*Math.PI/4;
+      s+='<line x1="'+(1176+38*Math.cos(a)).toFixed(1)+'" y1="'+(208+38*Math.sin(a)).toFixed(1)+
+         '" x2="'+(1176+50*Math.cos(a)).toFixed(1)+'" y2="'+(208+50*Math.sin(a)).toFixed(1)+
+         '" stroke="#f5c451" stroke-width="3"/>'; }
+    s+='</g><text id="rCap" x="650" y="392" font-size="17" fill="#8b9096" text-anchor="middle"></text>';
+    s+='<rect id="rBtn" x="530" y="404" width="240" height="34" rx="8" fill="#23408f" style="cursor:pointer"/>';
+    s+='<text id="rBtnT" x="650" y="427" font-size="15" fill="#fff" text-anchor="middle" style="pointer-events:none"></text>';
+    fr.innerHTML=s;
+    var arm=document.getElementById('rArm'),core=document.getElementById('rCore'),lampE=document.getElementById('rLamp'),
+        rays=document.getElementById('rRays'),pull=document.getElementById('rPull'),blade=document.getElementById('rBlade'),
+        cap=document.getElementById('rCap'),btnT=document.getElementById('rBtnT'),ctrlW=document.getElementById('rCtrlWire'),
+        coilW=document.getElementById('rCoil'),swW=document.getElementById('rSwWire'),bridge=document.getElementById('rBridge');
+    function pp(g,on,base){ Array.prototype.forEach.call(g.querySelectorAll('path'),function(p){
+      p.setAttribute('stroke',on?HI:GREY); p.setAttribute('stroke-width',on?5:(base||3));
+      if(on) p.classList.add('flow'); else p.classList.remove('flow'); }); }
+    function setRelay(on){
+      energised=on; arm.classList.toggle('pulled',!!on);
+      core.setAttribute('fill',on?'#fbf0dc':'#efece5'); core.setAttribute('stroke',on?'#b06a12':GREY);
+      pull.setAttribute('opacity',on?1:0); bridge.setAttribute('fill',on?HI:'#b98f4a');
+      lampE.setAttribute('fill',on?'#f5c451':'#eeece6'); lampE.setAttribute('stroke',on?'#b06a12':GREY);
+      rays.setAttribute('opacity',on?1:0); blade.setAttribute('y2',on?122:98);
+      pp(ctrlW,on); pp(swW,on); pp(coilW,on,4);
+      cap.textContent = on ? 'the magnet pulls the arm down, the bar bridges the contacts, and the far lamp lights'
+                           : 'no current, no magnet, the arm springs back up and the contacts are apart';
+      cap.setAttribute('fill',on?'#b06a12':'#8b9096');
+      btnT.textContent = on ? 'release the control switch' : 'press the control switch';
+    }
+    document.getElementById('rBtn').onclick=function(){ setRelay(energised?0:1); };
+    setRelay(0);
+  }
+
+  /* ================= single transistor ================= */
+  var f1=document.getElementById('fet1');
+  if(f1){
+    var g=0;
+    function d1(){
+      var s='<svg viewBox="0 0 380 290" width="340" height="260">';
+      s+=pin(64,60,g,'GATE')+h(60,84,150,st(g))+v(150,60,150,st(g))+h(150,150,178,st(g));
+      s+=fet(230,150,'n',g,'NMOS');
+      s+=v(246,128,72,g?'hi':null)+txt(258,66,'joined to here');
+      s+=v(246,172,228,g?'hi':null)+txt(258,234,'and here');
+      s+=txt(190,272,(g?'channel formed, current passes':'no channel, nothing passes'),16,g?HI:'#8b9096','middle');
+      s+='</svg>';
+      f1.innerHTML=s; f1.onclick=function(){ g=g?0:1; d1(); }; f1.style.cursor='pointer';
+    }
+    d1();
+  }
+  var f2=document.getElementById('fet2');
+  if(f2){
+    var g2=0;
+    function d2(){
+      var s='<svg viewBox="0 0 420 300" width="380" height="272">';
+      s+=pin(70,48,g2,'INPUT')+h(48,90,166,st(g2))+v(166,48,232,st(g2));
+      s+=h(112,166,214,st(g2))+h(232,166,214,st(g2));
+      s+=fet(266,112,'n',g2,'NMOS')+fet(266,232,'p',!g2,'PMOS');
+      s+=txt(352,118,(g2?'conducting':'blocked'),14,g2?HI:'#a9a69d');
+      s+=txt(352,238,(!g2?'conducting':'blocked'),14,!g2?HI:'#a9a69d');
+      s+=txt(210,288,'exactly one of them is conducting',16,'#23408f','middle');
+      s+='</svg>';
+      f2.innerHTML=s; f2.onclick=function(){ g2=g2?0:1; d2(); }; f2.style.cursor='pointer';
+    }
+    d2();
+  }
+
+  /* ================= the CMOS template ================= */
+  var fru=document.getElementById('figRule');
+  if(fru){
+    var s=h(36,430,870,null)+txt(880,42,'SUPPLY',14);
+    s+='<rect x="530" y="64" width="240" height="60" rx="10" fill="#eaeef7" stroke="#c3cee6" stroke-width="2"/>';
+    s+=txt(650,92,'PULL UP NETWORK',15,'#23408f','middle')+txt(650,112,'PMOS only',13,'#8b9096','middle');
+    s+=v(650,124,156,null)+dot(650,156)+h(156,650,900,null);
+    s+='<rect x="900" y="134" width="130" height="44" rx="8" fill="#fff" stroke="'+GREY+'"/>'+txt(965,162,'OUTPUT',15,INK,'middle');
+    s+='<rect x="530" y="188" width="240" height="60" rx="10" fill="#fbf0dc" stroke="#e8d3ab" stroke-width="2"/>';
+    s+=txt(650,216,'PULL DOWN NETWORK',15,'#b06a12','middle')+txt(650,236,'NMOS only',13,'#8b9096','middle');
+    s+=v(650,156,188,null)+h(276,430,870,null)+txt(880,282,'GROUND',14)+v(650,248,276,null);
+    s+=h(94,320,530,null)+h(218,320,530,null);
+    s+=txt(300,99,'inputs',15,'#8b9096','end')+txt(300,223,'the same inputs',15,'#8b9096','end');
+    s+='<path d="M340 136 L340 176" stroke="#a8231f" stroke-width="2" stroke-dasharray="5 5"/>';
+    s+=txt(130,150,'exactly one network',15,'#a8231f')+txt(130,172,'is ever connected',15,'#a8231f');
+    fru.innerHTML=s;
+  }
+
+  /* ================= the six gates, all at transistor level ================= */
+  function gateBench(hostId,tabId,kind){
+    var host=document.getElementById(hostId); if(!host) return;
+    var A=0,B=0;
+    var FN={ not:function(a){return a?0:1;},
+             nand:function(a,b){return (a&&b)?0:1;},
+             nor:function(a,b){return (a||b)?0:1;},
+             and:function(a,b){return (a&&b)?1:0;},
+             or:function(a,b){return (a||b)?1:0;},
+             xor:function(a,b){return (a!==b)?1:0;} };
+    var one = kind==='not';
+
+    function draw(){
+      var s, o = one?FN.not(A):FN[kind](A,B);
+      var VDD=34, GND=366;
+
+      if(kind==='not'){
+        var up=(o===1), dn=(o===0);
+        s='<svg viewBox="0 0 640 452" width="560" height="396">';
+        s+=h(VDD,180,440,up?'hi':null)+txt(452,VDD+5,'SUPPLY',12);
+        s+=h(GND,180,440,dn?'lo':null)+txt(452,GND+5,'GROUND',12);
+        s+=fet(300,100,'p',!A,'PMOS')+fet(300,300,'n',A,'NMOS');
+        s+=v(316,78,VDD,up?'hi':null)+v(316,122,200,up?'hi':null);
+        s+=v(316,278,200,dn?'lo':null)+v(316,322,GND,dn?'lo':null);
+        s+=dot(316,200)+h(200,316,500,st(o))+pin(536,200,o,'OUT');
+        s+=pin(60,200,A,'IN','hitA')+h(200,80,140,st(A))+v(140,100,300,st(A))+dot(140,200);
+        s+=h(100,140,248,st(A))+h(300,140,248,st(A));
+      }
+      else if(kind==='nand'||kind==='and'){
+        var nout = (A&&B)?0:1;
+        var up=(nout===1), dn=(nout===0);
+        var wide = kind==='and';
+        s='<svg viewBox="0 0 '+(wide?1080:640)+' 452" width="'+(wide?900:560)+'" height="'+(wide?376:396)+'">';
+        var railEnd = wide?940:500;
+        s+=h(VDD,60,railEnd,null)+txt(railEnd+12,VDD+5,'SUPPLY',12);
+        s+=h(GND,60,railEnd,null)+txt(railEnd+12,GND+5,'GROUND',12);
+        /* pull up: two PMOS in parallel */
+        s+=fet(250,100,'p',!A)+fet(410,100,'p',!B);
+        s+=v(266,78,VDD,(!A&&up)?'hi':null)+v(426,78,VDD,(!B&&up)?'hi':null);
+        s+=v(266,122,160,(!A&&up)?'hi':null)+v(426,122,160,(!B&&up)?'hi':null);
+        s+=h(160,266,426,up?'hi':null)+dot(266,160)+dot(426,160);
+        s+=txt(346,148,'in parallel',12,'#8b9096','middle');
+        s+=dot(346,160)+v(346,160,200,up?'hi':null);
+        /* pull down: two NMOS in series */
+        s+=fet(330,260,'n',A)+fet(330,330,'n',B);
+        s+=v(346,238,200,dn?'lo':null)+v(346,282,308,dn?'lo':null)+v(346,352,GND,dn?'lo':null);
+        s+=txt(214,300,'in series',12,'#8b9096','middle');
+        /* inputs: a rail x=120, b rail x=90 */
+        s+=pin(34,100,A,'a','hitA')+pin(34,330,B,'b','hitB');
+        s+=h(100,54,120,st(A),[90])+v(120,100,260,st(A))+dot(120,100);
+        s+=h(100,120,198,st(A))+h(260,120,278,st(A));
+        s+=h(330,54,90,st(B))+v(90,330,60,st(B))+dot(90,330);
+        s+=h(330,90,278,st(B));
+        s+=h(60,90,358,st(B),[266])+v(358,60,100,st(B));
+        if(!wide){
+          s+=h(200,346,470,st(nout))+pin(506,200,nout,'OUT');
+        } else {
+          s+=h(200,346,680,st(nout))+txt(520,188,'this wire carries the opposite',12,'#a8231f','middle');
+          s+=fet(780,100,'p',!nout,'PMOS')+fet(780,300,'n',nout,'NMOS');
+          s+=v(796,78,VDD,o?'hi':null)+v(796,122,200,o?'hi':null);
+          s+=v(796,278,200,o?null:'lo')+v(796,322,GND,o?null:'lo');
+          s+=v(680,100,300,st(nout))+dot(680,200);
+          s+=h(100,680,728,st(nout))+h(300,680,728,st(nout));
+          s+=dot(796,200)+h(200,796,880,st(o))+pin(916,200,o,'OUT');
+          s+='<rect x="150" y="20" width="420" height="360" rx="12" fill="none" stroke="#c3cee6" stroke-dasharray="6 5"/>';
+          s+=txt(360,394,'NAND, 4 transistors',13,'#23408f','middle');
+          s+='<rect x="700" y="20" width="220" height="360" rx="12" fill="none" stroke="#e0bcb9" stroke-dasharray="6 5"/>';
+          s+=txt(810,394,'inverter, 2 more',13,'#a8231f','middle');
+        }
+      }
+      else if(kind==='nor'||kind==='or'){
+        var nout2 = (A||B)?0:1;
+        var up=(nout2===1), dn=(nout2===0);
+        var wide = kind==='or';
+        s='<svg viewBox="0 0 '+(wide?1080:640)+' 452" width="'+(wide?900:560)+'" height="'+(wide?376:396)+'">';
+        var railEnd = wide?940:500;
+        s+=h(VDD,60,railEnd,null)+txt(railEnd+12,VDD+5,'SUPPLY',12);
+        s+=h(GND,60,railEnd,null)+txt(railEnd+12,GND+5,'GROUND',12);
+        /* pull up: two PMOS in series */
+        s+=fet(330,80,'p',!A)+fet(330,150,'p',!B);
+        s+=v(346,58,VDD,up?'hi':null)+v(346,102,128,up?'hi':null)+v(346,172,200,up?'hi':null);
+        s+=txt(214,120,'in series',12,'#8b9096','middle');
+        /* pull down: two NMOS in parallel */
+        s+=fet(250,290,'n',A)+fet(410,320,'n',B);
+        s+=v(266,268,240,(A&&dn)?'lo':null)+v(426,298,240,(B&&dn)?'lo':null);
+        s+=h(240,266,426,dn?'lo':null)+dot(266,240)+dot(426,240)+dot(346,240);
+        s+=v(346,200,240,dn?'lo':null);
+        s+=v(266,312,GND,(A&&dn)?'lo':null)+v(426,342,GND,(B&&dn)?'lo':null);
+        s+=txt(346,272,'in parallel',12,'#8b9096','middle');
+        /* inputs: a rail x=120, b rail x=90 */
+        s+=pin(50,80,A,'a','hitA')+pin(50,150,B,'b','hitB');
+        s+=h(80,70,120,st(A))+v(120,80,290,st(A))+dot(120,80);
+        s+=h(80,120,278,st(A))+h(290,120,198,st(A));
+        s+=h(150,70,90,st(B))+v(90,150,320,st(B))+dot(90,150);
+        s+=h(150,90,278,st(B),[120]);
+        s+=h(320,90,358,st(B),[266])+v(358,320,320,st(B));
+        if(!wide){
+          s+=dot(346,200)+h(200,346,470,st(nout2))+pin(506,200,nout2,'OUT');
+        } else {
+          s+=dot(346,200)+h(200,346,680,st(nout2))+txt(520,188,'this wire carries the opposite',12,'#a8231f','middle');
+          s+=fet(780,100,'p',!nout2,'PMOS')+fet(780,300,'n',nout2,'NMOS');
+          s+=v(796,78,VDD,o?'hi':null)+v(796,122,200,o?'hi':null);
+          s+=v(796,278,200,o?null:'lo')+v(796,322,GND,o?null:'lo');
+          s+=v(680,100,300,st(nout2))+dot(680,200);
+          s+=h(100,680,728,st(nout2))+h(300,680,728,st(nout2));
+          s+=dot(796,200)+h(200,796,880,st(o))+pin(916,200,o,'OUT');
+          s+='<rect x="150" y="20" width="420" height="360" rx="12" fill="none" stroke="#c3cee6" stroke-dasharray="6 5"/>';
+          s+=txt(360,394,'NOR, 4 transistors',13,'#23408f','middle');
+          s+='<rect x="700" y="20" width="220" height="360" rx="12" fill="none" stroke="#e0bcb9" stroke-dasharray="6 5"/>';
+          s+=txt(810,394,'inverter, 2 more',13,'#a8231f','middle');
+        }
+      }
+      else {  /* xor: four NAND clusters, each showing its four transistors */
+        var nd=function(a,b){ return (a&&b)?0:1; };
+        var n1=nd(A,B), n2=nd(A,n1), n3=nd(B,n1), oo=nd(n2,n3);
+        s='<svg viewBox="0 0 1180 452" width="960" height="368">';
+        function cluster(cx,cy,lab,ia,ib,ov){
+          var t='<rect x="'+(cx-62)+'" y="'+(cy-52)+'" width="124" height="104" rx="10" fill="#fbfaf7" stroke="'+
+                (ov?'#e0bcb9':'#c3cee6')+'" stroke-width="2"/>';
+          /* four mini transistors */
+          [[-34,-26,'p',!ia],[6,-26,'p',!ib],[-14,14,'n',ia],[-14,38,'n',ib]].forEach(function(m){
+            var x=cx+m[0], y=cy+m[1], on=m[3];
+            t+='<line x1="'+(x-7)+'" y1="'+(y-9)+'" x2="'+(x-7)+'" y2="'+(y+9)+'" stroke="'+INK+'" stroke-width="2"/>';
+            t+='<line x1="'+(x-1)+'" y1="'+(y-9)+'" x2="'+(x-1)+'" y2="'+(y+9)+'" stroke="'+(on?HI:DEAD)+'" stroke-width="3.5"/>';
+            if(m[2]==='p') t+='<circle cx="'+(x-12)+'" cy="'+y+'" r="3" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/>';
+          });
+          t+=txt(cx,cy+64,lab,12,'#8b9096','middle');
+          t+=txt(cx,cy-58,'4T',11,'#146b5c','middle');
+          return t;
+        }
+        s+=pin(46,80,A,'a','hitA')+pin(46,320,B,'b','hitB');
+        /* n1 */
+        s+=h(80,66,150,st(A))+v(150,80,170,st(A))+dot(150,80);
+        s+=h(320,66,150,st(B))+v(150,320,230,st(B))+dot(150,320);
+        s+=h(170,150,238,st(A))+h(230,150,238,st(B));
+        s+=cluster(300,200,'NAND 1',A,B,false);
+        s+=h(200,362,430,st(n1))+dot(430,200)+txt(396,190,'n1',12,'#8b9096','middle');
+        /* n2 */
+        s+=v(430,200,110,st(n1))+h(110,430,518,st(n1));
+        s+=h(80,150,518,st(A),[430]);
+        s+=cluster(580,110,'NAND 2',A,n1,false);
+        s+=h(110,642,760,st(n2))+txt(700,100,'n2',12,'#8b9096','middle');
+        /* n3 */
+        s+=v(430,200,290,st(n1))+h(290,430,518,st(n1));
+        s+=h(320,150,518,st(B),[430]);
+        s+=cluster(580,290,'NAND 3',B,n1,false);
+        s+=h(290,642,760,st(n3))+txt(700,280,'n3',12,'#8b9096','middle');
+        /* out */
+        s+=v(760,110,180,st(n2))+v(760,290,220,st(n3));
+        s+=h(180,760,838,st(n2))+h(220,760,838,st(n3));
+        s+=cluster(900,200,'NAND 4',n2,n3,true);
+        s+=h(200,962,1060,st(oo))+pin(1100,200,oo,'OUT');
+      }
+      var cx = kind==='xor' ? 490 : (kind==='and'||kind==='or') ? 440 : 220;
+      s+=flipBtn('btnA',cx,412,'flip a');
+      if(!one) s+=flipBtn('btnB',cx+108,412,'flip b');
+      s+='</svg>';
+      host.innerHTML=s;
+      function bind(id,fn){ var e=host.querySelector('#'+id); if(e) e.onclick=function(ev){ ev.stopPropagation(); fn(); draw(); }; }
+      bind('hitA',function(){ A=A?0:1; });
+      bind('btnA',function(){ A=A?0:1; });
+      if(!one){ bind('hitB',function(){ B=B?0:1; }); bind('btnB',function(){ B=B?0:1; }); }
+      host.style.cursor='default';
+      fillTable(tabId, one?FN.not:FN[kind], one, A, B);
+    }
+    draw();
+  }
+  gateBench('gNot','tNot','not');
+  gateBench('gNand','tNand','nand');
+  gateBench('gNor','tNor','nor');
+  gateBench('gAnd','tAnd','and');
+  gateBench('gOr','tOr','or');
+  gateBench('gXor','tXor','xor');
+
+  paint();
+})();
+</script>
+</body>
+</html>
