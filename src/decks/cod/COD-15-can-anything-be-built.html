@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 15 · Can anything be built from gates?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12;
+  --hi:#e8952b; --lo:#b9bfc6;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:52px 76px 84px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:24px;left:76px;font-family:var(--mono);font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:24px;right:76px;font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:76px;right:76px;bottom:26px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:76px;bottom:48px;font-family:var(--mono);font-size:12.5px;color:var(--soft);z-index:5}
+#help{position:absolute;left:76px;bottom:48px;font-family:var(--mono);font-size:11.5px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+h1{font-family:var(--display);font-weight:600;font-size:68px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:31px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:8px}
+p{font-size:21px;line-height:1.44;max-width:36ch}
+p+p{margin-top:9px}
+.big{font-size:26px;line-height:1.3;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:16.5px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center}
+.prog{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
+.stack>*+*{margin-top:9px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:12px 14px}
+
+pre{background:#14181f;border-radius:10px;padding:15px 19px;font-family:var(--mono);font-size:13.5px;
+  line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.term{background:#0f1319;border-radius:10px;padding:14px 18px;font-family:var(--mono);
+  font-size:14.5px;line-height:1.55;color:#9fe8b8;box-shadow:0 10px 24px rgba(20,22,28,.18);white-space:pre;overflow:hidden}
+.term.xs{font-size:12.5px}
+.term .hit{color:#ffd47e;font-weight:700}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:10px 14px;margin-top:10px}
+.rem .h{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.rem ul{list-style:none}
+.rem li{font-size:16.5px;line-height:1.36;color:var(--ink);padding:3px 0 3px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+
+.steps{counter-reset:s}
+.steps li{list-style:none;font-size:19px;line-height:1.4;color:var(--ink);padding:9px 0 9px 44px;position:relative;border-bottom:1px solid var(--rule)}
+.steps li:last-child{border-bottom:none}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:9px;
+  width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;
+  background:var(--accent-soft);color:var(--accent);font-family:var(--mono);font-size:14px;font-weight:700}
+
+.btn{font-family:var(--mono);font-size:13.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:7px 13px;cursor:pointer}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.4;cursor:default}
+.btnrow{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+.stagelab{font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;color:var(--accent);text-align:center;min-height:18px;margin-top:6px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+svg text{font-family:'JetBrains Mono',monospace}
+/* everything the builder animates */
+.bx{opacity:0;transition:opacity .42s ease}
+.bx.on{opacity:1}
+.strike{opacity:0;transition:opacity .4s ease}
+.strike.on{opacity:1}
+.wire,.gate,.box{transition:stroke .25s ease, fill .25s ease}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.pulsing{animation:pulse 1s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}.bx{transition:none}.pulsing{animation:none}}
+
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:76px;right:76px;bottom:70px;display:none;padding:9px 13px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:15.5px;line-height:1.38;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:46px 76px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:11px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:54px}
+#jump li{padding:4px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:16px;color:var(--body);display:flex;gap:12px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:32px}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 15</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 15 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- ===== ACT 1 ===== -->
+
+<section class="slide" data-t="Title" data-act="1 · an unreasonable request">
+  <div>
+    <div class="kicker">class 15 · hour fifteen of fifty</div>
+    <h1>Can anything be<br>built from gates?</h1>
+    <p class="big" style="margin-top:24px;max-width:46ch">You have six kinds of gate and you know what each costs. Today: find out whether that is enough, and for what.</p>
+  </div>
+  <div class="cue">This is the hour the arc turns on. If they leave with one thing, it is the machine on slide five.</div>
+</section>
+
+<section class="slide" data-t="A table I invented" data-act="1 · an unreasonable request">
+  <div>
+    <div class="kicker">no story, no meaning, no hint</div>
+    <h2 style="font-size:29px;margin-bottom:4px">Here is a table. I made it up on the way in.</h2>
+    <div class="split" style="gap:50px">
+      <div style="display:flex;justify-content:flex-end">
+        <div class="panel"><svg viewBox="0 0 300 380" width="270" height="342"><g id="figChal"></g></svg></div>
+      </div>
+      <div class="stack">
+        <p>Three inputs, eight rows, and I chose every output by flipping a coin.</p>
+        <p class="frag">It computes nothing. It is not a known function. Nobody has ever needed it, and there is no pattern in it to find.</p>
+        <p class="big frag" style="margin-top:4px">Build me the circuit.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Three minutes, in pairs. They will hunt for structure and there is none. The failure is the setup for the next slide.</div>
+</section>
+
+<!-- ===== ACT 2 ===== -->
+
+<section class="slide" data-t="A row is a detector" data-act="2 · one row at a time">
+  <div>
+    <div class="kicker">so stop reading the table and read one row</div>
+    <h2 style="font-size:29px;margin-bottom:2px">An AND gate is a detector for exactly one row.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1240 384" width="1180" height="365"><g id="figDet"></g></svg></div>
+    <div class="rem" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Take one row of that table. The row <span class="num">1 0 0</span> wants a 1, so feed an AND gate <span class="num">a</span>, <span class="num">NOT b</span> and <span class="num">NOT c</span>.</li>
+        <li>It fires on its own row and stays dark on the other seven. <strong>Including three rows that also want a 1</strong>, and that is not a mistake.</li>
+        <li>This gate answers for one row only. Each of the other three needs a detector of its own, which is exactly what the next slide builds.</li>
+        <li>One row wanting a 1 becomes one AND gate. It has a name: a <strong>minterm</strong>.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Let the cycle run twice before saying anything. The silence on seven rows out of eight is the whole point.</div>
+</section>
+
+<!-- ===== ACT 3 · THE MACHINE ===== -->
+
+<section class="slide" data-t="Watch it get built" data-act="3 · the machine">
+  <div>
+    <div class="kicker">press build. one step at a time.</div>
+    <h2 style="font-size:28px;margin-bottom:2px">Four rows want a 1. So the circuit needs four detectors and one OR.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1060 530" width="1100" height="550"><g id="figBuild"></g></svg></div>
+    <div class="stagelab" id="bLab"></div>
+    <div class="btnrow">
+      <button class="btn hot" id="bStep">build &#9654;</button>
+      <button class="btn" id="bAuto">play all</button>
+      <button class="btn" id="bTest" disabled>test every row</button>
+      <button class="btn" id="bReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">Step through it by hand the first time, narrating each stage. Then press test and let it check itself against the table.</div>
+</section>
+
+<section class="slide" data-t="Four steps" data-act="3 · the machine">
+  <div>
+    <h2>Written out, that was four steps and no judgement anywhere.</h2>
+    <ol class="steps" style="margin-top:2px">
+      <li>Write the table. Every combination of inputs, and what you want out of each.</li>
+      <li class="frag">Cross out every row whose output is 0. They contribute nothing at all.</li>
+      <li class="frag">Turn each surviving row into one AND gate, fed by each input directly where the row has a 1, and through an inverter where it has a 0.</li>
+      <li class="frag">Feed every AND gate into a single OR gate. Its output is your function.</li>
+    </ol>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Nowhere in those four steps did anyone have to be clever, spot anything, or know what the function was for.</li>
+        <li>The shape it produces is called <strong>sum of products</strong>. The products are the ANDs and the sum is the OR.</li>
+        <li>A procedure with no judgement in it is a procedure a machine can run. That is your assignment.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Say no judgement out loud. It is Shannon's promise from Class 13 being delivered in full.</div>
+</section>
+
+<!-- ===== ACT 4 · THEREFORE ===== -->
+
+<section class="slide" data-t="The proof" data-act="4 · therefore">
+  <div>
+    <div class="kicker">and now the sentence the whole arc was for</div>
+    <h2 style="font-size:29px;margin-bottom:6px">That procedure never fails.</h2>
+    <div class="split" style="margin-top:2px">
+      <div class="stack">
+        <p>Take any function of any <span class="num">n</span> inputs. Whatever it does, however it was described to you.</p>
+        <p class="frag">It has a truth table, because it must produce some output for each of the <span class="num">2<sup>n</sup></span> input combinations. There is nowhere else for a definition to live.</p>
+        <p class="frag">Every row of that table is either a 0, which you discard, or a 1, which becomes one AND gate.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0;border-left-color:var(--ok)">
+        <div class="h" style="color:var(--ok)">therefore</div>
+        <ul>
+          <li>Every function of bits, without exception, can be built from AND, OR and NOT.</li>
+          <li>Not most functions. Not the useful ones. <strong>All of them.</strong></li>
+          <li>And the construction is mechanical, so you never again have to wonder whether a thing is buildable.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Slow right down. Three sentences and it is proved, and most courses assert this without ever showing why.</div>
+</section>
+
+<section class="slide" data-t="The question changes" data-act="4 · therefore">
+  <div>
+    <h2>Which closes one question permanently and opens a better one.</h2>
+    <div style="text-align:center;margin:6px 0"><svg viewBox="0 0 1180 210" width="1120" height="199"><g id="figPivot"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Adding two numbers is a function of bits. So is comparing them, sorting them, or deciding which circuit an instruction refers to.</li>
+        <li>All of them are buildable, and you now know the procedure that builds them.</li>
+        <li>Every hour from here to Class 50 is about the second question, not the first.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Put both questions on the board and draw a line under the first. This is the pivot of the whole course.</div>
+</section>
+
+<!-- ===== ACT 5 · THE BILL ===== -->
+
+<section class="slide" data-t="The bill" data-act="5 · the bill">
+  <div>
+    <div class="kicker">because the procedure is correct, not cheap</div>
+    <h2 style="font-size:29px;margin-bottom:2px">The table doubles every time you add one input.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="c">/* 04-cost.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    printf(<span class="s">"inputs   rows in the table   "</span>
+           <span class="s">"worst case AND gates\n"</span>);
+
+    <span class="k">for</span> (<span class="f">int</span> n = <span class="s">1</span>; n &lt;= <span class="s">16</span>; n++) {
+        <span class="f">long</span> rows = <span class="s">1L</span> &lt;&lt; n;
+        <span class="k">if</span> (n &lt;= <span class="s">6</span> || n == <span class="s">8</span> || n == <span class="s">12</span> || n == <span class="s">16</span>)
+            printf(<span class="s">"%4d   %17ld   %19ld\n"</span>,
+                   n, rows, rows / <span class="s">2</span>);
+    }
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term xs frag">inputs   rows in the table   worst case AND gates
+   1                   2                     1
+   2                   4                     2
+   3                   8                     4
+   4                  16                     8
+   5                  32                    16
+   6                  64                    32
+   8                 256                   128
+  12                4096                  2048
+  16               65536                 <span class="hit">32768</span></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Sixteen inputs is a modest circuit, and its table already has 65,536 rows.</li>
+            <li>A 32 bit comparison takes 64 inputs. Its table would have about 18,400,000,000,000,000,000 rows.</li>
+            <li>The method is correct at every size and unusable past about six inputs. Both are true at once.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Class 16 is entirely about what to do when the table is too big to write. Do not answer it here.</div>
+</section>
+
+<!-- ===== ACT 6 · ONE GATE ===== -->
+
+<section class="slide" data-t="One gate is enough" data-act="6 · one gate">
+  <div>
+    <div class="kicker">flip a and b. all three are built from NAND alone.</div>
+    <h2 style="font-size:29px;margin-bottom:2px">The procedure needs AND, OR and NOT. It could need less.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1200 300" width="1140" height="285"><g id="figNand"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn" id="nA">flip a</button>
+      <button class="btn" id="nB">flip b</button>
+    </div>
+    <div class="rem" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>NOT is a NAND with both inputs tied together. AND is that inverter on a NAND. OR is a NAND fed by two inverters, which is De Morgan's law drawn as a picture.</li>
+        <li>So one gate type is enough for every function of bits there is. NAND is called <strong>functionally complete</strong>, and so is NOR.</li>
+        <li>The Apollo Guidance Computer was built from about 5,600 gates and they were all NOR. One part number for the whole machine.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Check each of the three against the tables from Class 14 as you flip.</div>
+</section>
+
+<!-- ===== ACT 7 · THE ASSIGNMENT ===== -->
+
+<section class="slide" data-t="The compiler" data-act="7 · the assignment">
+  <div>
+    <div class="kicker">and since the procedure has no judgement in it</div>
+    <h2 style="font-size:29px;margin-bottom:2px">A program can do the whole thing.</h2>
+    <div class="prog">
+      <div>
+<pre class="xs"><span class="c">/* 01-compile.c */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+
+<span class="f">int</span> main(<span class="f">void</span>)
+{
+    <span class="c">/* the function you want, one entry per row */</span>
+    <span class="f">int</span> want[<span class="s">8</span>] = { <span class="s">0</span>, <span class="s">1</span>, <span class="s">0</span>, <span class="s">1</span>, <span class="s">1</span>, <span class="s">0</span>, <span class="s">0</span>, <span class="s">1</span> };
+    <span class="f">int</span> terms = <span class="s">0</span>;
+
+    printf(<span class="s">"out = "</span>);
+
+    <span class="k">for</span> (<span class="f">int</span> row = <span class="s">0</span>; row &lt; <span class="s">8</span>; row++) {
+        <span class="k">if</span> (!want[row]) <span class="k">continue</span>;
+
+        <span class="f">int</span> a = row &gt;&gt; <span class="s">2</span> &amp; <span class="s">1</span>, b = row &gt;&gt; <span class="s">1</span> &amp; <span class="s">1</span>, c = row &amp; <span class="s">1</span>;
+
+        <span class="k">if</span> (terms) printf(<span class="s">" + "</span>);
+        printf(<span class="s">"%s%s%s"</span>, a ? <span class="s">"a"</span> : <span class="s">"a'"</span>,
+                              b ? <span class="s">"b"</span> : <span class="s">"b'"</span>,
+                              c ? <span class="s">"c"</span> : <span class="s">"c'"</span>);
+        terms++;
+    }
+    <span class="k">if</span> (!terms) printf(<span class="s">"0"</span>);
+    printf(<span class="s">"\n\n%d AND gates, then one OR gate with %d inputs\n"</span>,
+           terms, terms);
+    <span class="k">return</span> <span class="s">0</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="term frag">out = <span class="hit">a'b'c + a'bc + ab'c' + abc</span>
+
+4 AND gates, then one OR gate with 4 inputs</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Twenty lines, and it turns any three input table into a circuit. It is the machine you just watched.</li>
+            <li>The loop body is steps two and three, and nothing else.</li>
+            <li>Notice what it never does: look for a pattern, simplify anything, or understand the function.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Type the loop body live. Six lines, and it is the entire content of the hour.</div>
+</section>
+
+<section class="slide" data-t="The assignment" data-act="7 · the assignment">
+  <div>
+    <div class="kicker">assignment two of six &#183; this one you keep</div>
+    <h2 style="font-size:29px;margin-bottom:4px">Build the truth table compiler properly.</h2>
+    <div class="split" style="margin-top:2px">
+      <div class="stack">
+        <p>Read a table from a file, with any number of inputs. Emit the sum of products expression, the gate count, and a netlist you can load into Logisim.</p>
+        <p class="small frag">Then test it the way the machine tested itself: generate a random table, compile it, simulate the result, and check every row against what you asked for.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">why this one matters more than it looks</div>
+        <ul>
+          <li>It is layer two of the program you extend all term. The adder bench in Class 21 verifies itself against this.</li>
+          <li>Half the marks are in the write up. Explain sum of products to somebody who has not taken this course.</li>
+          <li>Report the gate count for a function of your choice, and say what you predicted before you ran it.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Every later assignment checks itself against this one, so a broken compiler now is expensive in week nine.</div>
+</section>
+
+<section class="slide" data-t="Close" data-act="7 · the assignment">
+  <div class="center">
+    <h2 style="font-size:37px;margin-bottom:18px">Anything can be built.<br>Almost nothing should be built this way.</h2>
+    <p class="big" style="max-width:54ch;color:var(--soft)">The procedure is correct at every size and unusable past about six inputs. Both are true, and the second half is now the interesting one.</p>
+    <p class="big frag" style="margin-top:18px;max-width:50ch">Next session: what to do when the table is too big to write down.</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: write the truth table for adding two two bit numbers. Four inputs, three outputs. Count the rows before you start.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  var onSlide=null;
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    if(onSlide) onSlide(i);
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallow=false;
+  document.addEventListener('click',function(e){
+    swallow = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallow){ swallow=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= svg helpers ================= */
+  var NS='http://www.w3.org/2000/svg';
+  var GREY='#c6c3ba', HI='#e8952b', LO='#b9bfc6', INK='#15171b';
+  function sig(v){ return v===1?HI : v===0?LO : GREY; }
+  function el(tag,attrs,parent){
+    var e=document.createElementNS(NS,tag);
+    for(var k in attrs) e.setAttribute(k,attrs[k]);
+    if(parent) parent.appendChild(e);
+    return e;
+  }
+  function line(p,x1,y1,x2,y2,o){
+    return el('line',Object.assign({x1:x1,y1:y1,x2:x2,y2:y2,stroke:GREY,'stroke-width':3,
+      'stroke-linecap':'round','class':'wire'},o||{}),p);
+  }
+  function path(p,d,o){
+    return el('path',Object.assign({d:d,fill:'none',stroke:GREY,'stroke-width':3,
+      'stroke-linecap':'round','stroke-linejoin':'round','class':'wire'},o||{}),p);
+  }
+  function text(p,x,y,s,o){
+    var t=el('text',Object.assign({x:x,y:y,'font-size':13,fill:'#8b9096'},o||{}),p);
+    t.textContent=s; return t;
+  }
+  function rect(p,x,y,w,hh,o){
+    return el('rect',Object.assign({x:x,y:y,width:w,height:hh,rx:7,fill:'#fff',stroke:GREY,'stroke-width':2},o||{}),p);
+  }
+  function andGate(p,x,y,hh,o){
+    return el('path',Object.assign({d:'M'+x+' '+(y-hh)+' L'+(x+18)+' '+(y-hh)+' A '+hh+' '+hh+' 0 0 1 '+
+      (x+18)+' '+(y+hh)+' L'+x+' '+(y+hh)+' z', fill:'#fff', stroke:INK,'stroke-width':2.2,'class':'gate'},o||{}),p);
+  }
+  function orGate(p,x,y,hh,o){
+    return el('path',Object.assign({d:'M'+(x-5)+' '+(y-hh)+' Q'+(x+20)+' '+y+' '+(x-5)+' '+(y+hh)+
+      ' Q'+(x+28)+' '+(y+hh*0.85)+' '+(x+22+hh)+' '+y+' Q'+(x+28)+' '+(y-hh*0.85)+' '+(x-5)+' '+(y-hh)+' z',
+      fill:'#fff', stroke:INK,'stroke-width':2.2,'class':'gate'},o||{}),p);
+  }
+  function notGate(p,x,y,o){
+    var g=el('g',{},p);
+    el('path',Object.assign({d:'M'+x+' '+(y-13)+' L'+(x+24)+' '+y+' L'+x+' '+(y+13)+' z',
+      fill:'#fff',stroke:INK,'stroke-width':2.2,'class':'gate'},o||{}),g);
+    el('circle',Object.assign({cx:x+29,cy:y,r:4.5,fill:'#fff',stroke:INK,'stroke-width':2.2,'class':'gate'},o||{}),g);
+    return g;
+  }
+  function junction(p,x,y){ return el('circle',{cx:x,cy:y,r:4.5,fill:INK,'class':'wire'},p); }
+
+  var TABLE=[0,1,0,1,1,0,0,1], ONES=[1,3,4,7];
+
+  /* ================= the challenge table ================= */
+  (function(){
+    var g=document.getElementById('figChal'); if(!g) return;
+    ['a','b','c'].forEach(function(n,k){ text(g,70+k*46,34,n,{'font-size':17,fill:INK,'text-anchor':'middle','font-weight':700}); });
+    text(g,232,34,'out',{'font-size':17,fill:'#23408f','text-anchor':'middle','font-weight':700});
+    line(g,34,46,268,46,{stroke:'#c6c3ba','stroke-width':1.5});
+    for(var r=0;r<8;r++){
+      var y=78+r*38, a=r>>2&1,b=r>>1&1,c=r&1;
+      [a,b,c].forEach(function(v,k){ text(g,70+k*46,y+6,v,{'font-size':17,fill:'#4b5057','text-anchor':'middle'}); });
+      rect(g,210,y-14,44,28,{fill:TABLE[r]?'#eaeef7':'#f4f2ed',stroke:TABLE[r]?'#c3cee6':'#e2e0d9'});
+      text(g,232,y+6,TABLE[r],{'font-size':17,fill:TABLE[r]?'#23408f':'#a9a69d','text-anchor':'middle','font-weight':700});
+      if(r<7) line(g,34,y+19,268,y+19,{stroke:'#eceae4','stroke-width':1});
+    }
+  })();
+
+  /* ================= the detector, auto cycling ================= */
+  var detTimer=null;
+  (function(){
+    var g=document.getElementById('figDet'); if(!g) return;
+    var cur=0, pins=[], gate, outBox, outTxt, rows=[], tested=[];
+    var TARGET=4;                                     /* the row 1 0 0 */
+
+    /* ---- left: the detector circuit ---- */
+    text(g,56,34,'THIS ROW OF THE TABLE WANTS A 1',{'font-size':12,fill:'#23408f','letter-spacing':2});
+    ['a = 1','b = 0','c = 0'].forEach(function(t,k){ text(g,56+k*104,74,t,{'font-size':23,fill:INK}); });
+    text(g,56,106,'so build a detector for exactly that combination',{'font-size':14,fill:'#8b9096'});
+
+    ['a','b','c'].forEach(function(n,k){
+      var y=170+k*54;
+      var r=rect(g,56,y-17,64,34,{});
+      var t=text(g,88,y+7,n+' = 0',{'font-size':16,'text-anchor':'middle','font-weight':700});
+      pins.push({r:r,t:t,n:n});
+      line(g,120,y,190,y,{'class':'wire dsig','data-k':k});
+    });
+    [1,2].forEach(function(k){
+      var y=170+k*54;
+      notGate(g,190,y);
+      line(g,223,y,410,y,{'class':'wire dsig2','data-k':k});
+    });
+    line(g,190,170,410,170,{'class':'wire dsig2','data-k':0});
+    ['a',"b'","c'"].forEach(function(t,k){
+      text(g,316,170+k*54-9,t,{'font-size':15,fill:'#8b9096','text-anchor':'middle'});
+    });
+    gate=andGate(g,410,224,64,{});
+    line(g,492,224,548,224,{'class':'wire dout'});
+    outBox=rect(g,548,200,52,48,{});
+    outTxt=text(g,574,234,'0',{'font-size':22,'text-anchor':'middle','font-weight':700});
+    text(g,574,272,'DETECTOR',{'font-size':11,fill:'#8b9096','text-anchor':'middle'});
+
+    /* ---- right: the same table, with a lamp per row ---- */
+    text(g,700,34,'THE SAME TABLE, ROW BY ROW',{'font-size':12,fill:'#23408f','letter-spacing':2});
+    ['a','b','c'].forEach(function(n,k){ text(g,772+k*38,60,n,{'font-size':14,fill:INK,'text-anchor':'middle','font-weight':700}); });
+    text(g,906,60,'WANTS',{'font-size':11,fill:'#8b9096','text-anchor':'middle'});
+    text(g,1050,60,'THIS ONE DETECTOR',{'font-size':11,fill:'#8b9096','text-anchor':'middle'});
+    line(g,712,70,1180,70,{stroke:GREY,'stroke-width':1.5});
+
+    for(var r=0;r<8;r++){
+      var y=94+r*30, aa=r>>2&1,bb=r>>1&1,cc=r&1;
+      var hl=rect(g,712,y-14,468,28,{rx:6,fill:'transparent',stroke:'transparent'});
+      var mark=el('path',{d:'M700 '+(y-7)+' L710 '+y+' L700 '+(y+7)+' z',fill:'#23408f',opacity:0},g);
+      var digits=[aa,bb,cc].map(function(v,k){
+        return text(g,772+k*38,y+6,v,{'font-size':16,fill:'#4b5057','text-anchor':'middle'});
+      });
+      text(g,906,y+6,TABLE[r],{'font-size':16,fill:TABLE[r]?'#23408f':'#c6c3ba','text-anchor':'middle','font-weight':700});
+      var lamp=el('circle',{cx:986,cy:y,r:9,fill:'#f6f4ef',stroke:'#e6e4de','stroke-width':2},g);
+      var rays=el('g',{opacity:0},g);
+      for(var q=0;q<8;q++){
+        var an=q*Math.PI/4;
+        line(rays,986+12*Math.cos(an),y+12*Math.sin(an),986+17*Math.cos(an),y+17*Math.sin(an),
+             {stroke:'#f5c451','stroke-width':2.5});
+      }
+      var note=text(g,1014,y+5,'',{'font-size':12.5,'font-weight':700});
+      rows.push({hl:hl,mark:mark,digits:digits,lamp:lamp,rays:rays,note:note,r:r});
+      tested.push(-1);
+      if(r<7) line(g,712,y+14,1180,y+14,{stroke:'#eceae4','stroke-width':1});
+    }
+    var tally=text(g,712,352,'',{'font-size':14,fill:'#23408f'});
+
+    function show(r){
+      if(r===0) for(var q=0;q<8;q++) tested[q]=-1;    /* a fresh pass down the table */
+      cur=r;
+      var vals=[r>>2&1, r>>1&1, r&1];
+      var eff=[vals[0], vals[1]?0:1, vals[2]?0:1];
+      var fires=(r===TARGET)?1:0;
+      tested[r]=fires;
+
+      pins.forEach(function(p,k){
+        p.r.setAttribute('fill', vals[k]?'#fbf0dc':'#eef0f2');
+        p.r.setAttribute('stroke', vals[k]?'#b06a12':GREY);
+        p.t.setAttribute('fill', vals[k]?HI:'#6b7178');
+        p.t.textContent=p.n+' = '+vals[k];
+      });
+      Array.prototype.forEach.call(g.querySelectorAll('.dsig'),function(w){
+        w.setAttribute('stroke', sig(vals[+w.getAttribute('data-k')]));
+      });
+      Array.prototype.forEach.call(g.querySelectorAll('.dsig2'),function(w){
+        w.setAttribute('stroke', sig(eff[+w.getAttribute('data-k')]));
+      });
+      gate.setAttribute('fill', fires?'#fbf0dc':'#fff');
+      gate.setAttribute('stroke', fires?'#b06a12':INK);
+      g.querySelector('.dout').setAttribute('stroke', sig(fires));
+      outBox.setAttribute('fill', fires?'#fbf0dc':'#eef0f2');
+      outBox.setAttribute('stroke', fires?'#b06a12':GREY);
+      outTxt.textContent=fires; outTxt.setAttribute('fill', fires?HI:'#6b7178');
+
+      var covered=0, uncovered=0;
+      for(var q=0;q<8;q++){
+        if(TABLE[q]!==1) continue;
+        if(tested[q]===1) covered++; else if(tested[q]===0) uncovered++;
+      }
+      tally.textContent = (covered+uncovered)===0 ? '' :
+        'covers '+covered+' of the 4 rows wanting a 1 \u00b7 '+uncovered+' still uncovered';
+      rows.forEach(function(m){
+        var on=(m.r===r), st=tested[m.r];
+        m.hl.setAttribute('fill', on?'#eaeef7':'transparent');
+        m.hl.setAttribute('stroke', on?'#c3cee6':'transparent');
+        m.mark.setAttribute('opacity', on?1:0);
+        m.digits.forEach(function(d){ d.setAttribute('fill', on?INK:(st<0?'#c6c3ba':'#4b5057')); });
+        if(st===1){
+          m.lamp.setAttribute('fill','#f5c451'); m.lamp.setAttribute('stroke','#b06a12');
+          m.rays.setAttribute('opacity',1);
+          m.note.textContent='fires'; m.note.setAttribute('fill','#b06a12');
+        } else if(st===0){
+          m.lamp.setAttribute('fill','#e8e6e0'); m.lamp.setAttribute('stroke','#c6c3ba');
+          m.rays.setAttribute('opacity',0);
+          if(TABLE[m.r]===1){ m.note.textContent='needs its own'; m.note.setAttribute('fill','#23408f'); }
+          else { m.note.textContent=''; }
+        } else {
+          m.lamp.setAttribute('fill','#f6f4ef'); m.lamp.setAttribute('stroke','#e6e4de');
+          m.rays.setAttribute('opacity',0); m.note.textContent='';
+        }
+      });
+    }
+    show(0);
+    window.__detStart=function(){
+      if(detTimer) return;
+      detTimer=setInterval(function(){ show((cur+1)%8); },1150);
+    };
+    window.__detStop=function(){ if(detTimer){ clearInterval(detTimer); detTimer=null; } };
+  })();
+
+  /* ================= the hero: build it, then test it ================= */
+  (function(){
+    var g=document.getElementById('figBuild'); if(!g) return;
+    var A=0,B=0,C=1, stage=0, MAX=7, autoT=null, testT=null;
+
+    /* ---- geometry, all of it checked against the taps ---- */
+    var TX=20, TY=74, RH=38;
+    var PINY=[40,106,172], INVY=[73,139,205], TAPX=410;
+    var RAILS={ a:480, "a\u2032":506, b:532, "b\u2032":558, c:584, "c\u2032":610 };
+    var RAILBOT=480;
+    var ANDX=700, ANDH=26, ANDY=[245,313,381,449], TIP=ANDX+18+ANDH;
+    var COLS=[776,760,792,808];
+    var ORX=830, ORH=44, ORY=347;
+    var ENDX=[835,837,837,835];
+    var strikes=[], rowHl=[], rowOuts=[];
+
+    /* ---- the table ---- */
+    ['a','b','c'].forEach(function(n,k){ text(g,78+k*38,TY-14,n,{'font-size':16,fill:INK,'text-anchor':'middle','font-weight':700}); });
+    text(g,240,TY-14,'out',{'font-size':16,fill:'#23408f','text-anchor':'middle','font-weight':700});
+    line(g,24,TY-2,268,TY-2,{stroke:GREY,'stroke-width':1.5});
+    for(var r=0;r<8;r++){
+      var y=96+r*RH, a=r>>2&1,b=r>>1&1,c=r&1;
+      rowHl.push(rect(g,16,y-17,256,34,{rx:6,fill:'transparent',stroke:'transparent'}));
+      [a,b,c].forEach(function(v,k){ text(g,78+k*38,y+6,v,{'font-size':16,fill:'#4b5057','text-anchor':'middle'}); });
+      var ob=rect(g,218,y-14,44,28,{fill:TABLE[r]?'#eaeef7':'#f4f2ed',stroke:TABLE[r]?'#c3cee6':'#e2e0d9'});
+      text(g,240,y+6,TABLE[r],{'font-size':16,fill:TABLE[r]?'#23408f':'#a9a69d','text-anchor':'middle','font-weight':700});
+      rowOuts.push(ob);
+      if(!TABLE[r]){
+        var sk=el('g',{'class':'strike'},g);
+        line(sk,24,y,266,y,{stroke:'#a8231f','stroke-width':2});
+        strikes.push(sk);
+      }
+    }
+
+    /* ---- stage 2: inputs, inverters, and six rails that start at the top ---- */
+    var g2=el('g',{'class':'bx'},g), pinEls=[];
+    ['a','b','c'].forEach(function(n,k){
+      var py=PINY[k], iy=INVY[k], np=n+"\u2032";
+      var rr=rect(g2,320,py-17,62,34,{});
+      var tt=text(g2,351,py+7,n+' = 0',{'font-size':15,'text-anchor':'middle','font-weight':700});
+      pinEls.push({r:rr,t:tt,n:n});
+      line(g2,382,py,RAILS[n],py,{'class':'w','data-s':n});
+      junction(g2,TAPX,py);
+      line(g2,TAPX,py,TAPX,iy,{'class':'w','data-s':n});
+      notGate(g2,TAPX,iy,{});
+      line(g2,444,iy,RAILS[np],iy,{'class':'w','data-s':np});
+      line(g2,RAILS[n],py,RAILS[n],RAILBOT,{'class':'w','data-s':n});
+      line(g2,RAILS[np],iy,RAILS[np],RAILBOT,{'class':'w','data-s':np});
+      text(g2,RAILS[n],RAILBOT+20,n,{'font-size':13,fill:'#8b9096','text-anchor':'middle'});
+      text(g2,RAILS[np],RAILBOT+20,np,{'font-size':13,fill:'#8b9096','text-anchor':'middle'});
+    });
+
+    /* ---- stages 3 to 6: one detector each ---- */
+    var andEls=[];
+    ONES.forEach(function(r,k){
+      var gg=el('g',{'class':'bx'},g);
+      var y=ANDY[k], a=r>>2&1,b=r>>1&1,c=r&1;
+      var names=[a?'a':"a\u2032", b?'b':"b\u2032", c?'c':"c\u2032"];
+      names.forEach(function(nm,j){
+        var sy=y-14+j*14, rx=RAILS[nm];
+        line(gg,rx,sy,ANDX,sy,{'class':'w','data-s':nm});
+        junction(gg,rx,sy);
+      });
+      var gate=andGate(gg,ANDX,y,ANDH,{});
+      text(gg,ANDX+22,y-ANDH-9,a+' '+b+' '+c+'   \u00b7   '+names.join(''),
+           {'font-size':13.5,fill:'#b06a12','text-anchor':'middle'});
+      var ty=ORY-18+k*12;
+      var pth=path(gg,'M'+TIP+' '+y+' L'+COLS[k]+' '+y+' L'+COLS[k]+' '+ty+' L'+ENDX[k]+' '+ty,
+                   {'class':'w','data-s':'t'+r});
+      andEls.push({g:gg,gate:gate,row:r,path:pth});
+    });
+
+    /* ---- stage 7: the OR and the output ---- */
+    var g7=el('g',{'class':'bx'},g);
+    var orEl=orGate(g7,ORX,ORY,ORH,{});
+    line(g7,ORX+22+ORH,ORY,960,ORY,{'class':'w','data-s':'out'});
+    var outBox=rect(g7,960,ORY-24,52,48,{});
+    var outTxt=text(g7,986,ORY+8,'0',{'font-size':22,'text-anchor':'middle','font-weight':700});
+    text(g7,986,ORY+46,'OUT',{'font-size':11,fill:'#8b9096','text-anchor':'middle'});
+
+    function values(){
+      var v={a:A,b:B,c:C};
+      v["a\u2032"]=A?0:1; v["b\u2032"]=B?0:1; v["c\u2032"]=C?0:1;
+      var any=0;
+      ONES.forEach(function(r){
+        var a=r>>2&1,b=r>>1&1,c=r&1;
+        var on=(a===A&&b===B&&c===C)?1:0;
+        v['t'+r]=on; if(on) any=1;
+      });
+      v.out=any; return v;
+    }
+    function repaint(){
+      var v=values(), live=(stage>=2);
+      pinEls.forEach(function(p){
+        var val=v[p.n];
+        p.r.setAttribute('fill', val?'#fbf0dc':'#eef0f2');
+        p.r.setAttribute('stroke', val?'#b06a12':GREY);
+        p.t.setAttribute('fill', val?HI:'#6b7178');
+        p.t.textContent=p.n+' = '+val;
+      });
+      Array.prototype.forEach.call(g.querySelectorAll('.w'),function(wr){
+        wr.setAttribute('stroke', live? sig(v[wr.getAttribute('data-s')]) : GREY);
+      });
+      andEls.forEach(function(o){
+        var on=v['t'+o.row];
+        o.gate.setAttribute('fill', on?'#fbf0dc':'#fff');
+        o.gate.setAttribute('stroke', on?'#b06a12':INK);
+      });
+      orEl.setAttribute('fill', v.out?'#fbf0dc':'#fff');
+      orEl.setAttribute('stroke', v.out?'#b06a12':INK);
+      outBox.setAttribute('fill', v.out?'#fbf0dc':'#eef0f2');
+      outBox.setAttribute('stroke', v.out?'#b06a12':GREY);
+      outTxt.textContent=v.out; outTxt.setAttribute('fill', v.out?HI:'#6b7178');
+      var cur=(A<<2)|(B<<1)|C;
+      rowHl.forEach(function(bx,r){
+        var on=(live && r===cur);
+        bx.setAttribute('fill', on?'#eaeef7':'transparent');
+        bx.setAttribute('stroke', on?'#c3cee6':'transparent');
+        bx.setAttribute('stroke-width', on?2:1);
+      });
+    }
+
+    var LABELS=['press build',
+      'step 2 \u00b7 every row wanting a 0 is struck out, four remain',
+      'step 3a \u00b7 the inputs arrive, each with an inverter, so both versions run down the board',
+      'step 3b \u00b7 the row 0 0 1 becomes a detector for a\u2032b\u2032c',
+      'step 3c \u00b7 the row 0 1 1 becomes a detector for a\u2032bc',
+      'step 3d \u00b7 the row 1 0 0 becomes a detector for ab\u2032c\u2032',
+      'step 3e \u00b7 the row 1 1 1 becomes a detector for abc',
+      'step 4 \u00b7 one OR gate collects them. the circuit is finished.'];
+
+    function setStage(n){
+      stage=Math.max(0,Math.min(MAX,n));
+      strikes.forEach(function(s){ s.classList.toggle('on', stage>=1); });
+      rowOuts.forEach(function(o,r){ o.setAttribute('opacity', (stage>=1 && !TABLE[r])?0.35:1); });
+      g2.classList.toggle('on', stage>=2);
+      andEls.forEach(function(o,k){ o.g.classList.toggle('on', stage>=3+k); });
+      g7.classList.toggle('on', stage>=7);
+      document.getElementById('bLab').textContent=LABELS[stage];
+      document.getElementById('bTest').disabled = stage<MAX;
+      document.getElementById('bStep').textContent = stage>=MAX ? 'built' : 'build \u25B6';
+      document.getElementById('bStep').disabled = stage>=MAX;
+      repaint();
+    }
+    function stopAll(){
+      if(autoT){ clearInterval(autoT); autoT=null; }
+      if(testT){ clearInterval(testT); testT=null; }
+      document.getElementById('bAuto').classList.remove('hot');
+      document.getElementById('bTest').classList.remove('hot');
+    }
+    document.getElementById('bStep').onclick=function(){ stopAll(); setStage(stage+1); };
+    document.getElementById('bReset').onclick=function(){ stopAll(); A=0;B=0;C=1; setStage(0); };
+    document.getElementById('bAuto').onclick=function(){
+      if(autoT){ stopAll(); return; }
+      stopAll(); this.classList.add('hot');
+      if(stage>=MAX) setStage(0);
+      autoT=setInterval(function(){ if(stage>=MAX){ stopAll(); return; } setStage(stage+1); },1250);
+    };
+    document.getElementById('bTest').onclick=function(){
+      if(testT){ stopAll(); return; }
+      stopAll(); this.classList.add('hot');
+      var r=7;
+      testT=setInterval(function(){
+        r=(r+1)%8; A=r>>2&1; B=r>>1&1; C=r&1; repaint();
+        var o=values().out;
+        document.getElementById('bLab').textContent =
+          'testing '+A+' '+B+' '+C+' \u00b7 circuit says '+o+' \u00b7 table says '+TABLE[r]+
+          (o===TABLE[r]?'   \u2713':'   MISMATCH');
+      },900);
+    };
+    setStage(0);
+    window.__buildReset=function(){ stopAll(); };
+  })();
+
+  /* ================= NAND completeness ================= */
+  (function(){
+    var g=document.getElementById('figNand'); if(!g) return;
+    var A=1,B=0;
+    function nand(x,y){ return (x&&y)?0:1; }
+    var parts={};
+    function nd(p,x,y){
+      var gg=el('g',{},p);
+      var body=andGate(gg,x,y,24,{});
+      var bub=el('circle',{cx:x+47,cy:y,r:5,fill:'#fff',stroke:INK,'stroke-width':2.2},gg);
+      return {body:body,bub:bub};
+    }
+    /* three panels */
+    var cols=[{x:30,t:'NOT a',sub:'both inputs tied together'},
+              {x:430,t:'a AND b',sub:'a NAND, then invert it'},
+              {x:830,t:'a OR b',sub:'invert both, then NAND'}];
+    cols.forEach(function(c){
+      rect(g,c.x,24,340,232,{fill:'#fbfaf7',stroke:'#e2e0d9',rx:12});
+      text(g,c.x+20,52,c.t,{'font-size':17,fill:INK,'font-weight':700});
+      text(g,c.x+20,238,c.sub,{'font-size':13,fill:'#8b9096'});
+    });
+    /* NOT */
+    var n1=nd(g,150,140); parts.n1=n1;
+    parts.w1a=line(g,80,132,150,132,{}); parts.w1b=line(g,80,148,150,148,{});
+    text(g,68,144,'a',{'font-size':16,fill:INK,'text-anchor':'end'});
+    parts.w1o=line(g,202,140,258,140,{});
+    parts.b1=rect(g,258,118,44,44,{}); parts.t1=text(g,280,148,'0',{'font-size':20,'text-anchor':'middle','font-weight':700});
+    /* AND */
+    var n2=nd(g,500,140), n3=nd(g,610,140); parts.n2=n2; parts.n3=n3;
+    parts.w2a=line(g,458,130,500,130,{}); parts.w2b=line(g,458,150,500,150,{});
+    text(g,446,126,'a',{'font-size':15,fill:INK,'text-anchor':'end'});
+    text(g,446,158,'b',{'font-size':15,fill:INK,'text-anchor':'end'});
+    parts.w2m1=line(g,552,140,610,132,{}); parts.w2m2=line(g,552,140,610,148,{});
+    parts.w2o=line(g,662,140,706,140,{});
+    parts.b2=rect(g,706,118,44,44,{}); parts.t2=text(g,728,148,'0',{'font-size':20,'text-anchor':'middle','font-weight':700});
+    /* OR */
+    var n4=nd(g,900,92), n5=nd(g,900,196), n6=nd(g,1010,144); parts.n4=n4; parts.n5=n5; parts.n6=n6;
+    parts.w3a1=line(g,858,84,900,84,{}); parts.w3a2=line(g,858,100,900,100,{});
+    parts.w3b1=line(g,858,188,900,188,{}); parts.w3b2=line(g,858,204,900,204,{});
+    text(g,846,96,'a',{'font-size':15,fill:INK,'text-anchor':'end'});
+    text(g,846,200,'b',{'font-size':15,fill:INK,'text-anchor':'end'});
+    parts.w3m1=path(g,'M952 92 L980 92 L980 136 L1010 136',{});
+    parts.w3m2=path(g,'M952 196 L980 196 L980 152 L1010 152',{});
+    parts.w3o=line(g,1062,144,1106,144,{});
+    parts.b3=rect(g,1106,122,44,44,{}); parts.t3=text(g,1128,152,'0',{'font-size':20,'text-anchor':'middle','font-weight':700});
+
+    function paintN(){
+      var na=nand(A,A), ab=nand(A,B), and_=nand(ab,ab),
+          nb=nand(B,B), or_=nand(na,nb);
+      function setW(w,v){ if(w) w.setAttribute('stroke', sig(v)); }
+      function setG(n,v){ n.body.setAttribute('fill',v?'#fbf0dc':'#fff'); n.body.setAttribute('stroke',v?'#b06a12':INK);
+                          n.bub.setAttribute('stroke',v?'#b06a12':INK); }
+      function setB(b,t,v){ b.setAttribute('fill',v?'#fbf0dc':'#eef0f2'); b.setAttribute('stroke',v?'#b06a12':GREY);
+                            t.textContent=v; t.setAttribute('fill',v?HI:'#6b7178'); }
+      setW(parts.w1a,A); setW(parts.w1b,A); setG(parts.n1,na); setW(parts.w1o,na); setB(parts.b1,parts.t1,na);
+      setW(parts.w2a,A); setW(parts.w2b,B); setG(parts.n2,ab);
+      setW(parts.w2m1,ab); setW(parts.w2m2,ab); setG(parts.n3,and_); setW(parts.w2o,and_); setB(parts.b2,parts.t2,and_);
+      setW(parts.w3a1,A); setW(parts.w3a2,A); setW(parts.w3b1,B); setW(parts.w3b2,B);
+      setG(parts.n4,na); setG(parts.n5,nb); setW(parts.w3m1,na); setW(parts.w3m2,nb);
+      setG(parts.n6,or_); setW(parts.w3o,or_); setB(parts.b3,parts.t3,or_);
+      document.getElementById('nA').textContent='a = '+A;
+      document.getElementById('nB').textContent='b = '+B;
+    }
+    document.getElementById('nA').onclick=function(){ A=A?0:1; paintN(); };
+    document.getElementById('nB').onclick=function(){ B=B?0:1; paintN(); };
+    paintN();
+  })();
+
+  /* ================= the pivot figure ================= */
+  (function(){
+    var g=document.getElementById('figPivot'); if(!g) return;
+    rect(g,30,30,520,140,{fill:'#f2f0ea',stroke:'#e2e0d9',rx:14});
+    text(g,290,84,'can this be built from gates?',{'font-size':25,fill:'#a9a69d','text-anchor':'middle'});
+    line(g,90,100,490,100,{stroke:'#a8231f','stroke-width':3});
+    text(g,290,132,'answered. for everything. forever.',{'font-size':15,fill:'#a8231f','text-anchor':'middle'});
+    path(g,'M580 100 L640 100 M626 90 l14 10 l-14 10',{stroke:'#8b9096','stroke-width':2.5});
+    rect(g,670,30,480,140,{fill:'#eaeef7',stroke:'#c3cee6',rx:14});
+    text(g,910,88,'what will it cost?',{'font-size':30,fill:'#23408f','text-anchor':'middle','font-weight':700});
+    text(g,910,130,'the remaining thirty five hours',{'font-size':15,fill:'#8b9096','text-anchor':'middle'});
+  })();
+
+  /* start and stop the auto animations with the slide */
+  onSlide=function(idx){
+    var t=slides[idx].dataset.t;
+    if(t==='A row is a detector'){ if(window.__detStart) window.__detStart(); }
+    else { if(window.__detStop) window.__detStop(); }
+    if(t!=='Watch it get built' && window.__buildReset) window.__buildReset();
+  };
+
+  paint();
+})();
+</script>
+</body>
+</html>
