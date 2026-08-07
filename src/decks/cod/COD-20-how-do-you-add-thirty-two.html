@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 20 · How do you add thirty two?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --hi:#e8952b; --lo:#b9bfc6; --violet:#6b3fa0;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:46px 68px 78px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:19px;left:68px;font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:19px;right:68px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:68px;right:68px;bottom:21px;display:flex;gap:1.5px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:68px;bottom:42px;font-family:var(--mono);font-size:12px;color:var(--soft);z-index:5}
+#help{position:absolute;left:68px;bottom:42px;font-family:var(--mono);font-size:11px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:5px}
+h1{font-family:var(--display);font-weight:600;font-size:60px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:28px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:5px}
+p{font-size:19.5px;line-height:1.44;max-width:36ch}
+p+p{margin-top:8px}
+.big{font-size:23px;line-height:1.3;color:var(--ink);font-weight:300;max-width:30ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center}
+.stack>*+*{margin-top:8px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 12px}
+.row{display:flex;gap:18px;align-items:flex-start;justify-content:center}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:8px 13px;margin-top:8px}
+.rem .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.rem.win{border-left-color:var(--ok)} .rem.win .h{color:var(--ok)}
+.rem.bad{border-left-color:var(--fail)} .rem.bad .h{color:var(--fail)}
+.rem ul{list-style:none}
+.rem li{font-size:15px;line-height:1.33;color:var(--ink);padding:3px 0 3px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+
+.btn{font-family:var(--mono);font-size:12.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:6px 11px;cursor:pointer;min-width:34px}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;align-items:center;justify-content:center}
+.btnrow .lab{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--soft);margin-right:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:4px 10px;border-radius:20px;background:var(--accent-soft);color:var(--accent);margin-bottom:7px}
+.tag.win{background:var(--ok-soft);color:var(--ok)}
+.tag.bad{background:var(--fail-soft);color:var(--fail)}
+
+.readers{display:grid;grid-template-columns:1fr 1fr 210px;gap:14px;margin-top:8px}
+.reader{background:var(--card);border:1px solid var(--rule2);border-radius:11px;padding:11px 15px}
+.reader .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--soft);margin-bottom:5px}
+.reader .eq{font-family:var(--mono);font-size:19px;color:var(--ink);font-weight:700}
+.reader .vd{font-family:var(--mono);font-size:13px;margin-top:5px;font-weight:700}
+.reader.good{border-color:#b6d5cc} .reader.good .vd{color:var(--ok)}
+.reader.bad{border-color:#e0bcb9;background:#fdf7f6} .reader.bad .vd{color:var(--fail)}
+.lamps{display:flex;flex-direction:column;gap:8px}
+.lamp{background:var(--card);border:1px solid var(--rule2);border-radius:11px;padding:8px 13px;display:flex;align-items:center;gap:11px}
+.lamp .dot{width:20px;height:20px;border-radius:50%;background:#eeece6;border:2px solid var(--rule2);flex:none}
+.lamp.on .dot{background:#f5c451;border-color:var(--amber)}
+.lamp .t{font-family:var(--mono);font-size:11px;color:var(--soft);line-height:1.3}
+.lamp .t b{display:block;font-size:13px;color:var(--soft)}
+.lamp.on .t b{color:var(--ink)}
+
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .3s ease}
+.frag.shown{opacity:1}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+.cue{position:absolute;left:68px;right:68px;bottom:64px;display:none;padding:8px 12px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:14.5px;line-height:1.32;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:38px 68px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:9px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:50px}
+#jump li{padding:3px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:15px;color:var(--body);display:flex;gap:11px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:30px}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 20</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 20 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 20 · hour twenty of fifty</div>
+    <h1>How do you add<br>thirty two?</h1>
+    <p class="big" style="margin-top:20px;max-width:46ch">Chaining the columns is the easy part. What comes off the end of the chain is where nineteen hours of this course have been heading.</p>
+  </div>
+  <div class="cue">Collect the send off: 255 plus 1 in eight bits, by hand, and what the last carry does.</div>
+</section>
+
+<section class="slide" data-t="The plan" data-act="opening">
+  <div>
+    <h2>One column cost six gates. Now do eight of them.</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:4px">
+      <div class="panel" style="padding:18px 20px">
+        <div class="tag">QUESTION ONE</div>
+        <div style="font-family:var(--display);font-size:22px;font-weight:600;color:var(--ink);margin:2px 0 8px">How do the columns connect?</div>
+        <div style="font-size:15px;line-height:1.4">The easiest question in the arc. It takes about a minute.</div>
+      </div>
+      <div class="panel frag" style="padding:18px 20px">
+        <div class="tag">QUESTION TWO</div>
+        <div style="font-family:var(--display);font-size:22px;font-weight:600;color:var(--ink);margin:2px 0 8px">What if the answer does not fit?</div>
+        <div style="font-size:15px;line-height:1.4">A phone that would not boot, first shown to you in hour one, finally explained.</div>
+      </div>
+      <div class="panel frag" style="padding:18px 20px">
+        <div class="tag">QUESTION THREE</div>
+        <div style="font-family:var(--display);font-size:22px;font-weight:600;color:var(--ink);margin:2px 0 8px">Is 127 + 1 the same failure?</div>
+        <div style="font-size:15px;line-height:1.4">It is not, and working out why takes most of the hour.</div>
+      </div>
+    </div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">a note on width</div>
+      <ul>
+        <li>Everything today is drawn with eight columns so it fits on a slide. Real machines use thirty two or sixty four.</li>
+        <li>Nothing about the argument changes with width. Only the numbers at which things break.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Say the eight versus thirty two thing once, clearly, so nobody thinks eight bits is the real machine.</div>
+</section>
+
+<!-- ================= Q1 ================= -->
+
+<section class="slide" data-t="Q1 · the question" data-act="question 1 · chaining">
+  <div>
+    <div class="tag">QUESTION ONE</div>
+    <div class="kicker" style="margin-top:2px">the easy one</div>
+    <h2 style="font-size:31px;margin-bottom:4px">How do the columns connect?</h2>
+    <div class="split" style="margin-top:4px">
+      <div class="stack">
+        <p>Each full adder makes a carry out. Each one also needs a carry in. They are the same signal, one column apart.</p>
+        <p class="frag">So wire the carry out of each column to the carry in of the column on its left, exactly the way your pencil moves across a page.</p>
+        <p class="big frag" style="margin-top:4px">The rightmost column has nothing to its right, so its carry in is tied to zero.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">that is the whole design</div>
+        <ul>
+          <li>Eight full adders, forty eight gates, one wire between each neighbouring pair.</li>
+          <li>It is called a <strong>ripple carry adder</strong>, because the carry ripples along the chain from right to left.</li>
+          <li>It is the obvious construction, it is correct, and the next two sessions are about what is wrong with it.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Nobody struggles here. Move briskly; the hour's content is questions two and three.</div>
+</section>
+
+<section class="slide" data-t="Q1 · built" data-act="question 1 · chaining">
+  <div>
+    <div class="tag win">ANSWER</div>
+    <div class="kicker" style="margin-top:2px">click any a or b bit &nbsp;·&nbsp; or load a preset</div>
+    <h2 style="font-size:26px;margin-bottom:0">Eight full adders in a row.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1200 350" width="1160" height="338"><g id="figAdder"></g></svg></div>
+    <div class="readers">
+      <div class="reader" id="rdU"><div class="h">READ AS UNSIGNED</div><div class="eq" id="eqU"></div><div class="vd" id="vdU"></div></div>
+      <div class="reader" id="rdS"><div class="h">READ AS SIGNED</div><div class="eq" id="eqS"></div><div class="vd" id="vdS"></div></div>
+      <div class="lamps">
+        <div class="lamp" id="lampC"><div class="dot"></div><div class="t"><b>CARRY OUT</b>the ninth bit</div></div>
+        <div class="lamp" id="lampV"><div class="dot"></div><div class="t"><b>OVERFLOW</b>the sign is wrong</div></div>
+      </div>
+    </div>
+    <div class="btnrow">
+      <span class="lab">PRESETS</span>
+      <button class="btn hot" data-p="7,3">7 + 3</button>
+      <button class="btn" data-p="255,1">255 + 1</button>
+      <button class="btn" data-p="255,16">255 + 16</button>
+      <button class="btn" data-p="127,1">127 + 1</button>
+      <button class="btn" data-p="100,100">100 + 100</button>
+      <button class="btn" data-p="128,255">128 + 255</button>
+      <span style="width:14px"></span>
+      <button class="btn" id="ripple">watch the carry travel</button>
+    </div>
+  </div>
+  <div class="cue">Press the ripple button. The carry starts at bit 0 on the right and works left, one column at a time.</div>
+</section>
+
+<!-- ================= Q2 ================= -->
+
+<section class="slide" data-t="Q2 · the question" data-act="question 2 · the ninth bit">
+  <div>
+    <div class="tag">QUESTION TWO</div>
+    <div class="kicker" style="margin-top:2px">load the 255 + 1 preset and look at the sum</div>
+    <h2 style="font-size:31px;margin-bottom:4px">What happens when the answer does not fit?</h2>
+    <div class="split" style="margin-top:4px">
+      <div class="stack">
+        <p>Two hundred and fifty five is the largest number eight bits can hold. Add one and the correct answer is two hundred and fifty six.</p>
+        <p class="frag">The adder returns <span class="num">0</span>. Not an error, not a warning. A confident, wrong, zero.</p>
+        <p class="big frag" style="margin-top:4px">And the missing bit is not lost. It is sitting on a wire at the left hand end.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">look at what the circuit actually did</div>
+        <ul>
+          <li>Every one of the eight columns computed its column correctly. Not a single full adder made a mistake.</li>
+          <li>The ninth bit of the answer came out of the last carry out, exactly as it should.</li>
+          <li>There were only eight sum wires to put an answer on, so the ninth bit had nowhere to go.</li>
+          <li>The hardware did its job perfectly and produced a wrong answer, which is a distinction worth sitting with.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The hardware is not broken. That is the sentence. Everything after this depends on them believing it.</div>
+</section>
+
+<section class="slide" data-t="Q2 · the wallpaper" data-act="question 2 · the ninth bit">
+  <div>
+    <div class="tag bad">HOUR ONE, FINALLY CLOSED</div>
+    <h2 style="font-size:27px;margin-bottom:2px">A phone that would not boot, and a colour value of 271.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figWall"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Two hundred and seventy one needs nine bits. The container held eight, so the top bit went where the carry out goes.</li>
+        <li>What came back was <span class="num">15</span>: a colour meant to sit near the top of its range arriving near the bottom.</li>
+        <li>Go back one slide, load the <span class="num">255 + 16</span> preset, and watch the adder produce exactly that with the carry lamp lit.</li>
+        <li>The wire carrying the truth was right there. Nothing downstream was looking at it.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Actually go back and run it. Seeing 15 come out of a circuit they built is the payoff for nineteen hours.</div>
+</section>
+
+<section class="slide" data-t="Q2 · answered" data-act="question 2 · the ninth bit">
+  <div>
+    <div class="tag win">ANSWER</div>
+    <h2 style="font-size:31px;margin-bottom:4px">It goes onto a wire called the carry flag, and somebody has to read it.</h2>
+    <div style="text-align:center;margin-top:2px"><svg viewBox="0 0 1120 220" width="1060" height="208"><g id="figFlag"></g></svg></div>
+    <div class="rem win" style="max-width:none">
+      <div class="h">what this question taught</div>
+      <ul>
+        <li>A fixed width adder cannot report a result that needs more width. It can only report <em>that</em> it happened.</li>
+        <li>The carry out becomes a one bit output of the machine alongside the answer, and it is called the <strong>carry flag</strong>.</li>
+        <li>Hardware raising a flag and software ignoring it is the single most common shape of arithmetic bug there is.</li>
+        <li>In C, unsigned overflow is defined to wrap quietly. The flag exists; the language simply does not make you look.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The flag is not a fix. It is a notification, and notifications can be ignored.</div>
+</section>
+
+<!-- ================= Q3 ================= -->
+
+<section class="slide" data-t="Q3 · the question" data-act="question 3 · two failures">
+  <div>
+    <div class="tag">QUESTION THREE</div>
+    <div class="kicker" style="margin-top:2px">load 127 + 1 and look at the carry lamp</div>
+    <h2 style="font-size:31px;margin-bottom:4px">Is 127 + 1 the same failure?</h2>
+    <div class="split" style="margin-top:4px">
+      <div class="stack">
+        <p>In two's complement, 127 is the largest positive number eight bits can hold. Adding one should be an overflow.</p>
+        <p class="frag">The adder returns <span class="num">10000000</span>, which a signed reader calls <span class="num">-128</span>. Wrong by two hundred and fifty six.</p>
+        <p class="big frag" style="margin-top:4px">And the carry flag is <em>off</em>.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">so the flag you just built does not catch this</div>
+        <ul>
+          <li>Nothing came off the left hand end. As unsigned this is 127 + 1 = 128, which fits perfectly.</li>
+          <li>An unsigned reader is entirely satisfied with that answer. A signed reader has been lied to.</li>
+          <li>Same eight wires, same circuit, same instant. The disagreement is not in the hardware.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Have them predict the carry lamp before you show it. Almost everybody guesses it lights.</div>
+</section>
+
+<section class="slide" data-t="Q3 · two cuts" data-act="question 3 · two failures">
+  <div>
+    <div class="kicker">back to the circle you drew in class five</div>
+    <h2 style="font-size:27px;margin-bottom:2px">The two readers cut the same circle in different places.</h2>
+    <div class="row" style="align-items:center;gap:24px">
+      <div><svg viewBox="0 0 760 410" width="620" height="334"><g id="figCircle"></g></svg></div>
+      <div style="max-width:32ch">
+        <p style="font-size:18px">Two hundred and fifty six patterns in a ring, and counting up walks you round it. That has been true since Class 5.</p>
+        <p class="frag" style="font-size:18px;margin-top:8px">An <strong>unsigned</strong> reader calls one point the end: past 255 there is nowhere to go.</p>
+        <p class="frag" style="font-size:18px;margin-top:8px">A <strong>signed</strong> reader picks a different point: past 127 the numbers turn negative.</p>
+        <div class="rem frag" style="margin-top:10px">
+          <div class="h">so there are two ends</div>
+          <ul>
+            <li>Same ring, same adder, two places where the answer stops making sense.</li>
+            <li>They sit on opposite sides, so stepping over one says nothing about the other.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Draw the ring and mark both cuts on the board before showing this. Two ends is the idea of the hour.</div>
+</section>
+
+<section class="slide" data-t="Q3 · different signs are safe" data-act="question 3 · two failures">
+  <div>
+    <div class="kicker">before hunting for a detector, rule out most of the cases</div>
+    <h2 style="font-size:27px;margin-bottom:2px">Adding a positive to a negative can never overflow.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 250" width="1080" height="237"><g id="figSafe"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">why, in one line</div>
+      <ul>
+        <li>If one input is positive and the other negative, the true sum lies strictly <em>between</em> them.</li>
+        <li>Both inputs are representable, and the representable numbers form one unbroken run from -128 to 127.</li>
+        <li>So anything between two representable numbers is representable too. There is nothing to overflow into.</li>
+        <li>This is not special to two's complement. It is true of adding inside any contiguous range.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Half the eight sign combinations are eliminated by this argument alone. Say that; it makes the next slide short.</div>
+</section>
+
+<section class="slide" data-t="Q3 · three sign bits" data-act="question 3 · two failures">
+  <div>
+    <div class="kicker">so overflow is decided by three bits: the two input signs and the result sign</div>
+    <h2 style="font-size:27px;margin-bottom:2px">Eight combinations. Only two of them are overflow.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 430" width="1040" height="392"><g id="figSignTable"></g></svg></div>
+    <div class="btnrow">
+      <span class="lab">SHOW</span>
+      <button class="btn hot" data-fl="all">all eight</button>
+      <button class="btn" data-fl="same">inputs share a sign</button>
+      <button class="btn" data-fl="diff">inputs differ</button>
+    </div>
+  </div>
+  <div class="cue">Filter to "inputs differ" first. Four rows, all safe. Then "share a sign", and the two failures are obvious.</div>
+</section>
+
+<section class="slide" data-t="Q3 · the rule" data-act="question 3 · two failures">
+  <div>
+    <h2>So: matching input signs is the precondition, not the verdict.</h2>
+    <div class="split" style="margin-top:2px">
+      <div class="stack">
+        <p>If the two top bits differ, stop. There is no overflow and there cannot be, whatever the result looks like.</p>
+        <p class="frag">If they match, then look at the result's top bit. Matching means the sign survived. Differing means it was pushed over the break.</p>
+        <p class="big frag" style="margin-top:4px">Overflow is when two numbers of the same sign produce the other sign.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">stated as a formula</div>
+        <ul>
+          <li><span class="num">V = (sa equals sb) AND (ss differs from sa)</span></li>
+          <li>All three bits are needed. Two of them are not enough, because the same pair of input signs gives V = 0 or V = 1 depending on the result.</li>
+          <li>Every one of the eight combinations occurs in real eight bit arithmetic. None of them is a theoretical curiosity.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Precondition, not verdict. That phrasing stops the usual mistake of thinking matching signs alone means overflow.</div>
+</section>
+
+<section class="slide" data-t="Q3 · four cases" data-act="question 3 · two failures">
+  <div>
+    <div class="kicker">click any cell to load that case into the adder</div>
+    <h2 style="font-size:27px;margin-bottom:2px">Two independent things can go wrong, so there are four cases, and all four happen.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1080 400" width="1000" height="370"><g id="figQuad"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>The bits coming out of the adder are identical in all four cases. Only the question being asked of them differs.</li>
+        <li>Which means the circuit cannot possibly decide for you. It does not know whether you meant signed or unsigned.</li>
+        <li>So it computes <strong>both</strong> verdicts, raises <strong>both</strong> flags, and lets the program decide which one it cares about.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">All four quadrants are filled by real eight bit examples. That is worth saying; it is not a theoretical taxonomy.</div>
+</section>
+
+<section class="slide" data-t="Q3 · two ways to build it" data-act="question 3 · two failures">
+  <div>
+    <div class="kicker">the rule needs three sign bits · the hardware uses two wires it already has</div>
+    <h2 style="font-size:27px;margin-bottom:2px">Same flag, two ways to compute it, and one is five gates cheaper.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 330" width="1080" height="313"><g id="figTwoWays"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>The sign rule needs the two input top bits and the result top bit routed to a block of their own, and it does not minimise: it is another checkerboard.</li>
+        <li>The carries either side of the sign column are already inside bit 7. Taking them costs no routing at all.</li>
+        <li>If a carry arrives at the sign column but none leaves, the sign was pushed over. If one leaves but none arrived, pushed the other way. Either mismatch is overflow.</li>
+        <li>The two agree on every one of the 65,536 input pairs. <strong>They are the same flag, computed differently.</strong></li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is the useful engineering lesson: the cheapest circuit is often the one whose signals already exist.</div>
+</section>
+
+<section class="slide" data-t="Q3 · answered" data-act="question 3 · two failures">
+  <div>
+    <div class="tag win">ANSWER</div>
+    <h2 style="font-size:31px;margin-bottom:4px">No. Different failures, different detectors, and the machine raises both.</h2>
+    <div style="text-align:center;margin-top:2px"><svg viewBox="0 0 1120 230" width="1060" height="218"><g id="figTwoFlags"></g></svg></div>
+    <div class="rem win" style="max-width:none">
+      <div class="h">what this question taught</div>
+      <ul>
+        <li><strong>Carry</strong> means the unsigned answer needed a ninth bit. <strong>Overflow</strong> means the signed answer came out with the wrong sign.</li>
+        <li>They are independent, and you have seen all four combinations of them in eight bit arithmetic.</li>
+        <li>This is Class 5 arriving in copper: the bits never carried a meaning, so the hardware computes for both meanings at once.</li>
+        <li>Every processor you will ever meet has both flags. Now you know why there are two.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Class 5 said the machine does not know what its bits mean. This is what that costs in silicon: two flags instead of one.</div>
+</section>
+
+<section class="slide" data-t="Close" data-act="closing">
+  <div class="center">
+    <h2 style="font-size:34px;margin-bottom:16px">Eight full adders, one wire between each,<br>and two flags at the end.</h2>
+    <p class="big" style="max-width:56ch;color:var(--soft)">It is correct on every input. The wallpaper crash was never a broken circuit; it was a correct circuit whose warning nobody read.</p>
+    <p class="big frag" style="margin-top:18px;max-width:52ch">Next session: it is also unusably slow, and you already have the tools to prove it.</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: measure the adder with Class 18's method. Longest path from any input to any output, in gates. Bring a number.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallow=false;
+  document.addEventListener('click',function(e){
+    swallow = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||
+                 e.target.closest('svg')||e.target.closest('.readers'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallow){ swallow=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= helpers ================= */
+  var NS='http://www.w3.org/2000/svg';
+  var GREY='#c6c3ba', HI='#e8952b', INK='#15171b', DEAD='#dedbd3',
+      BLUE='#23408f', RED='#a8231f', GRN='#146b5c', VIO='#6b3fa0', AMB='#b06a12';
+  function el(tag,a,p){ var e=document.createElementNS(NS,tag);
+    for(var k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e; }
+  function txt(p,x,y,s,o){ var t=el('text',Object.assign({x:x,y:y,'font-size':13,fill:'#8b9096'},o||{}),p);
+    t.textContent=s; return t; }
+  function rct(p,x,y,w,h,o){ return el('rect',Object.assign({x:x,y:y,width:w,height:h,rx:7,
+    fill:'#fff',stroke:GREY,'stroke-width':2},o||{}),p); }
+  function wire(p,x1,y1,x2,y2,v){ return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,
+    stroke:v?HI:DEAD,'stroke-width':v?3.4:2.4,'stroke-linecap':'round'},p); }
+  function pth(p,d,o){ return el('path',Object.assign({d:d,fill:'none',stroke:GREY,'stroke-width':2.4},o||{}),p); }
+  function gOr(p,x,y,h,v,xr){
+    var nose=h*1.4;
+    el('path',{d:'M'+(x-4)+' '+(y-h)+' Q'+(x+h*0.8)+' '+y+' '+(x-4)+' '+(y+h)+
+      ' Q'+(x+nose*0.55)+' '+(y+h*0.85)+' '+(x+nose)+' '+y+' Q'+(x+nose*0.55)+' '+(y-h*0.85)+' '+(x-4)+' '+(y-h)+' z',
+      fill:v?'#fbf0dc':'#fff',stroke:v?AMB:INK,'stroke-width':2.2},p);
+    if(xr) el('path',{d:'M'+(x-14)+' '+(y-h)+' Q'+(x+h*0.6)+' '+y+' '+(x-14)+' '+(y+h),
+      fill:'none',stroke:v?AMB:INK,'stroke-width':2.2},p);
+    return x+nose;
+  }
+  function orTip(x,h){ return x+h*1.4; }
+  function sgn(v){ return v>=128 ? v-256 : v; }
+
+  /* ================= the ripple adder ================= */
+  var A=7, B=3, rippleTo=8;
+  function compute(){
+    var s=0, carry=0, cs=[0];
+    for(var k=0;k<8;k++){
+      var ab=(A>>k)&1, bb=(B>>k)&1, tot=ab+bb+carry;
+      s|=(tot&1)<<k; carry=tot>>1; cs.push(carry);
+    }
+    return {sum:s, cout:carry, cs:cs, V:(cs[7]^carry)};
+  }
+
+  (function(){
+    var g=document.getElementById('figAdder'); if(!g) return;
+    var BW=104, DX=124, X0=150;
+    function colX(k){ return X0+(7-k)*DX; }   /* k = 7 leftmost, k = 0 rightmost */
+
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var r=compute();
+      for(var k=7;k>=0;k--){
+        var X=colX(k);
+        /* column k settles one step after the column to its right */
+        var live=(rippleTo>=k+1), cinShown=(rippleTo>=k);
+        var ab=(A>>k)&1, bb=(B>>k)&1, sb=(r.sum>>k)&1;
+        txt(g,X+BW/2,32,'bit '+k,{'font-size':10.5,'text-anchor':'middle','letter-spacing':1.2});
+        [[ab,58,'A'],[bb,106,'B']].forEach(function(pr){
+          var v=pr[0], y=pr[1];
+          var rr=rct(g,X+BW/2-24,y,48,38,{fill:v?'#fbf0dc':'#f6f4ef',stroke:v?AMB:'#e2e0d9'});
+          rr.style.cursor='pointer';
+          rr.onclick=(function(which,kk){ return function(){
+            if(which==='A') A^=(1<<kk); else B^=(1<<kk);
+            rippleTo=8; render(); updateReaders();
+          }; })(pr[2],k);
+          txt(g,X+BW/2,y+26,v,{'font-size':18,fill:v?HI:'#a9a69d','text-anchor':'middle','font-weight':700,'pointer-events':'none'});
+        });
+        rct(g,X,164,BW,68,{rx:10,fill:live?'#fbfaf7':'#f4f2ed',stroke:live?'#c3cee6':'#e2e0d9','stroke-width':2});
+        txt(g,X+BW/2,196,'full',{'font-size':12,fill:live?BLUE:'#c6c3ba','text-anchor':'middle','font-weight':700});
+        txt(g,X+BW/2,214,'adder',{'font-size':12,fill:live?BLUE:'#c6c3ba','text-anchor':'middle','font-weight':700});
+        wire(g,X+BW/2,96,X+BW/2,164,ab&&live);
+        wire(g,X+BW/2,144,X+BW/2,164,bb&&live);
+        wire(g,X+BW/2,232,X+BW/2,262,live);
+        rct(g,X+BW/2-24,262,48,40,{fill:live?(sb?'#eaeef7':'#f6f4ef'):'#f4f2ed',
+          stroke:live?(sb?'#c3cee6':'#e2e0d9'):'#e2e0d9'});
+        txt(g,X+BW/2,290,live?sb:'',{'font-size':19,fill:sb?BLUE:'#a9a69d','text-anchor':'middle','font-weight':700});
+        /* the carry arrives from the column on the right */
+        if(k===0){
+          wire(g,X+BW+26,198,X+BW,198,0);
+          txt(g,X+BW+40,203,'0',{'font-size':15,fill:'#a9a69d'});
+          txt(g,X+BW+30,228,'tied low',{'font-size':10,'text-anchor':'middle'});
+        } else {
+          var from=colX(k-1);
+          wire(g,from,198,X+BW,198,r.cs[k]&&cinShown);
+          if(r.cs[k]&&cinShown) txt(g,(from+X+BW)/2,190,'1',{'font-size':11.5,fill:AMB,'text-anchor':'middle','font-weight':700});
+        }
+      }
+      var X7=colX(7), coShown=(rippleTo>=8);
+      wire(g,X7,198,X7-46,198,r.cout&&coShown);
+      rct(g,X7-104,176,58,44,{fill:(r.cout&&coShown)?'#fbf0dc':'#f6f4ef',stroke:(r.cout&&coShown)?AMB:'#e2e0d9'});
+      txt(g,X7-75,206,coShown?r.cout:'',{'font-size':19,fill:r.cout?HI:'#a9a69d','text-anchor':'middle','font-weight':700});
+      txt(g,X7-75,238,'CARRY',{'font-size':10,'text-anchor':'middle','letter-spacing':1.2});
+      txt(g,X7-75,252,'OUT',{'font-size':10,'text-anchor':'middle','letter-spacing':1.2});
+      txt(g,X0-58,84,'a',{'font-size':14,fill:INK,'text-anchor':'end','font-weight':700});
+      txt(g,X0-58,132,'b',{'font-size':14,fill:INK,'text-anchor':'end','font-weight':700});
+      txt(g,X0-58,290,'sum',{'font-size':13,fill:BLUE,'text-anchor':'end','font-weight':700});
+      if(rippleTo<8) txt(g,X0,326,'the carry has reached column '+Math.max(0,rippleTo-1)+' of 7',
+        {'font-size':13,fill:AMB,'font-weight':700});
+    }
+
+    function updateReaders(){
+      var r=compute();
+      var uOK=((A+B)===r.sum), sOK=((sgn(A)+sgn(B))===sgn(r.sum));
+      document.getElementById('eqU').textContent=A+' + '+B+' = '+r.sum;
+      document.getElementById('vdU').textContent=uOK?'correct':('should be '+(A+B)+'  \u00b7  wrapped');
+      document.getElementById('rdU').className='reader '+(uOK?'good':'bad');
+      document.getElementById('eqS').textContent=sgn(A)+' + '+sgn(B)+' = '+sgn(r.sum);
+      document.getElementById('vdS').textContent=sOK?'correct':('should be '+(sgn(A)+sgn(B))+'  \u00b7  overflowed');
+      document.getElementById('rdS').className='reader '+(sOK?'good':'bad');
+      document.getElementById('lampC').className='lamp'+(r.cout?' on':'');
+      document.getElementById('lampV').className='lamp'+(r.V?' on':'');
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-p]'),function(b){
+      b.onclick=function(){
+        Array.prototype.forEach.call(document.querySelectorAll('[data-p]'),function(o){o.classList.remove('hot');});
+        b.classList.add('hot');
+        var p=b.getAttribute('data-p').split(',');
+        A=+p[0]; B=+p[1]; rippleTo=8; render(); updateReaders();
+      };
+    });
+    var timer=null;
+    document.getElementById('ripple').onclick=function(){
+      var self=this;
+      if(timer){ clearInterval(timer); timer=null; self.classList.remove('hot'); rippleTo=8; render(); return; }
+      self.classList.add('hot'); rippleTo=0; render();
+      timer=setInterval(function(){
+        rippleTo++; render();
+        if(rippleTo>=8){ clearInterval(timer); timer=null; self.classList.remove('hot'); render(); }
+      },400);
+    };
+    render(); updateReaders();
+  })();
+
+  /* ================= Q2 · the wallpaper ================= */
+  (function(){
+    var g=document.getElementById('figWall'); if(!g) return;
+    txt(g,40,30,'A COLOUR VALUE OF 271, WRITTEN INTO EIGHT BITS',{'font-size':10.5,fill:RED,'letter-spacing':1.8});
+    [1,0,0,0,0,1,1,1,1].forEach(function(v,idx){
+      var x=40+idx*74, keep=idx>0;
+      rct(g,x,54,58,58,{fill:v?(keep?'#fbf0dc':'#fdf0ef'):'#f6f4ef',
+        stroke:v?(keep?AMB:RED):'#e2e0d9','stroke-width':keep?2:2.6});
+      txt(g,x+29,94,v,{'font-size':24,fill:v?(keep?HI:RED):'#a9a69d','text-anchor':'middle','font-weight':700});
+      txt(g,x+29,132,keep?('bit '+(8-idx)):'the ninth',{'font-size':10,'text-anchor':'middle',fill:keep?'#8b9096':RED});
+    });
+    el('rect',{x:34,y:48,width:70,height:70,rx:10,fill:'none',stroke:RED,'stroke-width':3,'stroke-dasharray':'7 5'},g);
+    pth(g,'M69 44 L69 22',{stroke:RED,'stroke-width':2.4});
+    txt(g,69,16,'no wire for this one',{'font-size':11.5,fill:RED,'text-anchor':'middle','font-weight':700});
+    el('rect',{x:108,y:48,width:664,height:70,rx:10,fill:'none',stroke:'#c3cee6','stroke-width':2.4},g);
+    txt(g,440,148,'the eight bits that fit',{'font-size':12,fill:BLUE,'text-anchor':'middle'});
+    pth(g,'M796 84 L856 84 M844 77 l12 7 l-12 7',{stroke:'#c6c3ba','stroke-width':2.4});
+    rct(g,876,52,214,64,{rx:12,fill:'#fdf0ef',stroke:'#e0bcb9','stroke-width':2});
+    txt(g,983,96,'reads back as 15',{'font-size':19,fill:RED,'text-anchor':'middle','font-weight':700});
+    txt(g,40,196,'271 was meant to sit near the top of the range. 15 sits near the bottom.',{'font-size':17,fill:INK});
+    txt(g,40,224,'The wrong colour, and then a crash loop that no reboot escapes.',{'font-size':17,fill:INK});
+    txt(g,40,266,'the adder you just built does exactly this: load 255 + 16 and the sum reads 15 with the carry lamp lit',
+      {'font-size':15,fill:RED,'font-weight':700});
+  })();
+
+  /* ================= Q2 · the flag ================= */
+  (function(){
+    var g=document.getElementById('figFlag'); if(!g) return;
+    rct(g,40,40,400,130,{rx:14,fill:'#fbfaf7',stroke:'#e2e0d9'});
+    txt(g,64,70,'WHAT THE ADDER PRODUCES',{'font-size':10.5,fill:BLUE,'letter-spacing':1.8});
+    txt(g,64,110,'8 sum bits',{'font-size':19,fill:INK,'font-weight':700});
+    txt(g,64,142,'1 carry bit',{'font-size':19,fill:AMB,'font-weight':700});
+    pth(g,'M470 105 L530 105 M518 98 l12 7 l-12 7',{stroke:'#c6c3ba','stroke-width':2.4});
+    rct(g,560,40,240,130,{rx:14,fill:'#eaeef7',stroke:'#c3cee6','stroke-width':2});
+    txt(g,584,70,'WHAT SOFTWARE TAKES',{'font-size':10.5,fill:BLUE,'letter-spacing':1.8});
+    txt(g,584,110,'8 sum bits',{'font-size':19,fill:INK,'font-weight':700});
+    txt(g,584,142,'and looks away',{'font-size':17,fill:RED,'font-weight':700});
+    txt(g,830,96,'the flag is a notification,',{'font-size':16,fill:INK});
+    txt(g,830,120,'not a fix',{'font-size':16,fill:INK,'font-weight':700});
+    txt(g,40,204,'nothing forces a program to check it, and in C unsigned overflow is defined to wrap quietly',
+      {'font-size':15,fill:'#8b9096'});
+  })();
+
+  /* ================= Q3 · one ring, two cuts ================= */
+  (function(){
+    var g=document.getElementById('figCircle'); if(!g) return;
+    var CX=330, CY=214, R=120;
+    function P(v,rad){ var t=(v/256)*Math.PI*2 + Math.PI;
+      return [CX+rad*Math.cos(t), CY+rad*Math.sin(t)]; }
+    el('circle',{cx:CX,cy:CY,r:R,fill:'none',stroke:'#dedbd3','stroke-width':16},g);
+    el('circle',{cx:CX,cy:CY,r:R,fill:'none',stroke:'#c6c3ba','stroke-width':1.5},g);
+    el('path',{d:'M'+(CX-30)+' '+(CY-26)+' A 40 40 0 0 1 '+(CX+24)+' '+(CY-32),
+      fill:'none',stroke:'#c6c3ba','stroke-width':2},g);
+    el('path',{d:'M'+(CX+16)+' '+(CY-40)+' l10 8 l-10 6',fill:'none',stroke:'#c6c3ba','stroke-width':2},g);
+    txt(g,CX,CY+2,'counting up',{'font-size':12,'text-anchor':'middle'});
+    txt(g,CX,CY+20,'goes this way',{'font-size':12,'text-anchor':'middle'});
+    [[32,'32','32'],[64,'64','64'],[96,'96','96'],
+     [160,'160','-96'],[192,'192','-64'],[224,'224','-32']].forEach(function(t){
+      var p=P(t[0],R-8), q=P(t[0],R+8);
+      el('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:'#a9a69d','stroke-width':1.6},g);
+      var o=P(t[0],R+30), i=P(t[0],R-30);
+      txt(g,o[0],o[1]+4,t[1],{'font-size':12,fill:AMB,'text-anchor':'middle','font-weight':700});
+      txt(g,i[0],i[1]+4,t[2],{'font-size':12,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    });
+    function cut(v,col,lab,sub,lx,anchor){
+      var p=P(v,R-24), q=P(v,R+24);
+      el('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:col,'stroke-width':7,'stroke-linecap':'round'},g);
+      txt(g,lx,CY-8,lab,{'font-size':15,fill:col,'text-anchor':anchor,'font-weight':700});
+      txt(g,lx,CY+12,sub,{'font-size':12,fill:col,'text-anchor':anchor});
+    }
+    cut(255.5,AMB,'255 \u2192 0','the unsigned break',CX-R-38,'end');
+    cut(127.5,RED,'127 \u2192 -128','the signed break',CX+R+38,'start');
+    el('circle',{cx:150,cy:386,r:6,fill:AMB},g);
+    txt(g,166,391,'outer numbers: what unsigned sees',{'font-size':12.5,fill:'#8b9096'});
+    el('circle',{cx:450,cy:386,r:6,fill:BLUE},g);
+    txt(g,466,391,'inner: what signed sees',{'font-size':12.5,fill:'#8b9096'});
+    txt(g,CX,28,'the same 256 patterns, broken in two different places',
+      {'font-size':13.5,fill:INK,'text-anchor':'middle','font-weight':700});
+  })();
+
+  /* ================= Q3 · different signs are safe ================= */
+  (function(){
+    var g=document.getElementById('figSafe'); if(!g) return;
+    var X0=110, W=920, Y=96;
+    function xOf(v){ return X0+(v+128)/255*W; }
+    /* the representable band */
+    el('rect',{x:X0,y:Y-22,width:W,height:44,rx:10,fill:'#e9f2ef',stroke:'#b6d5cc','stroke-width':2},g);
+    txt(g,X0,Y+44,'-128',{'font-size':13,fill:GRN,'text-anchor':'middle','font-weight':700});
+    txt(g,X0+W,Y+44,'127',{'font-size':13,fill:GRN,'text-anchor':'middle','font-weight':700});
+    txt(g,X0+W/2,Y+44,'0',{'font-size':13,fill:'#8b9096','text-anchor':'middle'});
+    el('line',{x1:X0+W/2,y1:Y-22,x2:X0+W/2,y2:Y+22,stroke:'#b6d5cc','stroke-width':1.6},g);
+    txt(g,X0,26,'EVERY REPRESENTABLE NUMBER, IN ONE UNBROKEN RUN',{'font-size':10.5,fill:GRN,'letter-spacing':1.8});
+    /* the two inputs and the sum */
+    function mark(v,lab,col,dy){
+      var x=xOf(v);
+      el('line',{x1:x,y1:Y-30,x2:x,y2:Y+30,stroke:col,'stroke-width':3},g);
+      el('circle',{cx:x,cy:Y,r:8,fill:'#fff',stroke:col,'stroke-width':3},g);
+      txt(g,x,Y+dy,lab,{'font-size':14,fill:col,'text-anchor':'middle','font-weight':700});
+    }
+    mark(-40,'b = -40',RED,-42);
+    mark(100,'a = 100',BLUE,-42);
+    mark(60,'a + b = 60',INK,72);
+    /* the bracket */
+    var l=xOf(-40), r=xOf(100);
+    pth(g,'M'+l+' 160 L'+l+' 172 L'+r+' 172 L'+r+' 160',{stroke:'#8b9096','stroke-width':2});
+    txt(g,(l+r)/2,192,'the sum has to land somewhere in here',{'font-size':15,fill:INK,'text-anchor':'middle','font-weight':700});
+    txt(g,(l+r)/2,214,'and every point in here is already representable',{'font-size':13.5,fill:'#8b9096','text-anchor':'middle'});
+  })();
+
+  /* ================= Q3 · the eight sign combinations ================= */
+  (function(){
+    var g=document.getElementById('figSignTable'); if(!g) return;
+    var filter='all';
+    var rows=[
+      {sa:0,sb:0,ss:0,eg:'   0 +    0 =    0'},
+      {sa:0,sb:0,ss:1,eg:'   1 +  127 = -128'},
+      {sa:0,sb:1,ss:0,eg:'   1 +   -1 =    0'},
+      {sa:0,sb:1,ss:1,eg:'   0 + -128 = -128'},
+      {sa:1,sb:0,ss:0,eg:'-127 +  127 =    0'},
+      {sa:1,sb:0,ss:1,eg:'-128 +    0 = -128'},
+      {sa:1,sb:1,ss:0,eg:'-128 + -128 =    0'},
+      {sa:1,sb:1,ss:1,eg:'-127 +   -1 = -128'}
+    ];
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,60,30,'a\u2019s TOP BIT',{'font-size':10,fill:'#8b9096','letter-spacing':1.4,'text-anchor':'middle'});
+      txt(g,150,30,'b\u2019s TOP BIT',{'font-size':10,fill:'#8b9096','letter-spacing':1.4,'text-anchor':'middle'});
+      txt(g,250,30,'RESULT\u2019S TOP BIT',{'font-size':10,fill:'#8b9096','letter-spacing':1.4,'text-anchor':'middle'});
+      txt(g,380,30,'V',{'font-size':10,fill:'#8b9096','letter-spacing':1.4,'text-anchor':'middle'});
+      txt(g,450,30,'WHY',{'font-size':10,fill:'#8b9096','letter-spacing':1.4});
+      txt(g,880,30,'AN EXAMPLE THAT REACHES IT',{'font-size':10,fill:'#8b9096','letter-spacing':1.4});
+      pth(g,'M30 40 L1120 40',{stroke:GREY,'stroke-width':1.5});
+      var y=62, shown=0;
+      rows.forEach(function(r){
+        var same=(r.sa===r.sb), V=(same && r.ss!==r.sa)?1:0;
+        if(filter==='same' && !same) return;
+        if(filter==='diff' && same) return;
+        shown++;
+        var tone = V?'#fdf0ef' : same?'#fbfaf7' : '#e9f2ef';
+        var edge = V?'#e0bcb9' : same?'#e2e0d9' : '#b6d5cc';
+        el('rect',{x:30,y:y-20,width:1090,height:34,rx:7,fill:tone,stroke:edge,'stroke-width':V?2:1.4},g);
+        [[r.sa,60],[r.sb,150],[r.ss,250]].forEach(function(c){
+          txt(g,c[1],y+4,c[0],{'font-size':17,fill:'#4b5057','text-anchor':'middle','font-weight':700});
+        });
+        txt(g,380,y+4,V,{'font-size':17,fill:V?RED:GRN,'text-anchor':'middle','font-weight':700});
+        txt(g,450,y+4, V ? 'same sign in, other sign out'
+          : same ? 'same sign in, sign survived'
+                 : 'signs differ, so it cannot overflow',
+          {'font-size':14,fill:V?RED:(same?'#8b9096':GRN),'font-weight':V?700:400});
+        txt(g,880,y+4,r.eg,{'font-size':13.5,fill:'#8b9096'});
+        y+=42;
+      });
+      var note = filter==='diff' ? 'four rows, and not one of them can overflow'
+               : filter==='same' ? 'four rows, and exactly half of them do'
+               : 'eight rows, two overflows, and every one of the eight occurs in real eight bit arithmetic';
+      txt(g,30,y+18,note,{'font-size':15,fill:INK,'font-weight':700});
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-fl]'),function(b){
+      b.onclick=function(){
+        Array.prototype.forEach.call(document.querySelectorAll('[data-fl]'),function(o){o.classList.remove('hot');});
+        b.classList.add('hot'); filter=b.getAttribute('data-fl'); render();
+      };
+    });
+    render();
+  })();
+
+  /* ================= Q3 · the four cases ================= */
+  (function(){
+    var g=document.getElementById('figQuad'); if(!g) return;
+    var cases=[{a:7,b:3,C:0,V:0},{a:100,b:100,C:0,V:1},{a:255,b:1,C:1,V:0},{a:128,b:255,C:1,V:1}];
+    var CW=380, CH=112, X0=250, Y0=92;
+    txt(g,X0+CW/2,58,'OVERFLOW  V = 0',{'font-size':11,fill:'#8b9096','text-anchor':'middle','letter-spacing':1.5});
+    txt(g,X0+CW+CW/2+24,58,'OVERFLOW  V = 1',{'font-size':11,fill:'#8b9096','text-anchor':'middle','letter-spacing':1.5});
+    [[0,'C = 0'],[1,'C = 1']].forEach(function(rr){
+      txt(g,X0-24,Y0+rr[0]*(CH+24)+CH/2,'CARRY',{'font-size':11,'text-anchor':'end','letter-spacing':1.5});
+      txt(g,X0-24,Y0+rr[0]*(CH+24)+CH/2+18,rr[1],{'font-size':11,'text-anchor':'end','letter-spacing':1.5});
+    });
+    cases.forEach(function(c,idx){
+      var col=idx%2, rw=idx>>1, x=X0+col*(CW+24), y=Y0+rw*(CH+24);
+      var s=(c.a+c.b)&255, uOK=!c.C, sOK=!c.V;
+      var tone=(uOK&&sOK)?'#e9f2ef':(!uOK&&!sOK)?'#fdf0ef':'#fdf6ea';
+      var edge=(uOK&&sOK)?'#b6d5cc':(!uOK&&!sOK)?'#e0bcb9':'#e8d3ab';
+      var box=rct(g,x,y,CW,CH,{rx:12,fill:tone,stroke:edge,'stroke-width':2});
+      box.style.cursor='pointer';
+      box.onclick=(function(cc){ return function(){
+        var pb=document.querySelector('[data-p="'+cc.a+','+cc.b+'"]'); if(pb) pb.click();
+      }; })(c);
+      txt(g,x+20,y+34,c.a+' + '+c.b+'  =  '+s,{'font-size':19,fill:INK,'font-weight':700,'pointer-events':'none'});
+      txt(g,x+20,y+62,'unsigned: '+(uOK?'correct':'wrapped'),
+        {'font-size':14,fill:uOK?GRN:RED,'font-weight':uOK?400:700,'pointer-events':'none'});
+      txt(g,x+20,y+84,'signed: '+sgn(c.a)+' + '+sgn(c.b)+' = '+sgn(s)+(sOK?'  correct':'  overflowed'),
+        {'font-size':14,fill:sOK?GRN:RED,'font-weight':sOK?400:700,'pointer-events':'none'});
+      txt(g,x+CW-20,y+34,'C='+c.C+'  V='+c.V,{'font-size':14,fill:'#8b9096','text-anchor':'end','pointer-events':'none'});
+    });
+    txt(g,X0,Y0+2*CH+24+44,'the same adder, the same wires. all four combinations occur in eight bits.',
+      {'font-size':15,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= Q3 · two ways to build the flag ================= */
+  (function(){
+    var g=document.getElementById('figTwoWays'); if(!g) return;
+    /* the sign-bit way */
+    el('rect',{x:34,y:34,width:520,height:250,rx:14,fill:'#fdf6ea',stroke:'#e8d3ab','stroke-width':2},g);
+    txt(g,58,64,'FROM THE THREE SIGN BITS',{'font-size':10.5,fill:AMB,'letter-spacing':1.8});
+    ['a\u2019s top bit','b\u2019s top bit','result\u2019s top bit'].forEach(function(n,k){
+      var y=100+k*46;
+      rct(g,58,y-17,150,34,{fill:'#fff',stroke:'#e8d3ab','stroke-width':1.6});
+      txt(g,133,y+5,n,{'font-size':12,fill:'#8b9096','text-anchor':'middle'});
+      pth(g,'M208 '+y+' L268 '+y,{stroke:'#e8d3ab','stroke-width':2});
+    });
+    rct(g,268,110,150,110,{rx:11,fill:'#fff',stroke:AMB,'stroke-width':2});
+    txt(g,343,150,'2 AND',{'font-size':14,fill:AMB,'text-anchor':'middle','font-weight':700});
+    txt(g,343,172,'1 OR',{'font-size':14,fill:AMB,'text-anchor':'middle','font-weight':700});
+    txt(g,343,194,'3 NOT',{'font-size':14,fill:AMB,'text-anchor':'middle','font-weight':700});
+    pth(g,'M418 165 L466 165',{stroke:'#e8d3ab','stroke-width':2});
+    rct(g,466,141,54,48,{fill:'#fbf0dc',stroke:AMB});
+    txt(g,493,173,'V',{'font-size':22,fill:HI,'text-anchor':'middle','font-weight':700});
+    txt(g,58,252,'6 gates, plus routing three bits out of the adder',{'font-size':14,fill:AMB,'font-weight':700});
+    txt(g,58,272,'and it does not minimise: another checkerboard',{'font-size':12.5,fill:'#8b9096'});
+    /* the carry way */
+    el('rect',{x:586,y:34,width:520,height:250,rx:14,fill:'#e9f2ef',stroke:'#b6d5cc','stroke-width':2},g);
+    txt(g,610,64,'FROM THE TWO CARRIES AROUND BIT 7',{'font-size':10.5,fill:GRN,'letter-spacing':1.8});
+    ['carry into bit 7','carry out of bit 7'].forEach(function(n,k){
+      var y=118+k*46;
+      rct(g,610,y-17,170,34,{fill:'#fff',stroke:'#b6d5cc','stroke-width':1.6});
+      txt(g,695,y+5,n,{'font-size':12,fill:'#8b9096','text-anchor':'middle'});
+      pth(g,'M780 '+y+' L826 '+y,{stroke:'#b6d5cc','stroke-width':2});
+    });
+    gOr(g,830,141,24,1,true);
+    txt(g,862,104,'XOR',{'font-size':11.5,fill:AMB,'text-anchor':'middle'});
+    pth(g,'M'+orTip(830,24)+' 141 L940 141',{stroke:'#b6d5cc','stroke-width':2});
+    rct(g,940,117,54,48,{fill:'#fbf0dc',stroke:AMB});
+    txt(g,967,149,'V',{'font-size':22,fill:HI,'text-anchor':'middle','font-weight':700});
+    txt(g,610,206,'both wires already exist inside bit 7',{'font-size':13,fill:GRN});
+    txt(g,610,252,'1 gate, and no extra routing at all',{'font-size':14,fill:GRN,'font-weight':700});
+    txt(g,610,272,'five gates cheaper, and identical on all 65,536 pairs',{'font-size':12.5,fill:'#8b9096'});
+    txt(g,34,314,'the cheapest circuit is usually the one whose signals you already have',
+      {'font-size':16,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= Q3 · two flags ================= */
+  (function(){
+    var g=document.getElementById('figTwoFlags'); if(!g) return;
+    function bay(X,tag,title,body,col){
+      rct(g,X,34,480,132,{rx:14,fill:'#fbfaf7',stroke:col,'stroke-width':2});
+      txt(g,X+26,64,tag,{'font-size':10.5,fill:col,'letter-spacing':1.8});
+      txt(g,X+26,98,title,{'font-size':21,fill:INK,'font-weight':700});
+      txt(g,X+26,128,body[0],{'font-size':14,fill:'#8b9096'});
+      txt(g,X+26,150,body[1],{'font-size':14,fill:'#8b9096'});
+    }
+    bay(40,'FLAG ONE \u00b7 C','Carry',['the unsigned answer needed','a ninth bit'],AMB);
+    bay(600,'FLAG TWO \u00b7 V','Overflow',['the signed answer came out','with the wrong sign'],RED);
+    txt(g,40,206,'independent, both computed every time, and only the program knows which one it meant',
+      {'font-size':16,fill:INK,'font-weight':700});
+  })();
+
+  paint();
+})();
+</script>
+</body>
+</html>
