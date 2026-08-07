@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 17 · How small can it go?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --hi:#e8952b; --lo:#b9bfc6; --violet:#6b3fa0;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:48px 70px 80px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:20px;left:70px;font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:20px;right:70px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:70px;right:70px;bottom:22px;display:flex;gap:1.5px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:70px;bottom:44px;font-family:var(--mono);font-size:12px;color:var(--soft);z-index:5}
+#help{position:absolute;left:70px;bottom:44px;font-family:var(--mono);font-size:11px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:5px}
+.kicker b{color:var(--accent);font-weight:400}
+h1{font-family:var(--display);font-weight:600;font-size:62px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:29px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:6px}
+p{font-size:20px;line-height:1.44;max-width:36ch}
+p+p{margin-top:8px}
+.big{font-size:24px;line-height:1.3;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:15.5px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center}
+.stack>*+*{margin-top:8px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 12px}
+.row{display:flex;gap:20px;align-items:flex-start;justify-content:center}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:9px 13px;margin-top:9px}
+.rem .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.rem.win{border-left-color:var(--ok)} .rem.win .h{color:var(--ok)}
+.rem ul{list-style:none}
+.rem li{font-size:15.5px;line-height:1.34;color:var(--ink);padding:3px 0 3px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+
+.btn{font-family:var(--mono);font-size:12.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:6px 11px;cursor:pointer;min-width:34px}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;align-items:center;justify-content:center}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+.expr{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);
+  background:var(--card);border:1px solid var(--rule);border-radius:9px;padding:10px 15px;text-align:center;line-height:1.5}
+.expr .dim{color:var(--soft);font-weight:400;font-size:13px}
+
+.tally{display:flex;align-items:stretch;justify-content:center;margin-top:2px}
+.tally .c{flex:1;text-align:center;padding:11px 10px;border-right:1px solid var(--rule)}
+.tally .c:last-child{border-right:none}
+.tally .c .l{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--soft)}
+.tally .c .v{font-family:var(--display);font-size:40px;font-weight:600;line-height:1.05;margin-top:3px}
+.tally .c .s{font-size:13px;color:var(--soft);margin-top:2px}
+
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:4px 10px;border-radius:20px;background:var(--accent-soft);color:var(--accent);margin-bottom:8px}
+.tag.new{background:#efe9f7;color:var(--violet)}
+.tag.win{background:var(--ok-soft);color:var(--ok)}
+
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .3s ease}
+.frag.shown{opacity:1}
+.kc{cursor:pointer;transition:fill .15s ease}
+.step{opacity:.15;transition:opacity .35s ease}
+.step.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag,.kc,.step{transition:none}}
+.cue{position:absolute;left:70px;right:70px;bottom:66px;display:none;padding:8px 12px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:14.5px;line-height:1.34;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:40px 70px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:9px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:50px}
+#jump li{padding:3px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:15px;color:var(--body);display:flex;gap:11px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:30px}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 17</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 17 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- ================= OPENING ================= -->
+
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 17 · hour seventeen of fifty</div>
+    <h1>How small<br>can it go?</h1>
+    <p class="big" style="margin-top:22px;max-width:46ch">Three problems. Each one gets solved completely before the next one starts, and each one needs exactly one thing you have not seen yet.</p>
+  </div>
+  <div class="cue">Collect the send off. Somebody will have shrunk bar c by hand, and that is problem three.</div>
+</section>
+
+<section class="slide" data-t="Three problems" data-act="opening">
+  <div>
+    <h2>The hour, in advance.</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:4px">
+      <div class="panel" style="padding:18px 20px">
+        <div class="tag">PROBLEM ONE</div>
+        <div style="font-family:var(--display);font-size:23px;font-weight:600;color:var(--ink);margin:2px 0 8px">A boiler with three sensors</div>
+        <div style="font-size:15.5px;line-height:1.4;margin-bottom:10px">Small enough that you can see the waste by staring at it.</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--fail)">4 AND gates</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--ok)">3 AND gates</div>
+      </div>
+      <div class="panel frag" style="padding:18px 20px">
+        <div class="tag">PROBLEM TWO</div>
+        <div style="font-family:var(--display);font-size:23px;font-weight:600;color:var(--ink);margin:2px 0 8px">Is the digit prime?</div>
+        <div style="font-size:15.5px;line-height:1.4;margin-bottom:10px">Sixteen rows. Staring stops working, so we need a better way to look.</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--fail)">4 AND gates</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--ok)">2 AND gates</div>
+      </div>
+      <div class="panel frag" style="padding:18px 20px">
+        <div class="tag">PROBLEM THREE</div>
+        <div style="font-family:var(--display);font-size:23px;font-weight:600;color:var(--ink);margin:2px 0 8px">Bar c of the display</div>
+        <div style="font-size:15.5px;line-height:1.4;margin-bottom:10px">The debt from last session. The better way of looking is still not enough.</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--fail)">9 AND gates</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--ok)">none at all</div>
+      </div>
+    </div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the shape of each one</div>
+      <ul>
+        <li>State the problem. Write the table. Build it the Class 15 way and count the gates.</li>
+        <li>Then find what the building method could not see, fix it, and rebuild.</li>
+        <li>Nothing is left half done. Each problem finishes before the next one is mentioned.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Promise the nine to none now. It sounds impossible and it makes them watch through two other problems to get there.</div>
+</section>
+
+<!-- ================= PROBLEM 1 ================= -->
+
+<section class="slide" data-t="P1 · the problem" data-act="problem 1 · the boiler">
+  <div>
+    <div class="kicker"><b>problem one</b> &nbsp;·&nbsp; state it, then table it</div>
+    <h2 style="font-size:28px;margin-bottom:4px">Three sensors on a boiler. Shut it down if at least two say the temperature is too high.</h2>
+    <div class="split" style="margin-top:2px;gap:40px">
+      <div style="display:flex;justify-content:flex-end">
+        <div class="panel"><svg viewBox="0 0 350 356" width="320" height="326"><g id="tabMaj"></g></svg></div>
+      </div>
+      <div class="stack">
+        <p>Nobody said the word logic. It is a rule about sensors, said the way a plant engineer would say it.</p>
+        <p class="frag">Three inputs means eight situations, and you decide what happens in each. That is the whole specification.</p>
+        <p class="big frag" style="margin-top:4px">Four of the eight want a shutdown, so the Class 15 method gives four detectors.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Fill the eight rows aloud with the room. Forty seconds, and it settles that the table is not the hard part.</div>
+</section>
+
+<section class="slide" data-t="P1 · as built" data-act="problem 1 · the boiler">
+  <div>
+    <div class="kicker"><b>problem one</b> &nbsp;·&nbsp; built the class fifteen way &nbsp;·&nbsp; click any input</div>
+    <h2 style="font-size:27px;margin-bottom:0">Four detectors, four AND gates, twelve wires into them.</h2>
+    <div style="text-align:center"><div id="bMajBefore"></div></div>
+    <div class="rem" style="max-width:none">
+      <div class="h">look at it before moving on</div>
+      <ul>
+        <li>Every gate tests all three sensors. The bottom two gates differ by one wire and nothing else.</li>
+        <li>Sum of products walks down the table writing one detector per row. It never compares two rows.</li>
+        <li>So it cannot notice a near duplicate, and there are three of them on this board.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Ask them to find the near duplicate pairs on the drawing. They will find at least one unaided.</div>
+</section>
+
+<section class="slide" data-t="P1 · the near duplicate" data-act="problem 1 · the boiler">
+  <div>
+    <div class="kicker"><b>problem one</b> &nbsp;·&nbsp; take two of the four and line them up</div>
+    <h2 style="font-size:28px;margin-bottom:2px">These two agree on everything except s1, and between them they cover both values of it.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 270" width="1080" height="255"><g id="figShare"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">so ask the obvious question</div>
+      <ul>
+        <li>Whatever s1 happens to be doing, one of these two detectors fires. Both mean shut down.</li>
+        <li>So why is anybody testing s1 at all?</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Get a student to say the last line before you do. It is the entire hour in one sentence.</div>
+</section>
+
+<section class="slide" data-t="P1 · the merge" data-act="problem 1 · the boiler">
+  <div>
+    <div class="tag new">NEW TECHNIQUE &nbsp;·&nbsp; THE MERGE</div>
+    <h2 style="font-size:28px;margin-bottom:2px">Click the algebra to step through it, then press merge.</h2>
+    <div class="row" style="align-items:center;gap:26px">
+      <div><svg viewBox="0 0 640 250" width="580" height="227"><g id="figAlg"></g></svg></div>
+      <div><svg viewBox="0 0 560 250" width="500" height="223"><g id="figMerge"></g></svg></div>
+    </div>
+    <div class="btnrow"><button class="btn hot" id="mBtn">merge &#9654;</button></div>
+    <div class="rem" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Factor out what they share, then a variable or its opposite is always true, then anding with true changes nothing.</li>
+        <li>Nothing was approximated. All three lines are equalities, proved by Boole in 1847 and made facts about copper by Shannon in 1937.</li>
+        <li>You never build a circuit to check a simplification. The algebra already settled it.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Click the algebra panel to advance a line at a time, and write each line on the board as it appears.</div>
+</section>
+
+<section class="slide" data-t="P1 · all three" data-act="problem 1 · the boiler">
+  <div>
+    <div class="kicker"><b>problem one</b> &nbsp;·&nbsp; the same move fits in three places</div>
+    <h2 style="font-size:28px;margin-bottom:2px">Step through them.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 280" width="1100" height="266"><g id="figThree"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn hot" id="t1">merge 1</button>
+      <button class="btn" id="t2">merge 2</button>
+      <button class="btn" id="t3">merge 3</button>
+    </div>
+  </div>
+  <div class="cue">The all ones term gets merged three separate times. A term may be reused, and that surprises people.</div>
+</section>
+
+<section class="slide" data-t="P1 · solved" data-act="problem 1 · the boiler">
+  <div>
+    <div class="tag win">PROBLEM ONE &nbsp;·&nbsp; SOLVED</div>
+    <h2 style="font-size:27px;margin-bottom:0">Three gates of two inputs, and it reads like the problem statement.</h2>
+    <div style="text-align:center"><div id="bMajAfter"></div></div>
+    <div class="split" style="gap:20px;margin-top:2px">
+      <div class="tally" style="margin:0">
+        <div class="c"><div class="l">AS BUILT</div><div class="v" style="color:var(--fail)">4</div><div class="s">AND gates &middot; 12 wires</div></div>
+        <div class="c"><div class="l">SOLVED</div><div class="v" style="color:var(--ok)">3</div><div class="s">AND gates &middot; 6 wires</div></div>
+      </div>
+      <div class="rem win" style="margin-top:0">
+        <div class="h">what this problem taught</div>
+        <ul>
+          <li><strong>The merge.</strong> Two terms differing in one variable become one term without it.</li>
+          <li>Read the answer aloud: shut down if one and two agree, or one and three, or two and three. That is the original sentence.</li>
+          <li>This worked because eight rows fit in your head. The next problem has sixteen.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The minimal form is very often the one a human would have written. Say so, then move on.</div>
+</section>
+
+<!-- ================= PROBLEM 2 ================= -->
+
+<section class="slide" data-t="P2 · the problem" data-act="problem 2 · is it prime">
+  <div>
+    <div class="kicker"><b>problem two</b> &nbsp;·&nbsp; new problem, same method</div>
+    <h2 style="font-size:28px;margin-bottom:4px">The pump display drives a small lamp. Light it when the digit showing is prime.</h2>
+    <div class="split" style="margin-top:2px;gap:40px">
+      <div style="display:flex;justify-content:flex-end">
+        <div class="panel"><svg viewBox="0 0 360 400" width="330" height="367"><g id="tabPrime"></g></svg></div>
+      </div>
+      <div class="stack">
+        <p>The four wires already carry the digit in binary. The primes below ten are 2, 3, 5 and 7.</p>
+        <p class="frag">Four inputs means sixteen rows, of which ten are digits. Four of those ten want the lamp on.</p>
+        <p class="big frag" style="margin-top:4px">So again, four detectors. But each one now tests four wires instead of three.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">There is no pattern in the primes. That is the point, and it is why nobody can guess this circuit.</div>
+</section>
+
+<section class="slide" data-t="P2 · as built" data-act="problem 2 · is it prime">
+  <div>
+    <div class="kicker"><b>problem two</b> &nbsp;·&nbsp; built the class fifteen way &nbsp;·&nbsp; click any input</div>
+    <h2 style="font-size:27px;margin-bottom:0">Four AND gates, sixteen wires into them.</h2>
+    <div style="text-align:center"><div id="bPrimeBefore"></div></div>
+    <div class="rem" style="max-width:none">
+      <div class="h">now try what worked last time</div>
+      <ul>
+        <li>Look for two terms differing in exactly one variable. There are sixteen rows and each has four possible neighbours.</li>
+        <li>That is thirty two pairs to check, on a table written in counting order that scatters them.</li>
+        <li>It is doable and it is horrible, and at five variables it stops being doable at all.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Give them ninety seconds to try. Some will find one pair. Nobody will be confident they found all of them.</div>
+</section>
+
+<section class="slide" data-t="P2 · a better way to look" data-act="problem 2 · is it prime">
+  <div>
+    <div class="tag new">NEW TECHNIQUE &nbsp;·&nbsp; THE MAP</div>
+    <h2 style="font-size:28px;margin-bottom:2px">Rearrange the table so that mergeable means touching.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 300" width="1090" height="282"><g id="figGray"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Counting order steps 01 to 10 and changes both bits at once, so those two rows can never merge and sit next to each other anyway.</li>
+        <li>Gray order changes exactly one bit at every step, so every neighbour is a possible merge.</li>
+        <li>It also <strong>wraps</strong>: the last entry is one bit from the first. Half of all mistakes in this topic come from forgetting that.</li>
+        <li>Frank Gray and Maurice Karnaugh, both at Bell Labs, both in 1953.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Say the wrap twice here and a third time on the next slide.</div>
+</section>
+
+<section class="slide" data-t="P2 · the map" data-act="problem 2 · is it prime">
+  <div>
+    <div class="kicker"><b>problem two</b> &nbsp;·&nbsp; the same sixteen rows, laid out in gray order both ways</div>
+    <h2 style="font-size:27px;margin-bottom:2px">Now the merges are visible without looking for them.</h2>
+    <div class="row" style="align-items:center">
+      <div><svg viewBox="0 0 600 450" width="470" height="353"><g id="kmPrime"></g></svg></div>
+      <div style="max-width:33ch">
+        <div class="expr" id="kmPrimeExpr"></div>
+        <div class="rem" style="margin-top:9px">
+          <div class="h">the rules for circling</div>
+          <ul>
+            <li>Rectangles of 1, 2, 4 or 8 cells. Never 3, never 6, because those do not cover a variable completely.</li>
+            <li>As large as they will go. Each doubling of a circle deletes one more literal from its term.</li>
+            <li>Circles may overlap and may wrap round the edges. Overlap is free.</li>
+            <li>Every 1 must be inside a circle, and no circle may touch a 0.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Click cells to show them a wrap-around circle and a group of four before you settle back on the primes.</div>
+</section>
+
+<section class="slide" data-t="P2 · solved" data-act="problem 2 · is it prime">
+  <div>
+    <div class="tag win">PROBLEM TWO &nbsp;·&nbsp; SOLVED</div>
+    <h2 style="font-size:27px;margin-bottom:0">Two gates of three inputs. Sixteen wires became six.</h2>
+    <div style="text-align:center"><div id="bPrimeAfter"></div></div>
+    <div class="split" style="gap:20px;margin-top:2px">
+      <div class="tally" style="margin:0">
+        <div class="c"><div class="l">AS BUILT</div><div class="v" style="color:var(--fail)">4</div><div class="s">AND gates &middot; 16 wires</div></div>
+        <div class="c"><div class="l">SOLVED</div><div class="v" style="color:var(--ok)">2</div><div class="s">AND gates &middot; 6 wires</div></div>
+      </div>
+      <div class="rem win" style="margin-top:0">
+        <div class="h">what this problem taught</div>
+        <ul>
+          <li><strong>The map.</strong> Gray order turns "differs in one variable" into "shares an edge", and your eye does the search.</li>
+          <li>Half the gates and a third of the wires, on a problem with no pattern anybody could have guessed.</li>
+          <li>Check it: 2 and 3 both have w and x off and y on. 5 and 7 both have w off, x on, z on. Two circles, two terms.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Step the inputs through 0 to 9 and confirm the lamp lights on exactly four of them.</div>
+</section>
+
+<!-- ================= PROBLEM 3 ================= -->
+
+<section class="slide" data-t="P3 · the problem" data-act="problem 3 · bar c">
+  <div>
+    <div class="kicker"><b>problem three</b> &nbsp;·&nbsp; the one you were sent home with</div>
+    <h2 style="font-size:28px;margin-bottom:4px">Bar c of the pump display. Lit for nine digits out of ten.</h2>
+    <div class="row" style="align-items:center;gap:34px">
+      <div class="panel" style="padding:8px 12px">
+        <svg viewBox="0 0 150 244" width="118" height="192"><g id="figSeg"></g></svg>
+      </div>
+      <div><svg viewBox="0 0 360 400" width="330" height="367"><g id="tabC"></g></svg></div>
+      <div class="stack" style="max-width:28ch">
+        <p>Nine rows want the bar lit, so the Class 15 method gives nine detectors of four wires each.</p>
+        <p class="frag">Thirty six wires, for a bar that is dark for exactly one digit.</p>
+        <p class="big frag" style="margin-top:4px">Anybody can see this should be smaller. The question is by how much.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask what they got by hand. Somebody will have found the one dark digit and inverted it, which is the right instinct.</div>
+</section>
+
+<section class="slide" data-t="P3 · as built" data-act="problem 3 · bar c">
+  <div>
+    <div class="kicker"><b>problem three</b> &nbsp;·&nbsp; nine detectors, built the class fifteen way</div>
+    <h2 style="font-size:27px;margin-bottom:0">This is what nine AND gates of four inputs looks like.</h2>
+    <div style="text-align:center"><div id="bCBefore"></div></div>
+  </div>
+  <div class="cue">Let it sit. No commentary. The drawing is the argument.</div>
+</section>
+
+<section class="slide" data-t="P3 · the map" data-act="problem 3 · bar c">
+  <div>
+    <div class="kicker"><b>problem three</b> &nbsp;·&nbsp; apply what problem two taught &nbsp;·&nbsp; click any cell</div>
+    <h2 style="font-size:27px;margin-bottom:2px">Nine ones and one zero. Three circles cover the lot.</h2>
+    <div class="row" style="align-items:center">
+      <div><svg viewBox="0 0 600 450" width="470" height="353"><g id="km4"></g></svg></div>
+      <div style="max-width:33ch">
+        <div class="expr" id="km4Expr"></div>
+        <div class="rem" style="margin-top:9px">
+          <div class="h">good, and not good enough</div>
+          <ul>
+            <li>Nine AND gates of four inputs became three of two. Thirty six wires became six.</li>
+            <li>But three gates still feels like too many for a bar that is dark for one digit.</li>
+            <li>Look at the bottom two rows. Those six cells are inputs 1010 to 1111, which are not digits at all.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Do not move on until somebody notices the six cells are being forced to zero for no reason.</div>
+</section>
+
+<section class="slide" data-t="P3 · six impossible rows" data-act="problem 3 · bar c">
+  <div>
+    <div class="tag new">NEW TECHNIQUE &nbsp;·&nbsp; DON'T CARES</div>
+    <h2 style="font-size:28px;margin-bottom:4px">Six of those sixteen inputs cannot occur.</h2>
+    <div class="split" style="margin-top:2px">
+      <div class="stack">
+        <p>The digits are 0 to 9. The combinations 1010 through 1111 are not digits, and the counter driving the display never produces them.</p>
+        <p class="frag">So what should the bar do in those six cases? The honest answer is that <strong>nobody cares</strong>.</p>
+        <p class="big frag" style="margin-top:4px">Which means you may pick whichever answer makes the circuit smaller.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">remember</div>
+        <ul>
+          <li>Write an <span class="num">X</span> there instead of a 0. It is not an unknown value, it is a free choice you get to make.</li>
+          <li>When circling, treat an X as a 1 if that lets a circle grow, and ignore it otherwise. You may split them however you like.</li>
+          <li>Nothing is approximated. Every input that can actually arrive still gets exactly the right answer.</li>
+          <li>Writing 0 there was <em>over specifying</em>: telling the circuit what to do in cases that never happen, and paying for it in gates.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Over specifying is the phrase to leave them with. It costs real money and it is very easy to do by accident.</div>
+</section>
+
+<section class="slide" data-t="P3 · the map again" data-act="problem 3 · bar c">
+  <div>
+    <div class="kicker"><b>problem three</b> &nbsp;·&nbsp; six cells changed from 0 to X &nbsp;·&nbsp; click one back to 0 and watch</div>
+    <h2 style="font-size:27px;margin-bottom:2px">Every circle grows to a whole row or column.</h2>
+    <div class="row" style="align-items:center">
+      <div><svg viewBox="0 0 600 450" width="470" height="353"><g id="km4d"></g></svg></div>
+      <div style="max-width:33ch">
+        <div class="expr" id="km4dExpr"></div>
+        <div class="rem" style="margin-top:9px">
+          <div class="h">remember</div>
+          <ul>
+            <li>Each circle covers eight cells now, so each term is down to a single literal.</li>
+            <li>A term of one literal needs no AND gate at all. It is a wire straight from a rail to the OR.</li>
+            <li>Nine AND gates have become zero. What is left is one inverter and one OR gate.</li>
+            <li>Toggle a single X back to 0 and a circle immediately halves. That is what the free choice was worth.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Do the toggle live. It is the clearest demonstration in the deck of what don't cares actually buy.</div>
+</section>
+
+<section class="slide" data-t="P3 · solved" data-act="problem 3 · bar c">
+  <div>
+    <div class="tag win">PROBLEM THREE &nbsp;·&nbsp; SOLVED</div>
+    <h2 style="font-size:27px;margin-bottom:0">One inverter and one OR gate. Click through all ten digits.</h2>
+    <div style="text-align:center"><div id="bCAfter"></div></div>
+    <div class="split" style="gap:20px;margin-top:2px">
+      <div class="tally" style="margin:0">
+        <div class="c"><div class="l">AS BUILT</div><div class="v" style="color:var(--fail)">9</div><div class="s">AND gates &middot; 36 wires</div></div>
+        <div class="c"><div class="l">WITH THE MAP</div><div class="v" style="color:var(--accent)">3</div><div class="s">AND gates &middot; 6 wires</div></div>
+        <div class="c"><div class="l">WITH DON'T CARES</div><div class="v" style="color:var(--ok)">0</div><div class="s">no AND gates at all</div></div>
+      </div>
+      <div class="rem win" style="margin-top:0">
+        <div class="h">what this problem taught</div>
+        <ul>
+          <li><strong>Don't cares.</strong> Inputs that cannot happen are free choices, and free choices make circles bigger.</li>
+          <li>Read the answer: the bar is lit unless x is off and y is on and z is off, which is the single digit 2.</li>
+          <li>That is exactly the instinct some of you had by hand. The map is how you get there without guessing.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Check every digit against the display from Class 16. It should be dark on 2 and lit on the other nine.</div>
+</section>
+
+<!-- ================= CLOSING ================= -->
+
+<section class="slide" data-t="Three techniques" data-act="closing">
+  <div>
+    <h2>Three problems, and each one earned one technique.</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:4px">
+      <div class="panel" style="padding:17px 20px">
+        <div class="tag">FROM PROBLEM ONE</div>
+        <div style="font-family:var(--display);font-size:23px;font-weight:600;color:var(--ink);margin:2px 0 8px">The merge</div>
+        <div style="font-size:15.5px;line-height:1.4">Two terms differing in exactly one variable become one term without it. Three lines of Boole's algebra, and every line is an equality.</div>
+      </div>
+      <div class="panel frag" style="padding:17px 20px">
+        <div class="tag">FROM PROBLEM TWO</div>
+        <div style="font-family:var(--display);font-size:23px;font-weight:600;color:var(--ink);margin:2px 0 8px">The map</div>
+        <div style="font-size:15.5px;line-height:1.4">Gray order turns "differs in one variable" into "shares an edge", so finding merges becomes looking rather than searching.</div>
+      </div>
+      <div class="panel frag" style="padding:17px 20px">
+        <div class="tag">FROM PROBLEM THREE</div>
+        <div style="font-family:var(--display);font-size:23px;font-weight:600;color:var(--ink);margin:2px 0 8px">Don't cares</div>
+        <div style="font-size:15.5px;line-height:1.4">Inputs that cannot occur are not constraints. Marking them free lets circles grow, and bigger circles mean smaller gates.</div>
+      </div>
+    </div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">and one sentence underneath all three</div>
+      <ul>
+        <li>Sum of products is correct and blind. It writes one detector per row and never compares two rows to each other.</li>
+        <li>Everything today was a way of doing the comparing it refuses to do.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Put the three names on the board. These are the words they need for the exam and for reading a datasheet.</div>
+</section>
+
+<section class="slide" data-t="The whole display" data-act="closing">
+  <div>
+    <h2>Apply all three to every bar of the display.</h2>
+    <div style="text-align:center;margin:2px 0"><svg viewBox="0 0 1180 300" width="1100" height="280"><g id="figBill"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Forty nine AND gates became sixteen. One hundred and ninety six wires into gates became forty two.</li>
+        <li>Two thirds of the gates gone, and the behaviour did not change by a single row of a single table.</li>
+        <li>On a four digit pump that is about two hundred gates down to sixty five, on every unit ever manufactured.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Say the manufacturing line out loud. Minimisation is not an aesthetic preference, it is a unit cost.</div>
+</section>
+
+<section class="slide" data-t="Where it stops" data-act="closing">
+  <div>
+    <div class="kicker">the same honest limit as class sixteen</div>
+    <h2 style="font-size:28px;margin-bottom:2px">A map works because a human eye can take in the whole of it at once.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 260" width="1090" height="245"><g id="figLimit"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Five variables means two maps stacked, with adjacency running between the sheets. Six means four. Nobody does eight.</li>
+        <li>So the merge got mechanised: Quine and McCluskey wrote it as an algorithm in the 1950s, doing exhaustively what you did by eye.</li>
+        <li>That is exponential too, so real tools use heuristics. The standard one is Espresso, from Berkeley in 1982.</li>
+        <li>You will never minimise a real circuit by hand. You will read many minimised circuits, and now you know what was done to them.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Same shape as Class 16. The hand method teaches the idea, the tool does the work, and the idea is what lets you read the output.</div>
+</section>
+
+<section class="slide" data-t="What it cannot tell you" data-act="closing">
+  <div>
+    <h2>One thing all three problems quietly assumed.</h2>
+    <div class="split" style="margin-top:2px">
+      <div class="stack">
+        <p>Every count today was gates, or wires into gates. Fewer is better, and that was the entire measure of a circuit.</p>
+        <p class="frag">But a circuit also takes <em>time</em>. A signal crosses every gate on its path one after another, and each one costs a delay.</p>
+        <p class="big frag" style="margin-top:4px">Two circuits with the same gate count can be very different speeds.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">remember</div>
+        <ul>
+          <li>A minimal circuit is minimal in gate count. Nobody ever promised it was fast.</li>
+          <li>Sometimes the cheapest circuit is a long thin chain of gates, which is the slowest possible shape.</li>
+          <li>Next session that becomes the point, and it is why the adder in Class 19 is not built the obvious way.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Do not resolve it. Just make them notice the assumption they have been making for an hour.</div>
+</section>
+
+<section class="slide" data-t="Close" data-act="closing">
+  <div class="center">
+    <h2 style="font-size:36px;margin-bottom:16px">Three problems, solved.<br>4 to 3, 4 to 2, and 9 to none.</h2>
+    <p class="big" style="max-width:54ch;color:var(--soft)">The map is only a way of arranging a table so you can see where two terms differ in one variable. All the work is done by three lines of algebra from 1847.</p>
+    <p class="big frag" style="margin-top:18px;max-width:52ch">Next session: what a gate costs besides existing, and why the smallest circuit is sometimes the wrong one.</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: bar d of the display, solved completely. Table, as built, map, don't cares, final gate count.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallow=false;
+  document.addEventListener('click',function(e){
+    swallow = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||
+                 e.target.closest('svg')||e.target.closest('[id^=b]'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallow){ swallow=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= helpers ================= */
+  var NS='http://www.w3.org/2000/svg';
+  var GREY='#c6c3ba', HI='#e8952b', LO='#b9bfc6', INK='#15171b',
+      BLUE='#23408f', RED='#a8231f', GRN='#146b5c', VIO='#6b3fa0', AMB='#b06a12';
+  function sig(v){ return v===1?HI : v===0?LO : GREY; }
+  function el(tag,a,p){ var e=document.createElementNS(NS,tag);
+    for(var k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e; }
+  function txt(p,x,y,s,o){ var t=el('text',Object.assign({x:x,y:y,'font-size':13,fill:'#8b9096'},o||{}),p);
+    t.textContent=s; return t; }
+  function rct(p,x,y,w,h,o){ return el('rect',Object.assign({x:x,y:y,width:w,height:h,rx:7,
+    fill:'#fff',stroke:GREY,'stroke-width':2},o||{}),p); }
+  function ln(p,x1,y1,x2,y2,v,w){ return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:sig(v),
+    'stroke-width':w||(v===null||v===undefined?2.5:3.5),'stroke-linecap':'round'},p); }
+  function pth(p,d,o){ return el('path',Object.assign({d:d,fill:'none',stroke:GREY,'stroke-width':2.5},o||{}),p); }
+  function jn(p,x,y){ return el('circle',{cx:x,cy:y,r:4,fill:INK},p); }
+  function gAnd(p,x,y,h,v){ return el('path',{d:'M'+x+' '+(y-h)+' L'+(x+18)+' '+(y-h)+' A '+h+' '+h+
+    ' 0 0 1 '+(x+18)+' '+(y+h)+' L'+x+' '+(y+h)+' z', fill:v===1?'#fbf0dc':'#fff',
+    stroke:v===1?AMB:INK,'stroke-width':2.2},p); }
+  function gOr(p,x,y,h,nose,v){ return el('path',{d:'M'+(x-5)+' '+(y-h)+' Q'+(x+20)+' '+y+' '+(x-5)+' '+(y+h)+
+    ' Q'+(x+nose*0.5)+' '+(y+h*0.86)+' '+(x+nose)+' '+y+' Q'+(x+nose*0.5)+' '+(y-h*0.86)+' '+(x-5)+' '+(y-h)+' z',
+    fill:v===1?'#fbf0dc':'#fff', stroke:v===1?AMB:INK,'stroke-width':2.2},p); }
+  function gNot(p,x,y){
+    el('path',{d:'M'+x+' '+(y-12)+' L'+(x+22)+' '+y+' L'+x+' '+(y+12)+' z',fill:'#fff',stroke:INK,'stroke-width':2.2},p);
+    el('circle',{cx:x+27,cy:y,r:4.5,fill:'#fff',stroke:INK,'stroke-width':2.2},p);
+  }
+
+  /* ================= minimiser ================= */
+  function allCubes(n){ var out=[];
+    (function rec(a){ if(a.length===n){out.push(a.slice());return;}
+      [0,1,'-'].forEach(function(v){ rec(a.concat([v])); }); })([]); return out; }
+  function cubeCells(c){ var n=c.length,out=[];
+    for(var m=0;m<(1<<n);m++){ var ok=true;
+      for(var k=0;k<n;k++){ var b=(m>>(n-1-k))&1; if(c[k]!=='-'&&c[k]!==b) ok=false; }
+      if(ok) out.push(m); } return out; }
+  function minimise(n,ones,dcs){
+    var onS={},dcS={}; ones.forEach(function(m){onS[m]=1;}); dcs.forEach(function(m){dcS[m]=1;});
+    var valid=allCubes(n).filter(function(c){ var cs=cubeCells(c);
+      return cs.every(function(m){return onS[m]||dcS[m];}) && cs.some(function(m){return onS[m];}); });
+    var primes=valid.filter(function(c){ var cs=cubeCells(c);
+      return !valid.some(function(o){ if(o===c) return false; var os=cubeCells(o);
+        return os.length>cs.length && cs.every(function(m){return os.indexOf(m)>=0;}); }); });
+    var need={}; ones.forEach(function(m){need[m]=1;});
+    var chosen=[], guard=0;
+    while(Object.keys(need).length && guard++<40){
+      var best=null,bn=-1;
+      primes.forEach(function(p){ var g=cubeCells(p).filter(function(m){return need[m];}).length;
+        var lits=p.filter(function(v){return v!=='-';}).length;
+        if(g>bn||(g===bn&&best&&lits<best.filter(function(v){return v!=='-';}).length)){bn=g;best=p;} });
+      if(!best||bn<=0) break;
+      chosen.push(best); cubeCells(best).forEach(function(m){delete need[m];});
+    }
+    return chosen;
+  }
+  function termText(nm,t){ var s=t.map(function(v,k){ return v==='-'?'':(v?nm[k]:nm[k]+'\u2032'); }).join('');
+    return s||'1'; }
+  function mintermTerm(n,m){ var t=[]; for(var k=0;k<n;k++) t.push((m>>(n-1-k))&1); return t; }
+
+  /* ================= general circuit from terms ================= */
+  function buildTerms(hostId,names,terms,initial,width){
+    var host=document.getElementById(hostId); if(!host) return;
+    var n=names.length, vals=initial.slice(), m=terms.length;
+    var PINX=52, pinY=function(k){return 46+k*46;}, invY=function(k){return pinY(k)+23;};
+    var TAPX=PINX+58+26, INVEND=TAPX+34, RAIL0=INVEND+42, RSP=26;
+    var railX=function(i){return RAIL0+i*RSP;};
+    var lastLive=invY(n-1);
+    var ANDH = m>6?20:22, P = m<=4?68 : m<=6?56 : 50, TSP=n<=3?14:11;
+    var gateY=function(j){return lastLive+44+ANDH+j*P;};
+    var ANDX=railX(2*n-1)+86, TIP=ANDX+18+ANDH, ORX=TIP+92;
+    var ORY=(gateY(0)+gateY(m-1))/2, ORH=(gateY(m-1)-gateY(0))/2+ANDH;
+    var NOSE=Math.round(60+ORH*0.22), outX=ORX+NOSE+54;
+    var railBot=gateY(m-1)+ANDH+16, W=outX+76, H=Math.max(railBot+46,gateY(m-1)+ANDH+46);
+    function draw(){
+      var v={}; names.forEach(function(nm,k){ v[nm]=vals[k]; v[nm+'\u2032']=vals[k]?0:1; });
+      var fires=terms.map(function(t){ var on=1;
+        for(var k=0;k<n;k++) if(t[k]!=='-'&&t[k]!==vals[k]) on=0; return on; });
+      var any=fires.some(function(x){return x;})?1:0;
+      host.innerHTML='';
+      var svg=el('svg',{viewBox:'0 0 '+W+' '+H,width:width,height:Math.round(H*width/W)},host);
+      names.forEach(function(nm,k){
+        var py=pinY(k), iy=invY(k), np=nm+'\u2032';
+        ln(svg,PINX+27,py,railX(2*k),py,v[nm]);
+        jn(svg,TAPX,py); ln(svg,TAPX,py,TAPX,iy,v[nm]); gNot(svg,TAPX,iy);
+        ln(svg,INVEND,iy,railX(2*k+1),iy,v[np]);
+        ln(svg,railX(2*k),py,railX(2*k),railBot,v[nm]);
+        ln(svg,railX(2*k+1),iy,railX(2*k+1),railBot,v[np]);
+        txt(svg,railX(2*k),railBot+18,nm,{'font-size':12,'text-anchor':'middle'});
+        txt(svg,railX(2*k+1),railBot+18,np,{'font-size':12,'text-anchor':'middle'});
+        var r=rct(svg,PINX-27,py-16,54,32,{fill:v[nm]?'#fbf0dc':'#eef0f2',stroke:v[nm]?AMB:GREY});
+        txt(svg,PINX,py+6,nm+' = '+v[nm],{'font-size':14,fill:v[nm]?HI:'#6b7178','text-anchor':'middle','font-weight':700});
+        r.style.cursor='pointer'; r.onclick=function(){ vals[k]=vals[k]?0:1; draw(); };
+      });
+      terms.forEach(function(t,j){
+        var y=gateY(j), lits=[];
+        for(var k=0;k<n;k++) if(t[k]!=='-') lits.push({k:k,want:t[k]});
+        var t2=(y-(ORY-ORH))/(2*ORH), ex=(ORX-5)+2*t2*(1-t2)*25;
+        if(lits.length===1){
+          var L0=lits[0], nm0=L0.want?names[L0.k]:names[L0.k]+'\u2032';
+          var rx=railX(L0.want?2*L0.k:2*L0.k+1);
+          ln(svg,rx,y,ex,y,v[nm0]); jn(svg,rx,y);
+          txt(svg,ANDX+30,y-13,nm0+'   \u00b7   a wire, no AND gate',
+            {'font-size':12.5,fill:fires[j]?GRN:'#a9a69d','text-anchor':'middle'});
+        } else {
+          var lbl=[];
+          lits.forEach(function(L,q){
+            var nm=L.want?names[L.k]:names[L.k]+'\u2032';
+            var rx=railX(L.want?2*L.k:2*L.k+1);
+            var ty=y-(lits.length-1)*TSP/2+q*TSP;
+            ln(svg,rx,ty,ANDX,ty,v[nm]); jn(svg,rx,ty); lbl.push(nm);
+          });
+          gAnd(svg,ANDX,y,ANDH,fires[j]);
+          txt(svg,ANDX+22,y-ANDH-8,lbl.join(''),{'font-size':12,fill:fires[j]?AMB:'#a9a69d','text-anchor':'middle'});
+          ln(svg,TIP,y,ex,y,fires[j]);
+        }
+      });
+      gOr(svg,ORX,ORY,ORH,NOSE,any);
+      txt(svg,ORX+26,ORY+6,'OR',{'font-size':16,fill:any?AMB:'#8b9096','text-anchor':'middle','font-weight':700});
+      ln(svg,ORX+NOSE,ORY,outX,ORY,any);
+      rct(svg,outX,ORY-24,52,48,{fill:any?'#fbf0dc':'#eef0f2',stroke:any?AMB:GREY});
+      txt(svg,outX+26,ORY+8,any,{'font-size':21,fill:any?HI:'#6b7178','text-anchor':'middle','font-weight':700});
+      txt(svg,outX+26,ORY+44,'OUT',{'font-size':10.5,'text-anchor':'middle'});
+      var ands=terms.filter(function(t){return t.filter(function(x){return x!=='-';}).length>1;}).length;
+      var wires=terms.reduce(function(s,t){var L=t.filter(function(x){return x!=='-';}).length; return s+(L>1?L:0);},0);
+      txt(svg,26,H-14,ands+' AND gate'+(ands===1?'':'s')+' \u00b7 '+wires+' wires into them',
+        {'font-size':13,fill:ands?BLUE:GRN});
+    }
+    draw();
+  }
+
+  /* ================= shared table drawer ================= */
+  function truthTable(hostId,cfg){
+    var g=document.getElementById(hostId); if(!g) return;
+    var n=cfg.names.length, rows=1<<n;
+    txt(g,0,16,cfg.title,{'font-size':11,fill:BLUE,'letter-spacing':2});
+    cfg.names.forEach(function(nm,k){
+      txt(g,cfg.x0+k*cfg.dx,44,nm,{'font-size':13,fill:INK,'text-anchor':'middle','font-weight':700}); });
+    txt(g,cfg.outX,44,cfg.outLab,{'font-size':10.5,'text-anchor':'middle'});
+    if(cfg.noteLab) txt(g,cfg.noteX,44,cfg.noteLab,{'font-size':10.5,'text-anchor':'middle'});
+    ln(g,0,54,cfg.w,54,null,1.5);
+    for(var r=0;r<rows;r++){
+      var y=54+cfg.rh+r*cfg.rh, on=cfg.out(r);
+      if(on) rct(g,2,y-cfg.rh/2-2,cfg.w-4,cfg.rh-2,{rx:5,fill:'#fbf0dc',stroke:'#e8d3ab','stroke-width':1.3});
+      for(var k=0;k<n;k++)
+        txt(g,cfg.x0+k*cfg.dx,y+5,(r>>(n-1-k))&1,{'font-size':14,fill:'#4b5057','text-anchor':'middle'});
+      txt(g,cfg.outX,y+5,on,{'font-size':14,fill:on?AMB:'#c6c3ba','text-anchor':'middle','font-weight':700});
+      if(cfg.note) txt(g,cfg.noteX,y+5,cfg.note(r),{'font-size':11.5,fill:cfg.noteCol?cfg.noteCol(r):'#c6c3ba','text-anchor':'middle'});
+    }
+    if(cfg.foot) txt(g,2,54+cfg.rh*(rows+1)+22,cfg.foot,{'font-size':13,fill:AMB});
+  }
+
+  truthTable('tabMaj',{title:'THREE SENSORS \u00b7 SHUT DOWN?',names:['s1','s2','s3'],
+    x0:60,dx:56,outX:266,outLab:'SHUT DOWN',w:330,rh:34,
+    out:function(r){ return ((r>>2&1)+(r>>1&1)+(r&1))>=2?1:0; },
+    foot:'four rows want a shutdown'});
+
+  var PRIMES=[2,3,5,7];
+  truthTable('tabPrime',{title:'IS THE DIGIT PRIME?',names:['w','x','y','z'],
+    x0:56,dx:42,outX:250,outLab:'LAMP',w:340,rh:20,
+    noteX:312,noteLab:'DIGIT',
+    out:function(r){ return PRIMES.indexOf(r)>=0?1:0; },
+    note:function(r){ return r<10? r : 'n/a'; },
+    noteCol:function(r){ return r<10?'#8b9096':'#d5d2ca'; },
+    foot:'2, 3, 5 and 7. the other twelve rows want it off'});
+
+  var SEGB=[0x7E,0x30,0x6D,0x79,0x33,0x5B,0x5F,0x70,0x7F,0x7B];
+  var C_ONES=[]; for(var d0=0;d0<10;d0++) if(SEGB[d0]>>4&1) C_ONES.push(d0);
+  truthTable('tabC',{title:'BAR C \u00b7 LIT FOR WHICH DIGITS?',names:['w','x','y','z'],
+    x0:56,dx:42,outX:250,outLab:'BAR C',w:340,rh:20,
+    noteX:312,noteLab:'DIGIT',
+    out:function(r){ return C_ONES.indexOf(r)>=0?1:0; },
+    note:function(r){ return r<10? r : 'n/a'; },
+    noteCol:function(r){ return r<10?'#8b9096':'#d5d2ca'; },
+    foot:'nine rows want it lit. only digit 2 wants it dark.'});
+
+  /* ================= the seven segment glyph ================= */
+  (function(){
+    var g=document.getElementById('figSeg'); if(!g) return;
+    var L=92,T=17,X=24,Y=24;
+    function hs(x,y){ return [[x,y],[x+T/2,y-T/2],[x+L-T/2,y-T/2],[x+L,y],[x+L-T/2,y+T/2],[x+T/2,y+T/2]]; }
+    function vs(x,y){ return [[x,y],[x+T/2,y+T/2],[x+T/2,y+L-T/2],[x,y+L],[x-T/2,y+L-T/2],[x-T/2,y+T/2]]; }
+    var SHAPE=[hs(X,Y),vs(X+L,Y),vs(X+L,Y+L),hs(X,Y+2*L),vs(X,Y+L),vs(X,Y),hs(X,Y+L)];
+    SHAPE.forEach(function(pts,s){
+      var isC=(s===2);
+      el('polygon',{points:pts.map(function(q){return q.join(',');}).join(' '),
+        fill:isC?'#fbf0dc':'#f4f2ed',stroke:isC?AMB:'#e2e0d9','stroke-width':isC?3:2},g);
+    });
+    txt(g,X+L+22,Y+L+L/2+5,'c',{'font-size':20,fill:AMB,'font-weight':700});
+    txt(g,75,232,'the bar on the lower right',{'font-size':11,'text-anchor':'middle'});
+  })();
+
+  /* ================= problem 1 figures ================= */
+  (function(){
+    var g=document.getElementById('figShare'); if(!g) return;
+    var NMS=['s1','s2','s3'], A=[0,1,1], B=[1,1,1];
+    txt(g,70,32,'DETECTOR ONE',{'font-size':11,fill:BLUE,'letter-spacing':2});
+    txt(g,70,240,'DETECTOR TWO',{'font-size':11,fill:RED,'letter-spacing':2});
+    txt(g,70,72,'s1\u2032s2s3',{'font-size':17,fill:BLUE,'font-weight':700});
+    txt(g,70,212,'s1s2s3',{'font-size':17,fill:RED,'font-weight':700});
+    NMS.forEach(function(nm,k){
+      var x=310+k*180;
+      txt(g,x,32,nm,{'font-size':16,fill:INK,'text-anchor':'middle','font-weight':700});
+      [[A,66,BLUE],[B,206,RED]].forEach(function(pr){
+        var v=pr[0][k], y=pr[1];
+        rct(g,x-50,y-25,100,50,{rx:10,fill:v?'#fbf0dc':'#eef0f2',stroke:v?AMB:GREY});
+        txt(g,x,y+9,v,{'font-size':23,fill:v?HI:'#6b7178','text-anchor':'middle','font-weight':700});
+      });
+      var same=(A[k]===B[k]);
+      pth(g,'M'+x+' 96 L'+x+' 176',{stroke:same?GRN:RED,'stroke-width':3,'stroke-dasharray':same?'':'7 5'});
+      rct(g,x-44,120,88,32,{rx:8,fill:same?'#e9f2ef':'#fdf0ef',stroke:same?'#b6d5cc':'#e0bcb9','stroke-width':1.5});
+      txt(g,x,142,same?'agree':'differ',{'font-size':14,fill:same?GRN:RED,'text-anchor':'middle','font-weight':700});
+    });
+    txt(g,790,124,'one variable differs',{'font-size':17,fill:INK,'font-weight':700});
+    txt(g,790,150,'and the two detectors take',{'font-size':14,fill:'#8b9096'});
+    txt(g,790,170,'both of its possible values',{'font-size':14,fill:'#8b9096'});
+  })();
+
+  (function(){
+    var g=document.getElementById('figAlg'); if(!g) return;
+    var lines=[
+      ["s1\u2032s2s3  +  s1s2s3",'the two terms as they stand','#8b9096'],
+      ["( s1\u2032 + s1 ) s2s3",'factor out what they share',BLUE],
+      ["1 \u00b7 s2s3",'a variable or its opposite is always true',VIO],
+      ["s2s3",'and anding with true changes nothing',GRN]
+    ];
+    lines.forEach(function(L,k){
+      var y=42+k*54;
+      var grp=el('g',{'class':'step'+(k===0?' on':'')},g);
+      if(k) txt(grp,26,y-20,'=',{'font-size':19,fill:'#c6c3ba','text-anchor':'middle'});
+      rct(grp,44,y-26,300,42,{rx:9,fill:'#fff',stroke:k===3?'#b6d5cc':'#e2e0d9','stroke-width':k===3?2.5:1.5});
+      txt(grp,194,y+2,L[0],{'font-size':19,fill:L[2],'text-anchor':'middle','font-weight':700});
+      txt(grp,360,y+2,L[1],{'font-size':13,fill:'#8b9096'});
+    });
+    txt(g,44,244,'click to step \u00b7 every line is an equality',{'font-size':12.5,fill:'#8b9096'});
+  })();
+
+  (function(){
+    var g=document.getElementById('figMerge'); if(!g) return;
+    var merged=false;
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      if(!merged){
+        [[0,BLUE],[1,RED]].forEach(function(c,idx){
+          var a=c[0], col=c[1], Y=24+idx*112;
+          ['s1'+(a?'':'\u2032'),'s2','s3'].forEach(function(nm,k){
+            var y=Y+12+k*24;
+            txt(g,150,y+5,nm,{'font-size':13,fill:INK,'text-anchor':'end'});
+            ln(g,158,y,236,y,null,2.2);
+          });
+          gAnd(g,236,Y+36,32,0);
+          ln(g,286,Y+36,350,Y+36,null,2.2);
+          txt(g,102,Y+40,(a?'s1':'s1\u2032')+'s2s3',{'font-size':13,fill:col,'text-anchor':'end','font-weight':700});
+        });
+        gOr(g,350,124,70,60,0);
+        ln(g,410,124,470,124,null,2.2);
+        txt(g,150,230,'2 AND gates \u00b7 6 wires in',{'font-size':14,fill:RED,'font-weight':700});
+      } else {
+        ['s2','s3'].forEach(function(nm,k){
+          var y=108+k*32;
+          txt(g,150,y+5,nm,{'font-size':14,fill:INK,'text-anchor':'end'});
+          ln(g,158,y,236,y,null,2.2);
+        });
+        gAnd(g,236,124,30,0);
+        ln(g,284,124,470,124,null,2.2);
+        txt(g,150,230,'1 AND gate \u00b7 2 wires in',{'font-size':14,fill:GRN,'font-weight':700});
+        txt(g,150,254,'the s1 rail is not connected here any more',{'font-size':12.5,fill:GRN});
+      }
+    }
+    document.getElementById('mBtn').onclick=function(){
+      merged=!merged; this.textContent=merged?'\u25C0 undo':'merge \u25B6';
+      this.classList.toggle('hot',!merged); render();
+    };
+    render();
+  })();
+
+  (function(){
+    var g=document.getElementById('figThree'); if(!g) return;
+    var shown=1;
+    var SRC=['s1\u2032s2s3','s1s2\u2032s3','s1s2s3\u2032','s1s2s3'];
+    var OUT=['s2s3','s1s3','s1s2'], PAIRS=[[0,3],[1,3],[2,3]], COLS=[BLUE,RED,GRN];
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,40,28,'THE FOUR DETECTORS',{'font-size':11,fill:'#8b9096','letter-spacing':2});
+      SRC.forEach(function(t,k){
+        var used=PAIRS.slice(0,shown).some(function(p){return p[0]===k||p[1]===k;});
+        rct(g,40,46+k*50,200,38,{rx:8,fill:used?'#eef2fa':'#fbfaf7',stroke:used?'#c3cee6':'#e2e0d9','stroke-width':used?2:1.5});
+        txt(g,140,70+k*50,t,{'font-size':16,fill:used?INK:'#a9a69d','text-anchor':'middle','font-weight':700});
+      });
+      txt(g,690,28,'AFTER MERGING',{'font-size':11,fill:GRN,'letter-spacing':2});
+      for(var q=0;q<shown;q++){
+        var p=PAIRS[q], col=COLS[q], y1=65+p[0]*50, y2=65+p[1]*50, mx=300+q*46;
+        pth(g,'M240 '+y1+' L'+mx+' '+y1+' L'+mx+' '+(65+q*50)+' L670 '+(65+q*50),{stroke:col,'stroke-width':2.6});
+        pth(g,'M240 '+y2+' L'+mx+' '+y2,{stroke:col,'stroke-width':2.6,'stroke-dasharray':'6 4'});
+        rct(g,670,46+q*50,180,38,{rx:8,fill:'#e9f2ef',stroke:'#b6d5cc','stroke-width':2});
+        txt(g,760,70+q*50,OUT[q],{'font-size':17,fill:GRN,'text-anchor':'middle','font-weight':700});
+        txt(g,mx,40+q*50,'merge '+(q+1),{'font-size':10.5,fill:col,'text-anchor':'middle'});
+      }
+      txt(g,40,262,'4 gates \u00b7 12 wires in',{'font-size':14,fill:RED});
+      if(shown===3){
+        txt(g,670,262,'3 gates \u00b7 6 wires in',{'font-size':14,fill:GRN,'font-weight':700});
+        txt(g,900,120,'s1s2s3 was merged',{'font-size':15,fill:INK});
+        txt(g,900,142,'three separate times',{'font-size':15,fill:INK});
+        txt(g,900,172,'a term may be reused',{'font-size':13,fill:'#8b9096'});
+      }
+    }
+    [['t1',1],['t2',2],['t3',3]].forEach(function(b){
+      document.getElementById(b[0]).onclick=function(){
+        shown=b[1];
+        ['t1','t2','t3'].forEach(function(id,q){ document.getElementById(id).classList.toggle('hot',q+1===shown); });
+        render();
+      };
+    });
+    render();
+  })();
+
+  /* ================= problem 2: gray order ================= */
+  (function(){
+    var g=document.getElementById('figGray'); if(!g) return;
+    function strip(y,label,seq,col){
+      txt(g,40,y-30,label,{'font-size':11,fill:col,'letter-spacing':2});
+      seq.forEach(function(s,k){
+        var x=60+k*150;
+        rct(g,x,y-22,110,44,{fill:'#fff',stroke:col,'stroke-width':2});
+        txt(g,x+55,y+8,s,{'font-size':21,fill:INK,'text-anchor':'middle','font-weight':700});
+        if(k<seq.length-1){
+          var a=seq[k], b=seq[k+1], d=0;
+          for(var q=0;q<2;q++) if(a[q]!==b[q]) d++;
+          pth(g,'M'+(x+110)+' '+y+' L'+(x+150)+' '+y,{stroke:d===1?GRN:RED,'stroke-width':2.6});
+          el('circle',{cx:x+130,cy:y-18,r:11,fill:d===1?'#e9f2ef':'#fdf0ef',stroke:d===1?GRN:RED,'stroke-width':2},g);
+          txt(g,x+130,y-13,d,{'font-size':12.5,fill:d===1?GRN:RED,'text-anchor':'middle','font-weight':700});
+        }
+      });
+    }
+    strip(72,'COUNTING ORDER \u00b7 BITS CHANGED PER STEP',['00','01','10','11'],RED);
+    strip(212,'GRAY ORDER \u00b7 BITS CHANGED PER STEP',['00','01','11','10'],GRN);
+    pth(g,'M115 240 L115 268 L665 268 L665 240',{stroke:GRN,'stroke-width':2.4,'stroke-dasharray':'6 5'});
+    txt(g,390,286,'and the ends wrap: 10 back to 00 is also one bit',{'font-size':13.5,fill:GRN,'text-anchor':'middle'});
+    txt(g,760,62,'01 to 10 changes both',{'font-size':16,fill:RED,'font-weight':700});
+    txt(g,760,86,'bits at once, so those two',{'font-size':16,fill:RED,'font-weight':700});
+    txt(g,760,110,'rows can never merge',{'font-size':16,fill:RED,'font-weight':700});
+    txt(g,760,202,'every step changes exactly',{'font-size':16,fill:GRN,'font-weight':700});
+    txt(g,760,226,'one bit, so every neighbour',{'font-size':16,fill:GRN,'font-weight':700});
+    txt(g,760,250,'is a possible merge',{'font-size':16,fill:GRN,'font-weight':700});
+  })();
+
+  /* ================= karnaugh maps ================= */
+  var GRAY=[0,1,3,2];
+  function kmap(hostId,exprId,nvars,initial,names,opts){
+    var host=document.getElementById(hostId); if(!host) return;
+    opts=opts||{};
+    var cells=initial.slice(), rows=nvars===3?2:4, cols=4;
+    var CW=nvars===3?96:104, CH=nvars===3?92:76;
+    var X0=nvars===3?120:130, Y0=nvars===3?92:96;
+    var PAL=[BLUE,RED,GRN,AMB,VIO];
+    function idx(r,c){ return nvars===3?((r<<2)|GRAY[c]):((GRAY[r]<<2)|GRAY[c]); }
+    function pos(m){ return nvars===3?[m>>2&1,GRAY.indexOf(m&3)]:[GRAY.indexOf(m>>2&3),GRAY.indexOf(m&3)]; }
+    function draw(){
+      host.innerHTML='';
+      var ones=[],dcs=[];
+      cells.forEach(function(v,m){ if(v===1) ones.push(m); else if(v===2) dcs.push(m); });
+      var terms=ones.length?minimise(nvars,ones,dcs):[];
+      var colLab=nvars===3?names.slice(1).join(' '):names.slice(2).join(' ');
+      var rowLab=nvars===3?names[0]:names.slice(0,2).join(' ');
+      txt(host,X0-30,Y0-46,rowLab,{'font-size':14,fill:INK,'font-weight':700,'text-anchor':'end'});
+      txt(host,X0+18,Y0-46,colLab,{'font-size':14,fill:INK,'font-weight':700});
+      pth(host,'M'+(X0-26)+' '+(Y0-62)+' L'+(X0-2)+' '+(Y0-38),{stroke:GREY,'stroke-width':1.5});
+      ['00','01','11','10'].forEach(function(c,j){ txt(host,X0+j*CW+CW/2,Y0-14,c,{'font-size':13,'text-anchor':'middle'}); });
+      (nvars===3?['0','1']:['00','01','11','10']).forEach(function(r,ri){
+        txt(host,X0-14,Y0+ri*CH+CH/2+5,r,{'font-size':13,'text-anchor':'end'}); });
+      for(var r=0;r<rows;r++) for(var c=0;c<cols;c++){
+        var m=idx(r,c), v=cells[m];
+        var rr=el('rect',{x:X0+c*CW,y:Y0+r*CH,width:CW,height:CH,
+          fill:v===1?'#fbf0dc':(v===2?'#f2f0fa':'#fff'),stroke:GREY,'stroke-width':1.5,'class':'kc'},host);
+        rr.onclick=(function(mm){ return function(){ cells[mm]=(cells[mm]+1)%(opts.allowX?3:2); draw(); }; })(m);
+        txt(host,X0+c*CW+CW/2,Y0+r*CH+CH/2+9,v===2?'X':v,
+          {'font-size':24,fill:v===1?AMB:(v===2?VIO:'#c6c3ba'),'text-anchor':'middle','font-weight':700,'pointer-events':'none'});
+        var lab = opts.digit && m<10 ? m : (opts.digit? '' : m);
+        txt(host,X0+c*CW+7,Y0+r*CH+17,lab,{'font-size':10.5,fill:'#d5d2ca','pointer-events':'none'});
+      }
+      terms.forEach(function(t,gi){
+        var ms=cubeCells(t), rs={}, cs={};
+        ms.forEach(function(m){ var p=pos(m); rs[p[0]]=1; cs[p[1]]=1; });
+        var rl=Object.keys(rs).map(Number).sort(function(a,b){return a-b;});
+        var cl=Object.keys(cs).map(Number).sort(function(a,b){return a-b;});
+        function runs(list,total){
+          if(list.length===total) return [[0,total]];
+          var out=[], st=list[0], pv=list[0];
+          for(var q=1;q<list.length;q++){ if(list[q]===pv+1) pv=list[q];
+            else { out.push([st,pv-st+1]); st=list[q]; pv=list[q]; } }
+          out.push([st,pv-st+1]); return out;
+        }
+        var inset=5+gi*4;
+        runs(rl,rows).forEach(function(rr){ runs(cl,cols).forEach(function(cc){
+          el('rect',{x:X0+cc[0]*CW+inset,y:Y0+rr[0]*CH+inset,
+            width:cc[1]*CW-2*inset,height:rr[1]*CH-2*inset,rx:12,
+            fill:PAL[gi%5],'fill-opacity':0.07,stroke:PAL[gi%5],'stroke-width':2.6,'pointer-events':'none'},host);
+        }); });
+      });
+      var ex=document.getElementById(exprId);
+      if(ex){
+        if(!terms.length){ ex.innerHTML='<span class="dim">no ones on the map</span>'; }
+        else {
+          var lits=terms.reduce(function(s,t){return s+t.filter(function(v){return v!=='-';}).length;},0);
+          var ands=terms.filter(function(t){return t.filter(function(v){return v!=='-';}).length>1;}).length;
+          ex.innerHTML=terms.map(function(t,gi){
+            return '<span style="color:'+PAL[gi%5]+'">'+termText(names,t)+'</span>';
+          }).join(' <span class="dim">+</span> ')+
+          '<br><span class="dim">'+ands+' AND gate'+(ands===1?'':'s')+' \u00b7 '+lits+' wires in'+
+          (opts.was?' \u00b7 was '+opts.was:'')+'</span>';
+        }
+      }
+    }
+    draw();
+  }
+
+  var pCells=[]; for(var q1=0;q1<16;q1++) pCells.push(PRIMES.indexOf(q1)>=0?1:0);
+  kmap('kmPrime','kmPrimeExpr',4,pCells,['w','x','y','z'],{was:'4 AND gates, 16 wires',digit:true});
+  var cPlain=[]; for(var q2=0;q2<16;q2++) cPlain.push(C_ONES.indexOf(q2)>=0?1:0);
+  kmap('km4','km4Expr',4,cPlain,['w','x','y','z'],{was:'9 AND gates, 36 wires',digit:true});
+  var cDont=cPlain.slice(); for(var q3=10;q3<16;q3++) cDont[q3]=2;
+  kmap('km4d','km4dExpr',4,cDont,['w','x','y','z'],{allowX:true,was:'9 AND gates, 36 wires',digit:true});
+
+  /* ================= the six built circuits ================= */
+  buildTerms('bMajBefore',['s1','s2','s3'],
+    [mintermTerm(3,3),mintermTerm(3,5),mintermTerm(3,6),mintermTerm(3,7)],[0,1,1],760);
+  buildTerms('bMajAfter',['s1','s2','s3'],
+    [[1,1,'-'],[1,'-',1],['-',1,1]],[0,1,1],700);
+  buildTerms('bPrimeBefore',['w','x','y','z'],
+    PRIMES.map(function(m){return mintermTerm(4,m);}),[0,0,1,1],740);
+  buildTerms('bPrimeAfter',['w','x','y','z'],
+    [[0,0,1,'-'],[0,1,'-',1]],[0,0,1,1],700);
+  buildTerms('bCBefore',['w','x','y','z'],
+    C_ONES.map(function(m){return mintermTerm(4,m);}),[0,0,0,1],620);
+  buildTerms('bCAfter',['w','x','y','z'],
+    [['-',1,'-','-'],['-','-',0,'-'],['-','-','-',1]],[0,0,1,0],660);
+
+  /* ================= closing figures ================= */
+  (function(){
+    var g=document.getElementById('figBill'); if(!g) return;
+    var NM='abcdefg', rows=[], totS=0,totM=0,wS=0,wM=0;
+    for(var s=0;s<7;s++){
+      var ones=[]; for(var d=0;d<10;d++) if(SEGB[d]>>(6-s)&1) ones.push(d);
+      var t=minimise(4,ones,[10,11,12,13,14,15]);
+      var ands=t.filter(function(x){return x.filter(function(v){return v!=='-';}).length>1;}).length;
+      var lits=t.reduce(function(a,x){return a+x.filter(function(v){return v!=='-';}).length;},0);
+      rows.push({nm:NM[s],sop:ones.length,min:ands,expr:t.map(function(x){return termText(['w','x','y','z'],x);}).join(' + ')});
+      totS+=ones.length; totM+=ands; wS+=ones.length*4; wM+=lits;
+    }
+    txt(g,40,26,'BAR',{'font-size':10.5,'letter-spacing':1.5});
+    txt(g,100,26,'AS BUILT',{'font-size':10.5,fill:RED,'letter-spacing':1.5});
+    txt(g,270,26,'SOLVED',{'font-size':10.5,fill:GRN,'letter-spacing':1.5});
+    txt(g,690,26,'AND GATES',{'font-size':10.5,'letter-spacing':1.5});
+    ln(g,40,36,830,36,null,1.5);
+    rows.forEach(function(r,k){
+      var y=62+k*32;
+      txt(g,48,y,r.nm,{'font-size':16,fill:INK,'font-weight':700});
+      txt(g,100,y,r.sop+' gates, '+(r.sop*4)+' wires',{'font-size':14,fill:RED});
+      txt(g,270,y,r.expr,{'font-size':15,fill:GRN,'font-weight':700});
+      txt(g,706,y,r.sop,{'font-size':15,fill:RED,'text-anchor':'end'});
+      txt(g,720,y,'\u2192',{'font-size':13,fill:'#c6c3ba'});
+      txt(g,766,y,r.min,{'font-size':15,fill:GRN,'text-anchor':'end','font-weight':700});
+    });
+    ln(g,40,294,830,294,null,1.5);
+    txt(g,920,92,totS,{'font-size':50,fill:RED,'text-anchor':'middle','font-weight':700});
+    txt(g,920,116,'BEFORE',{'font-size':10.5,'text-anchor':'middle','letter-spacing':1.5});
+    txt(g,1080,92,totM,{'font-size':50,fill:GRN,'text-anchor':'middle','font-weight':700});
+    txt(g,1080,116,'AFTER',{'font-size':10.5,'text-anchor':'middle','letter-spacing':1.5});
+    pth(g,'M970 80 L1024 80 M1012 72 l12 8 l-12 8',{stroke:'#c6c3ba','stroke-width':2.5});
+    txt(g,1000,176,wS+' wires into gates',{'font-size':15,fill:RED,'text-anchor':'middle'});
+    txt(g,1000,200,'became '+wM,{'font-size':15,fill:GRN,'text-anchor':'middle','font-weight':700});
+    txt(g,1000,240,'two thirds of the gates gone,',{'font-size':13,'text-anchor':'middle'});
+    txt(g,1000,262,'behaviour unchanged everywhere',{'font-size':13,'text-anchor':'middle'});
+  })();
+
+  (function(){
+    var g=document.getElementById('figLimit'); if(!g) return;
+    var data=[[2,4,'2 x 2','yes',GRN],[3,8,'2 x 4','yes',GRN],[4,16,'4 x 4','yes',GRN],
+              [5,32,'two 4 x 4 sheets','barely',AMB],[6,64,'four sheets','barely',AMB],
+              [8,256,'sixteen sheets','no',RED]];
+    txt(g,40,26,'VARIABLES',{'font-size':10.5,'letter-spacing':1.5});
+    txt(g,190,26,'CELLS',{'font-size':10.5,'letter-spacing':1.5});
+    txt(g,320,26,'SHAPE OF THE MAP',{'font-size':10.5,'letter-spacing':1.5});
+    txt(g,620,26,'CAN YOU SEE IT?',{'font-size':10.5,'letter-spacing':1.5});
+    ln(g,40,36,780,36,null,1.5);
+    data.forEach(function(d,k){
+      var y=64+k*32;
+      if(d[3]!=='yes') el('rect',{x:34,y:y-18,width:752,height:26,rx:5,
+        fill:d[3]==='no'?'#fdf0ef':'#fdf6ea','fill-opacity':.7},g);
+      txt(g,48,y,d[0],{'font-size':16,fill:INK,'font-weight':700});
+      txt(g,190,y,d[1],{'font-size':15,fill:'#4b5057'});
+      txt(g,320,y,d[2],{'font-size':15,fill:'#4b5057'});
+      txt(g,620,y,d[3],{'font-size':15,fill:d[4],'font-weight':700});
+    });
+    txt(g,840,74,'past four variables the eye',{'font-size':16,fill:INK,'font-weight':700});
+    txt(g,840,98,'gives up, so the merge',{'font-size':16,fill:INK,'font-weight':700});
+    txt(g,840,122,'gets mechanised',{'font-size':16,fill:INK,'font-weight':700});
+    txt(g,840,160,'Quine and McCluskey, 1950s',{'font-size':13.5,'fill':'#8b9096'});
+    txt(g,840,182,'the same merge, done exhaustively',{'font-size':13.5,fill:'#8b9096'});
+    txt(g,840,216,'Espresso, Berkeley 1982',{'font-size':13.5,fill:'#8b9096'});
+    txt(g,840,238,'heuristics, because exhaustive is exponential',{'font-size':13.5,fill:'#8b9096'});
+  })();
+
+  /* stepped algebra reveal */
+  (function(){
+    var slide=null;
+    slides.forEach(function(s){ if(s.dataset.t==='P1 · the merge') slide=s; });
+    if(!slide) return;
+    var steps=slide.querySelectorAll('.step'), shown=1;
+    function apply(){ steps.forEach(function(s,k){ s.classList.toggle('on',k<shown); }); }
+    var alg=document.getElementById('figAlg');
+    if(alg && alg.ownerSVGElement) alg.ownerSVGElement.style.cursor='pointer';
+    slide.addEventListener('click',function(e){
+      if(e.target.closest('button')) return;
+      shown = shown>=steps.length?1:shown+1; apply();
+    });
+    apply();
+  })();
+
+  paint();
+})();
+</script>
+</body>
+</html>
