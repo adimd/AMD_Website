@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 19 · How do you add one column?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --hi:#e8952b; --lo:#b9bfc6; --violet:#6b3fa0;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:46px 68px 78px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:19px;left:68px;font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:19px;right:68px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:68px;right:68px;bottom:21px;display:flex;gap:1.5px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:68px;bottom:42px;font-family:var(--mono);font-size:12px;color:var(--soft);z-index:5}
+#help{position:absolute;left:68px;bottom:42px;font-family:var(--mono);font-size:11px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:5px}
+h1{font-family:var(--display);font-weight:600;font-size:60px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:28px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:5px}
+p{font-size:19.5px;line-height:1.44;max-width:36ch}
+p+p{margin-top:8px}
+.big{font-size:23px;line-height:1.3;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:15px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center}
+.stack>*+*{margin-top:8px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 12px}
+.row{display:flex;gap:18px;align-items:flex-start;justify-content:center}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:8px 13px;margin-top:8px}
+.rem .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.rem.win{border-left-color:var(--ok)} .rem.win .h{color:var(--ok)}
+.rem.bad{border-left-color:var(--fail)} .rem.bad .h{color:var(--fail)}
+.rem ul{list-style:none}
+.rem li{font-size:15px;line-height:1.33;color:var(--ink);padding:3px 0 3px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+
+.btn{font-family:var(--mono);font-size:12.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:6px 11px;cursor:pointer;min-width:34px}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;align-items:center;justify-content:center}
+.btnrow .lab{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--soft);margin-right:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:4px 10px;border-radius:20px;background:var(--accent-soft);color:var(--accent);margin-bottom:7px}
+.tag.new{background:#efe9f7;color:var(--violet)}
+.tag.win{background:var(--ok-soft);color:var(--ok)}
+
+.expr{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--accent);
+  background:var(--card);border:1px solid var(--rule);border-radius:9px;padding:10px 15px;text-align:center;line-height:1.5}
+.expr .dim{color:var(--soft);font-weight:400;font-size:13px}
+
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .3s ease}
+.frag.shown{opacity:1}
+.kc{cursor:pointer;transition:fill .15s ease}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag,.kc{transition:none}}
+.cue{position:absolute;left:68px;right:68px;bottom:64px;display:none;padding:8px 12px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:14.5px;line-height:1.32;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:38px 68px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:9px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:50px}
+#jump li{padding:3px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:15px;color:var(--body);display:flex;gap:11px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:30px}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 19</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 19 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- ================= OPENING ================= -->
+
+<section class="slide" data-t="Title" data-act="arc three opens">
+  <div>
+    <div class="kicker">class 19 · hour nineteen of fifty · arc three opens</div>
+    <h1>How do you add<br>one column?</h1>
+    <p class="big" style="margin-top:20px;max-width:46ch">Twelve hours of representation. Six hours of gates. Today they finally touch, and something you decided in Class 5 gets paid off.</p>
+  </div>
+  <div class="cue">Collect the send off. The three input, two output table is the whole hour, and some will have it already.</div>
+</section>
+
+<section class="slide" data-t="The debt" data-act="arc three opens">
+  <div>
+    <h2>Eighteen hours ago you chose two's complement, and gave a reason.</h2>
+    <div class="split" style="margin-top:2px">
+      <div class="stack">
+        <p>The reason was that a machine which only knows how to <em>count forwards</em> would then get subtraction right for free, by wrapping round the circle.</p>
+        <p class="frag">You have never built that machine. Every scheme in Arc 1 was designed around a circuit that did not exist yet.</p>
+        <p class="big frag" style="margin-top:4px">You now have gates, and a method that builds any function of the present. Adding is a function of the present.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">three questions this hour</div>
+        <ul>
+          <li><strong>What does it take to add two bits?</strong> The smallest possible version of the problem.</li>
+          <li><strong>Why is that not enough?</strong> Do one addition by hand and the answer is obvious.</li>
+          <li><strong>What does it take to add three?</strong> Which turns out to be the real building block, and you have built half of it already without knowing.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The Class 5 callback matters. That decision has been sitting unjustified for eighteen hours.</div>
+</section>
+
+<!-- ================= Q1 · TWO BITS ================= -->
+
+<section class="slide" data-t="Q1 · two bits" data-act="question 1 · two bits">
+  <div>
+    <div class="tag">QUESTION ONE</div>
+    <div class="kicker" style="margin-top:2px">click either bit</div>
+    <h2 style="font-size:31px;margin-bottom:4px">What does it take to add two bits?</h2>
+    <div class="row" style="align-items:center">
+      <div><svg viewBox="0 0 460 300" width="440" height="287"><g id="figOnePlus"></g></svg></div>
+      <div style="max-width:34ch">
+        <p>Three of the four cases fit in one bit. The fourth does not: <span class="num">1 + 1 = 10</span>, which is two.</p>
+        <p class="frag" style="margin-top:8px">So a bit adder has <strong>two outputs</strong>, not one. The low bit of the answer, and the bit that has to go somewhere else.</p>
+        <div class="rem frag" style="margin-top:10px">
+          <div class="h">the names</div>
+          <ul>
+            <li>The low bit is called the <strong>sum</strong>.</li>
+            <li>The overflowing bit is called the <strong>carry</strong>, and it belongs to the next column left.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Click through all four. Only the last one produces a carry, and that is the entire difficulty of this arc.</div>
+</section>
+
+<section class="slide" data-t="Q1 · the table" data-act="question 1 · two bits">
+  <div>
+    <div class="kicker">four rows, two output columns</div>
+    <h2 style="font-size:27px;margin-bottom:2px">Write the table, then hand each column to the Class 15 method.</h2>
+    <div class="row" style="align-items:center">
+      <div><svg viewBox="0 0 420 260" width="410" height="254"><g id="tabHalf"></g></svg></div>
+      <div style="max-width:36ch">
+        <div class="expr" id="halfExpr"></div>
+        <div class="rem" style="margin-top:10px">
+          <div class="h">remember</div>
+          <ul>
+            <li>Two outputs means two independent functions of the same two inputs. Two tables, sharing a set of wires.</li>
+            <li>The sum column is 1 when exactly one input is 1. You have seen that shape three times now, and it is called <strong>XOR</strong>.</li>
+            <li>The carry column is 1 only when both are 1, which is plain <strong>AND</strong>.</li>
+            <li>Two gates. This is the whole circuit, and it has a name: the <strong>half adder</strong>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask why it is called a half adder before saying. The next question answers it.</div>
+</section>
+
+<section class="slide" data-t="Q1 · built" data-act="question 1 · two bits">
+  <div>
+    <div class="tag win">ANSWER</div>
+    <div class="kicker" style="margin-top:2px">click any input</div>
+    <h2 style="font-size:31px;margin-bottom:2px">Two gates. One XOR, one AND.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 900 300" width="880" height="293"><g id="figHalf"></g></svg></div>
+    <div class="rem win" style="max-width:none">
+      <div class="h">what this question taught</div>
+      <ul>
+        <li>Adding produces more bits than it consumes. That is why arithmetic needs a carry at all.</li>
+        <li>Two gates, depth one. It is about as cheap as a useful circuit gets.</li>
+        <li>And it is only half of what you need, which the next question shows in about thirty seconds.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Step through all four inputs and watch the carry light on the last one only.</div>
+</section>
+
+<!-- ================= Q2 · THE CARRY ================= -->
+
+<section class="slide" data-t="Q2 · by hand" data-act="question 2 · the carry">
+  <div>
+    <div class="tag">QUESTION TWO</div>
+    <div class="kicker" style="margin-top:2px">click any bit to change it &nbsp;·&nbsp; then step through the columns</div>
+    <h2 style="font-size:31px;margin-bottom:2px">So why is that not enough?</h2>
+    <div style="text-align:center"><svg viewBox="0 0 960 420" width="940" height="411"><g id="figHand"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn hot" id="hStep">next column &#9654;</button>
+      <button class="btn" id="hAuto">run all</button>
+      <button class="btn" id="hReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">Step it once and stop. The second column already has three things to add, and the half adder only takes two.</div>
+</section>
+
+<section class="slide" data-t="Q2 · answered" data-act="question 2 · the carry">
+  <div>
+    <div class="tag win">ANSWER</div>
+    <h2 style="font-size:31px;margin-bottom:4px">Because a column has three inputs, not two.</h2>
+    <div style="text-align:center;margin-top:2px"><svg viewBox="0 0 1120 230" width="1060" height="205"><g id="figThreeIn"></g></svg></div>
+    <div class="rem win" style="max-width:none">
+      <div class="h">what this question taught</div>
+      <ul>
+        <li>Only the rightmost column has two inputs. Every other column also receives a carry from its right.</li>
+        <li>So the half adder is only usable in one place out of thirty two, which is why it is called half.</li>
+        <li>The real building block takes <strong>a, b and a carry in</strong>, and produces a sum and a carry out. Three in, two out.</li>
+        <li>Three inputs means eight rows, and you already know exactly how to handle eight rows.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Three in, two out. Write it on the board. Everything in the next two arcs is built out of this one block.</div>
+</section>
+
+<!-- ================= Q3 · THREE BITS ================= -->
+
+<section class="slide" data-t="Q3 · the table" data-act="question 3 · three bits">
+  <div>
+    <div class="tag">QUESTION THREE</div>
+    <div class="kicker" style="margin-top:2px">click any row to work it out, or press fill</div>
+    <h2 style="font-size:31px;margin-bottom:2px">What does it take to add three bits?</h2>
+    <div class="row" style="align-items:center">
+      <div><svg viewBox="0 0 660 360" width="640" height="349"><g id="tabFull"></g></svg></div>
+      <div style="max-width:31ch">
+        <div class="rem" style="margin-top:0">
+          <div class="h">how to fill a row</div>
+          <ul>
+            <li>Add the three input bits as ordinary numbers. The total is 0, 1, 2 or 3.</li>
+            <li>Write the total in binary. It needs two bits, and those two bits <em>are</em> your outputs.</li>
+            <li>The low bit is the sum. The high bit is the carry out.</li>
+            <li>No cleverness anywhere. This is arithmetic you have done since you were six.</li>
+          </ul>
+        </div>
+        <div class="btnrow" style="justify-content:flex-start">
+          <button class="btn hot" id="fFill">fill it in</button>
+          <button class="btn" id="fClear">clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Fill three rows by hand with the room before pressing fill. It settles that the table is not the hard part.</div>
+</section>
+
+<section class="slide" data-t="Q3 · two maps" data-act="question 3 · three bits">
+  <div>
+    <div class="kicker">two output columns, so two functions, so two maps &nbsp;·&nbsp; click any cell</div>
+    <h2 style="font-size:27px;margin-bottom:2px">Hand each column to Class 17 and see what comes back.</h2>
+    <div class="row" style="align-items:flex-start;gap:26px">
+      <div style="text-align:center">
+        <svg viewBox="0 0 590 300" width="500" height="254"><g id="kmSum"></g></svg>
+        <div class="expr" id="kmSumExpr" style="margin-top:6px;font-size:16px"></div>
+      </div>
+      <div style="text-align:center">
+        <svg viewBox="0 0 590 300" width="500" height="254"><g id="kmCout"></g></svg>
+        <div class="expr" id="kmCoutExpr" style="margin-top:6px;font-size:16px"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Let them look at both before you say anything. Somebody will notice the left map has no groups drawn on it.</div>
+</section>
+
+<section class="slide" data-t="Q3 · the checkerboard" data-act="question 3 · three bits">
+  <div>
+    <h2>The sum map cannot be minimised at all.</h2>
+    <div class="split" style="margin-top:2px">
+      <div class="stack">
+        <p>No two of its four cells share an edge. Every pair differs in two variables or three, and never in one.</p>
+        <p class="frag">So there is nothing to merge. Class 17's method runs, finds nothing, and hands back exactly what sum of products gave you: four terms of three literals.</p>
+        <p class="big frag" style="margin-top:4px">This is what an XOR looks like on a map, and it is why XOR has been expensive every time you have met it.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">the third time you have hit this</div>
+        <ul>
+          <li><strong>Class 13.</strong> It would not come out of series or parallel switches. It needed a different kind of switch entirely.</li>
+          <li><strong>Class 14.</strong> No single pull up and pull down pair produces it, so it took four whole gates.</li>
+          <li><strong>Class 19.</strong> Its map is a checkerboard, so minimisation has nothing to work with.</li>
+          <li>Three different tools, three refusals, one reason: XOR asks whether things <em>differ</em>, and difference does not factor.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Three encounters across seven sessions. They will not have connected them, so connect them explicitly.</div>
+</section>
+
+<section class="slide" data-t="Q3 · you built this" data-act="question 3 · three bits">
+  <div>
+    <div class="kicker">now the other map</div>
+    <h2 style="font-size:27px;margin-bottom:2px">And the carry out is a circuit you already built, three sessions ago.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figSame"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Identical minterms, identical map, identical three circles, identical answer. Only the labels on the wires differ.</li>
+        <li>In Class 16 it was a boiler with three sensors, shutting down when at least two agreed. Here it is a carry.</li>
+        <li>The circuit does not know which. A carry out happens exactly when at least two of the three input bits are 1, and that is a majority vote.</li>
+        <li>You were told in Class 16 that you would build this again and not recognise it. This is that moment.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is the payoff of a promise made three sessions ago. Enjoy it, and let them enjoy it.</div>
+</section>
+
+<section class="slide" data-t="Q3 · built" data-act="question 3 · three bits">
+  <div>
+    <div class="tag win">ANSWER</div>
+    <div class="kicker" style="margin-top:2px">click any input &nbsp;·&nbsp; check it against the table</div>
+    <h2 style="font-size:29px;margin-bottom:0">Six gates. The full adder.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 900 470" width="840" height="439"><g id="figFull"></g></svg></div>
+  </div>
+  <div class="cue">Set all three inputs high. Sum goes to 1 and carry goes to 1, because three is binary 11.</div>
+</section>
+
+<section class="slide" data-t="Q3 · the cost" data-act="question 3 · three bits">
+  <div>
+    <h2>What one column costs, in the two currencies from Class 18.</h2>
+    <div style="text-align:center;margin-top:2px"><svg viewBox="0 0 1120 250" width="1060" height="223"><g id="figCost"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Six gates for one column, and the carry out is ready two gate delays after the inputs settle.</li>
+        <li>Two gate delays is forty picoseconds. For one column of one addition.</li>
+        <li>Hold that number. Next session there are thirty two columns, and the carry has to cross all of them.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Forty picoseconds sounds like nothing. Multiply it by thirty two on the board and let them do the arithmetic.</div>
+</section>
+
+<!-- ================= CLOSE ================= -->
+
+<section class="slide" data-t="Close" data-act="closing">
+  <div class="center">
+    <h2 style="font-size:36px;margin-bottom:18px">One column of an addition,<br>and it took six gates.</h2>
+    <p class="big" style="max-width:54ch;color:var(--soft)">Three inputs, two outputs. Sum is an XOR that refuses to shrink, and carry is a majority vote you built for a boiler.</p>
+    <p class="big frag" style="margin-top:18px;max-width:52ch">Next session: thirty two of these in a row, and what happens to the carry on its way across.</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: add 255 and 1 in eight bits, by hand, column by column. Write down what the last carry does.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  var onSlide=null;
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    if(onSlide) onSlide(i);
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallow=false;
+  document.addEventListener('click',function(e){
+    swallow = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallow){ swallow=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= helpers ================= */
+  var NS='http://www.w3.org/2000/svg';
+  var GREY='#c6c3ba', HI='#e8952b', INK='#15171b', DEAD='#dedbd3',
+      BLUE='#23408f', RED='#a8231f', GRN='#146b5c', VIO='#6b3fa0', AMB='#b06a12';
+  function el(tag,a,p){ var e=document.createElementNS(NS,tag);
+    for(var k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e; }
+  function txt(p,x,y,s,o){ var t=el('text',Object.assign({x:x,y:y,'font-size':13,fill:'#8b9096'},o||{}),p);
+    t.textContent=s; return t; }
+  function rct(p,x,y,w,h,o){ return el('rect',Object.assign({x:x,y:y,width:w,height:h,rx:7,
+    fill:'#fff',stroke:GREY,'stroke-width':2},o||{}),p); }
+  function wire(p,x1,y1,x2,y2,v){ return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,
+    stroke:v?HI:DEAD,'stroke-width':v?3.4:2.4,'stroke-linecap':'round'},p); }
+  function poly(p,pts,v){ return el('path',{d:pts.map(function(q,k){return (k?'L':'M')+q[0]+' '+q[1];}).join(' '),
+    fill:'none',stroke:v?HI:DEAD,'stroke-width':v?3.4:2.4,'stroke-linecap':'round','stroke-linejoin':'round'},p); }
+  function pth(p,d,o){ return el('path',Object.assign({d:d,fill:'none',stroke:GREY,'stroke-width':2.4},o||{}),p); }
+  function jn(p,x,y){ return el('circle',{cx:x,cy:y,r:4,fill:INK},p); }
+  function gAnd(p,x,y,h,v){ return el('path',{d:'M'+x+' '+(y-h)+' L'+(x+16)+' '+(y-h)+' A '+h+' '+h+
+    ' 0 0 1 '+(x+16)+' '+(y+h)+' L'+x+' '+(y+h)+' z',fill:v?'#fbf0dc':'#fff',
+    stroke:v?AMB:INK,'stroke-width':2.2},p); }
+  function andTip(x,h){ return x+16+h; }
+  function gOr(p,x,y,h,v,xr){
+    var nose=h*1.4;
+    el('path',{d:'M'+(x-4)+' '+(y-h)+' Q'+(x+h*0.8)+' '+y+' '+(x-4)+' '+(y+h)+
+      ' Q'+(x+nose*0.55)+' '+(y+h*0.85)+' '+(x+nose)+' '+y+' Q'+(x+nose*0.55)+' '+(y-h*0.85)+' '+(x-4)+' '+(y-h)+' z',
+      fill:v?'#fbf0dc':'#fff',stroke:v?AMB:INK,'stroke-width':2.2},p);
+    if(xr) el('path',{d:'M'+(x-14)+' '+(y-h)+' Q'+(x+h*0.6)+' '+y+' '+(x-14)+' '+(y+h),
+      fill:'none',stroke:v?AMB:INK,'stroke-width':2.2},p);
+    return x+nose;
+  }
+  function orTip(x,h){ return x+h*1.4; }
+  function pin(p,x,y,v,lab,cb){
+    var r=rct(p,x-26,y-16,52,32,{fill:v?'#fbf0dc':'#eef0f2',stroke:v?AMB:GREY});
+    txt(p,x,y+6,v,{'font-size':17,fill:v?HI:'#6b7178','text-anchor':'middle','font-weight':700});
+    if(lab) txt(p,x,y-24,lab,{'font-size':12,'text-anchor':'middle'});
+    if(cb){ r.style.cursor='pointer'; r.onclick=cb;
+      var hit=el('rect',{x:x-30,y:y-20,width:60,height:40,fill:'transparent'},p);
+      hit.style.cursor='pointer'; hit.onclick=cb; }
+    return r;
+  }
+  function outBox(p,x,y,v,lab){
+    rct(p,x,y-22,54,44,{fill:v?'#fbf0dc':'#eef0f2',stroke:v?AMB:GREY});
+    txt(p,x+27,y+8,v,{'font-size':20,fill:v?HI:'#6b7178','text-anchor':'middle','font-weight':700});
+    txt(p,x+27,y+38,lab,{'font-size':11.5,'text-anchor':'middle','letter-spacing':1.2});
+  }
+
+  /* ================= minimiser, for the two maps ================= */
+  function allCubes(n){ var o=[];
+    (function r(a){ if(a.length===n){o.push(a.slice());return;}
+      [0,1,'-'].forEach(function(v){ r(a.concat([v])); }); })([]); return o; }
+  function cubeCells(c){ var n=c.length,o=[];
+    for(var m=0;m<(1<<n);m++){ var k2=true;
+      for(var k=0;k<n;k++){ var b=(m>>(n-1-k))&1; if(c[k]!=='-'&&c[k]!==b) k2=false; }
+      if(k2) o.push(m); } return o; }
+  function minimise(n,ones){
+    if(!ones.length) return [];
+    var on={}; ones.forEach(function(m){on[m]=1;});
+    var valid=allCubes(n).filter(function(c){ var s=cubeCells(c);
+      return s.every(function(m){return on[m];}) && s.length; });
+    var primes=valid.filter(function(c){ var s=cubeCells(c);
+      return !valid.some(function(o){ if(o===c) return false; var os=cubeCells(o);
+        return os.length>s.length && s.every(function(m){return os.indexOf(m)>=0;}); }); });
+    var need={}; ones.forEach(function(m){need[m]=1;});
+    var ch=[], g=0;
+    while(Object.keys(need).length && g++<30){
+      var best=null,bn=-1;
+      primes.forEach(function(p){ var gg=cubeCells(p).filter(function(m){return need[m];}).length,
+        l=p.filter(function(v){return v!=='-';}).length;
+        if(gg>bn||(gg===bn&&best&&l<best.filter(function(v){return v!=='-';}).length)){bn=gg;best=p;} });
+      if(!best||bn<=0) break;
+      ch.push(best); cubeCells(best).forEach(function(m){delete need[m];});
+    }
+    return ch;
+  }
+  function termText(nm,t){ return t.map(function(v,k){ return v==='-'?'':(v?nm[k]:nm[k]+'\u2032'); }).join('')||'1'; }
+
+  /* ================= Q1 · one plus one ================= */
+  (function(){
+    var g=document.getElementById('figOnePlus'); if(!g) return;
+    var a=1,b=1;
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var tot=a+b, s=tot&1, c=tot>>1;
+      pin(g,120,60,a,'a',function(){ a=a?0:1; render(); });
+      txt(g,190,68,'+',{'font-size':26,fill:INK,'text-anchor':'middle'});
+      pin(g,260,60,b,'b',function(){ b=b?0:1; render(); });
+      txt(g,330,68,'=',{'font-size':26,fill:INK,'text-anchor':'middle'});
+      txt(g,390,70,tot,{'font-size':30,fill:INK,'text-anchor':'middle','font-weight':700});
+      pth(g,'M60 110 L400 110',{stroke:'#e2e0d9','stroke-width':1.5});
+      txt(g,60,140,'in binary that is',{'font-size':14});
+      var bits = c ? '1 0' : '0 '+s;
+      txt(g,300,148,bits,{'font-size':34,fill:c?RED:INK,'text-anchor':'middle','font-weight':700});
+      /* the two output boxes */
+      rct(g,90,190,140,60,{fill:s?'#fbf0dc':'#f6f4ef',stroke:s?AMB:'#e2e0d9'});
+      txt(g,160,222,s,{'font-size':26,fill:s?HI:'#a9a69d','text-anchor':'middle','font-weight':700});
+      txt(g,160,268,'SUM',{'font-size':11.5,'text-anchor':'middle','letter-spacing':1.5});
+      rct(g,250,190,140,60,{fill:c?'#fdf0ef':'#f6f4ef',stroke:c?RED:'#e2e0d9'});
+      txt(g,320,222,c,{'font-size':26,fill:c?RED:'#a9a69d','text-anchor':'middle','font-weight':700});
+      txt(g,320,268,'CARRY',{'font-size':11.5,'text-anchor':'middle','letter-spacing':1.5,fill:c?RED:'#8b9096'});
+      if(c) txt(g,60,296,'this one does not fit. it has to go somewhere.',{'font-size':13,fill:RED});
+    }
+    render();
+  })();
+
+  /* ================= Q1 · half adder table ================= */
+  (function(){
+    var g=document.getElementById('tabHalf'); if(!g) return;
+    txt(g,0,18,'ADDING TWO BITS',{'font-size':11,fill:BLUE,'letter-spacing':1.8});
+    ['a','b'].forEach(function(n,k){ txt(g,70+k*60,46,n,{'font-size':15,fill:INK,'text-anchor':'middle','font-weight':700}); });
+    txt(g,250,46,'SUM',{'font-size':11,'text-anchor':'middle','letter-spacing':1.4});
+    txt(g,350,46,'CARRY',{'font-size':11,'text-anchor':'middle','letter-spacing':1.4});
+    pth(g,'M20 56 L400 56',{stroke:GREY,'stroke-width':1.5});
+    for(var m=0;m<4;m++){
+      var a=m>>1&1,b=m&1,tot=a+b,s=tot&1,c=tot>>1,y=90+m*40;
+      if(c) rct(g,16,y-20,388,36,{rx:6,fill:'#fdf0ef',stroke:'#e0bcb9','stroke-width':1.4});
+      [a,b].forEach(function(v,k){ txt(g,70+k*60,y+6,v,{'font-size':17,fill:'#4b5057','text-anchor':'middle'}); });
+      txt(g,180,y+6,'\u2192',{'font-size':14,fill:'#d5d2ca','text-anchor':'middle'});
+      txt(g,250,y+6,s,{'font-size':17,fill:s?AMB:'#c6c3ba','text-anchor':'middle','font-weight':700});
+      txt(g,350,y+6,c,{'font-size':17,fill:c?RED:'#c6c3ba','text-anchor':'middle','font-weight':700});
+    }
+    txt(g,20,244,'only the last row carries',{'font-size':13,fill:RED});
+    var ex=document.getElementById('halfExpr');
+    if(ex) ex.innerHTML='sum = a &#8853; b<br>carry = a &#183; b<br><span class="dim">one XOR, one AND, depth 1</span>';
+  })();
+
+  /* ================= Q1 · half adder built ================= */
+  (function(){
+    var g=document.getElementById('figHalf'); if(!g) return;
+    var a=1,b=1;
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var s=a^b, c=(a&&b)?1:0;
+      pin(g,70,90,a,'a',function(){ a=a?0:1; render(); });
+      pin(g,70,200,b,'b',function(){ b=b?0:1; render(); });
+      /* rails */
+      wire(g,96,90,180,90,a); wire(g,96,200,220,200,b);
+      wire(g,180,90,180,230,a); jn(g,180,90);
+      wire(g,220,200,220,140,b); jn(g,220,200);
+      /* xor */
+      wire(g,180,110,360,110,a); wire(g,220,140,360,140,b);
+      gOr(g,360,125,26,s,true);
+      txt(g,392,80,'XOR',{'font-size':12,fill:s?AMB:'#a9a69d','text-anchor':'middle'});
+      wire(g,orTip(360,26),125,600,125,s);
+      outBox(g,600,125,s,'SUM');
+      /* and */
+      wire(g,180,230,340,230,a); wire(g,220,260,340,260,b);
+      wire(g,220,140,220,260,b);
+      gAnd(g,340,245,24,c);
+      txt(g,368,205,'AND',{'font-size':12,fill:c?AMB:'#a9a69d','text-anchor':'middle'});
+      wire(g,andTip(340,24),245,600,245,c);
+      outBox(g,600,245,c,'CARRY');
+      txt(g,70,290,'two gates \u00b7 depth 1',{'font-size':13,fill:BLUE});
+    }
+    render();
+  })();
+
+  /* ================= Q2 · addition by hand ================= */
+  var handCtl=null;
+  (function(){
+    var g=document.getElementById('figHand'); if(!g) return;
+    var A=[0,1,0,1,1], B=[0,0,1,1,0];   /* index 0 is the leftmost */
+    var step=-1, timer=null;
+    var X0=250, DX=110;
+    function colX(k){ return X0+(4-k)*DX; }   /* k = bit index, 0 = least significant */
+    function compute(){
+      var s=[], carries=[0,0,0,0,0,0];
+      for(var k=0;k<5;k++){
+        var a=A[4-k], b=B[4-k], ci=carries[k];
+        var tot=a+b+ci;
+        s[k]=tot&1; carries[k+1]=tot>>1;
+      }
+      return {s:s,c:carries};
+    }
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var r=compute();
+      txt(g,40,44,'carry',{'font-size':13,'text-anchor':'end'});
+      txt(g,40,124,'a',{'font-size':15,fill:INK,'text-anchor':'end','font-weight':700});
+      txt(g,40,184,'b',{'font-size':15,fill:INK,'text-anchor':'end','font-weight':700});
+      txt(g,40,264,'sum',{'font-size':13,fill:BLUE,'text-anchor':'end','font-weight':700});
+      pth(g,'M60 214 L'+(colX(0)+46)+' 214',{stroke:INK,'stroke-width':2});
+      for(var k=0;k<5;k++){
+        var x=colX(k), done=(step>=k), active=(step===k);
+        if(active) el('rect',{x:x-46,y:24,width:92,height:266,rx:11,
+          fill:BLUE,'fill-opacity':.06,stroke:BLUE,'stroke-width':2.4},g);
+        /* carry in */
+        var ci=r.c[k];
+        if(k>0 && step>=k-1) txt(g,x+40,44,ci,{'font-size':17,fill:ci?RED:'#d5d2ca','text-anchor':'middle','font-weight':700});
+        /* a and b, clickable */
+        [[A,110],[B,170]].forEach(function(pr){
+          var arr=pr[0], y=pr[1];
+          var rr=rct(g,x-26,y-20,52,40,{fill:arr[4-k]?'#fbf0dc':'#f6f4ef',stroke:arr[4-k]?AMB:'#e2e0d9'});
+          rr.style.cursor='pointer';
+          rr.onclick=(function(ar,idx){ return function(){ ar[idx]=ar[idx]?0:1; step=-1; render(); }; })(arr,4-k);
+          txt(g,x,y+8,arr[4-k],{'font-size':19,fill:arr[4-k]?HI:'#a9a69d','text-anchor':'middle','font-weight':700,'pointer-events':'none'});
+        });
+        /* sum */
+        if(done){
+          rct(g,x-26,242,52,40,{fill:'#eaeef7',stroke:'#c3cee6'});
+          txt(g,x,270,r.s[k],{'font-size':19,fill:BLUE,'text-anchor':'middle','font-weight':700});
+        }
+        /* the carry arrow to the next column */
+        if(done && r.c[k+1] && k<4){
+          pth(g,'M'+(x-46)+' 62 L'+(x-DX+40)+' 62',{stroke:RED,'stroke-width':2.4});
+          pth(g,'M'+(x-DX+48)+' 56 l-10 6 l10 6',{stroke:RED,'stroke-width':2.4});
+        }
+      }
+      /* the final carry out */
+      if(step>=4 && r.c[5]){
+        rct(g,colX(4)-DX-26,242,52,40,{fill:'#fdf0ef',stroke:RED});
+        txt(g,colX(4)-DX,270,r.c[5],{'font-size':19,fill:RED,'text-anchor':'middle','font-weight':700});
+        txt(g,colX(4)-DX,306,'a sixth bit',{'font-size':11,fill:RED,'text-anchor':'middle'});
+      }
+      /* the working */
+      var y=352;
+      if(step<0){ txt(g,60,y,'press next column to work right to left, the way you were taught',{'font-size':15,fill:'#8b9096'}); }
+      else {
+        var a=A[4-step], b=B[4-step], ci=r.c[step], tot=a+b+ci;
+        txt(g,60,y,'column '+step+':  '+a+' + '+b+(step?' + '+ci+' (the carry in)':'')+'  =  '+tot,
+          {'font-size':17,fill:INK,'font-weight':700});
+        txt(g,60,y+26,'write '+(tot&1)+', carry '+(tot>>1)+(step===0?'':'')+
+          (step>0?'':'   \u00b7   this first column had only two things to add'),
+          {'font-size':15,fill:tot>>1?RED:'#8b9096'});
+        if(step===1) txt(g,600,y+26,'\u2190 three things, and the half adder takes two',{'font-size':15,fill:RED,'font-weight':700});
+      }
+      var A5=parseInt(A.join(''),2), B5=parseInt(B.join(''),2);
+      txt(g,700,44,A5+' + '+B5+' = '+(A5+B5),{'font-size':15,fill:'#8b9096'});
+    }
+    function stop(){ if(timer){clearInterval(timer);timer=null;}
+      var b=document.getElementById('hAuto'); if(b) b.classList.remove('hot'); }
+    document.getElementById('hStep').onclick=function(){ stop(); step=step>=4?-1:step+1; render(); };
+    document.getElementById('hAuto').onclick=function(){
+      if(timer){ stop(); return; }
+      this.classList.add('hot'); if(step>=4) step=-1;
+      timer=setInterval(function(){ if(step>=4){ stop(); return; } step++; render(); },900);
+    };
+    document.getElementById('hReset').onclick=function(){ stop(); step=-1; render(); };
+    render();
+    handCtl={stop:stop};
+  })();
+
+  /* ================= Q2 · three inputs ================= */
+  (function(){
+    var g=document.getElementById('figThreeIn'); if(!g) return;
+    /* the rightmost column */
+    rct(g,50,40,440,150,{rx:14,fill:'#fbfaf7',stroke:'#e2e0d9'});
+    txt(g,74,70,'THE RIGHTMOST COLUMN ONLY',{'font-size':10.5,fill:GRN,'letter-spacing':1.8});
+    ['a','b'].forEach(function(n,k){
+      rct(g,90+k*80,90,60,44,{fill:'#f6f4ef',stroke:'#e2e0d9'});
+      txt(g,120+k*80,120,n,{'font-size':18,fill:INK,'text-anchor':'middle','font-weight':700});
+    });
+    pth(g,'M262 112 L302 112 M292 105 l10 7 l-10 7',{stroke:'#c6c3ba','stroke-width':2.2});
+    rct(g,314,84,150,56,{rx:9,fill:'#e9f2ef',stroke:'#b6d5cc','stroke-width':2});
+    txt(g,389,118,'half adder',{'font-size':15,fill:GRN,'text-anchor':'middle','font-weight':700});
+    txt(g,74,172,'two in, two out \u00b7 usable in exactly one place',{'font-size':13,fill:GRN});
+    /* every other column */
+    rct(g,560,40,510,150,{rx:14,fill:'#fbfaf7',stroke:'#e2e0d9'});
+    txt(g,584,70,'EVERY OTHER COLUMN',{'font-size':10.5,fill:RED,'letter-spacing':1.8});
+    ['a','b','carry in'].forEach(function(n,k){
+      rct(g,600+k*86,90,74,44,{fill:k===2?'#fdf0ef':'#f6f4ef',stroke:k===2?RED:'#e2e0d9','stroke-width':k===2?2:1.6});
+      txt(g,637+k*86,120,n,{'font-size':k===2?13:18,fill:k===2?RED:INK,'text-anchor':'middle','font-weight':700});
+    });
+    pth(g,'M866 112 L906 112 M896 105 l10 7 l-10 7',{stroke:'#c6c3ba','stroke-width':2.2});
+    rct(g,918,84,134,56,{rx:9,fill:'#fdf0ef',stroke:'#e0bcb9','stroke-width':2});
+    txt(g,985,118,'full adder',{'font-size':15,fill:RED,'text-anchor':'middle','font-weight':700});
+    txt(g,584,172,'three in, two out \u00b7 the block everything else is made of',{'font-size':13,fill:RED});
+  })();
+
+  /* ================= Q3 · full adder table ================= */
+  var fullShown=[];
+  (function(){
+    var g=document.getElementById('tabFull'); if(!g) return;
+    for(var k=0;k<8;k++) fullShown.push(false);
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,0,18,'ADDING THREE BITS',{'font-size':11,fill:BLUE,'letter-spacing':1.8});
+      ['a','b','cin'].forEach(function(n,k){ txt(g,60+k*54,46,n,{'font-size':14,fill:INK,'text-anchor':'middle','font-weight':700}); });
+      txt(g,300,46,'TOTAL',{'font-size':10.5,'text-anchor':'middle','letter-spacing':1.4});
+      txt(g,400,46,'IN BINARY',{'font-size':10.5,'text-anchor':'middle','letter-spacing':1.4});
+      txt(g,510,46,'SUM',{'font-size':10.5,'text-anchor':'middle','letter-spacing':1.4});
+      txt(g,600,46,'COUT',{'font-size':10.5,'text-anchor':'middle','letter-spacing':1.4});
+      pth(g,'M14 56 L646 56',{stroke:GREY,'stroke-width':1.5});
+      for(var m=0;m<8;m++){
+        var a=m>>2&1,b=m>>1&1,c=m&1,tot=a+b+c,s=tot&1,co=tot>>1,y=84+m*33;
+        var box=rct(g,14,y-17,632,30,{rx:6,fill:fullShown[m]?(co?'#fdf0ef':'#fbfaf7'):'#fff',
+          stroke:fullShown[m]?(co?'#e0bcb9':'#e2e0d9'):'#eceae4','stroke-width':1.4});
+        box.style.cursor='pointer';
+        box.onclick=(function(mm){ return function(){ fullShown[mm]=!fullShown[mm]; render(); }; })(m);
+        [a,b,c].forEach(function(v,k){ txt(g,60+k*54,y+6,v,{'font-size':16,fill:'#4b5057','text-anchor':'middle','pointer-events':'none'}); });
+        if(fullShown[m]){
+          txt(g,300,y+6,tot,{'font-size':16,fill:INK,'text-anchor':'middle','font-weight':700,'pointer-events':'none'});
+          txt(g,400,y+6,co+' '+s,{'font-size':16,fill:'#8b9096','text-anchor':'middle','pointer-events':'none'});
+          txt(g,510,y+6,s,{'font-size':16,fill:s?AMB:'#c6c3ba','text-anchor':'middle','font-weight':700,'pointer-events':'none'});
+          txt(g,600,y+6,co,{'font-size':16,fill:co?RED:'#c6c3ba','text-anchor':'middle','font-weight':700,'pointer-events':'none'});
+        } else {
+          txt(g,300,y+6,'?',{'font-size':15,fill:'#d5d2ca','text-anchor':'middle','pointer-events':'none'});
+        }
+      }
+      var n=fullShown.filter(Boolean).length;
+      txt(g,14,348,n+' of 8 rows worked out',{'font-size':13,fill:n===8?GRN:'#8b9096','font-weight':n===8?700:400});
+    }
+    document.getElementById('fFill').onclick=function(){ for(var k=0;k<8;k++) fullShown[k]=true; render(); };
+    document.getElementById('fClear').onclick=function(){ for(var k=0;k<8;k++) fullShown[k]=false; render(); };
+    render();
+  })();
+
+  /* ================= the two maps ================= */
+  var GRAY=[0,1,3,2];
+  function kmap(hostId,exprId,initial,names,note){
+    var host=document.getElementById(hostId); if(!host) return;
+    var cells=initial.slice(), CW=104, CH=92, X0=140, Y0=96;
+    var PAL=[BLUE,RED,GRN,AMB,VIO];
+    function draw(){
+      host.innerHTML='';
+      var ones=[]; cells.forEach(function(v,m){ if(v) ones.push(m); });
+      var terms=minimise(3,ones);
+      txt(host,X0-30,Y0-46,names[0],{'font-size':14,fill:INK,'font-weight':700,'text-anchor':'end'});
+      txt(host,X0+16,Y0-46,names[1]+' '+names[2],{'font-size':14,fill:INK,'font-weight':700});
+      pth(host,'M'+(X0-26)+' '+(Y0-62)+' L'+(X0-2)+' '+(Y0-38),{stroke:GREY,'stroke-width':1.5});
+      ['00','01','11','10'].forEach(function(c,j){ txt(host,X0+j*CW+CW/2,Y0-14,c,{'font-size':13,'text-anchor':'middle'}); });
+      ['0','1'].forEach(function(r,ri){ txt(host,X0-14,Y0+ri*CH+CH/2+5,r,{'font-size':13,'text-anchor':'end'}); });
+      for(var r=0;r<2;r++) for(var c=0;c<4;c++){
+        var m=(r<<2)|GRAY[c], v=cells[m];
+        var rr=el('rect',{x:X0+c*CW,y:Y0+r*CH,width:CW,height:CH,
+          fill:v?'#fbf0dc':'#fff',stroke:GREY,'stroke-width':1.5,'class':'kc'},host);
+        rr.onclick=(function(mm){ return function(){ cells[mm]=cells[mm]?0:1; draw(); }; })(m);
+        txt(host,X0+c*CW+CW/2,Y0+r*CH+CH/2+9,v,{'font-size':24,fill:v?AMB:'#c6c3ba',
+          'text-anchor':'middle','font-weight':700,'pointer-events':'none'});
+        txt(host,X0+c*CW+7,Y0+r*CH+17,m,{'font-size':10.5,fill:'#d5d2ca','pointer-events':'none'});
+      }
+      terms.forEach(function(t,gi){
+        var ms=cubeCells(t), rs={}, cs={};
+        ms.forEach(function(m){ rs[m>>2&1]=1; cs[GRAY.indexOf(m&3)]=1; });
+        var rl=Object.keys(rs).map(Number).sort(function(a,b){return a-b;});
+        var cl=Object.keys(cs).map(Number).sort(function(a,b){return a-b;});
+        function runs(list,total){ if(list.length===total) return [[0,total]];
+          var out=[],st=list[0],pv=list[0];
+          for(var q=1;q<list.length;q++){ if(list[q]===pv+1) pv=list[q];
+            else { out.push([st,pv-st+1]); st=list[q]; pv=list[q]; } }
+          out.push([st,pv-st+1]); return out; }
+        var ins=5+gi*4;
+        runs(rl,2).forEach(function(rr){ runs(cl,4).forEach(function(cc){
+          el('rect',{x:X0+cc[0]*CW+ins,y:Y0+rr[0]*CH+ins,width:cc[1]*CW-2*ins,height:rr[1]*CH-2*ins,rx:12,
+            fill:PAL[gi%5],'fill-opacity':.07,stroke:PAL[gi%5],'stroke-width':2.6,'pointer-events':'none'},host);
+        }); });
+      });
+      var ex=document.getElementById(exprId);
+      if(ex){
+        var lits=terms.reduce(function(s,t){return s+t.filter(function(v){return v!=='-';}).length;},0);
+        ex.innerHTML = terms.length
+          ? terms.map(function(t,gi){ return '<span style="color:'+PAL[gi%5]+'">'+termText(names,t)+'</span>'; })
+              .join(' <span class="dim">+</span> ')+
+            '<br><span class="dim">'+terms.length+' terms \u00b7 '+lits+' literals \u00b7 '+note+'</span>'
+          : '<span class="dim">nothing on the map</span>';
+      }
+    }
+    draw();
+  }
+  var NM3=['a','b','cin'];
+  kmap('kmSum','kmSumExpr',[0,1,1,0,1,0,0,1],NM3,'no circles possible');
+  kmap('kmCout','kmCoutExpr',[0,0,0,1,0,1,1,1],NM3,'three circles of two');
+
+  /* ================= Q3 · you built this ================= */
+  (function(){
+    var g=document.getElementById('figSame'); if(!g) return;
+    function map(X,title,labels,col){
+      txt(g,X,32,title,{'font-size':10.5,fill:col,'letter-spacing':1.8});
+      var CW=76,CH=66,Y0=76;
+      txt(g,X-6,Y0-30,labels[0],{'font-size':12,fill:INK,'font-weight':700,'text-anchor':'end'});
+      txt(g,X+16,Y0-30,labels[1]+' '+labels[2],{'font-size':12,fill:INK,'font-weight':700});
+      ['00','01','11','10'].forEach(function(c,j){ txt(g,X+j*CW+CW/2,Y0-10,c,{'font-size':11,'text-anchor':'middle'}); });
+      for(var r=0;r<2;r++){
+        txt(g,X-10,Y0+r*CH+CH/2+4,r,{'font-size':11,'text-anchor':'end'});
+        for(var c=0;c<4;c++){
+          var m=(r<<2)|[0,1,3,2][c], v=[0,0,0,1,0,1,1,1][m];
+          el('rect',{x:X+c*CW,y:Y0+r*CH,width:CW,height:CH,fill:v?'#fbf0dc':'#fff',stroke:GREY,'stroke-width':1.4},g);
+          txt(g,X+c*CW+CW/2,Y0+r*CH+CH/2+8,v,{'font-size':20,fill:v?AMB:'#c6c3ba','text-anchor':'middle','font-weight':700});
+        }
+      }
+      /* the three circles */
+      [[1,1,1,2],[0,2,2,1],[1,2,1,2]].forEach(function(q,gi){
+        var PAL=[BLUE,RED,GRN], ins=5+gi*4;
+        el('rect',{x:X+q[1]*CW+ins,y:Y0+q[0]*CH+ins,width:q[3]*CW-2*ins,height:q[2]*CH-2*ins,rx:11,
+          fill:PAL[gi],'fill-opacity':.07,stroke:PAL[gi],'stroke-width':2.4},g);
+      });
+      txt(g,X,236,labels[0]+labels[1]+' + '+labels[0]+labels[2]+' + '+labels[1]+labels[2],
+        {'font-size':17,fill:col,'font-weight':700});
+      txt(g,X,262,'minterms 3, 5, 6, 7',{'font-size':12,fill:'#8b9096'});
+    }
+    map(60,'CLASS 16 \u00b7 THE BOILER ALARM',['s1','s2','s3'],GRN);
+    map(660,'CLASS 19 \u00b7 THE CARRY OUT',['a','b','cin'],RED);
+    pth(g,'M400 150 L620 150',{stroke:'#c6c3ba','stroke-width':2.2,'stroke-dasharray':'7 5'});
+    txt(g,510,138,'the same',{'font-size':14,fill:INK,'text-anchor':'middle','font-weight':700});
+    txt(g,510,172,'circuit',{'font-size':14,fill:INK,'text-anchor':'middle','font-weight':700});
+    txt(g,60,292,'a carry happens when at least two of the three bits are 1, which is a majority vote',
+      {'font-size':15,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= Q3 · the full adder built ================= */
+  (function(){
+    var g=document.getElementById('figFull'); if(!g) return;
+    var a=1,b=1,ci=1;
+    /* geometry, all taps verified against the rail spans */
+    var RA=140, RB=170, RC=200;
+    var AY=63, BY=124, CY=188;
+    var X1X=300, X1Y=75, X1H=24;          /* xor 1 */
+    var X2X=470, X2Y=125, X2H=24;         /* xor 2 */
+    var ANX=400, ANH=22;
+    var AND=[{y:240,t:'a b'},{y:316,t:'a cin'},{y:392,t:'b cin'}];
+    var ORX=560, ORY=316, ORH=52;
+    var OUTX=760;
+    /* rail extents: from the pin to the furthest tap */
+    var RAILA=[Math.min(AY,63), 304], RAILB=[87, 380], RAILC=[137, 404];
+
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var x1=a^b, s=x1^ci;
+      var t=[ (a&&b)?1:0, (a&&ci)?1:0, (b&&ci)?1:0 ];
+      var co=(t[0]||t[1]||t[2])?1:0;
+
+      /* pins and their rails */
+      pin(g,54,AY,a,'a',function(){ a=a?0:1; render(); });
+      pin(g,54,BY,b,'b',function(){ b=b?0:1; render(); });
+      pin(g,54,CY,ci,'cin',function(){ ci=ci?0:1; render(); });
+      wire(g,80,AY,RA,AY,a);   wire(g,RA,RAILA[0],RA,RAILA[1],a);
+      wire(g,80,BY,RB,BY,b);   wire(g,RB,RAILB[0],RB,RAILB[1],b);
+      wire(g,80,CY,RC,CY,ci);  wire(g,RC,RAILC[0],RC,RAILC[1],ci);
+
+      /* xor 1: a and b */
+      wire(g,RA,63,X1X-4,63,a);  jn(g,RA,63);
+      wire(g,RB,87,X1X-4,87,b);  jn(g,RB,87);
+      gOr(g,X1X,X1Y,X1H,x1,true);
+      txt(g,X1X+32,X1Y-X1H-14,'XOR',{'font-size':11.5,fill:x1?AMB:'#a9a69d','text-anchor':'middle'});
+
+      /* xor 2: that, and cin */
+      poly(g,[[orTip(X1X,X1H),X1Y],[420,X1Y],[420,113],[X2X-4,113]],x1);
+      wire(g,RC,137,X2X-4,137,ci); jn(g,RC,137);
+      gOr(g,X2X,X2Y,X2H,s,true);
+      txt(g,X2X+32,X2Y-X2H-14,'XOR',{'font-size':11.5,fill:s?AMB:'#a9a69d','text-anchor':'middle'});
+      wire(g,orTip(X2X,X2H),X2Y,OUTX,X2Y,s);
+      outBox(g,OUTX,X2Y,s,'SUM');
+
+      /* the three AND gates */
+      var taps=[[[RA,228,a],[RB,252,b]],[[RA,304,a],[RC,328,ci]],[[RB,380,b],[RC,404,ci]]];
+      AND.forEach(function(G,k){
+        taps[k].forEach(function(tp){
+          wire(g,tp[0],tp[1],ANX,tp[1],tp[2]); jn(g,tp[0],tp[1]);
+        });
+        gAnd(g,ANX,G.y,ANH,t[k]);
+        txt(g,ANX+24,G.y-ANH-12,G.t,{'font-size':11.5,fill:t[k]?AMB:'#a9a69d','text-anchor':'middle'});
+      });
+
+      /* routing into the OR, landing on its left edge */
+      var TIP=andTip(ANX,ANH), L=ORX-4;
+      poly(g,[[TIP,AND[0].y],[500,AND[0].y],[500,292],[L,292]],t[0]);
+      wire(g,TIP,AND[1].y,L,ORY,t[1]);
+      poly(g,[[TIP,AND[2].y],[520,AND[2].y],[520,340],[L,340]],t[2]);
+      gOr(g,ORX,ORY,ORH,co);
+      txt(g,ORX+36,ORY-ORH-14,'OR',{'font-size':11.5,fill:co?AMB:'#a9a69d','text-anchor':'middle'});
+      wire(g,orTip(ORX,ORH),ORY,OUTX,ORY,co);
+      outBox(g,OUTX,ORY,co,'CARRY OUT');
+
+      /* the arithmetic check */
+      var tot=a+b+ci;
+      txt(g,54,450,a+' + '+b+' + '+ci+' = '+tot+',  which in binary is '+co+' '+s,
+        {'font-size':15,fill:INK,'font-weight':700});
+      txt(g,620,450,'6 gates \u00b7 depth 2 to the carry',{'font-size':13,fill:BLUE});
+    }
+    render();
+  })();
+
+  /* ================= Q3 · the cost ================= */
+  (function(){
+    var g=document.getElementById('figCost'); if(!g) return;
+    function bay(X,title,body,val,unit,col){
+      rct(g,X,34,320,140,{rx:14,fill:'#fbfaf7',stroke:'#e2e0d9'});
+      txt(g,X+24,64,title,{'font-size':10.5,fill:col,'letter-spacing':1.8});
+      txt(g,X+24,112,val,{'font-size':40,fill:col,'font-weight':700});
+      txt(g,X+24+String(val).length*24+10,112,unit,{'font-size':15,fill:'#8b9096'});
+      txt(g,X+24,146,body,{'font-size':13,fill:'#8b9096'});
+    }
+    bay(40,'GATE COUNT','2 XOR, 3 AND, 1 OR','6','gates',BLUE);
+    bay(400,'DEPTH TO THE SUM','two XOR gates in a row','2','deep',BLUE);
+    bay(760,'DEPTH TO THE CARRY','an AND then an OR','2','deep',RED);
+    txt(g,40,214,'two gate delays is about 40 picoseconds, for one column of one addition',
+      {'font-size':16,fill:INK,'font-weight':700});
+  })();
+
+  onSlide=function(idx){
+    if(handCtl && slides[idx].dataset.t!=='Q2 · by hand') handCtl.stop();
+  };
+
+  paint();
+})();
+</script>
+</body>
+</html>
