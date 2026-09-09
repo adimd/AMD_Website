@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Adventure of the Eight Bits — ECS203</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#EFE3C4;--paper-deep:#D8C79C;--ink:#2B211A;--ink-soft:#6B5A48;--wax:#8E1B1B;--desk:#1E2A22;--brass:#A8853B;--ok:#3B6B3E}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--desk);background-image:radial-gradient(ellipse at 50% 0%,#2C3B31 0%,var(--desk) 70%);color:var(--ink);font-family:"IM Fell English",Georgia,serif;font-size:18px;line-height:1.5}
+  body{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px 60px}
+  .clock{position:fixed;top:14px;right:18px;color:var(--paper);font-family:"Courier Prime",monospace;font-size:22px;font-weight:700;letter-spacing:.04em;background:rgba(0,0,0,.35);padding:6px 14px;border-radius:3px;border:1px solid rgba(168,133,59,.5);text-align:right;z-index:5}
+  .clock small{display:block;font-size:11px;font-weight:400;opacity:.8;letter-spacing:0;font-family:"IM Fell English",serif}
+  .deck{width:100%;max-width:780px;position:relative;margin-top:36px}
+  .card{background:var(--paper);position:relative;padding:0 0 34px;box-shadow:0 3px 0 var(--paper-deep),0 8px 0 var(--paper),0 11px 0 var(--paper-deep),0 18px 36px rgba(0,0,0,.55);background-image:radial-gradient(ellipse at 90% 10%,rgba(107,90,72,.12),transparent 40%),radial-gradient(ellipse at 10% 95%,rgba(107,90,72,.14),transparent 45%)}
+  .card::after{content:"";position:absolute;inset:12px;border:1px double rgba(43,33,26,.35);pointer-events:none}
+  .header{display:flex;align-items:center;justify-content:space-between;padding:26px 36px 0 40px}
+  .pips{display:flex;gap:10px;align-items:center}
+  .pips span{width:14px;height:17px;border-radius:50%/60% 60% 40% 40%;border:1.5px solid var(--ink-soft);transform:rotate(-20deg)}
+  .pips span.on{background:#C86A2E;border-color:#8A4519;box-shadow:inset -2px -2px 3px rgba(0,0,0,.35)}
+  .pips span.skip{background:repeating-linear-gradient(45deg,transparent 0 2px,var(--ink-soft) 2px 3px)}
+  .hlabel{font-size:14px;color:var(--ink-soft);font-style:italic}
+  h1{font-size:36px;font-weight:400;margin:14px 36px 4px 40px;line-height:1.15}
+  h2{font-size:24px;font-weight:400;margin:18px 36px 2px 40px}
+  p{margin:10px 36px 10px 40px;max-width:62ch}
+  .story{font-style:italic;color:var(--ink-soft)}
+  .holmes{margin:12px 36px;padding:8px 18px;border-left:2px solid var(--brass);max-width:60ch}
+  .holmes em{display:block;font-size:14px;color:var(--ink-soft);margin-top:4px;font-style:normal}
+  .holmes u{text-decoration:none;font-style:italic;border-bottom:1px solid var(--brass)}
+  .rules{margin:6px 36px 0 40px;max-width:64ch;border-top:1px solid rgba(43,33,26,.3);border-bottom:1px solid rgba(43,33,26,.3);padding:6px 0}
+  .rules div{display:grid;grid-template-columns:150px 1fr;gap:0 16px;padding:7px 0;border-bottom:1px dotted rgba(43,33,26,.25);font-size:16px}
+  .rules div:last-child{border-bottom:none}
+  .rules b{font-family:"Courier Prime",monospace;font-weight:700;font-size:15px;color:var(--wax)}
+  table{border-collapse:collapse;margin:8px 36px 12px 40px;font-family:"Courier Prime",monospace;font-size:15px}
+  td,th{border:1px solid rgba(43,33,26,.4);padding:3px 12px;text-align:center}
+  th{background:rgba(43,33,26,.08);font-weight:700}
+  td.l{text-align:left}
+  .byte{font-family:"Courier Prime",monospace;font-size:32px;font-weight:700;letter-spacing:.2em;margin:6px 36px 8px 40px}
+  .byte i{font-family:"IM Fell English",serif;font-style:italic;font-size:15px;letter-spacing:0;color:var(--ink-soft);display:block;font-weight:400}
+  .evidence{margin:10px 36px 6px 40px;max-width:640px}
+  .evidence svg{width:100%;height:auto;display:block}
+  .q{margin:16px 36px 0 40px;display:grid;grid-template-columns:1fr 170px;gap:10px 16px;align-items:center;max-width:660px}
+  .q label{font-size:17px}
+  input[type=text]{font-family:"Courier Prime",monospace;font-size:17px;padding:8px 10px;border:none;border-bottom:1.5px solid var(--ink);background:rgba(255,255,255,.25);color:var(--ink);width:100%}
+  input[type=text]:focus{outline:none;border-bottom:2.5px solid var(--wax);background:rgba(255,255,255,.4)}
+  input.bad{border-bottom-color:var(--wax);background:rgba(142,27,27,.09)}
+  input.good{border-bottom-color:var(--ok);background:rgba(59,107,62,.14)}
+  .actions{margin:22px 36px 0 40px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  button{font-family:"IM Fell English",serif;font-size:18px;padding:9px 22px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:2px;cursor:pointer}
+  button.ghost{background:transparent;color:var(--ink)}
+  button.skip{background:transparent;color:var(--wax);border-color:var(--wax);margin-left:auto}
+  button:focus-visible{outline:3px solid var(--wax);outline-offset:2px}
+  .msg{margin:12px 36px 0 40px;font-size:16px;min-height:1.4em;font-style:italic}
+  .msg.err{color:var(--wax)}
+  .hint{margin:12px 36px 0 40px;padding:10px 16px;border-left:3px solid var(--wax);font-size:16px;background:rgba(142,27,27,.06);display:none}
+  .away{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--paper);color:var(--wax);border:2px solid var(--wax);padding:8px 18px;font-style:italic;font-size:16px;box-shadow:0 6px 20px rgba(0,0,0,.5);display:none;z-index:6;max-width:90vw}
+  .stamp{position:absolute;right:38px;top:140px;transform:rotate(-11deg);border:3px double var(--wax);color:var(--wax);padding:6px 16px;font-size:26px;letter-spacing:.1em;opacity:.85;mix-blend-mode:multiply;pointer-events:none;display:none;border-radius:3px}
+  .seal{position:absolute;right:44px;bottom:30px;width:74px;height:74px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#B83A30,#7A1414 70%);box-shadow:0 2px 4px rgba(0,0,0,.4),inset 0 0 0 4px rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#F2D6C6;font-size:22px}
+  .code{font-family:"Courier Prime",monospace;font-size:34px;font-weight:700;letter-spacing:.12em;margin:6px 36px 4px 40px}
+  .fine{font-size:15px;color:var(--ink-soft)}
+  .ledger{margin:6px 36px 0 40px;font-family:"Courier Prime",monospace;font-size:15px;max-width:420px}
+  .ledger div{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted rgba(43,33,26,.3)}
+  .ledger div.total{font-weight:700;border-bottom:2px solid var(--ink);border-top:1px solid var(--ink);margin-top:4px}
+  .casetag{display:inline-block;font-family:"Courier Prime",monospace;font-size:13px;border:1px solid var(--ink-soft);padding:1px 8px;border-radius:2px;margin-left:8px}
+  .stack{position:absolute;left:8px;right:-8px;top:10px;height:100%;background:var(--paper-deep);z-index:-1;opacity:.8;transform:rotate(.6deg)}
+  .stack.two{left:16px;right:-16px;top:20px;opacity:.5;transform:rotate(-.8deg)}
+  @media (max-width:600px){h1{font-size:28px}.q{grid-template-columns:1fr}.byte{font-size:22px}.rules div{grid-template-columns:1fr}p,h2,.q,.actions,.msg,.hint,table,.rules,.evidence,.ledger{margin-left:26px;margin-right:22px}.header{padding-left:26px}.stamp{top:60px;font-size:18px}.seal{width:56px;height:56px;font-size:16px}.clock{font-size:16px;padding:4px 10px}}
+  @media (prefers-reduced-motion:no-preference){.card{transition:transform .25s ease,opacity .25s ease}.card.leave{transform:translateY(-14px) rotate(-1deg);opacity:0}}
+</style>
+</head>
+<body>
+<div class="clock" id="clock">00:00<small id="pen">no penalties</small></div>
+<div class="away" id="away"></div>
+<div class="deck">
+  <div class="stack two"></div><div class="stack"></div>
+  <div class="card" id="card"></div>
+</div>
+
+<script>
+// ---------- configuration ----------
+const SHEET_URL="https://script.google.com/macros/s/AKfycbzBVIPHOfLwawgKPkHrrruOCRxaVy4uM0eMS_rwgTgvvmfZWGA7Mr5ZwOtc5Kul84dkmQ/exec";
+const HINT_PENALTY=90, SKIP_PENALTY=300;
+const N=6;
+
+// ---------- state ----------
+let start=null, stage=0, team='', member1='', member2='', finalCode='', caseId='', C=null;
+let hintsUsed=0, skips=0, hintPen=0, skipPen=0;
+let awayCount=0, awaySeconds=0, awayStart=null;
+const wrong={}, skipped={};
+for(let i=1;i<=N;i++){wrong[i]=0;skipped[i]=false;}
+
+function norm(s){return String(s).trim().toUpperCase().replace(/\s+/g,'').replace(/^0X/,'').replace(/^\+/,'');}
+function h(s){s=norm(s);let x=5381;for(const c of s){x=((x*33)^c.charCodeAt(0))>>>0;}return x.toString(16);}
+function fmt(sec){sec=Math.max(0,Math.floor(sec));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
+function wall(){return start?(Date.now()-start)/1000:0;}
+function penalties(){return hintPen+skipPen+awaySeconds;}
+function total(){return wall()+penalties();}
+setInterval(()=>{if(start&&stage<=N)document.getElementById('clock').firstChild.nodeValue=fmt(total());},250);
+function updatePen(){
+  const parts=[];
+  if(hintsUsed)parts.push(hintsUsed+' hint'+(hintsUsed>1?'s':''));
+  if(skips)parts.push(skips+' skip'+(skips>1?'s':''));
+  if(awayCount)parts.push(awayCount+' away');
+  document.getElementById('pen').textContent=parts.length?parts.join(' · ')+' · +'+fmt(penalties()):'no penalties';
+}
+
+// ---------- tab-leave detection ----------
+function leftPage(){ if(!start||stage>N||awayStart!==null)return; awayStart=Date.now(); awayCount++; }
+function cameBack(){
+  if(awayStart===null)return;
+  const s=(Date.now()-awayStart)/1000; awaySeconds+=s; awayStart=null; updatePen();
+  const el=document.getElementById('away');
+  const lines=['“You left the room, Watson. Holmes noticed.”','“Twice now. The clock did not stop.”','“Wherever you keep going, the answer is not there.”'];
+  el.textContent=lines[Math.min(awayCount-1,2)]+' ('+Math.round(s)+'s away, added to your time)';
+  el.style.display='block'; clearTimeout(el._t); el._t=setTimeout(()=>el.style.display='none',6000);
+}
+document.addEventListener('visibilitychange',()=>document.hidden?leftPage():cameBack());
+window.addEventListener('blur',leftPage);
+window.addEventListener('focus',cameBack);
+
+// ---------- reporting ----------
+function report(event){
+  if(!SHEET_URL.startsWith('https://'))return;
+  const payload={event,case:caseId,team,member1,member2,
+    seconds:Math.floor(total()),solve_seconds:Math.floor(wall()),hints:hintsUsed,skips,
+    away_count:awayCount,away_seconds:Math.round(awaySeconds),
+    code:event==='finished'?finalCode:'',
+    wrongAttempts:Object.entries(wrong).map(([k,v])=>k+':'+(skipped[k]?'skip':v)).join(',')};
+  try{fetch(SHEET_URL,{method:'POST',mode:'no-cors',keepalive:true,body:JSON.stringify(payload)});}catch(e){}
+}
+
+// ---------- SVG helpers ----------
+const S={
+  and:(x,y)=>`<path d="M${x} ${y-38} H${x+35} A38 38 0 0 1 ${x+35} ${y+38} H${x} Z"/>`,
+  or:(x,y)=>`<path d="M${x} ${y-38} Q${x+38} ${y-38} ${x+72} ${y} Q${x+38} ${y+38} ${x} ${y+38} Q${x+16} ${y} ${x} ${y-38} Z"/>`,
+  bub:(x,y)=>`<circle cx="${x}" cy="${y}" r="6"/>`,
+  inv:(x,y)=>`<path d="M${x} ${y-12} L${x+26} ${y} L${x} ${y+12} Z"/><circle cx="${x+30}" cy="${y}" r="4"/>`,
+  line:(a,b,c,d)=>`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}"/>`,
+  txt:(x,y,t)=>`<text x="${x}" y="${y}" stroke="none" fill="#2B211A">${t}</text>`,
+  cap:(x,y,t)=>`<text x="${x}" y="${y}" stroke="none" fill="#6B5A48" font-style="italic">${t}</text>`
+};
+function simpleGate(x,y,type,inv,outb){ // inputs at y-20,y+20 from x; returns svg + output x
+  let s=S.line(x,y-20,x+50,y-20)+S.line(x,y+20,x+50,y+20)+S.txt(x-16,y-15,'A')+S.txt(x-16,y+25,'B');
+  if(inv){s=S.line(x,y-20,x+8,y-20)+S.line(x,y+20,x+8,y+20)+S.inv(x+8,y-20)+S.inv(x+8,y+20)+S.line(x+42,y-20,x+50,y-20)+S.line(x+42,y+20,x+50,y+20)+S.txt(x-16,y-15,'A')+S.txt(x-16,y+25,'B');}
+  s+=type==='and'?S.and(x+50,y):S.or(x+50,y);
+  let ox=x+122; if(outb){s+=S.bub(ox+6,y);ox+=12;}
+  s+=S.line(ox,y,ox+34,y)+S.txt(ox+40,y+5,'out'); return s;
+}
+function drawingsSVG(cs){
+  let d1,d2;
+  if(cs==='A'){d1=simpleGate(30,80,'or',false,true); d2=simpleGate(370,80,'and',true,false);}
+  else if(cs==='B'){d1=simpleGate(30,80,'and',false,true); d2=simpleGate(370,80,'or',true,false);}
+  else{
+    // C: A NAND (A NAND B)
+    d1=S.txt(14,45,'A')+S.txt(14,105,'B')
+      +S.line(30,40,72,40)+S.line(30,100,72,100)+`<circle cx="46" cy="40" r="3" fill="#2B211A"/>`+S.line(46,40,46,16)+S.line(46,16,170,16)+S.line(170,16,170,40)+S.line(170,40,178,40)
+      +`<path d="M72 30 H98 A40 40 0 0 1 98 110 H72 Z"/>`+S.bub(144,70)+S.line(150,70,158,70)+S.line(158,70,158,100)+S.line(158,100,178,100)
+      +`<path d="M178 30 H204 A40 40 0 0 1 204 110 H178 Z"/>`+S.bub(250,70)+S.line(256,70,286,70)+S.txt(292,75,'out');
+    d2=S.txt(354,45,'A')+S.txt(354,105,'B')+S.line(370,40,420,40)+S.line(370,100,380,100)+S.inv(380,100)+S.line(414,100,420,100)
+      +`<path d="M420 30 H446 A40 40 0 0 1 446 110 H420 Z"/>`+S.line(486,70,520,70)+S.txt(526,75,'out');
+  }
+  return `<svg viewBox="0 0 640 150" role="img" aria-label="two circuit drawings"><g stroke="#2B211A" stroke-width="2" fill="none" font-family="Courier Prime,monospace" font-size="14">
+    ${S.cap(20,14,'Drawing 1')}${S.cap(340,14,'Drawing 2')}${d1}${d2}</g></svg>`;
+}
+function tapeSVG(bits){
+  return `<svg viewBox="0 0 640 70" role="img" aria-label="punched tape">
+    <rect x="4" y="8" width="632" height="54" rx="3" fill="#E4D2A4" stroke="#6B5A48"/>
+    <g fill="#6B5A48" opacity=".35">${[...Array(21)].map((_,i)=>`<circle cx="${20+i*30}" cy="16" r="1.6"/><circle cx="${20+i*30}" cy="54" r="1.6"/>`).join('')}</g>
+    ${bits.map((b,i)=>b?`<circle cx="${95+i*65}" cy="35" r="9" fill="#2B211A"/>`:`<circle cx="${95+i*65}" cy="35" r="9" fill="none" stroke="#6B5A48" stroke-dasharray="2 3"/>`).join('')}</svg>`;
+}
+
+// ---------- the three cases ----------
+const CASES={
+A:{name:'The Norwood Tape',bits:[1,0,1,1,0,1,0,1],
+  I:["b866d9d","b863eaa","5972f2","5967f3"],
+  hudson:'“The lamp in his window was lit when the street door was open <u>and</u> the bell had <u>not</u> rung — <u>or</u> whenever the constable’s whistle blew, door or no door.”',
+  night:'D=1, B=1, W=0', II:["2b590","2b596","2b595"],
+  IIhint:'Translate first: L = (D AND NOT B) OR W. Then list all 8 rows of D,B,W and count the ones. The gate count is the number of operators in the smallest correct expression.',
+  suspects:[['Adair','“They were not both true — the window open and the dog barking.”'],['Moran','“If the window was open, then the dog barked.”'],['Milverton','“Exactly one of those two things happened.”'],['Ferrier','“The window was shut.”']],
+  III:["2b595","2b595","f70e8a39"],
+  IIIhint:'“If X then Y” is true whenever X is false, and also when both are true. Write it as (NOT X) OR Y. Then fill four rows and count.',
+  IVq2:'Fewest 2-input NAND gates needed to build a 2-input XOR', IVq3:'A NOR gate with both inputs tied to the same signal A behaves as which gate?',
+  IV:["b881c0a","2b591","b87d3d0"],
+  IVhint:'Drawing 1 is NOT(A OR B). Drawing 2 is (NOT A) AND (NOT B). Fill both tables. For XOR from NANDs, the classic construction uses four.',
+  add1:'0x64 + 0x32',add2:'0xE0 + 0x30',sub:'0x2C − 0x5D', V:["7c4dfb3f","596824","2b594","5972e0"],
+  Vhint:'Overflow: the true signed sum does not fit in −128…127. Carry-out is a separate thing. Subtract by adding the two’s complement of the second number and keeping 8 bits.',
+  lock:['Y3 = b7 NAND b6','Y2 = (b5 XOR b4) NOR Y3','Y1 = b3 AND (NOT b2)','Y0 = (Y2 OR Y1) XOR b0'], VI:["7c53ff25","2b59c"]},
+B:{name:'The Camberwell Tape',bits:[1,1,1,0,0,0,1,1],
+  I:["b8670d2","b863dc3","5971d3","596850"],
+  hudson:'“The lamp in his window was lit <u>only</u> when the constable’s whistle blew while the street door was <u>shut</u> and the bell <u>silent</u>. Any other night it stayed dark.”',
+  night:'D=0, B=0, W=0', II:["2b594","2b597","2b595"],
+  IIhint:'“Door shut and bell silent” is NOT(D OR B). Then that must be true together with W. Two operators.',
+  suspects:[['Sholto','“Neither. The window was shut and the dog was silent.”'],['Stapleton','“The dog barked.”'],['Gruner','“If the dog barked, then the window was open.”'],['Woodley','“They were not both true.”']],
+  III:["2b595","2b595","80d2f52f"],
+  IIIhint:'“If X then Y” is (NOT X) OR Y. Sholto’s statement is W NOR D; Woodley’s is W NAND D. Four rows, count the truths.',
+  IVq2:'Fewest 2-input NOR gates needed to build a 2-input AND', IVq3:'NOT( NOT A OR NOT B ) is which single gate?',
+  IV:["b881c0a","2b596","b87b72e"],
+  IVhint:'Drawing 1 is NOT(A AND B). Drawing 2 is (NOT A) OR (NOT B). For AND from NORs: invert A, invert B, NOR the results.',
+  add1:'0x50 + 0x50',add2:'0xF0 + 0x20',sub:'0x3B − 0x62', V:["b863ce7","596824","2b594","597238"],
+  Vhint:'Overflow: the true signed sum does not fit in −128…127. Carry-out is a separate thing. Subtract by adding the two’s complement of the second number and keeping 8 bits.',
+  lock:['Y3 = b7 NOR b6','Y2 = (b5 OR b4) AND Y3','Y1 = Y2 XOR b3 XOR b2','Y0 = Y1 NAND b1'], VI:["7c537b04","2b594"]},
+C:{name:'The Brixton Tape',bits:[1,0,0,1,1,1,1,0],
+  I:["b866c79","b863ce9","596959","5967c1"],
+  hudson:'“The lamp in his window was lit when the street door was open, <u>or</u> when the bell and the constable’s whistle <u>both</u> sounded — but if both of those things were true at once, it went <u>out</u>.”',
+  night:'D=1, B=1, W=1', II:["2b591","2b597","2b595"],
+  IIhint:'“One or the other but not both” is XOR. The two things are D and (B AND W). Two operators.',
+  suspects:[['Slaney','“Both. The window was open and the dog barked.”'],['Oldacre','“Exactly one of those two things happened.”'],['Roylott','“The dog did not bark.”'],['Blessington','“The window was open, or the dog was silent — one or the other, or both.”']],
+  III:["2b594","2b595","c9c1e429"],
+  IIIhint:'Blessington is W OR (NOT D). Four rows; exactly one has three truths.',
+  IVq2:'Fewest 2-input NAND gates needed to build a 2-input AND', IVq3:'A NAND gate whose two inputs are each passed through a NOT first behaves as which gate?',
+  IV:["597304","2b597","597378"],
+  IVhint:'Do not assume. Drawing 1 is A NAND (A NAND B); simplify it or table it. Drawing 2 is A AND NOT B. Try A=0, B=0 on both.',
+  add1:'0x90 + 0x90',add2:'0x7F + 0xFF',sub:'0x12 − 0x7A', V:["596864","596797","2b594","596924"],
+  Vhint:'Overflow: the true signed sum does not fit in −128…127. Both additions here produce a carry-out — that is not the test. Subtract by adding the two’s complement of the second number.',
+  lock:['Y3 = b7 XOR b6','Y2 = b5 XOR (NOT b4)','Y1 = NAND of b3, b2 and Y3 (three inputs)','Y0 = (Y3 XOR Y2) NOR Y1'], VI:["7c53ff24","2b59d"]}
+};
+
+function pips(n){let s='<div class="pips">';for(let i=1;i<=N;i++){const cls=i<n?(skipped[i]?'skip':'on'):'';s+=`<span class="${cls}"></span>`;}return s+'</div>';}
+
+function buildStages(c){
+  const bitstr=c.bits.join(' ');
+  return [
+  {title:'The Adventure of the Eight Bits'},
+  {title:'Clue I — The strip of tape',
+   body:`<p class="story">Eight marks. A hole is a one, unpunched is a zero. The engineer’s machine read it left to right, largest place first.</p>
+   <div class="evidence">${tapeSVG(c.bits)}</div>
+   <div class="holmes">“The same eight marks, and yet three men would read three different numbers — and the accountant, being an accountant, will then ask for the opposite.”</div>
+   <div class="q">
+     <label for="a0">The clerk reads it as an unsigned integer</label><input type="text" id="a0" autocomplete="off">
+     <label for="a1">The accountant reads it as 8-bit two’s complement</label><input type="text" id="a1" autocomplete="off">
+     <label for="a2">The printer reads it as hexadecimal</label><input type="text" id="a2" autocomplete="off">
+     <label for="a3">The accountant demands a tape reading the <em>negative</em> of his value. Write that byte in hex</label><input type="text" id="a3" autocomplete="off">
+   </div>`, ans:c.I,
+   hint:'Two’s complement: if the leftmost mark is a hole, value = unsigned − 256. To negate: flip every bit, add one, then write the result as two hex digits.'},
+  {title:'Clue II — Mrs Hudson’s statement',
+   body:`<p class="story">Mrs Hudson was on the stair the night he vanished. She is precise, as always. There are three things she watched: the street door, the bell, and the constable’s whistle from the corner.</p>
+   <div class="holmes">${c.hudson}<em>— Mrs Hudson</em></div>
+   <p>Signals: door <strong>D</strong> (1 = open), bell <strong>B</strong> (1 = rung), whistle <strong>W</strong> (1 = blew), lamp <strong>L</strong> (1 = lit). The lamp is the output of a small circuit of 2-input gates.</p>
+   <div class="q">
+     <label for="a0">Of the 8 possible nights (every combination of D, B, W), on how many was the lamp lit?</label><input type="text" id="a0" autocomplete="off">
+     <label for="a1">Fewest 2-input gates (any of NOT, AND, OR, XOR, NAND, NOR) needed to build the lamp circuit</label><input type="text" id="a1" autocomplete="off">
+     <label for="a2">On the night in question, ${c.night}. Was the lamp lit? (1 or 0)</label><input type="text" id="a2" autocomplete="off">
+   </div>`, ans:c.II, hint:c.IIhint},
+  {title:'Clue III — Four alibis',
+   body:`<p class="story">Two facts about that night are in dispute: whether the workshop <strong>window was open</strong> (W) and whether the <strong>dog barked</strong> (D). Four men gave statements.</p>
+   <table><tr><th>Suspect</th><th>Statement</th></tr>${c.suspects.map(([n,s])=>`<tr><td>${n}</td><td class="l">${s}</td></tr>`).join('')}</table>
+   <div class="holmes">“Exactly three of them told the truth, Watson. Some of them speak in conditions — mind what ‘if’ means to a logician. There are only four ways the night could have gone. Try each.”</div>
+   <div class="q">
+     <label for="a0">Was the window open? (1 or 0)</label><input type="text" id="a0" autocomplete="off">
+     <label for="a1">Did the dog bark? (1 or 0)</label><input type="text" id="a1" autocomplete="off">
+     <label for="a2">Who lied?</label><input type="text" id="a2" autocomplete="off">
+   </div>`, ans:c.III, hint:c.IIIhint},
+  {title:'Clue IV — Two drawings, one machine?',
+   body:`<p class="story">Two schematics from the engineer’s desk. Lestrade insists they are different devices and has charged the engineer with billing the Works twice. Holmes has not yet said whether Lestrade is wrong.</p>
+   <div class="evidence">${drawingsSVG(caseId)}</div>
+   <div class="holmes">“Do not tell me what the shapes look like. Tell me what they <u>do</u>, for every pair of inputs. Then we shall see who owes whom.”</div>
+   <div class="q">
+     <label for="a0">Do the two drawings produce the same output for every input? (yes or no)</label><input type="text" id="a0" autocomplete="off">
+     <label for="a1">${c.IVq2}</label><input type="text" id="a1" autocomplete="off">
+     <label for="a2">${c.IVq3}</label><input type="text" id="a2" autocomplete="off">
+   </div>`, ans:c.IV, hint:c.IVhint},
+  {title:'Clue V — The ledger at Cox & Co.',
+   body:`<p class="story">The engineer’s account balanced for six years. Then a deposit turned into a debt. Lestrade circled two additions in the machine’s 8-bit log — and one subtraction he could not follow at all.</p>
+   <table><tr><th></th><th>Operation (8-bit, hex)</th></tr>
+     <tr><td>1</td><td>${c.add1}</td></tr><tr><td>2</td><td>${c.add2}</td></tr><tr><td>3</td><td>${c.sub}</td></tr></table>
+   <div class="holmes">“Lestrade sees a crime. I see a register with only eight places. One of the additions is an honest wraparound; the other is a lie the machine told. And the subtraction is just an addition wearing a disguise.”</div>
+   <div class="q">
+     <label for="a0">Operation 1, read as two’s complement, gives (decimal)</label><input type="text" id="a0" autocomplete="off">
+     <label for="a1">Operation 2 leaves what in the 8-bit register? (hex, two digits)</label><input type="text" id="a1" autocomplete="off">
+     <label for="a2">Which addition is a genuine <em>signed overflow</em>? (1 or 2)</label><input type="text" id="a2" autocomplete="off">
+     <label for="a3">Operation 3, as an 8-bit two’s complement byte (hex)</label><input type="text" id="a3" autocomplete="off">
+   </div>`, ans:c.V, hint:c.Vhint},
+  {title:'Clue VI — The strongbox at Charing Cross',
+   body:`<p class="story">The lock takes the eight marks from the tape and feeds them through four gates — but this engineer was cunning: later gates use the outputs of earlier ones. The four results, in order, are the combination.</p>
+   <div class="byte">b7 b6 b5 b4 b3 b2 b1 b0<i>= ${bitstr}, the tape from Clue I</i></div>
+   <table><tr><th>Step</th><th>Rule</th></tr>${c.lock.map((r,i)=>`<tr><td>${i+1}</td><td class="l">${r}</td></tr>`).join('')}</table>
+   <div class="holmes">“In order, Watson. Y3 first. You cannot know Y0 until you know what came before it.”</div>
+   <div class="q">
+     <label for="a0">The combination as four bits: Y3 Y2 Y1 Y0</label><input type="text" id="a0" placeholder="e.g. 1010" autocomplete="off">
+     <label for="a1">The same combination as a single hex digit</label><input type="text" id="a1" autocomplete="off">
+   </div>`, ans:c.VI,
+   hint:'Compute Y3 from the tape bits alone, write it down, then Y2 (it may need Y3), then Y1, then Y0. A NAND is 0 only when every input is 1. A NOR is 1 only when every input is 0.'}
+  ];
+}
+
+const intro=`
+  <p class="story">Baker Street, November 1889. A telegram from Mycroft: an engineer at the Analytical Works has vanished, leaving on his bench a strip of punched tape and a note — “The strongbox at Charing Cross opens to whoever can read this.” Mrs Hudson saw something. Four men have alibis. Lestrade has already called it fraud.</p>
+  <div class="holmes">“You see, Watson, but you do not observe. Six clues. Read the tape, hear the witness, break the alibis, and the box is yours. This is an open-book case — your notes will not save you from thinking.”</div>
+  <h2>Rules of the case</h2>
+  <div class="rules">
+    <div><b>Six clues</b><span>Each clue is one card. Solve it and you earn an orange pip and the next card. The cards must be taken in order.</span></div>
+    <div><b>Wrong answers</b><span>Cost nothing. Fields that don’t match are marked; fix them and press <em>Deduce</em> again.</span></div>
+    <div><b>Consult Holmes</b><span>Shows a hint for the current clue. Adds <strong>${fmt(HINT_PENALTY)}</strong> to your time, once per clue.</span></div>
+    <div><b>Skip a clue</b><span>Moves you to the next card without solving. Adds <strong>${fmt(SKIP_PENALTY)}</strong> to your time and the pip is struck through. You cannot come back.</span></div>
+    <div><b>Leaving this tab</b><span>The case knows when this page is not in front of you — another tab, another window, a minimised browser. Every departure is counted, and the seconds away are <strong>added to your time as a penalty on top of the clock</strong>. Leaving costs double.</span></div>
+    <div><b>Your score</b><span>Case time = solving time + hint penalties + skip penalties + time away from the tab. <strong>Lowest case time wins.</strong> Ties go to the team that was away less.</span></div>
+    <div><b>Access code</b><span>The case opens only with the code your instructor announces in the room. The code also decides which of three cases you receive. It is checked with Scotland Yard, not on this page.</span></div>
+    <div><b>Filing</b><span>Your start and your result are filed automatically with your instructor, including both detectives’ names and which case you took. Keep this tab open until the case is closed.</span></div>
+  </div>
+  <p>Two detectives per agency, one screen. Argue before you type.</p>
+  <div class="q">
+    <label for="team">Your detective agency</label><input type="text" id="team" placeholder="Baker St. Irregulars" autocomplete="off">
+    <label for="m1">First detective</label><input type="text" id="m1" placeholder="full name" autocomplete="off">
+    <label for="m2">Second detective</label><input type="text" id="m2" placeholder="full name" autocomplete="off">
+    <label for="access">Access code from your instructor</label><input type="text" id="access" placeholder="given in class" autocomplete="off">
+  </div>
+  <div class="actions"><button id="go" onclick="begin()">Take the case</button></div>
+  <div class="msg err" id="msg"></div>`;
+
+let stages=null;
+const wrongLines=[
+  '“No, no, Watson. Look again at the marked ones.”',
+  '“You are guessing. Stop guessing and reason.”',
+  '“Write it out. Every row. The answer is in the table, not in your head.”',
+  '“Consult me if you must. It will cost you less than another guess costs your pride.”'
+];
+
+function render(){
+  const c=document.getElementById('card');
+  if(stage===0){
+    c.innerHTML=`<div class="header">${pips(0)}<span class="hlabel">ECS203 · Representation & logic gates</span></div><h1>The Adventure of the Eight Bits</h1>${intro}`;
+  }else{
+    const s=stages[stage];
+    c.innerHTML=`<div class="header">${pips(stage)}<span class="hlabel">clue ${stage} of ${N} · ${team}<span class="casetag">${C.name}</span></span></div>
+      <h1>${s.title}</h1>${s.body}
+      <div class="hint" id="hint">${s.hint}</div>
+      <div class="actions">
+        <button onclick="check()">Deduce</button>
+        <button class="ghost" onclick="showHint()">Consult Holmes (+${fmt(HINT_PENALTY)})</button>
+        <button class="skip" onclick="skipClue()">Skip this clue (+${fmt(SKIP_PENALTY)})</button>
+      </div>
+      <div class="msg err" id="msg"></div><div class="stamp" id="stamp">Deduced</div>`;
+  }
+  c.classList.remove('leave');
+  const first=c.querySelector('input[type=text]'); if(first) first.focus();
+  c.querySelectorAll('input[type=text]').forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter')(stage===0?begin():check());}));
+  window.scrollTo({top:0});
+}
+
+async function begin(){
+  const msg=document.getElementById('msg'), go=document.getElementById('go');
+  const t=document.getElementById('team').value.trim();
+  const a=document.getElementById('m1').value.trim(), b=document.getElementById('m2').value.trim();
+  const code=document.getElementById('access').value.trim();
+  if(!t){msg.textContent='Every agency needs a name.';return;}
+  if(!a||!b){msg.textContent='Both detectives must sign in.';return;}
+  if(!code){msg.textContent='The case needs the access code.';return;}
+  go.disabled=true; msg.textContent='Checking with Scotland Yard…';
+  let verdict='';
+  try{const r=await fetch(SHEET_URL+'?code='+encodeURIComponent(code),{method:'GET'});verdict=(await r.text()).trim();}
+  catch(e){verdict='error';}
+  go.disabled=false;
+  if(!CASES[verdict]){
+    msg.textContent= verdict==='no' ? '“That is not the code, Watson.”' : 'Could not reach Scotland Yard. Check your connection and try again.';
+    return;
+  }
+  msg.textContent='';
+  caseId=verdict; C=CASES[caseId]; stages=buildStages(C);
+  team=t; member1=a; member2=b; start=Date.now(); report('started'); next();
+}
+function showHint(){
+  const el=document.getElementById('hint'); if(el.style.display==='block')return;
+  el.style.display='block'; hintPen+=HINT_PENALTY; hintsUsed++; updatePen();
+}
+function skipClue(){
+  if(!confirm('Skip this clue? '+fmt(SKIP_PENALTY)+' will be added to your time and you cannot return to it.'))return;
+  skipped[stage]=true; skips++; skipPen+=SKIP_PENALTY; updatePen();
+  document.getElementById('stamp').textContent='Skipped'; document.getElementById('stamp').style.display='block';
+  setTimeout(next,700);
+}
+function check(){
+  const s=stages[stage]; let ok=true;
+  s.ans.forEach((hash,i)=>{
+    const el=document.getElementById('a'+i); const good=h(el.value)===hash;
+    el.classList.toggle('bad',!good); el.classList.toggle('good',good); if(!good)ok=false;
+  });
+  const msg=document.getElementById('msg');
+  if(!ok){wrong[stage]++;msg.textContent=wrongLines[Math.min(wrong[stage]-1,wrongLines.length-1)];return;}
+  msg.textContent='';
+  document.getElementById('stamp').style.display='block';
+  setTimeout(next,900);
+}
+function next(){
+  const c=document.getElementById('card'); c.classList.add('leave');
+  setTimeout(()=>{stage++; if(stage<=N)render(); else finish();},260);
+}
+function finish(){
+  if(awayStart!==null)cameBack();
+  const tot=total();
+  finalCode=h(caseId+'|'+team+'|'+Math.floor(tot)+'|'+hintsUsed+'|'+skips).toUpperCase().slice(0,6);
+  report('finished');
+  const c=document.getElementById('card');
+  c.innerHTML=`<div class="header">${pips(N+1)}<span class="hlabel">case closed · ${member1} &amp; ${member2}<span class="casetag">${C.name}</span></span></div>
+    <h1>${skips?'The strongbox opens — eventually.':'The strongbox opens.'}</h1>
+    <p class="story">Inside: the engineer’s drawings, a train ticket to Edinburgh, and a note in his hand. “Every number is a decision. Every gate is a switch. I have gone to build something larger.”</p>
+    <div class="holmes">“Not fraud, Lestrade. Arithmetic. The two are frequently confused.”</div>
+    <h2>Case time</h2>
+    <div class="ledger">
+      <div><span>Solving time (clock)</span><span>${fmt(wall())}</span></div>
+      <div><span>Hints ×${hintsUsed}</span><span>+${fmt(hintPen)}</span></div>
+      <div><span>Skips ×${skips}</span><span>+${fmt(skipPen)}</span></div>
+      <div><span>Away from tab ×${awayCount}</span><span>+${fmt(awaySeconds)}</span></div>
+      <div class="total"><span>Case time</span><span>${fmt(tot)}</span></div>
+    </div>
+    <p class="fine">${N-skips} of ${N} clues solved.</p>
+    <h2>Scotland Yard file number</h2>
+    <div class="code">${finalCode}</div>
+    <p class="fine">Your result has been filed. Keep this tab open until your instructor confirms it arrived.</p>
+    <div class="seal">221B</div>`;
+  c.classList.remove('leave');
+  document.getElementById('clock').firstChild.nodeValue=fmt(tot);
+  window.scrollTo({top:0});
+}
+render();
+</script>
+</body>
+</html>
