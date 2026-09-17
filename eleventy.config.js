@@ -3,6 +3,7 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/assets");
   eleventyConfig.addPassthroughCopy("src/CNAME");
   eleventyConfig.addPassthroughCopy({ "src/decks/cod": "courses/cod" });
+  eleventyConfig.addPassthroughCopy({ "src/decks/edge-ai": "courses/edge-ai" });
  
   return {
     dir: {
