@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 23 · Subtraction, for almost nothing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --hi:#e8952b; --lo:#b9bfc6; --violet:#6b3fa0;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:46px 68px 78px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .32s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.eyebrow{position:absolute;top:19px;left:68px;font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:19px;right:68px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:68px;right:68px;bottom:21px;display:flex;gap:1.5px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:68px;bottom:42px;font-family:var(--mono);font-size:12px;color:var(--soft);z-index:5}
+#help{position:absolute;left:68px;bottom:42px;font-family:var(--mono);font-size:11px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+h1{font-family:var(--display);font-weight:600;font-size:60px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:29px;line-height:1.12;letter-spacing:-.015em;color:var(--ink);margin-bottom:6px}
+p{font-size:20px;line-height:1.46;max-width:37ch}
+p+p{margin-top:10px}
+.big{font-size:23.5px;line-height:1.34;color:var(--ink);font-weight:300;max-width:31ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center}
+.stack>*+*{margin-top:9px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 12px}
+.row{display:flex;gap:20px;align-items:flex-start;justify-content:center}
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:9px 14px;margin-top:9px}
+.rem .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.rem.win{border-left-color:var(--ok)} .rem.win .h{color:var(--ok)}
+.rem.bad{border-left-color:var(--fail)} .rem.bad .h{color:var(--fail)}
+.rem ul{list-style:none}
+.rem li{font-size:15.5px;line-height:1.36;color:var(--ink);padding:3.5px 0 3.5px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+.btn{font-family:var(--mono);font-size:12.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:6px 12px;cursor:pointer;min-width:34px}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+.btnrow .lab{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--soft);margin-right:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:4px 11px;border-radius:20px;background:var(--accent-soft);color:var(--accent);margin-bottom:8px}
+.tag.win{background:var(--ok-soft);color:var(--ok)}
+.tag.bad{background:var(--fail-soft);color:var(--fail)}
+.tag.new{background:#efe9f7;color:var(--violet)}
+.spec{display:flex;align-items:stretch;background:var(--card);border:1px solid var(--rule2);border-radius:11px;overflow:hidden;margin-top:8px}
+.spec .c{flex:1;padding:12px 15px;border-right:1px solid var(--rule)}
+.spec .c:last-child{border-right:none}
+.spec .c .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--soft)}
+.spec .c .v{font-family:var(--display);font-size:28px;font-weight:600;color:var(--ink);line-height:1.1;margin-top:3px}
+.spec .c .s{font-size:12.5px;color:var(--soft);margin-top:2px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .32s ease}
+.frag.shown{opacity:1}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+.cue{position:absolute;left:68px;right:68px;bottom:64px;display:none;padding:9px 13px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:14.5px;line-height:1.34;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:38px 68px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:10px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:50px}
+#jump li{padding:3.5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:15px;color:var(--body);display:flex;gap:11px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:30px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 23</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 23 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<section class="slide" data-t="Title" data-act="the three questions">
+  <div>
+    <div class="kicker">class 23 · hour twenty three of fifty</div>
+    <h1>You have an adder<br>that only adds.</h1>
+    <p class="big" style="margin-top:22px;max-width:48ch">You were asked how you would compute a minus b with nothing but that adder and a way to flip bits. Today you find out the answer costs thirty two gates.</p>
+  </div>
+  <div class="cue">Collect their ideas first. Someone will say flip the bits. Do not confirm it yet.</div>
+</section>
+
+<section class="slide" data-t="Where we are" data-act="the three questions">
+  <div>
+    <h2>One question runs through the hour, and the answer is smaller than anyone expects.</h2>
+    <div style="text-align:center;margin-top:2px"><svg viewBox="0 0 1140 250" width="1080" height="219"><g id="figArcTop"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the hour in three questions</div>
+      <ul>
+        <li><strong>How much new hardware does subtraction cost?</strong> Write down a guess now. Most people say about another adder.</li>
+        <li>If not a subtractor, then what? You will have to decide what a negative number even is.</li>
+        <li>And what does the winning answer cost in gates and delays, judged the way you have judged everything since Class 21?</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Get a number on the board for the guess. Two hundred gates is typical. The answer is thirty two.</div>
+</section>
+
+<!-- ================= ACT 1 ================= -->
+
+<section class="slide" data-t="Build the subtractor" data-act="1 · what the obvious answer costs">
+  <div>
+    <div class="kicker">take the honest route first</div>
+    <h2 style="font-size:27px;margin-bottom:0">There is nothing wrong with just building a subtractor.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figBorrow"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">it works, and it is familiar</div>
+      <ul>
+        <li>A borrow behaves exactly like a carry. One column makes a borrow, one passes it along, one stops it dead.</li>
+        <li>Which means it chains exactly like a carry did, and everything you learned in Class 21 and 22 applies unchanged.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Let them notice the borrow logic is the carry logic with the signs moved. That recognition is the point.</div>
+</section>
+
+<section class="slide" data-t="What that costs" data-act="1 · what the obvious answer costs">
+  <div>
+    <h2>The trouble is not that it fails. It is that you now own two of everything.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figTwoCircuits"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Two full width circuits, and the borrow chain needs its own lookahead network or it clocks at 0.77 GHz.</li>
+        <li>544 gates instead of 272, to do an operation the machine already almost does.</li>
+        <li>So before building it, ask whether the adder you already have could be made to do the job.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is the cost-first move again. They should want a cheaper answer before you offer one.</div>
+</section>
+
+<section class="slide" data-t="Change the question" data-act="1 · what the obvious answer costs">
+  <div class="center">
+    <div class="tag">THE MOVE OF THE HOUR</div>
+    <h2 style="font-size:40px;margin-bottom:14px">a &minus; b  =  a + (&minus;b)</h2>
+    <p class="big" style="max-width:52ch;color:var(--soft)">Nothing about that is new. It is the first thing you were ever taught about subtraction.</p>
+    <p class="big frag" style="margin-top:18px;max-width:54ch">But look at what it did to the problem. Subtraction was a question about <em>circuits</em>. Now it is a question about <strong>how you write a negative number</strong>.</p>
+  </div>
+  <div class="cue">Same shape as last session. Stop building, and look harder at the definition instead.</div>
+</section>
+
+<!-- ================= ACT 2 ================= -->
+
+<section class="slide" data-t="The adder is a counter" data-act="2 · what negative has to mean">
+  <div>
+    <div class="kicker">press step and watch it wrap</div>
+    <h2 style="font-size:27px;margin-bottom:0">Your adder cannot count past its last column. It rolls over.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1090" height="303"><g id="figWrap"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn hot" id="wRun">run &#9654;</button>
+      <button class="btn" id="wStep">step</button>
+      <button class="btn" id="wReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">They have met this before. It was Class 21's worst case input, the one that set the clock.</div>
+</section>
+
+<section class="slide" data-t="So what must minus b be" data-act="2 · what negative has to mean">
+  <div>
+    <h2>Whatever you write for minus b, it has to make b plus it come out zero.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 290" width="1080" height="275"><g id="figDefine"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the only requirement, and it is a hard one</div>
+      <ul>
+        <li>The adder must get the right answer <em>without being told anything changed</em>. No new gates, no mode, no sign handling.</li>
+        <li>Since it wraps at 2<sup>32</sup>, the number that cancels b is whatever is left when you take b away from the wrap point.</li>
+        <li>Every candidate from here on gets tried against that one test.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Fix this test on the board. Sign magnitude and one's complement are about to fail it in different ways.</div>
+</section>
+
+<section class="slide" data-t="Try a sign bit" data-act="2 · what negative has to mean">
+  <div>
+    <div class="kicker">hands up first: will the adder get this right?</div>
+    <h2 style="font-size:27px;margin-bottom:0">First candidate, and the one everybody suggests: use the top bit as a sign.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 310" width="1080" height="294"><g id="figSignMag"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">why it fails</div>
+      <ul>
+        <li>The adder has no idea the top bit means anything special. It adds it like every other column, worth 2<sup>31</sup>.</li>
+        <li>Five plus minus five comes out as minus ten. And there are two zeros, positive and negative.</li>
+        <li>You could fix it with extra logic, but that is exactly the second circuit you were trying to avoid.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Take the vote before revealing. Most will say it works, because it is how humans write negatives.</div>
+</section>
+
+<section class="slide" data-t="Try flipping every bit" data-act="2 · what negative has to mean">
+  <div>
+    <h2>Second candidate, and much closer: just flip every bit of b.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 310" width="1080" height="294"><g id="figOnes"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">so near</div>
+      <ul>
+        <li>The signs now work. Positives and negatives add correctly nearly all of the time, with no extra logic.</li>
+        <li>But it lands one short, and it still has two zeros: all zeros and all ones.</li>
+        <li>The usual fix is to take the carry that falls off the end and add it back in, which is a second pass through the adder.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Take this one seriously. Real machines shipped with it. One short is a small crime and a fatal one.</div>
+</section>
+
+<section class="slide" data-t="One short, so add one" data-act="2 · what negative has to mean">
+  <div>
+    <div class="tag win">THE ANSWER, AND WHY IT IS CHEAP</div>
+    <h2 style="font-size:27px;margin-bottom:0">Flipping lands one short. So write the algebra out and see why.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 370" width="1090" height="348"><g id="figDerive"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn hot" id="dRun">run &#9654;</button>
+      <button class="btn" id="dStep">step</button>
+      <button class="btn" id="dReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">The middle line is the one that matters: all ones minus b never borrows, so flipping is subtraction with no chain.</div>
+</section>
+
+<section class="slide" data-t="Do one by hand" data-act="2 · what negative has to mean">
+  <div>
+    <div class="kicker">eight bits, on your own, before the reveal</div>
+    <h2 style="font-size:27px;margin-bottom:0">Write minus five.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figByHand"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn hot" id="hReveal">reveal &#9654;</button>
+      <button class="btn" id="hHide">hide</button>
+    </div>
+  </div>
+  <div class="cue">Then check it: add five to it and watch it wrap to zero. That check is the whole definition.</div>
+</section>
+
+<!-- ================= ACT 3 ================= -->
+
+<section class="slide" data-t="What flipping costs" data-act="3 · what the circuit costs">
+  <div>
+    <h2>So what does it take to flip every bit, only when you want to?</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figFlip"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>XOR with 1 flips a bit. XOR with 0 leaves it alone. So one control line into thirty two XOR gates does the whole job.</li>
+        <li>Thirty two gates, and one gate delay before the adder sees anything.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Let them derive the XOR trick from the truth table if there is time. It is two lines.</div>
+</section>
+
+<section class="slide" data-t="The plus one is already there" data-act="3 · what the circuit costs">
+  <div>
+    <div class="tag win">FOUR HOURS UNUSED</div>
+    <h2 style="font-size:27px;margin-bottom:0">And the plus one? You have been carrying a spare input since Class 20.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figCarryIn"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Column zero has a carry in. You have wired it to zero for four sessions because nothing ever carried into the first column.</li>
+        <li>Set it to one and the adder computes a + ~b + 1 with no new hardware at all. The plus one is free.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is the delight of the hour. Let them see the input that has been sitting there doing nothing.</div>
+</section>
+
+<section class="slide" data-t="One circuit, two operations" data-act="3 · what the circuit costs">
+  <div>
+    <div class="kicker">flip the control line and watch both change at once</div>
+    <h2 style="font-size:27px;margin-bottom:0">One control line drives the flips and the carry in together.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1090" height="303"><g id="figUnit"></g></svg></div>
+    <div class="btnrow">
+      <span class="lab">control</span>
+      <button class="btn hot" id="uAdd">sub = 0</button>
+      <button class="btn" id="uSub">sub = 1</button>
+    </div>
+  </div>
+  <div class="cue">Same adder, same lookahead network, nothing rebuilt. One wire decides which operation happens.</div>
+</section>
+
+<section class="slide" data-t="What it cost" data-act="3 · what the circuit costs">
+  <div>
+    <h2>Now answer the question from the start of the hour.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 320" width="1080" height="303"><g id="figCost"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">judged the way you judge everything now</div>
+      <ul>
+        <li>32 gates on top of 272, so about 12% more. One gate delay on top of twelve, so about 8% more.</li>
+        <li>260 ps against a 333 ps cycle. Still fits at 3 GHz, with a ceiling of 3.85 GHz.</li>
+        <li>Against the 544 gates and second lookahead network a real subtractor would have cost.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Put the guess from slide two back on the board next to thirty two. That contrast is the payoff.</div>
+</section>
+
+<!-- ================= CLOSE ================= -->
+
+<section class="slide" data-t="Telling when it broke" data-act="closing">
+  <div>
+    <div class="kicker">one loose end, and it costs one more gate</div>
+    <h2 style="font-size:27px;margin-bottom:0">Thirty two bits cannot hold every answer. How does the circuit know?</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figOverflow"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>If the carry going into the sign column and the carry coming out of it disagree, the answer did not fit.</li>
+        <li>One XOR gate, on two wires you already have. Checked on all sixty five thousand eight bit pairs.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Do not derive this formally. Show the two cases, state the rule, move on.</div>
+</section>
+
+<section class="slide" data-t="And comparison, free" data-act="closing">
+  <div>
+    <h2>One more thing falls out that you did not ask for.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 280" width="1080" height="265"><g id="figCompare"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Is a less than b? Subtract and look at the sign. Are they equal? Subtract and check for all zeros.</li>
+        <li>Class 21 listed every comparison as a user of the adder. This is why. A comparison <em>is</em> a subtraction.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Every if statement and every loop condition in every program they have written runs through this circuit.</div>
+</section>
+
+<section class="slide" data-t="Where we are now" data-act="closing">
+  <div>
+    <h2>Five down, three to go.</h2>
+    <div style="text-align:center;margin:4px 0"><svg viewBox="0 0 1140 250" width="1080" height="219"><g id="figArcEnd"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the export from this hour</div>
+      <ul>
+        <li><strong>When an operation looks expensive, try changing what the numbers mean before you change the circuit.</strong> Two's complement is a representation choice, not a piece of hardware.</li>
+        <li>And look for the input you are already paying for and not using. The carry in sat idle for four sessions.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The representation move returns for floating point, and again for signed comparison in the ISA.</div>
+</section>
+
+<section class="slide" data-t="Close" data-act="closing">
+  <div class="center">
+    <h2 style="font-size:35px;margin-bottom:16px">How much did subtraction cost?</h2>
+    <p class="big" style="max-width:56ch;color:var(--soft)">Thirty two XOR gates, one gate delay, and an input that was already there. Not because subtraction is easy, but because you stopped asking the circuit to change and asked the numbers to change instead.</p>
+    <p class="big frag" style="margin-top:18px;max-width:56ch">Next session: you can add and subtract in one circuit at the same speed. Multiplication will not be nearly so generous.</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: multiply 13 by 11 in binary, by hand, the way you would on paper. Count how many additions it took you. Bring the number.</div>
+</section>
+
+</template>
+<script>
+(function(){
+  'use strict';
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  var onSlide=null;
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    if(onSlide) onSlide(i);
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallow=false;
+  document.addEventListener('click',function(e){
+    swallow = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||
+                 e.target.closest('svg')||e.target.closest('.spec'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallow){ swallow=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= helpers ================= */
+  var NS='http://www.w3.org/2000/svg';
+  var GREY='#c6c3ba', HI='#e8952b', INK='#15171b', DEAD='#dedbd3',
+      BLUE='#23408f', RED='#a8231f', GRN='#146b5c', VIO='#6b3fa0', AMB='#b06a12';
+  var D=20, RIPPLE=1300, LOOK=240;
+  function el(tag,a,p){ var e=document.createElementNS(NS,tag);
+    for(var k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e; }
+  function txt(p,x,y,s,o){ var t=el('text',Object.assign({x:x,y:y,'font-size':13,fill:'#8b9096'},o||{}),p);
+    t.textContent=s; return t; }
+  function rct(p,x,y,w,h,o){ return el('rect',Object.assign({x:x,y:y,width:w,height:h,rx:7,
+    fill:'#fff',stroke:GREY,'stroke-width':2},o||{}),p); }
+  function wire(p,x1,y1,x2,y2,v){ return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,
+    stroke:v?HI:DEAD,'stroke-width':v?3.6:2.4,'stroke-linecap':'round'},p); }
+  function pth(p,d,o){ return el('path',Object.assign({d:d,fill:'none',stroke:GREY,'stroke-width':2.4},o||{}),p); }
+  function jn(p,x,y){ return el('circle',{cx:x,cy:y,r:4,fill:INK},p); }
+  function gAnd(p,x,y,h,v){ return el('path',{d:'M'+x+' '+(y-h)+' L'+(x+16)+' '+(y-h)+' A '+h+' '+h+
+    ' 0 0 1 '+(x+16)+' '+(y+h)+' L'+x+' '+(y+h)+' z',fill:v?'#fbf0dc':'#fff',stroke:v?AMB:INK,'stroke-width':2.2},p); }
+  function andTip(x,h){ return x+16+h; }
+  function gOr(p,x,y,h,v){
+    var nose=h*1.4;
+    el('path',{d:'M'+(x-4)+' '+(y-h)+' Q'+(x+h*0.8)+' '+y+' '+(x-4)+' '+(y+h)+
+      ' Q'+(x+nose*0.55)+' '+(y+h*0.85)+' '+(x+nose)+' '+y+' Q'+(x+nose*0.55)+' '+(y-h*0.85)+' '+(x-4)+' '+(y-h)+' z',
+      fill:v?'#fbf0dc':'#fff',stroke:v?AMB:INK,'stroke-width':2.2},p);
+  }
+  function orTip(x,h){ return x+h*1.4; }
+  function ticker(runId,stepId,resetId,max,render){
+    var t=0,timer=null;
+    function set(v){ t=Math.max(0,Math.min(max,v)); render(t); }
+    function stop(){ if(timer){clearInterval(timer);timer=null;}
+      var b=document.getElementById(runId); if(b){b.classList.remove('hot');b.textContent='run \u25B6';} }
+    document.getElementById(runId).onclick=function(){
+      if(timer){ stop(); return; }
+      if(t>=max) set(0);
+      this.classList.add('hot'); this.textContent='\u25A0 stop';
+      timer=setInterval(function(){ if(t>=max){ stop(); return; } set(t+1); },380);
+    };
+    document.getElementById(stepId).onclick=function(){ stop(); set(t>=max?0:t+1); };
+    document.getElementById(resetId).onclick=function(){ stop(); set(0); };
+    set(0);
+    return {stop:stop};
+  }
+  function arcStrip(gid,litIndex,caption){
+    var g=document.getElementById(gid); if(!g) return;
+    var items=[[19,'one column'],[20,'thirty two'],[21,'how slow is slow'],[22,'predict the carry'],
+               [23,'subtraction'],[24,'multiply'],[25,'divide'],[26,'the bill']];
+    var W=128, X0=34;
+    items.forEach(function(it,k){
+      var x=X0+k*(W+8), done=k<litIndex, lit=(k===litIndex);
+      el('rect',{x:x,y:52,width:W,height:104,rx:12,
+        fill:lit?'#eaeef7':(done?'#f2f0ea':'#fbfaf7'),
+        stroke:lit?BLUE:(done?'#c6c3ba':'#e2e0d9'),'stroke-width':lit?2.6:1.5},g);
+      txt(g,x+W/2,80,'CLASS '+it[0],{'font-size':9.5,fill:lit?BLUE:'#c6c3ba','text-anchor':'middle','letter-spacing':1.3});
+      txt(g,x+W/2,112,it[1],{'font-size':12.5,fill:lit?INK:(done?'#8b9096':'#a9a69d'),'text-anchor':'middle','font-weight':700});
+      if(done) txt(g,x+W/2,136,'done',{'font-size':11,fill:GRN,'text-anchor':'middle'});
+      if(lit) txt(g,x+W/2,136,'today',{'font-size':11,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      if(k<items.length-1) pth(g,'M'+(x+W)+' 104 L'+(x+W+8)+' 104',{stroke:'#dedbd3','stroke-width':2});
+    });
+    txt(g,34,198,caption,{'font-size':15.5,fill:INK,'font-weight':700});
+  }
+  arcStrip('figArcTop',4,'you can add thirty two bits in twelve gate delays. today you find out what the other three arithmetic operations cost.');
+  arcStrip('figArcEnd',4,'subtraction cost thirty two XOR gates and one delay. next: multiplication, which will not be nearly so generous.');
+
+  
+  
+
+
+  /* ================= borrow behaves like carry ================= */
+  (function(){
+    var g=document.getElementById('figBorrow'); if(!g) return;
+    txt(g,34,24,'ONE COLUMN OF A SUBTRACTOR, AND ONE COLUMN OF THE ADDER YOU BUILT',
+      {'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+    function panel(x0,title,col,soft,rows,foot){
+      el('rect',{x:x0,y:48,width:520,height:196,rx:14,fill:soft,stroke:col,'stroke-width':2.2},g);
+      txt(g,x0+24,76,title,{'font-size':11.5,fill:col,'letter-spacing':1.2,'font-weight':700});
+      rows.forEach(function(r,k){
+        var y=106+k*38;
+        el('rect',{x:x0+24,y:y,width:196,height:30,rx:6,fill:'#fff',stroke:col,'stroke-width':1.5},g);
+        txt(g,x0+122,y+21,r[0],{'font-size':12.5,fill:col,'text-anchor':'middle','font-weight':700});
+        txt(g,x0+236,y+21,r[1],{'font-size':12.5,fill:'#8b9096'});
+      });
+      txt(g,x0+24,232,foot,{'font-size':12.5,fill:col,'font-weight':700});
+    }
+    panel(34,'A SUBTRACTOR COLUMN',VIO,'#f3eefa',
+      [['0 minus 1','borrows from the next column'],
+       ['1 minus 1','nothing to pass on, it stops'],
+       ['0 minus 0, borrow in','passes the borrow along']],
+      'the borrow chains from column to column');
+    panel(606,'AN ADDER COLUMN',AMB,'#fbf0dc',
+      [['both bits 1','makes a carry of its own'],
+       ['both bits 0','carry stops dead here'],
+       ['one of each','passes the carry along']],
+      'the carry chains from column to column');
+    txt(g,580,146,'=',{'font-size':26,fill:'#c6c3ba','text-anchor':'middle','font-weight':700});
+    txt(g,34,282,'the same three behaviours, the same chain, the same 65 gate delays if you build it naively.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+    txt(g,34,306,'everything from Class 21 and 22 would apply to it, unchanged.',{'font-size':13,fill:'#8b9096'});
+  })();
+
+  /* ================= what two circuits cost ================= */
+  (function(){
+    var g=document.getElementById('figTwoCircuits'); if(!g) return;
+    txt(g,34,24,'WHAT YOU WOULD OWN',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+    var X0=240, MAXW=620, BH=52;
+    function bar(y,w,lab,val,col,soft){
+      el('rect',{x:X0,y:y,width:w,height:BH,rx:10,fill:soft,stroke:col,'stroke-width':2.2},g);
+      txt(g,X0-16,y+32,lab,{'font-size':14,fill:col,'text-anchor':'end','font-weight':700});
+      txt(g,X0+w+14,y+32,val,{'font-size':17,fill:col,'font-weight':700});
+    }
+    bar(56,MAXW*(272/544),'the adder','272 gates',BLUE,'#eaeef7');
+    bar(122,MAXW*(272/544),'a subtractor','272 more',VIO,'#f3eefa');
+    bar(196,MAXW,'both','544 gates',RED,'#fdf0ef');
+    txt(g,X0,268,'plus a second lookahead network, or the borrow chain clocks at 0.77 GHz all over again.',
+      {'font-size':15,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= the adder is a counter ================= */
+  var wrapCtl=null;
+  (function(){
+    var g=document.getElementById('figWrap'); if(!g) return;
+    var vals=[4294967293,4294967294,4294967295,0,1];
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,34,24,'A THIRTY TWO BIT COUNTER, STEPPING PAST ITS LAST VALUE',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+      var v=vals[Math.min(t,vals.length-1)];
+      var bits=[]; for(var i=31;i>=0;i--) bits.push((v>>>i)&1);
+      var X0=52, CW=33;
+      for(var k=0;k<32;k++){
+        var x=X0+k*CW, on=bits[k];
+        el('rect',{x:x,y:86,width:CW-6,height:42,rx:5,
+          fill:on?'#fbf0dc':'#f6f4ef',stroke:on?AMB:'#e2e0d9','stroke-width':on?1.8:1.2},g);
+        txt(g,x+(CW-6)/2,113,on,{'font-size':13,fill:on?HI:'#c6c3ba','text-anchor':'middle','font-weight':700});
+      }
+      var wrapped=(t>=3);
+      txt(g,52,72,'value',{'font-size':11,fill:'#8b9096'});
+      el('rect',{x:52,y:154,width:420,height:56,rx:11,
+        fill:wrapped?'#e9f2ef':'#fbfaf7',stroke:wrapped?GRN:'#c6c3ba','stroke-width':2.2},g);
+      txt(g,72,190,v.toLocaleString('en-US'),{'font-size':24,fill:wrapped?GRN:INK,'font-weight':700});
+      if(t<3){
+        txt(g,500,190,'add one',{'font-size':15,fill:'#8b9096','font-weight':700});
+      } else if(t===3){
+        txt(g,500,182,'it did not become four billion and one.',{'font-size':15.5,fill:GRN,'font-weight':700});
+        txt(g,500,206,'there is no thirty third column, so it rolled over to zero.',{'font-size':13.5,fill:'#8b9096'});
+      } else {
+        txt(g,500,190,'and carries on from there.',{'font-size':15.5,fill:GRN,'font-weight':700});
+      }
+      txt(g,34,262,'you met this in Class 21. it was the worst case input, the one that set the clock.',
+        {'font-size':15,fill:INK,'font-weight':700});
+      txt(g,34,288,'the adder does not count to infinity. it counts in a circle, and the circle is 2 to the 32.',
+        {'font-size':13.5,fill:'#8b9096'});
+    }
+    wrapCtl=ticker('wRun','wStep','wReset',4,render);
+  })();
+
+  /* ================= what must minus b be ================= */
+  (function(){
+    var g=document.getElementById('figDefine'); if(!g) return;
+    txt(g,34,24,'THE ONLY TEST A CANDIDATE HAS TO PASS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    el('rect',{x:60,y:56,width:1020,height:76,rx:13,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.4},g);
+    txt(g,90,104,'b   +   whatever you write for minus b   =   zero',{'font-size':24,fill:BLUE,'font-weight':700});
+    txt(g,90,152,'and the adder must get there on its own, with no new gates and nothing told to it.',
+      {'font-size':14.5,fill:INK,'font-weight':700});
+    pth(g,'M570 168 L570 198',{stroke:'#c6c3ba','stroke-width':2.4});
+    pth(g,'M562 189 l8 11 l8 -11',{stroke:'#c6c3ba','stroke-width':2.4});
+    el('rect',{x:60,y:212,width:1020,height:58,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,90,248,'since it wraps at 2\u00b3\u00b2,   minus b   =   2\u00b3\u00b2 \u2212 b',{'font-size':21,fill:GRN,'font-weight':700});
+    txt(g,660,248,'now find a cheap way to compute that',{'font-size':13.5,fill:GRN});
+  })();
+
+  /* ================= try a sign bit ================= */
+  (function(){
+    var g=document.getElementById('figSignMag'); if(!g) return;
+    txt(g,34,24,'SIGN AND MAGNITUDE, ADDED BY A PLAIN ADDER',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+    var X0=300, CW=54;
+    function row(y,bits,label,note,col){
+      txt(g,X0-24,y+26,label,{'font-size':14,fill:col,'text-anchor':'end','font-weight':700});
+      for(var k=0;k<8;k++){
+        var on=bits[k], isSign=(k===0);
+        el('rect',{x:X0+k*CW,y:y,width:CW-8,height:40,rx:6,
+          fill:on?(isSign?'#f3eefa':'#fbf0dc'):'#f6f4ef',
+          stroke:on?(isSign?VIO:AMB):'#e2e0d9','stroke-width':on?1.8:1.2},g);
+        txt(g,X0+k*CW+(CW-8)/2,y+26,on,{'font-size':14,
+          fill:on?(isSign?VIO:HI):'#c6c3ba','text-anchor':'middle','font-weight':700});
+      }
+      if(note) txt(g,X0+8*CW+16,y+26,note,{'font-size':13,fill:col,'font-weight':700});
+    }
+    row(56,[0,0,0,0,0,1,0,1],'five','',INK);
+    row(110,[1,0,0,0,0,1,0,1],'minus five','sign bit set',VIO);
+    el('line',{x1:X0-8,y1:166,x2:X0+8*CW-8,y2:166,stroke:'#c6c3ba','stroke-width':2},g);
+    row(178,[1,0,0,0,1,0,1,0],'the adder says','which reads as minus ten',RED);
+    txt(g,300,262,'the adder never learned that the top bit is special. it added it as 128.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+    txt(g,300,286,'five plus minus five should be zero. it is not.',{'font-size':13.5,fill:RED,'font-weight':700});
+  })();
+
+  /* ================= try flipping every bit ================= */
+  (function(){
+    var g=document.getElementById('figOnes'); if(!g) return;
+    txt(g,34,24,'FLIP EVERY BIT, AND ADD THE RESULT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=300, CW=54;
+    function row(y,bits,label,note,col){
+      txt(g,X0-24,y+26,label,{'font-size':14,fill:col,'text-anchor':'end','font-weight':700});
+      for(var k=0;k<8;k++){
+        var on=bits[k];
+        el('rect',{x:X0+k*CW,y:y,width:CW-8,height:40,rx:6,
+          fill:on?'#fbf0dc':'#f6f4ef',stroke:on?AMB:'#e2e0d9','stroke-width':on?1.8:1.2},g);
+        txt(g,X0+k*CW+(CW-8)/2,y+26,on,{'font-size':14,fill:on?HI:'#c6c3ba','text-anchor':'middle','font-weight':700});
+      }
+      if(note) txt(g,X0+8*CW+16,y+26,note,{'font-size':13,fill:col,'font-weight':700});
+    }
+    row(52,[0,0,0,0,0,1,0,1],'five','',INK);
+    row(106,[1,1,1,1,1,0,1,0],'flipped','this is the candidate',AMB);
+    el('line',{x1:X0-8,y1:162,x2:X0+8*CW-8,y2:162,stroke:'#c6c3ba','stroke-width':2},g);
+    row(174,[1,1,1,1,1,1,1,1],'the adder says','all ones, not zero',RED);
+    el('rect',{x:60,y:238,width:480,height:56,rx:11,fill:'#fdf0ef',stroke:RED,'stroke-width':2},g);
+    txt(g,82,262,'it lands exactly one short',{'font-size':15,fill:RED,'font-weight':700});
+    txt(g,82,284,'and all ones is a second zero, on top of all zeros',{'font-size':12.5,fill:RED});
+    el('rect',{x:580,y:238,width:500,height:56,rx:11,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.8},g);
+    txt(g,602,262,'real machines shipped with this',{'font-size':14,fill:INK,'font-weight':700});
+    txt(g,602,284,'they added the dropped carry back in, which costs a second pass',{'font-size':12.5,fill:'#8b9096'});
+  })();
+
+  /* ================= one short, so add one ================= */
+  var derCtl=null;
+  (function(){
+    var g=document.getElementById('figDerive'); if(!g) return;
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,34,24,'WHY FLIPPING IS ALMOST RIGHT, IN THREE LINES',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+      var Y=74;
+      el('rect',{x:60,y:Y-34,width:1040,height:50,rx:10,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.2},g);
+      txt(g,84,Y,'minus b   =   2\u00b3\u00b2 \u2212 b',{'font-size':20,fill:BLUE,'font-weight':700});
+      txt(g,700,Y,'what you need',{'font-size':13,fill:'#8b9096'});
+      if(t>=1){
+        el('rect',{x:60,y:Y+34,width:1040,height:50,rx:10,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+        txt(g,84,Y+68,'=   (2\u00b3\u00b2 \u2212 1 \u2212 b)   +   1',{'font-size':20,fill:INK,'font-weight':700});
+        txt(g,700,Y+68,'take one out, and put it back',{'font-size':13,fill:'#8b9096'});
+      }
+      if(t>=2){
+        el('rect',{x:60,y:Y+102,width:1040,height:50,rx:10,fill:'#fbf0dc',stroke:AMB,'stroke-width':2.2},g);
+        txt(g,84,Y+136,'2\u00b3\u00b2 \u2212 1   is all ones,   and all ones \u2212 b   never borrows',
+          {'font-size':19,fill:AMB,'font-weight':700});
+        txt(g,84,Y+178,'every column is 1 minus something, so it is 1 or 0 and nothing is ever carried out of it.',
+          {'font-size':14,fill:INK,'font-weight':700});
+        txt(g,84,Y+202,'a subtraction with no chain at all, which is why it is only one gate deep.',
+          {'font-size':13,fill:'#8b9096'});
+      }
+      if(t>=3){
+        el('rect',{x:60,y:Y+222,width:1040,height:58,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.6},g);
+        txt(g,84,Y+258,'minus b   =   flip every bit of b,   then add one',{'font-size':21,fill:GRN,'font-weight':700});
+        txt(g,760,Y+258,'checked on all 65536 pairs',{'font-size':13,fill:GRN});
+      }
+    }
+    derCtl=ticker('dRun','dStep','dReset',3,render);
+  })();
+
+  /* ================= do one by hand ================= */
+  (function(){
+    var g=document.getElementById('figByHand'); if(!g) return;
+    var shown=false;
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,34,24,'MINUS FIVE, IN EIGHT BITS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+      var X0=330, CW=56;
+      function row(y,bits,label,note,col,hide){
+        txt(g,X0-24,y+26,label,{'font-size':14,fill:col,'text-anchor':'end','font-weight':700});
+        for(var k=0;k<8;k++){
+          if(hide){
+            el('rect',{x:X0+k*CW,y:y,width:CW-8,height:40,rx:6,fill:'#fbfaf7',stroke:'#dedbd3',
+              'stroke-width':1.6,'stroke-dasharray':'5 4'},g);
+          } else {
+            var on=bits[k];
+            el('rect',{x:X0+k*CW,y:y,width:CW-8,height:40,rx:6,
+              fill:on?'#fbf0dc':'#f6f4ef',stroke:on?AMB:'#e2e0d9','stroke-width':on?1.8:1.2},g);
+            txt(g,X0+k*CW+(CW-8)/2,y+26,on,{'font-size':14,fill:on?HI:'#c6c3ba','text-anchor':'middle','font-weight':700});
+          }
+        }
+        if(note&&!hide) txt(g,X0+8*CW+18,y+26,note,{'font-size':13,fill:col,'font-weight':700});
+      }
+      row(54,[0,0,0,0,0,1,0,1],'five','',INK,false);
+      row(110,[1,1,1,1,1,0,1,0],'flip every bit','',AMB,!shown);
+      row(166,[1,1,1,1,1,0,1,1],'add one','minus five',GRN,!shown);
+      if(shown){
+        el('rect',{x:60,y:230,width:1020,height:52,rx:11,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.2},g);
+        txt(g,82,262,'check it: 00000101 + 11111011 = 100000000, and the ninth bit falls off the end. zero.',
+          {'font-size':15.5,fill:GRN,'font-weight':700});
+      } else {
+        txt(g,60,254,'flip, then add one. work out both rows before you press reveal.',
+          {'font-size':15,fill:'#8b9096'});
+      }
+    }
+    document.getElementById('hReveal').onclick=function(){ shown=true; render(); };
+    document.getElementById('hHide').onclick=function(){ shown=false; render(); };
+    render();
+  })();
+
+  /* ================= what flipping costs ================= */
+  (function(){
+    var g=document.getElementById('figFlip'); if(!g) return;
+    txt(g,34,24,'XOR AGAINST ONE CONTROL LINE',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+    var rows=[['0','0','0','leave it alone'],['1','0','1','leave it alone'],
+              ['0','1','1','flip it'],['1','1','0','flip it']];
+    el('rect',{x:60,y:52,width:470,height:196,rx:13,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.8},g);
+    txt(g,84,78,'b bit',{'font-size':11,fill:'#8b9096','letter-spacing':1.1});
+    txt(g,180,78,'sub',{'font-size':11,fill:'#8b9096','letter-spacing':1.1});
+    txt(g,276,78,'out',{'font-size':11,fill:'#8b9096','letter-spacing':1.1});
+    rows.forEach(function(r,k){
+      var y=98+k*36, flip=(r[1]==='1');
+      txt(g,84,y+18,r[0],{'font-size':15,fill:INK,'font-weight':700});
+      txt(g,180,y+18,r[1],{'font-size':15,fill:flip?AMB:'#8b9096','font-weight':700});
+      txt(g,276,y+18,r[2],{'font-size':15,fill:flip?AMB:INK,'font-weight':700});
+      txt(g,340,y+18,r[3],{'font-size':12.5,fill:flip?AMB:'#8b9096'});
+    });
+    txt(g,84,270,'that is exactly an XOR',{'font-size':15,fill:INK,'font-weight':700});
+    /* the 32 gates */
+    var GX=640;
+    for(var k=0;k<8;k++){
+      var y=60+k*24;
+      el('rect',{x:GX,y:y,width:44,height:18,rx:4,fill:'#fbf0dc',stroke:AMB,'stroke-width':1.4},g);
+      pth(g,'M'+(GX+44)+' '+(y+9)+' L'+(GX+92)+' '+(y+9),{stroke:'#dedbd3','stroke-width':1.4});
+      pth(g,'M'+(GX-40)+' '+(y+9)+' L'+GX+' '+(y+9),{stroke:'#dedbd3','stroke-width':1.4});
+    }
+    txt(g,GX+22,48,'XOR',{'font-size':10.5,fill:AMB,'text-anchor':'middle','letter-spacing':1.1});
+    txt(g,GX-44,48,'b bits',{'font-size':10.5,fill:'#8b9096','text-anchor':'end'});
+    txt(g,GX+22,276,'thirty two of these',{'font-size':11,fill:'#8b9096','text-anchor':'middle'});
+    el('line',{x1:GX-14,y1:252,x2:GX-14,y2:56,stroke:VIO,'stroke-width':2.6},g);
+    txt(g,GX-30,240,'one control line, sub',{'font-size':12.5,fill:VIO,'text-anchor':'end','font-weight':700});
+    for(var m=0;m<8;m++){ el('circle',{cx:GX-14,cy:69+m*24,r:3,fill:VIO},g); }
+    el('rect',{x:800,y:96,width:290,height:96,rx:13,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,824,126,'THE WHOLE COST',{'font-size':10.5,fill:GRN,'letter-spacing':1.3});
+    txt(g,824,158,'32 gates',{'font-size':24,fill:GRN,'font-weight':700});
+    txt(g,824,182,'and one gate delay',{'font-size':13,fill:GRN});
+  })();
+
+  /* ================= the plus one is already there ================= */
+  (function(){
+    var g=document.getElementById('figCarryIn'); if(!g) return;
+    txt(g,34,24,'THE INPUT YOU HAVE NOT USED SINCE CLASS 20',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+    var X0=150, CW=110, Y=96;
+    for(var k=0;k<6;k++){
+      var x=X0+k*CW, last=(k===5);
+      el('rect',{x:x,y:Y,width:CW-16,height:58,rx:9,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.8},g);
+      txt(g,x+(CW-16)/2,Y+26,last?'col 0':('col '+(31-k)),
+        {'font-size':12,fill:INK,'text-anchor':'middle','font-weight':700});
+      txt(g,x+(CW-16)/2,Y+46,last?'the last one':'',{'font-size':10.5,fill:'#8b9096','text-anchor':'middle'});
+      if(k<5) pth(g,'M'+(x+CW-16)+' '+(Y+29)+' L'+(x+CW)+' '+(Y+29),{stroke:'#dedbd3','stroke-width':2});
+    }
+    txt(g,X0-14,Y+33,'\u00b7\u00b7\u00b7',{'font-size':16,fill:'#c6c3ba','text-anchor':'end'});
+    var cx=X0+5*CW+(CW-16), cy=Y+29;
+    el('path',{d:'M'+(cx+16)+' '+cy+' L'+(cx+78)+' '+cy,fill:'none',stroke:VIO,'stroke-width':3.4},g);
+    el('rect',{x:cx+78,y:cy-24,width:150,height:48,rx:10,fill:'#f3eefa',stroke:VIO,'stroke-width':2.6},g);
+    txt(g,cx+153,cy+6,'carry in',{'font-size':15,fill:VIO,'text-anchor':'middle','font-weight':700});
+    txt(g,cx+153,cy-38,'always tied to 0',{'font-size':12,fill:'#8b9096','text-anchor':'middle'});
+    el('rect',{x:150,y:214,width:460,height:70,rx:12,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+    txt(g,176,244,'FOR FOUR SESSIONS',{'font-size':10,fill:'#8b9096','letter-spacing':1.3});
+    txt(g,176,272,'nothing ever carried into column zero',{'font-size':15,fill:INK,'font-weight':700});
+    el('rect',{x:640,y:214,width:466,height:70,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.6},g);
+    txt(g,666,244,'SET IT TO ONE',{'font-size':10,fill:GRN,'letter-spacing':1.3});
+    txt(g,666,272,'and the adder computes a + ~b + 1. free.',{'font-size':15,fill:GRN,'font-weight':700});
+  })();
+
+  /* ================= one circuit, two operations ================= */
+  (function(){
+    var g=document.getElementById('figUnit'); if(!g) return;
+    var sub=0;
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,34,24,'THE SAME ADDER, WITH ONE CONTROL LINE ADDED',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+      var col = sub?VIO:BLUE, soft = sub?'#f3eefa':'#eaeef7';
+      /* a straight in */
+      el('rect',{x:60,y:74,width:120,height:40,rx:8,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.8},g);
+      txt(g,120,100,'a',{'font-size':15,fill:INK,'text-anchor':'middle','font-weight':700});
+      pth(g,'M180 94 L470 94',{stroke:'#dedbd3','stroke-width':2});
+      /* b through the xor bank */
+      el('rect',{x:60,y:166,width:120,height:40,rx:8,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.8},g);
+      txt(g,120,192,'b',{'font-size':15,fill:INK,'text-anchor':'middle','font-weight':700});
+      pth(g,'M180 186 L258 186',{stroke:'#dedbd3','stroke-width':2});
+      el('rect',{x:258,y:160,width:150,height:52,rx:9,fill:soft,stroke:col,'stroke-width':2.4},g);
+      txt(g,333,182,'32 XOR gates',{'font-size':12.5,fill:col,'text-anchor':'middle','font-weight':700});
+      txt(g,333,202,sub?'flipping b':'passing b through',{'font-size':11,fill:col,'text-anchor':'middle'});
+      pth(g,'M408 186 L470 186',{stroke:'#dedbd3','stroke-width':2});
+      /* control line */
+      el('rect',{x:60,y:252,width:150,height:44,rx:9,fill:soft,stroke:col,'stroke-width':2.6},g);
+      txt(g,135,280,'sub = '+sub,{'font-size':16,fill:col,'text-anchor':'middle','font-weight':700});
+      el('path',{d:'M210 274 L333 274 L333 214',fill:'none',stroke:col,'stroke-width':2.8},g);
+      el('path',{d:'M333 274 L560 274 L560 230',fill:'none',stroke:col,'stroke-width':2.8},g);
+      el('circle',{cx:333,cy:274,r:4.5,fill:col},g);
+      /* the adder */
+      el('rect',{x:470,y:64,width:180,height:152,rx:12,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2.4},g);
+      txt(g,560,124,'the adder',{'font-size':15,fill:INK,'text-anchor':'middle','font-weight':700});
+      txt(g,560,148,'from class 22',{'font-size':12,fill:'#8b9096','text-anchor':'middle'});
+      txt(g,560,172,'12 gate delays',{'font-size':12,fill:'#8b9096','text-anchor':'middle'});
+      txt(g,578,250,'carry in = '+sub,{'font-size':12.5,fill:col,'font-weight':700});
+      /* result */
+      pth(g,'M650 140 L730 140',{stroke:'#dedbd3','stroke-width':2});
+      el('rect',{x:730,y:110,width:370,height:60,rx:11,fill:soft,stroke:col,'stroke-width':2.6},g);
+      txt(g,754,136,sub?'a + (flip of b) + 1':'a + b + 0',{'font-size':17,fill:col,'font-weight':700});
+      txt(g,754,158,sub?'which is a minus b':'which is a plus b',{'font-size':13,fill:col});
+      txt(g,380,308,'one wire decides. nothing else in the circuit changed, and nothing was rebuilt.',
+        {'font-size':15.5,fill:INK,'font-weight':700});
+    }
+    document.getElementById('uAdd').onclick=function(){
+      sub=0; this.classList.add('hot'); document.getElementById('uSub').classList.remove('hot'); render(); };
+    document.getElementById('uSub').onclick=function(){
+      sub=1; this.classList.add('hot'); document.getElementById('uAdd').classList.remove('hot'); render(); };
+    render();
+  })();
+
+  /* ================= what it cost ================= */
+  (function(){
+    var g=document.getElementById('figCost'); if(!g) return;
+    txt(g,34,24,'THE BILL, AGAINST WHAT A REAL SUBTRACTOR WOULD HAVE COST',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+    var X0=250, MAXW=560, BH=40;
+    var rows=[
+      {y:56,w:272,lab:'the adder alone',val:'272 gates',col:BLUE,soft:'#eaeef7'},
+      {y:108,w:304,lab:'add and subtract',val:'304 gates',col:GRN,soft:'#e9f2ef'},
+      {y:160,w:544,lab:'a separate subtractor',val:'544 gates',col:RED,soft:'#fdf0ef'}
+    ];
+    rows.forEach(function(r){
+      var bw=MAXW*(r.w/544);
+      el('rect',{x:X0,y:r.y,width:bw,height:BH,rx:8,fill:r.soft,stroke:r.col,'stroke-width':2.2},g);
+      txt(g,X0-16,r.y+26,r.lab,{'font-size':13.5,fill:r.col,'text-anchor':'end','font-weight':700});
+      txt(g,X0+bw-16,r.y+26,r.val,{'font-size':15,fill:r.col,'text-anchor':'end','font-weight':700});
+    });
+    /* the delay budget */
+    var BY=234, BW=560;
+    txt(g,X0,BY-12,'one cycle at 3 GHz',{'font-size':11.5,fill:'#8b9096'});
+    el('rect',{x:X0,y:BY,width:BW,height:44,rx:9,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+    el('rect',{x:X0,y:BY,width:BW*(260/333.3),height:44,rx:9,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,X0+16,BY+29,'260 ps  \u00b7  78% of the cycle',{'font-size':14,fill:GRN,'font-weight':700});
+    txt(g,X0-16,BY+29,'13 delays',{'font-size':13.5,fill:GRN,'text-anchor':'end','font-weight':700});
+    txt(g,X0+BW+14,BY+29,'fits',{'font-size':14,fill:GRN,'font-weight':700});
+    el('rect',{x:860,y:56,width:246,height:152,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,884,84,'WHAT IT COST',{'font-size':10,fill:GRN,'letter-spacing':1.3});
+    txt(g,884,116,'+12% gates',{'font-size':19,fill:GRN,'font-weight':700});
+    txt(g,884,140,'+8% delay',{'font-size':19,fill:GRN,'font-weight':700});
+    txt(g,884,172,'ceiling drops from',{'font-size':12,fill:GRN});
+    txt(g,884,194,'4.17 GHz to 3.85 GHz',{'font-size':13.5,fill:GRN,'font-weight':700});
+  })();
+
+  /* ================= telling when it broke ================= */
+  (function(){
+    var g=document.getElementById('figOverflow'); if(!g) return;
+    txt(g,34,24,'THE TWO CARRIES AROUND THE SIGN COLUMN',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    function scene(x0,title,cin,cout,verdict,col,soft){
+      el('rect',{x:x0,y:52,width:500,height:150,rx:13,fill:soft,stroke:col,'stroke-width':2.2},g);
+      txt(g,x0+24,80,title,{'font-size':11.5,fill:col,'letter-spacing':1.1,'font-weight':700});
+      el('rect',{x:x0+150,y:100,width:104,height:52,rx:9,fill:'#fff',stroke:col,'stroke-width':2},g);
+      txt(g,x0+202,132,'sign column',{'font-size':12,fill:col,'text-anchor':'middle','font-weight':700});
+      el('path',{d:'M'+(x0+276)+' 126 L'+(x0+344)+' 126',fill:'none',stroke:col,'stroke-width':2.6},g);
+      txt(g,x0+310,112,'out '+cout,{'font-size':12.5,fill:col,'text-anchor':'middle','font-weight':700});
+      el('path',{d:'M'+(x0+60)+' 126 L'+(x0+146)+' 126',fill:'none',stroke:col,'stroke-width':2.6},g);
+      txt(g,x0+100,112,'in '+cin,{'font-size':12.5,fill:col,'text-anchor':'middle','font-weight':700});
+      txt(g,x0+24,182,verdict,{'font-size':14,fill:col,'font-weight':700});
+    }
+    scene(34,'THE TWO AGREE',1,1,'the answer fitted. carry on.',GRN,'#e9f2ef');
+    scene(606,'THE TWO DISAGREE',1,0,'the answer did not fit. overflow.',RED,'#fdf0ef');
+    el('rect',{x:34,y:224,width:1072,height:52,rx:11,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.2},g);
+    txt(g,58,256,'overflow  =  carry into the sign column   XOR   carry out of it.   one gate, on wires you already have.',
+      {'font-size':15.5,fill:BLUE,'font-weight':700});
+  })();
+
+  /* ================= comparison, free ================= */
+  (function(){
+    var g=document.getElementById('figCompare'); if(!g) return;
+    txt(g,34,24,'WHAT ELSE THIS CIRCUIT ALREADY DOES',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var items=[['a < b','subtract, then look at the sign bit',VIO,'#f3eefa'],
+               ['a == b','subtract, then check every bit is zero',GRN,'#e9f2ef'],
+               ['a > b','subtract the other way round',AMB,'#fbf0dc']];
+    items.forEach(function(it,k){
+      var y=56+k*62;
+      el('rect',{x:60,y:y,width:150,height:48,rx:10,fill:it[3],stroke:it[2],'stroke-width':2.2},g);
+      txt(g,135,y+30,it[0],{'font-size':17,fill:it[2],'text-anchor':'middle','font-weight':700});
+      pth(g,'M210 '+(y+24)+' L280 '+(y+24),{stroke:'#dedbd3','stroke-width':2.2});
+      pth(g,'M272 '+(y+18)+' l8 6 l-8 6',{stroke:'#dedbd3','stroke-width':2.2});
+      txt(g,296,y+30,it[1],{'font-size':15,fill:INK});
+    });
+    el('rect',{x:740,y:56,width:366,height:110,rx:13,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.4},g);
+    txt(g,764,84,'FROM CLASS 21',{'font-size':10,fill:BLUE,'letter-spacing':1.3});
+    txt(g,764,114,'every comparison',{'font-size':17,fill:BLUE,'font-weight':700});
+    txt(g,764,140,'was on the list of things',{'font-size':13,fill:BLUE});
+    txt(g,764,158,'that use the adder. this is why.',{'font-size':13,fill:BLUE});
+    txt(g,34,258,'every if statement you have ever written runs through this circuit.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+  })();
+
+  onSlide=function(idx){ if(wrapCtl) wrapCtl.stop(); if(derCtl) derCtl.stop(); };
+  paint();
+})();
+</script>
+</body>
+</html>
