@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 24 · Two ways to build a multiplier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --hi:#e8952b; --lo:#b9bfc6; --violet:#6b3fa0;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:46px 68px 78px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .32s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.eyebrow{position:absolute;top:19px;left:68px;font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:19px;right:68px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:68px;right:68px;bottom:21px;display:flex;gap:1.5px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:68px;bottom:42px;font-family:var(--mono);font-size:12px;color:var(--soft);z-index:5}
+#help{position:absolute;left:68px;bottom:42px;font-family:var(--mono);font-size:11px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+h1{font-family:var(--display);font-weight:600;font-size:60px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:29px;line-height:1.12;letter-spacing:-.015em;color:var(--ink);margin-bottom:6px}
+p{font-size:20px;line-height:1.46;max-width:37ch}
+p+p{margin-top:10px}
+.big{font-size:23.5px;line-height:1.34;color:var(--ink);font-weight:300;max-width:31ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center}
+.stack>*+*{margin-top:9px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 12px}
+.row{display:flex;gap:20px;align-items:flex-start;justify-content:center}
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:9px 14px;margin-top:9px}
+.rem .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.rem.win{border-left-color:var(--ok)} .rem.win .h{color:var(--ok)}
+.rem.bad{border-left-color:var(--fail)} .rem.bad .h{color:var(--fail)}
+.rem ul{list-style:none}
+.rem li{font-size:15.5px;line-height:1.36;color:var(--ink);padding:3.5px 0 3.5px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+.btn{font-family:var(--mono);font-size:12.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:6px 12px;cursor:pointer;min-width:34px}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+.btnrow .lab{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--soft);margin-right:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:4px 11px;border-radius:20px;background:var(--accent-soft);color:var(--accent);margin-bottom:8px}
+.tag.win{background:var(--ok-soft);color:var(--ok)}
+.tag.bad{background:var(--fail-soft);color:var(--fail)}
+.tag.new{background:#efe9f7;color:var(--violet)}
+.spec{display:flex;align-items:stretch;background:var(--card);border:1px solid var(--rule2);border-radius:11px;overflow:hidden;margin-top:8px}
+.spec .c{flex:1;padding:12px 15px;border-right:1px solid var(--rule)}
+.spec .c:last-child{border-right:none}
+.spec .c .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--soft)}
+.spec .c .v{font-family:var(--display);font-size:28px;font-weight:600;color:var(--ink);line-height:1.1;margin-top:3px}
+.spec .c .s{font-size:12.5px;color:var(--soft);margin-top:2px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .32s ease}
+.frag.shown{opacity:1}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+.cue{position:absolute;left:68px;right:68px;bottom:64px;display:none;padding:9px 13px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:14.5px;line-height:1.34;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:38px 68px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:10px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:50px}
+#jump li{padding:3.5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:15px;color:var(--body);display:flex;gap:11px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:30px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 24</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 24 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<section class="slide" data-t="Title" data-act="the question">
+  <div>
+    <div class="kicker">class 24 · hour twenty four of fifty</div>
+    <h1>Two ways to build<br>a multiplier.</h1>
+    <p class="big" style="margin-top:22px;max-width:49ch">Thirty two additions have to happen. You can spread them over thirty two clock cycles, or you can lay them out in silicon and do them all at once. Today you build both.</p>
+  </div>
+  <div class="cue">Collect the homework counts from last session. Then say the hour is one algorithm, two pieces of hardware.</div>
+</section>
+
+<section class="slide" data-t="Where we are" data-act="the question">
+  <div>
+    <h2>One algorithm. Two completely different machines.</h2>
+    <div style="text-align:center;margin-top:2px"><svg viewBox="0 0 1140 250" width="1080" height="219"><g id="figArcTop"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the hour in three questions</div>
+      <ul>
+        <li><strong>What is the algorithm?</strong> Written as a loop, it is four lines, and every line is something you already built.</li>
+        <li><strong>Design one: run the loop.</strong> One adder, thirty two turns. Small, slow, and what most chips ever made actually do.</li>
+        <li><strong>Design two: unroll the loop.</strong> Thirty two rows of adders in silicon. Ten times the gates, and one long cycle.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Neither design is clever yet. Cleverness is next session. Today is honest construction.</div>
+</section>
+
+<!-- ============ ACT 1 ============ -->
+
+<section class="slide" data-t="The algorithm as a loop" data-act="1 · the algorithm">
+  <div>
+    <h2>Everything you did on paper, written as four lines.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figLoop"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">notice what is in it</div>
+      <ul>
+        <li>A test of one bit. An addition. A shift. A counter. You have built every one of those already.</li>
+        <li>There is no multiplication anywhere in the algorithm for multiplication.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Read the loop aloud. Four lines, thirty two turns. The whole hour is about how you spend those turns.</div>
+</section>
+
+<section class="slide" data-t="Two ways to spend it" data-act="1 · the algorithm">
+  <div>
+    <h2>A loop can be run, or it can be unrolled.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 310" width="1090" height="294"><g id="figTwoWays"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the same thirty two additions, either way</div>
+      <ul>
+        <li>Run it: build one adder and use it thirty two times. You spend <strong>time</strong>.</li>
+        <li>Unroll it: build thirty two adders and use each once. You spend <strong>space</strong>.</li>
+        <li>This choice comes back for every loop in every machine you will ever design.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Name the tradeoff here explicitly. It is the most transferable idea in the hour.</div>
+</section>
+
+<!-- ============ ACT 2 · SEQUENTIAL ============ -->
+
+<section class="slide" data-t="Design 1, first attempt" data-act="2 · design one, run the loop">
+  <div>
+    <div class="kicker">the obvious datapath, and what is wrong with it</div>
+    <h2 style="font-size:27px;margin-bottom:0">Build it the way you wrote it on paper.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figNaive"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">it works, and it is wasteful</div>
+      <ul>
+        <li>The multiplicand register has to be 64 bits wide, because by the last turn it has been shifted left thirty one times.</li>
+        <li>So the adder has to be 64 bits wide too, and 64-bit adders cost twice what 32-bit ones do.</li>
+        <li>And the top half of that register is zeros for most of the run. You are paying for wire that holds nothing.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Let them see the waste before the fix. The fix is much prettier if the problem is felt first.</div>
+</section>
+
+<section class="slide" data-t="Move the other thing" data-act="2 · design one, run the loop">
+  <div>
+    <div class="tag win">THE REFINEMENT</div>
+    <h2 style="font-size:27px;margin-bottom:0">Nothing says the multiplicand has to move. Shift the product right instead.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figRefine"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">what that bought</div>
+      <ul>
+        <li>The multiplicand never moves, so it stays thirty two bits wide, and <strong>the adder only ever needs to be thirty two bits</strong>.</li>
+        <li>Shifting the running total right by one has exactly the same effect as shifting the multiplicand left by one. The relative positions are what matter.</li>
+        <li>Half the adder, half the register. Same answer.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is the first properly elegant idea of the hour. Do not rush it.</div>
+</section>
+
+<section class="slide" data-t="The register that does both jobs" data-act="2 · design one, run the loop">
+  <div>
+    <div class="kicker">watch the two halves trade places</div>
+    <h2 style="font-size:27px;margin-bottom:0">And now the trick that makes the whole design fit.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 340" width="1090" height="322"><g id="figAQ"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn hot" id="aRun">run &#9654;</button>
+      <button class="btn" id="aStep">step</button>
+      <button class="btn" id="aReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">The multiplier is consumed one bit per turn. The product is produced one bit per turn. They share one register.</div>
+</section>
+
+<section class="slide" data-t="Thirteen times eleven, in registers" data-act="2 · design one, run the loop">
+  <div>
+    <div class="kicker">four turns, and check every one against your paper working</div>
+    <h2 style="font-size:27px;margin-bottom:0">The whole algorithm, one turn at a time.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 360" width="1090" height="336"><g id="figTrace"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn hot" id="tRun">run &#9654;</button>
+      <button class="btn" id="tStep">step</button>
+      <button class="btn" id="tReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">Checked against every four bit pair in code. Step it slowly, the shift is where people lose the thread.</div>
+</section>
+
+<section class="slide" data-t="What drives it" data-act="2 · design one, run the loop">
+  <div>
+    <h2>The control is smaller than anything else on the slide.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 310" width="1090" height="294"><g id="figControl"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>A five bit counter counts the thirty two turns. Five bits, because two to the five is thirty two.</li>
+        <li>One AND gate decides whether this turn adds: the bottom bit of Q, gated with the add-enable.</li>
+        <li>When the counter rolls over, the product is sitting in A and Q, and the machine says done.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Emphasise how little control there is. Most of the cost is the adder and the registers.</div>
+</section>
+
+<section class="slide" data-t="What design one costs" data-act="2 · design one, run the loop">
+  <div>
+    <h2>Add it all up.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 345" width="1080" height="326"><g id="figSeqCost"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">judged the way you judge everything</div>
+      <ul>
+        <li>The clock does not have to slow down. One turn is one 32-bit addition, twelve gate delays, comfortably inside a 3 GHz cycle.</li>
+        <li>But a multiply now takes thirty two cycles. In a machine that issues an instruction per cycle, that is thirty two lost.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Separate the two numbers carefully. The cycle is fast. There are just a lot of them.</div>
+</section>
+
+<!-- ============ ACT 3 · ARRAY ============ -->
+
+<section class="slide" data-t="Design 2, unroll it" data-act="3 · design two, unroll the loop">
+  <div>
+    <div class="kicker">the same loop, with the turns laid side by side</div>
+    <h2 style="font-size:27px;margin-bottom:0">Take the thirty two turns and build them all at once.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1090" height="303"><g id="figUnroll"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">what unrolling does</div>
+      <ul>
+        <li>Every turn becomes a row of hardware. There is no counter, no register to shift, and no state at all.</li>
+        <li>The shifts disappear completely. A shift by k is just wiring row k over by k columns.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Shifts costing nothing in space is worth saying out loud. A shift is a wire, not a gate.</div>
+</section>
+
+<section class="slide" data-t="The grid of AND gates" data-act="3 · design two, unroll the loop">
+  <div>
+    <h2>First, every partial product bit at once.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1090" height="303"><g id="figGrid"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>One AND gate for every pair of bits. 1024 of them for a 32 by 32 multiply.</li>
+        <li>None of them waits for anything, so all 1024 partial product bits exist at t = 1.</li>
+        <li>That is the entire multiplication part of multiplication. Everything after this is addition.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Same point as last session, but now they are about to see how the additions are physically arranged.</div>
+</section>
+
+<section class="slide" data-t="Where do the carries go" data-act="3 · design two, unroll the loop">
+  <div>
+    <div class="kicker">the single most important wire in the design</div>
+    <h2 style="font-size:27px;margin-bottom:0">Each cell makes a sum and a carry. The carry has two places it could go.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 340" width="1090" height="322"><g id="figCarryWiring"></g></svg></div>
+    <div class="btnrow">
+      <span class="lab">send the carry</span>
+      <button class="btn hot" id="wRow">along the row</button>
+      <button class="btn" id="wDiag">down to the next row</button>
+    </div>
+  </div>
+  <div class="cue">Same cells, same count, one wire moved. 185 delays against 63. This is the slide of the act.</div>
+</section>
+
+<section class="slide" data-t="The path through the array" data-act="3 · design two, unroll the loop">
+  <div>
+    <h2>Follow the longest path a signal can take from input to output.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 340" width="1090" height="322"><g id="figPath"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Down through thirty one rows, and along toward the top end of the product. Two gate delays per cell.</li>
+        <li>Sixty three gate delays to get the array settled, and the bottom row is still two numbers, not one.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Trace it with a finger on the screen. The diagonal is the shape of the whole delay.</div>
+</section>
+
+<section class="slide" data-t="One real adder at the bottom" data-act="3 · design two, unroll the loop">
+  <div>
+    <h2>The array never finishes the job. It hands you two numbers.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figFinalAdd"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Saving carries to the next row is quick, but the last row still has a set of sums and a set of carries that were never combined.</li>
+        <li>So the bottom of the array is a real carry-propagating adder. The one from Class 22, doing the job nothing else can.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is the first appearance of an idea that dominates next session. Flag it.</div>
+</section>
+
+<section class="slide" data-t="What design two costs" data-act="3 · design two, unroll the loop">
+  <div>
+    <h2>Add that up too.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 320" width="1080" height="303"><g id="figArrayCost"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">judged the same way</div>
+      <ul>
+        <li>1500 picoseconds is four and a half cycles at 3 GHz. Better than thirty two, and still not one.</li>
+        <li>Ten times the gates of design one, for about five times the speed. That is not a scandal, but it is not a triumph either.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Resist calling this a win. It is a different point on the same curve, and next session beats both.</div>
+</section>
+
+<!-- ============ CLOSE ============ -->
+
+<section class="slide" data-t="Time against space" data-act="closing">
+  <div>
+    <h2>The same algorithm, and the bill depends entirely on where you spent it.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figTimeSpace"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the actual skill, again</div>
+      <ul>
+        <li>A microcontroller multiplying a few times a second should run the loop. Seven thousand gates would be silicon it cannot afford to power.</li>
+        <li>A processor doing signal or matrix work cannot stall for thirty two cycles, and buys the array without hesitating.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">They should be able to predict this slide by now. That is the point of repeating the shape.</div>
+</section>
+
+<section class="slide" data-t="Where we are now" data-act="closing">
+  <div>
+    <h2>Six down, three to go.</h2>
+    <div style="text-align:center;margin:4px 0"><svg viewBox="0 0 1140 250" width="1080" height="219"><g id="figArcEnd"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">what you are carrying into next session</div>
+      <ul>
+        <li>A loop can be run or unrolled, and that is a choice between time and area, not between right and wrong.</li>
+        <li>Shifting by a fixed amount costs nothing in hardware. It is wiring.</li>
+        <li>And carries can be handed to the next row instead of being resolved. 185 delays became 63 on one wire.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The carry-saving idea is the seed of the entire next session. Plant it, do not spend it.</div>
+</section>
+
+<section class="slide" data-t="Close" data-act="closing">
+  <div class="center">
+    <h2 style="font-size:35px;margin-bottom:16px">Thirty two cycles,<br>or seven thousand gates.</h2>
+    <p class="big" style="max-width:56ch;color:var(--soft)">Both designs are honest, both are built, and both get slower in exact proportion to how wide the machine is. Double the bits and you double the cycles, or you double the depth of the array.</p>
+    <p class="big frag" style="margin-top:18px;max-width:55ch">Next session: stop building the algorithm as written. Make fewer rows to add, and find a cheaper way to add the ones that are left.</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: write out 0111 in binary and find a way to multiply by it using only two operations instead of three. You are allowed to subtract.</div>
+</section>
+
+</template>
+<script>
+(function(){
+  'use strict';
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  var onSlide=null;
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    if(onSlide) onSlide(i);
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallow=false;
+  document.addEventListener('click',function(e){
+    swallow = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||
+                 e.target.closest('svg')||e.target.closest('.spec'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallow){ swallow=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= helpers ================= */
+  var NS='http://www.w3.org/2000/svg';
+  var GREY='#c6c3ba', HI='#e8952b', INK='#15171b', DEAD='#dedbd3',
+      BLUE='#23408f', RED='#a8231f', GRN='#146b5c', VIO='#6b3fa0', AMB='#b06a12';
+  var D=20, RIPPLE=1300, LOOK=240;
+  function el(tag,a,p){ var e=document.createElementNS(NS,tag);
+    for(var k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e; }
+  function txt(p,x,y,s,o){ var t=el('text',Object.assign({x:x,y:y,'font-size':13,fill:'#8b9096'},o||{}),p);
+    t.textContent=s; return t; }
+  function rct(p,x,y,w,h,o){ return el('rect',Object.assign({x:x,y:y,width:w,height:h,rx:7,
+    fill:'#fff',stroke:GREY,'stroke-width':2},o||{}),p); }
+  function wire(p,x1,y1,x2,y2,v){ return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,
+    stroke:v?HI:DEAD,'stroke-width':v?3.6:2.4,'stroke-linecap':'round'},p); }
+  function pth(p,d,o){ return el('path',Object.assign({d:d,fill:'none',stroke:GREY,'stroke-width':2.4},o||{}),p); }
+  function jn(p,x,y){ return el('circle',{cx:x,cy:y,r:4,fill:INK},p); }
+  function gAnd(p,x,y,h,v){ return el('path',{d:'M'+x+' '+(y-h)+' L'+(x+16)+' '+(y-h)+' A '+h+' '+h+
+    ' 0 0 1 '+(x+16)+' '+(y+h)+' L'+x+' '+(y+h)+' z',fill:v?'#fbf0dc':'#fff',stroke:v?AMB:INK,'stroke-width':2.2},p); }
+  function andTip(x,h){ return x+16+h; }
+  function gOr(p,x,y,h,v){
+    var nose=h*1.4;
+    el('path',{d:'M'+(x-4)+' '+(y-h)+' Q'+(x+h*0.8)+' '+y+' '+(x-4)+' '+(y+h)+
+      ' Q'+(x+nose*0.55)+' '+(y+h*0.85)+' '+(x+nose)+' '+y+' Q'+(x+nose*0.55)+' '+(y-h*0.85)+' '+(x-4)+' '+(y-h)+' z',
+      fill:v?'#fbf0dc':'#fff',stroke:v?AMB:INK,'stroke-width':2.2},p);
+  }
+  function orTip(x,h){ return x+h*1.4; }
+  function ticker(runId,stepId,resetId,max,render){
+    var t=0,timer=null;
+    function set(v){ t=Math.max(0,Math.min(max,v)); render(t); }
+    function stop(){ if(timer){clearInterval(timer);timer=null;}
+      var b=document.getElementById(runId); if(b){b.classList.remove('hot');b.textContent='run \u25B6';} }
+    document.getElementById(runId).onclick=function(){
+      if(timer){ stop(); return; }
+      if(t>=max) set(0);
+      this.classList.add('hot'); this.textContent='\u25A0 stop';
+      timer=setInterval(function(){ if(t>=max){ stop(); return; } set(t+1); },380);
+    };
+    document.getElementById(stepId).onclick=function(){ stop(); set(t>=max?0:t+1); };
+    document.getElementById(resetId).onclick=function(){ stop(); set(0); };
+    set(0);
+    return {stop:stop};
+  }
+  function arcStrip(gid,litIndex,caption){
+    var g=document.getElementById(gid); if(!g) return;
+    var items=[[19,'one column'],[20,'thirty two'],[21,'how slow'],[22,'the carry'],
+               [23,'subtraction'],[24,'two multipliers'],[25,'fast multiply'],[26,'divide'],[27,'the bill']];
+    var W=112, X0=40;
+    items.forEach(function(it,k){
+      var x=X0+k*(W+10), done=k<litIndex, lit=(k===litIndex);
+      el('rect',{x:x,y:52,width:W,height:104,rx:12,
+        fill:lit?'#eaeef7':(done?'#f2f0ea':'#fbfaf7'),
+        stroke:lit?BLUE:(done?'#c6c3ba':'#e2e0d9'),'stroke-width':lit?2.6:1.5},g);
+      txt(g,x+W/2,80,'CLASS '+it[0],{'font-size':9,fill:lit?BLUE:'#c6c3ba','text-anchor':'middle','letter-spacing':1.3});
+      txt(g,x+W/2,112,it[1],{'font-size':11,fill:lit?INK:(done?'#8b9096':'#a9a69d'),'text-anchor':'middle','font-weight':700});
+      if(done) txt(g,x+W/2,136,'done',{'font-size':11,fill:GRN,'text-anchor':'middle'});
+      if(lit) txt(g,x+W/2,136,'today',{'font-size':11,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      if(k<items.length-1) pth(g,'M'+(x+W)+' 104 L'+(x+W+10)+' 104',{stroke:'#dedbd3','stroke-width':2});
+    });
+    txt(g,34,198,caption,{'font-size':15.5,fill:INK,'font-weight':700});
+  }
+  arcStrip('figArcTop',5,'add and subtract cost one circuit and thirteen gate delays. today you build a multiplier twice, two different ways.');
+  arcStrip('figArcEnd',5,'thirty two cycles and 700 gates, or one cycle and 7000. both grow with n. next session you attack that.');
+
+  
+  
+
+
+
+
+  /* ================= the algorithm as a loop ================= */
+  (function(){
+    var g=document.getElementById('figLoop'); if(!g) return;
+    txt(g,34,24,'THE PAPER METHOD, WRITTEN AS A LOOP',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var lines=[['P = 0','start with nothing',GRN],
+               ['repeat 32 times:','once per bit of the multiplier',INK],
+               ['if the bottom bit of Q is 1:  P = P + M','an addition you built in Class 22',AMB],
+               ['shift P and Q right by one','a wire, not a gate',VIO],
+               ['P is the answer','','GRN']];
+    lines.forEach(function(L,k){
+      var y=64+k*46, indent=(k===2||k===3)?70:0;
+      el('rect',{x:60+indent,y:y,width:560-indent,height:36,rx:8,
+        fill:k===0||k===4?'#e9f2ef':(k===2?'#fbf0dc':(k===3?'#f3eefa':'#fbfaf7')),
+        stroke:L[2]===INK?'#c6c3ba':L[2],'stroke-width':1.9},g);
+      txt(g,78+indent,y+24,L[0],{'font-size':14.5,fill:L[2]===INK?INK:L[2],'font-weight':700});
+      if(L[1]) txt(g,650,y+24,L[1],{'font-size':13,fill:'#8b9096'});
+    });
+    el('rect',{x:60,y:104,width:14,height:130,rx:4,fill:'none',stroke:'#c6c3ba','stroke-width':2},g);
+    txt(g,34,318,'a bit test, an addition, a shift and a counter. every one of them is already in your machine.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= two ways to spend it ================= */
+  (function(){
+    var g=document.getElementById('figTwoWays'); if(!g) return;
+    txt(g,34,24,'THE SAME THIRTY TWO ADDITIONS, TWO PLACES TO PUT THEM',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+    /* run it: one adder over time */
+    el('rect',{x:34,y:52,width:520,height:190,rx:14,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.4},g);
+    txt(g,58,80,'RUN THE LOOP \u00b7 SPEND TIME',{'font-size':11,fill:BLUE,'letter-spacing':1.2,'font-weight':700});
+    el('rect',{x:110,y:110,width:120,height:52,rx:10,fill:'#fff',stroke:BLUE,'stroke-width':2.2},g);
+    txt(g,170,142,'one adder',{'font-size':13,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    for(var k=0;k<8;k++){
+      var x=270+k*30;
+      el('rect',{x:x,y:120,width:22,height:32,rx:4,fill:'#fff',stroke:'#c3cee6','stroke-width':1.3},g);
+    }
+    txt(g,270,172,'cycle 1, 2, 3 ... 32',{'font-size':12,fill:'#8b9096'});
+    txt(g,58,206,'one piece of hardware, used over and over',{'font-size':13.5,fill:BLUE,'font-weight':700});
+    txt(g,58,228,'small, and slow in cycles',{'font-size':12.5,fill:'#8b9096'});
+    /* unroll: many adders in space */
+    el('rect',{x:606,y:52,width:520,height:190,rx:14,fill:'#fdf0ef',stroke:RED,'stroke-width':2.4},g);
+    txt(g,630,80,'UNROLL THE LOOP \u00b7 SPEND SPACE',{'font-size':11,fill:RED,'letter-spacing':1.2,'font-weight':700});
+    for(var r=0;r<4;r++)for(var c=0;c<8;c++){
+      el('rect',{x:660+c*54,y:104+r*22,width:46,height:16,rx:3,fill:'#fff',stroke:RED,'stroke-width':1.1},g);
+    }
+    txt(g,630,230,'thirty two adders, each used exactly once',{'font-size':13.5,fill:RED,'font-weight':700});
+    txt(g,630,208,'one cycle, and a lot of silicon',{'font-size':12.5,fill:'#8b9096'});
+    txt(g,34,282,'this is not a multiplication question. it is the question you face every time you meet a loop in hardware.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= design 1, first attempt ================= */
+  (function(){
+    var g=document.getElementById('figNaive'); if(!g) return;
+    txt(g,34,24,'THE OBVIOUS DATAPATH, STRAIGHT FROM THE PAPER METHOD',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+    /* multiplicand register, 64 wide */
+    el('rect',{x:60,y:62,width:700,height:46,rx:9,fill:'#fdf0ef',stroke:RED,'stroke-width':2.4},g);
+    for(var k=0;k<32;k++) el('rect',{x:70+k*21,y:72,width:15,height:26,rx:3,
+      fill:k<16?'#fff':'#f9e2e0',stroke:'#e0b6b4','stroke-width':1},g);
+    txt(g,812,92,'multiplicand, 64 bits wide',{'font-size':13.5,fill:RED,'font-weight':700});
+    txt(g,812,112,'because it shifts left 31 times',{'font-size':12,fill:'#8b9096'});
+    el('path',{d:'M760 85 L800 85',fill:'none',stroke:RED,'stroke-width':2.4},g);
+    txt(g,60,54,'shifts left every turn',{'font-size':11,fill:RED});
+    /* the adder */
+    el('rect',{x:60,y:144,width:700,height:46,rx:9,fill:'#fdf0ef',stroke:RED,'stroke-width':2.4},g);
+    txt(g,410,174,'a 64-bit adder',{'font-size':16,fill:RED,'text-anchor':'middle','font-weight':700});
+    txt(g,812,174,'twice the width, twice the cost',{'font-size':13.5,fill:RED,'font-weight':700});
+    /* product */
+    el('rect',{x:60,y:226,width:700,height:46,rx:9,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+    txt(g,410,256,'the running product, 64 bits',{'font-size':14,fill:INK,'text-anchor':'middle','font-weight':700});
+    /* the waste */
+    el('rect',{x:70+16*21,y:72,width:16*21-6,height:26,rx:3,fill:'none',stroke:RED,'stroke-width':2.4,'stroke-dasharray':'6 4'},g);
+    txt(g,70,306,'for most of the run the shaded half is all zeros. you are paying for wire that is holding nothing.',
+      {'font-size':15,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= move the other thing ================= */
+  (function(){
+    var g=document.getElementById('figRefine'); if(!g) return;
+    txt(g,34,24,'SHIFT THE PRODUCT RIGHT INSTEAD OF THE MULTIPLICAND LEFT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+    function panel(y,title,col,soft,mw,label,note){
+      el('rect',{x:34,y:y,width:1092,height:104,rx:13,fill:soft,stroke:col,'stroke-width':2.2},g);
+      txt(g,58,y+26,title,{'font-size':11,fill:col,'letter-spacing':1.2,'font-weight':700});
+      el('rect',{x:58,y:y+40,width:mw,height:40,rx:8,fill:'#fff',stroke:col,'stroke-width':2},g);
+      txt(g,58+mw/2,y+65,label,{'font-size':13.5,fill:col,'text-anchor':'middle','font-weight':700});
+      txt(g,58+mw+24,y+65,note,{'font-size':13.5,fill:col,'font-weight':700});
+    }
+    panel(48,'BEFORE \u00b7 THE MULTIPLICAND MOVES',RED,'#fdf0ef',620,'multiplicand grows to 64 bits',
+      'so the adder must be 64 bits');
+    panel(170,'AFTER \u00b7 THE PRODUCT MOVES',GRN,'#e9f2ef',310,'multiplicand stays 32 bits',
+      'so a 32-bit adder is enough');
+    /* the equivalence */
+    el('rect',{x:34,y:290,width:1092,height:34,rx:8,fill:'#eaeef7',stroke:BLUE,'stroke-width':2},g);
+    txt(g,58,313,'sliding one number left and sliding the other right put the digits in the same relative place. only the relative position matters.',
+      {'font-size':13.5,fill:BLUE,'font-weight':700});
+  })();
+
+  /* ================= the register that does both jobs ================= */
+  var aqCtl=null;
+  (function(){
+    var g=document.getElementById('figAQ'); if(!g) return;
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,34,24,'ONE REGISTER, TWO JOBS, TRADING SPACE AS IT GOES',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+      var X0=120, CW=54, N=16, Y=90;
+      var used=t;            /* how many bits of Q have been consumed */
+      for(var k=0;k<N;k++){
+        var isA=(k<8);
+        var isProduct = isA ? false : (k>=8 && k< 8+used);
+        var consumed = (!isA) && (k>=8+used);
+        var fill, stroke, lab;
+        if(isA){ fill='#eaeef7'; stroke=BLUE; }
+        else if(k-8<used){ fill='#e9f2ef'; stroke=GRN; }
+        else { fill='#fbf0dc'; stroke=AMB; }
+        el('rect',{x:X0+k*CW,y:Y,width:CW-8,height:48,rx:6,fill:fill,stroke:stroke,'stroke-width':1.9},g);
+      }
+      /* braces */
+      el('rect',{x:X0-2,y:Y-24,width:8*CW-4,height:18,rx:4,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.6},g);
+      txt(g,X0+(8*CW)/2,Y-10,'A  \u00b7  the running total',{'font-size':12,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      el('rect',{x:X0+8*CW-2,y:Y-24,width:8*CW-4,height:18,rx:4,fill:'#fbf0dc',stroke:AMB,'stroke-width':1.6},g);
+      txt(g,X0+12*CW,Y-10,'Q  \u00b7  the multiplier',{'font-size':12,fill:AMB,'text-anchor':'middle','font-weight':700});
+      if(used>0){
+        el('rect',{x:X0+8*CW-2,y:Y+54,width:used*CW-4,height:18,rx:4,fill:'#e9f2ef',stroke:GRN,'stroke-width':1.6},g);
+        txt(g,X0+8*CW+(used*CW)/2,Y+68,'finished product bits',{'font-size':11.5,fill:GRN,'text-anchor':'middle','font-weight':700});
+      }
+      el('path',{d:'M'+(X0+16*CW-8)+' '+(Y+24)+' L'+(X0+16*CW+40)+' '+(Y+24),fill:'none',stroke:AMB,'stroke-width':2.6},g);
+      txt(g,X0+16*CW+48,Y+29,'bits fall out here',{'font-size':12,fill:AMB,'font-weight':700});
+      /* the readout */
+      el('rect',{x:60,y:224,width:520,height:90,rx:12,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+      txt(g,84,252,'AFTER '+used+' TURN'+(used===1?'':'S'),{'font-size':10.5,fill:'#8b9096','letter-spacing':1.3});
+      txt(g,84,282,used+' bits of the multiplier consumed',{'font-size':15,fill:AMB,'font-weight':700});
+      txt(g,84,304,used+' bits of the product finished, sitting in the space they left',{'font-size':13.5,fill:GRN,'font-weight':700});
+      el('rect',{x:620,y:224,width:506,height:90,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+      txt(g,644,252,'WHY IT FITS',{'font-size':10.5,fill:GRN,'letter-spacing':1.3});
+      txt(g,644,282,'one bit leaves Q every turn,',{'font-size':15,fill:GRN,'font-weight':700});
+      txt(g,644,304,'and one bit of the product arrives to take its place.',{'font-size':13.5,fill:GRN});
+    }
+    aqCtl=ticker('aRun','aStep','aReset',8,render);
+  })();
+
+  /* ================= thirteen times eleven, in registers ================= */
+  var trCtl=null;
+  (function(){
+    var g=document.getElementById('figTrace'); if(!g) return;
+    var steps=[];
+    (function(){
+      var A=0,Q=11,M=13,n=4;
+      steps.push({i:-1,A:0,Q:11,note:'start. A is empty, Q holds the multiplier.',add:false});
+      for(var i=0;i<n;i++){
+        var lsb=Q&1, A0=A;
+        if(lsb) A=A+M;
+        var comb=((A<<n)|Q)>>>1;
+        var A2=comb>>>n, Q2=comb&((1<<n)-1);
+        steps.push({i:i,lsb:lsb,Abefore:A0,Aadded:A,A:A2,Q:Q2,add:!!lsb,
+          note:lsb?('bottom bit of Q is 1, so add 13, then shift'):('bottom bit of Q is 0, so just shift')});
+        A=A2;Q=Q2;
+      }
+    })();
+    function bits(v,n){ var s=''; for(var i=n-1;i>=0;i--) s+=((v>>i)&1); return s; }
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,34,24,'13 x 11, FOUR BITS, ONE TURN PER STEP',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+      var st=steps[Math.min(t,steps.length-1)];
+      var X0=300, CW=58, Y=70;
+      function reg(y,label,val,col,soft,n){
+        txt(g,X0-20,y+30,label,{'font-size':14,fill:col,'text-anchor':'end','font-weight':700});
+        var s=bits(val,n);
+        for(var k=0;k<n;k++){
+          var on=(s[k]==='1');
+          el('rect',{x:X0+k*CW,y:y,width:CW-10,height:44,rx:7,
+            fill:on?soft:'#f6f4ef',stroke:on?col:'#e2e0d9','stroke-width':on?2:1.2},g);
+          txt(g,X0+k*CW+(CW-10)/2,y+29,s[k],{'font-size':16,fill:on?col:'#c6c3ba','text-anchor':'middle','font-weight':700});
+        }
+      }
+      reg(Y,'A',st.A!==undefined?st.A:0,BLUE,'#eaeef7',4);
+      /* Q sits beside A */
+      var QX=X0+4*CW+16;
+      var qs=bits(st.Q!==undefined?st.Q:0,4);
+      for(var k=0;k<4;k++){
+        var on=(qs[k]==='1');
+        el('rect',{x:QX+k*CW,y:Y,width:CW-10,height:44,rx:7,
+          fill:on?'#fbf0dc':'#f6f4ef',stroke:on?AMB:'#e2e0d9','stroke-width':on?2:1.2},g);
+        txt(g,QX+k*CW+(CW-10)/2,Y+29,qs[k],{'font-size':16,fill:on?HI:'#c6c3ba','text-anchor':'middle','font-weight':700});
+      }
+      txt(g,X0+2*CW,Y-12,'A',{'font-size':12,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      txt(g,QX+2*CW,Y-12,'Q',{'font-size':12,fill:AMB,'text-anchor':'middle','font-weight':700});
+      /* the step description */
+      el('rect',{x:60,y:150,width:1040,height:56,rx:11,
+        fill:st.add?'#fbf0dc':'#fbfaf7',stroke:st.add?AMB:'#c6c3ba','stroke-width':2.2},g);
+      txt(g,84,176,st.i<0?'BEFORE THE FIRST TURN':('TURN '+(st.i+1)+' OF 4'),
+        {'font-size':10.5,fill:st.add?AMB:'#8b9096','letter-spacing':1.3});
+      txt(g,84,198,st.note,{'font-size':15,fill:st.add?AMB:INK,'font-weight':700});
+      /* running values */
+      el('rect',{x:60,y:220,width:500,height:70,rx:11,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.9},g);
+      txt(g,84,246,'AS NUMBERS',{'font-size':10,fill:'#8b9096','letter-spacing':1.3});
+      txt(g,84,274,'A = '+(st.A||0)+'    Q = '+(st.Q!==undefined?st.Q:0),{'font-size':17,fill:INK,'font-weight':700});
+      var done=(t>=steps.length-1);
+      el('rect',{x:600,y:220,width:500,height:70,rx:11,
+        fill:done?'#e9f2ef':'#fbfaf7',stroke:done?GRN:'#c6c3ba','stroke-width':done?2.6:1.9},g);
+      txt(g,624,246,'A AND Q TOGETHER',{'font-size':10,fill:done?GRN:'#8b9096','letter-spacing':1.3});
+      var prod=((st.A||0)<<4)|(st.Q!==undefined?st.Q:0);
+      txt(g,624,274,bits(prod,8)+'   =   '+prod,{'font-size':17,fill:done?GRN:INK,'font-weight':700});
+      txt(g,34,330,done?'143. the same answer you got on paper, and it never used an adder wider than four bits.'
+                       :'watch A and Q together. they are one eight bit register being filled from the left.',
+        {'font-size':15.5,fill:done?GRN:'#8b9096','font-weight':done?700:400});
+    }
+    trCtl=ticker('tRun','tStep','tReset',steps.length-1,render);
+  })();
+
+  /* ================= what drives it ================= */
+  (function(){
+    var g=document.getElementById('figControl'); if(!g) return;
+    txt(g,34,24,'THE WHOLE CONTROL PATH',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+    el('rect',{x:60,y:60,width:210,height:70,rx:11,fill:'#f3eefa',stroke:VIO,'stroke-width':2.4},g);
+    txt(g,165,90,'a 5-bit counter',{'font-size':14,fill:VIO,'text-anchor':'middle','font-weight':700});
+    txt(g,165,112,'counts 0 to 31',{'font-size':12,fill:VIO,'text-anchor':'middle'});
+    el('rect',{x:60,y:154,width:210,height:70,rx:11,fill:'#fbf0dc',stroke:AMB,'stroke-width':2.4},g);
+    txt(g,165,184,'one AND gate',{'font-size':14,fill:AMB,'text-anchor':'middle','font-weight':700});
+    txt(g,165,206,'Q0 and add-enable',{'font-size':12,fill:AMB,'text-anchor':'middle'});
+    pth(g,'M270 95 L340 95',{stroke:'#c6c3ba','stroke-width':2.2});
+    pth(g,'M270 189 L340 189',{stroke:'#c6c3ba','stroke-width':2.2});
+    el('rect',{x:340,y:60,width:250,height:164,rx:12,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.6},g);
+    txt(g,465,130,'the datapath',{'font-size':16,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    txt(g,465,154,'adder, A, Q, shifter',{'font-size':12.5,fill:BLUE,'text-anchor':'middle'});
+    pth(g,'M590 142 L660 142',{stroke:GRN,'stroke-width':2.6});
+    el('rect',{x:660,y:118,width:180,height:48,rx:10,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,750,148,'done',{'font-size':15,fill:GRN,'text-anchor':'middle','font-weight':700});
+    el('rect',{x:880,y:60,width:246,height:164,rx:12,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+    txt(g,904,88,'WHAT CONTROL COSTS',{'font-size':10,fill:'#8b9096','letter-spacing':1.3});
+    txt(g,904,122,'about 40 gates',{'font-size':20,fill:INK,'font-weight':700});
+    txt(g,904,152,'out of roughly 700.',{'font-size':13,fill:'#8b9096'});
+    txt(g,904,176,'the adder and the',{'font-size':13,fill:'#8b9096'});
+    txt(g,904,196,'registers are the design.',{'font-size':13,fill:'#8b9096'});
+    txt(g,34,278,'five bits of counter, because two to the five is thirty two. when it rolls over, the product is already sitting in A and Q.',
+      {'font-size':15,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= what design one costs ================= */
+  (function(){
+    var g=document.getElementById('figSeqCost'); if(!g) return;
+    txt(g,34,24,'DESIGN ONE, ADDED UP',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+    var items=[['a 32-bit lookahead adder',272,BLUE,'#eaeef7'],
+               ['a 64-bit shift register for A and Q',360,VIO,'#f3eefa'],
+               ['a 32-bit multiplicand register',0,AMB,'#fbf0dc'],
+               ['counter and control',40,GRN,'#e9f2ef']];
+    var X0=330, MAXW=520, tot=700;
+    items.forEach(function(it,k){
+      var y=56+k*46, w=Math.max(24,MAXW*(it[1]/tot));
+      el('rect',{x:X0,y:y,width:w,height:34,rx:7,fill:it[3],stroke:it[2],'stroke-width':2},g);
+      txt(g,X0-16,y+23,it[0],{'font-size':13,fill:it[2],'text-anchor':'end','font-weight':700});
+      if(it[1]) txt(g,X0+w+12,y+23,it[1]+' gates',{'font-size':13,fill:it[2],'font-weight':700});
+      else txt(g,X0+w+12,y+23,'included above',{'font-size':12,fill:'#8b9096'});
+    });
+    el('rect',{x:X0,y:284,width:MAXW,height:38,rx:8,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+    txt(g,X0-16,308,'in total',{'font-size':13.5,fill:INK,'text-anchor':'end','font-weight':700});
+    txt(g,X0+16,308,'about 700 gates',{'font-size':17,fill:INK,'font-weight':700});
+    el('rect',{x:X0,y:238,width:MAXW,height:38,rx:8,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.2},g);
+    txt(g,X0-16,262,'one cycle',{'font-size':13.5,fill:GRN,'text-anchor':'end','font-weight':700});
+    txt(g,X0+16,262,'12 gate delays, 240 ps, fits at 3 GHz',{'font-size':14,fill:GRN,'font-weight':700});
+    el('rect',{x:880,y:238,width:246,height:84,rx:12,fill:'#fdf0ef',stroke:RED,'stroke-width':2.4},g);
+    txt(g,904,264,'BUT',{'font-size':10,fill:RED,'letter-spacing':1.3});
+    txt(g,904,294,'32 cycles',{'font-size':24,fill:RED,'font-weight':700});
+    txt(g,904,314,'for one multiply',{'font-size':13,fill:RED});
+  })();
+
+  /* ================= design 2, unroll it ================= */
+  (function(){
+    var g=document.getElementById('figUnroll'); if(!g) return;
+    txt(g,34,24,'THE LOOP, WITH EVERY TURN GIVEN ITS OWN HARDWARE',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+    var X0=120, Y=64, RW=760;
+    for(var k=0;k<6;k++){
+      var y=Y+k*36, off=k*22;
+      el('rect',{x:X0+off,y:y,width:RW-off,height:26,rx:5,fill:'#fbf0dc',stroke:AMB,'stroke-width':1.7},g);
+      txt(g,X0-16,y+18,'row '+k,{'font-size':11.5,fill:'#8b9096','text-anchor':'end'});
+      
+    }
+    txt(g,X0,Y-12,'each row is one turn of the loop, wired one column further left',{'font-size':12,fill:AMB});
+    txt(g,X0+132,Y+6*36+2,'\u00b7\u00b7\u00b7 and so on, down to row 31',{'font-size':12.5,fill:'#8b9096'});
+    el('rect',{x:60,y:284,width:520,height:0,fill:'none'},g);
+    txt(g,34,308,'the shift disappeared. a shift by k is just wiring row k over by k columns, and wire costs nothing.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+    el('rect',{x:920,y:64,width:206,height:190,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,944,92,'WHAT VANISHED',{'font-size':10,fill:GRN,'letter-spacing':1.3});
+    ['the counter','the shift register','the control','all the state'].forEach(function(t,k){
+      txt(g,944,124+k*28,t,{'font-size':14,fill:GRN,'font-weight':700});
+    });
+  })();
+
+  /* ================= the grid of AND gates ================= */
+  (function(){
+    var g=document.getElementById('figGrid'); if(!g) return;
+    txt(g,34,24,'EVERY PARTIAL PRODUCT BIT, ALL AT ONCE',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=200, Y=56, CW=42, N=12;
+    for(var j=0;j<N;j++) txt(g,X0+j*CW+16,Y-8,'a'+(N-1-j),{'font-size':10,fill:'#8b9096','text-anchor':'middle'});
+    for(var i=0;i<6;i++){
+      txt(g,X0-14,Y+22+i*34,'b'+i,{'font-size':10.5,fill:'#8b9096','text-anchor':'end'});
+      for(var j2=0;j2<N;j2++){
+        el('rect',{x:X0+j2*CW,y:Y+6+i*34,width:32,height:22,rx:4,fill:'#e9f2ef',stroke:GRN,'stroke-width':1.2},g);
+      }
+    }
+    txt(g,X0,Y+224,'\u00b7\u00b7\u00b7 thirty two rows by thirty two columns',{'font-size':12.5,fill:'#8b9096'});
+    el('rect',{x:740,y:60,width:386,height:100,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,764,88,'THE ONLY MULTIPLYING IN THE DESIGN',{'font-size':10,fill:GRN,'letter-spacing':1.2});
+    txt(g,764,124,'1024 AND gates',{'font-size':24,fill:GRN,'font-weight':700});
+    txt(g,764,148,'every one of them ready at t = 1',{'font-size':13,fill:GRN});
+    el('rect',{x:740,y:176,width:386,height:76,rx:12,fill:'#fdf0ef',stroke:RED,'stroke-width':2.2},g);
+    txt(g,764,204,'AND THEN',{'font-size':10,fill:RED,'letter-spacing':1.2});
+    txt(g,764,236,'thirty two numbers to add.',{'font-size':17,fill:RED,'font-weight':700});
+    txt(g,34,296,'that grid is the whole of the multiplication. everything after it is addition, and that is where the hour goes.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= where do the carries go ================= */
+  (function(){
+    var g=document.getElementById('figCarryWiring'); if(!g) return;
+    var mode='row';
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var diag=(mode==='diag');
+      var col=diag?GRN:RED, soft=diag?'#e9f2ef':'#fdf0ef';
+      txt(g,34,24,diag?'CARRIES SAVED INTO THE NEXT ROW':'CARRIES RIPPLING ALONG EACH ROW',
+        {'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+      var X0=120, Y=58, CW=72, CH=50, NC=8, NR=4;
+      for(var i=0;i<NR;i++)for(var j=0;j<NC;j++){
+        var x=X0+j*CW, y=Y+i*CH;
+        el('rect',{x:x,y:y,width:CW-14,height:CH-14,rx:6,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.4},g);
+        /* sum always goes down */
+        if(i<NR-1) pth(g,'M'+(x+(CW-14)/2)+' '+(y+CH-14)+' L'+(x+(CW-14)/2)+' '+(y+CH),{stroke:'#dedbd3','stroke-width':1.6});
+        /* carry */
+        if(!diag){
+          if(j<NC-1) el('path',{d:'M'+(x+CW-14)+' '+(y+(CH-14)/2)+' L'+(x+CW)+' '+(y+(CH-14)/2),
+            fill:'none',stroke:col,'stroke-width':2.6},g);
+        } else {
+          if(i<NR-1&&j>0) el('path',{d:'M'+(x+4)+' '+(y+CH-14)+' L'+(x-CW+(CW-14))+' '+(y+CH),
+            fill:'none',stroke:col,'stroke-width':2.2},g);
+        }
+      }
+      /* the critical path sketch */
+      if(!diag){
+        el('path',{d:'M'+(X0+4)+' '+(Y+18)+' L'+(X0+NC*CW-20)+' '+(Y+18),fill:'none',stroke:col,'stroke-width':4,'stroke-opacity':.35},g);
+        txt(g,X0,Y+NR*CH+16,'a carry must cross the whole row before the row is finished',{'font-size':13,fill:col,'font-weight':700});
+      } else {
+        el('path',{d:'M'+(X0+NC*CW-40)+' '+(Y+18)+' L'+(X0+20)+' '+(Y+NR*CH-20),fill:'none',stroke:col,'stroke-width':4,'stroke-opacity':.35},g);
+        txt(g,X0,Y+NR*CH+16,'a carry only ever travels one cell, diagonally, and then it is somebody else\u2019s problem',
+          {'font-size':13,fill:col,'font-weight':700});
+      }
+      el('rect',{x:60,y:250,width:500,height:76,rx:12,fill:soft,stroke:col,'stroke-width':2.6},g);
+      txt(g,84,278,diag?'THROUGH THE ARRAY':'THROUGH THE ARRAY',{'font-size':10,fill:col,'letter-spacing':1.3});
+      txt(g,84,312,diag?'63 gate delays':'185 gate delays',{'font-size':26,fill:col,'font-weight':700});
+      el('rect',{x:600,y:250,width:526,height:76,rx:12,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+      txt(g,624,278,'CELLS USED',{'font-size':10,fill:'#8b9096','letter-spacing':1.3});
+      txt(g,624,312,'992 full adders, in both. one wire moved.',{'font-size':17,fill:INK,'font-weight':700});
+    }
+    document.getElementById('wRow').onclick=function(){
+      mode='row'; this.classList.add('hot'); document.getElementById('wDiag').classList.remove('hot'); render(); };
+    document.getElementById('wDiag').onclick=function(){
+      mode='diag'; this.classList.add('hot'); document.getElementById('wRow').classList.remove('hot'); render(); };
+    render();
+  })();
+
+  /* ================= the path through the array ================= */
+  (function(){
+    var g=document.getElementById('figPath'); if(!g) return;
+    txt(g,34,24,'THE LONGEST ROUTE FROM AN INPUT TO AN OUTPUT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+    var X0=140, Y=52, CW=64, CH=44, NC=10, NR=5;
+    for(var i=0;i<NR;i++)for(var j=0;j<NC;j++){
+      var onPath = (j===NC-1-i) || (i===NR-1 && j<=NC-NR);
+      el('rect',{x:X0+j*CW,y:Y+i*CH,width:CW-12,height:CH-12,rx:5,
+        fill:onPath?'#fbf0dc':'#fbfaf7',stroke:onPath?AMB:'#dedbd3','stroke-width':onPath?2.2:1.2},g);
+    }
+    /* draw the diagonal */
+    var pts=[];
+    for(var i2=0;i2<NR;i2++) pts.push([X0+(NC-1-i2)*CW+(CW-12)/2, Y+i2*CH+(CH-12)/2]);
+    el('path',{d:pts.map(function(p,k){return (k?'L':'M')+p[0]+' '+p[1];}).join(' '),
+      fill:'none',stroke:AMB,'stroke-width':4,'stroke-linecap':'round'},g);
+    el('path',{d:'M'+pts[NR-1][0]+' '+pts[NR-1][1]+' L'+(X0+(CW-12)/2)+' '+pts[NR-1][1],
+      fill:'none',stroke:AMB,'stroke-width':4,'stroke-linecap':'round'},g);
+    txt(g,X0+NC*CW+10,Y+14,'a partial product bit',{'font-size':12,fill:AMB,'font-weight':700});
+    txt(g,X0-16,Y+(NR-1)*CH+20,'out',{'font-size':12,fill:AMB,'text-anchor':'end','font-weight':700});
+    el('rect',{x:60,y:262,width:500,height:64,rx:12,fill:'#fbf0dc',stroke:AMB,'stroke-width':2.4},g);
+    txt(g,84,288,'31 ROWS DOWN, AT 2 DELAYS A CELL',{'font-size':10,fill:AMB,'letter-spacing':1.3});
+    txt(g,84,316,'63 gate delays to settle the array',{'font-size':20,fill:AMB,'font-weight':700});
+    el('rect',{x:600,y:262,width:526,height:64,rx:12,fill:'#fdf0ef',stroke:RED,'stroke-width':2.2},g);
+    txt(g,624,288,'AND IT IS NOT FINISHED',{'font-size':10,fill:RED,'letter-spacing':1.3});
+    txt(g,624,316,'the bottom row is still two numbers, not one.',{'font-size':16,fill:RED,'font-weight':700});
+  })();
+
+  /* ================= one real adder at the bottom ================= */
+  (function(){
+    var g=document.getElementById('figFinalAdd'); if(!g) return;
+    txt(g,34,24,'WHAT COMES OUT OF THE BOTTOM OF THE ARRAY',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+    var X0=160, CW=46, N=16;
+    for(var k=0;k<N;k++){
+      el('rect',{x:X0+k*CW,y:58,width:CW-10,height:32,rx:5,fill:'#fbf0dc',stroke:AMB,'stroke-width':1.6},g);
+      el('rect',{x:X0+k*CW,y:100,width:CW-10,height:32,rx:5,fill:'#f3eefa',stroke:VIO,'stroke-width':1.6},g);
+    }
+    txt(g,X0-16,79,'sums',{'font-size':13,fill:AMB,'text-anchor':'end','font-weight':700});
+    txt(g,X0-16,121,'carries',{'font-size':13,fill:VIO,'text-anchor':'end','font-weight':700});
+    txt(g,X0,48,'two numbers, never combined',{'font-size':12,fill:'#8b9096'});
+    pth(g,'M'+(X0+N*CW/2)+' 140 L'+(X0+N*CW/2)+' 168',{stroke:'#c6c3ba','stroke-width':2.4});
+    pth(g,'M'+(X0+N*CW/2-8)+' 160 l8 9 l8 -9',{stroke:'#c6c3ba','stroke-width':2.4});
+    el('rect',{x:X0,y:176,width:N*CW-10,height:46,rx:9,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.6},g);
+    txt(g,X0+(N*CW-10)/2,205,'the lookahead adder from Class 22',{'font-size':15,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    txt(g,X0+N*CW+6,205,'12 delays',{'font-size':14,fill:BLUE,'font-weight':700});
+    txt(g,34,266,'the array is fast because it never resolves a carry. so somebody has to, once, at the very end.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+    txt(g,34,288,'63 through the array, plus 12 here, is 75 gate delays in total.',{'font-size':13.5,fill:'#8b9096'});
+  })();
+
+  /* ================= what design two costs ================= */
+  (function(){
+    var g=document.getElementById('figArrayCost'); if(!g) return;
+    txt(g,34,24,'DESIGN TWO, ADDED UP',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+    var items=[['1024 AND gates for the grid',1024,GRN,'#e9f2ef'],
+               ['992 full adders in the array',5952,AMB,'#fbf0dc'],
+               ['one lookahead adder at the bottom',272,BLUE,'#eaeef7']];
+    var X0=350, MAXW=460, tot=7248;
+    items.forEach(function(it,k){
+      var y=56+k*46, w=Math.max(20,MAXW*(it[1]/tot));
+      el('rect',{x:X0,y:y,width:w,height:32,rx:7,fill:it[3],stroke:it[2],'stroke-width':2},g);
+      txt(g,X0-16,y+22,it[0],{'font-size':13,fill:it[2],'text-anchor':'end','font-weight':700});
+      txt(g,X0+w+12,y+22,it[1],{'font-size':13,fill:it[2],'font-weight':700});
+    });
+    el('rect',{x:X0,y:198,width:MAXW,height:36,rx:8,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+    txt(g,X0-16,221,'in total',{'font-size':13.5,fill:INK,'text-anchor':'end','font-weight':700});
+    txt(g,X0+16,221,'about 7250 gates',{'font-size':17,fill:INK,'font-weight':700});
+    /* the cycle picture */
+    var BY=262, BX=350, CYC=92;
+    for(var k2=0;k2<5;k2++) el('rect',{x:BX+k2*CYC,y:BY,width:CYC-6,height:34,rx:5,fill:'#fbfaf7',stroke:'#dedbd3','stroke-width':1.2},g);
+    el('rect',{x:BX,y:BY,width:4.5*CYC,height:34,rx:7,fill:'#fdf0ef',stroke:RED,'stroke-width':2.4},g);
+    txt(g,BX+14,BY+23,'one multiply \u00b7 1500 ps \u00b7 75 delays',{'font-size':13.5,fill:RED,'font-weight':700});
+    txt(g,X0-16,BY+23,'at 3 GHz',{'font-size':13,fill:'#8b9096','text-anchor':'end','font-weight':700});
+    txt(g,BX+5*CYC+16,BY+23,'four and a half cycles',{'font-size':13,fill:RED,'font-weight':700});
+  })();
+
+  /* ================= time against space ================= */
+  (function(){
+    var g=document.getElementById('figTimeSpace'); if(!g) return;
+    txt(g,34,24,'THE SAME ALGORITHM, BUILT TWICE',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+    var rows=[['gates',700,7250],['cycles for one multiply',32,5],['gate delays per cycle',12,75]];
+    var X0=330, MAXW=300;
+    rows.forEach(function(r,k){
+      var y=60+k*84, mx=Math.max(r[1],r[2]);
+      txt(g,X0-18,y-8,r[0],{'font-size':13.5,fill:INK,'text-anchor':'end','font-weight':700});
+      [[r[1],BLUE,'#eaeef7','design 1'],[r[2],RED,'#fdf0ef','design 2']].forEach(function(v,i){
+        var w=Math.max(16,MAXW*Math.pow(v[0]/mx,0.55)), yy=y+i*30;
+        el('rect',{x:X0,y:yy,width:w,height:24,rx:6,fill:v[2],stroke:v[1],'stroke-width':1.9},g);
+        txt(g,X0+w+10,yy+17,v[0],{'font-size':12.5,fill:v[1],'font-weight':700});
+        if(k===0) txt(g,X0-18,yy+17,v[3],{'font-size':11.5,fill:v[1],'text-anchor':'end'});
+      });
+    });
+    el('rect',{x:760,y:60,width:366,height:120,rx:13,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.4},g);
+    txt(g,784,88,'DESIGN 1 \u00b7 RUN THE LOOP',{'font-size':10,fill:BLUE,'letter-spacing':1.2});
+    txt(g,784,120,'a sensor node, a watch,',{'font-size':14.5,fill:BLUE,'font-weight':700});
+    txt(g,784,142,'anything that multiplies rarely',{'font-size':14.5,fill:BLUE,'font-weight':700});
+    txt(g,784,168,'ten times smaller, and nobody notices the stall',{'font-size':11.5,fill:'#8b9096'});
+    el('rect',{x:760,y:196,width:366,height:120,rx:13,fill:'#fdf0ef',stroke:RED,'stroke-width':2.4},g);
+    txt(g,784,224,'DESIGN 2 \u00b7 UNROLL IT',{'font-size':10,fill:RED,'letter-spacing':1.2});
+    txt(g,784,256,'signal processing, graphics,',{'font-size':14.5,fill:RED,'font-weight':700});
+    txt(g,784,278,'anything multiplying constantly',{'font-size':14.5,fill:RED,'font-weight':700});
+    txt(g,784,304,'thirty two lost cycles would be unthinkable',{'font-size':11.5,fill:'#8b9096'});
+  })();
+
+  onSlide=function(idx){ if(aqCtl) aqCtl.stop(); if(trCtl) trCtl.stop(); };
+  paint();
+})();
+</script>
+</body>
+</html>
