@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 24 · How many additions is a multiply?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --hi:#e8952b; --lo:#b9bfc6; --violet:#6b3fa0;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:46px 68px 78px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .32s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.eyebrow{position:absolute;top:19px;left:68px;font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:19px;right:68px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:68px;right:68px;bottom:21px;display:flex;gap:1.5px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:68px;bottom:42px;font-family:var(--mono);font-size:12px;color:var(--soft);z-index:5}
+#help{position:absolute;left:68px;bottom:42px;font-family:var(--mono);font-size:11px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+h1{font-family:var(--display);font-weight:600;font-size:60px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:29px;line-height:1.12;letter-spacing:-.015em;color:var(--ink);margin-bottom:6px}
+p{font-size:20px;line-height:1.46;max-width:37ch}
+p+p{margin-top:10px}
+.big{font-size:23.5px;line-height:1.34;color:var(--ink);font-weight:300;max-width:31ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center}
+.stack>*+*{margin-top:9px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 12px}
+.row{display:flex;gap:20px;align-items:flex-start;justify-content:center}
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:9px 14px;margin-top:9px}
+.rem .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.rem.win{border-left-color:var(--ok)} .rem.win .h{color:var(--ok)}
+.rem.bad{border-left-color:var(--fail)} .rem.bad .h{color:var(--fail)}
+.rem ul{list-style:none}
+.rem li{font-size:15.5px;line-height:1.36;color:var(--ink);padding:3.5px 0 3.5px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+.btn{font-family:var(--mono);font-size:12.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:6px 12px;cursor:pointer;min-width:34px}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+.btnrow .lab{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--soft);margin-right:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:4px 11px;border-radius:20px;background:var(--accent-soft);color:var(--accent);margin-bottom:8px}
+.tag.win{background:var(--ok-soft);color:var(--ok)}
+.tag.bad{background:var(--fail-soft);color:var(--fail)}
+.tag.new{background:#efe9f7;color:var(--violet)}
+.spec{display:flex;align-items:stretch;background:var(--card);border:1px solid var(--rule2);border-radius:11px;overflow:hidden;margin-top:8px}
+.spec .c{flex:1;padding:12px 15px;border-right:1px solid var(--rule)}
+.spec .c:last-child{border-right:none}
+.spec .c .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--soft)}
+.spec .c .v{font-family:var(--display);font-size:28px;font-weight:600;color:var(--ink);line-height:1.1;margin-top:3px}
+.spec .c .s{font-size:12.5px;color:var(--soft);margin-top:2px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .32s ease}
+.frag.shown{opacity:1}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+.cue{position:absolute;left:68px;right:68px;bottom:64px;display:none;padding:9px 13px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:14.5px;line-height:1.34;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:38px 68px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:10px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:50px}
+#jump li{padding:3.5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:15px;color:var(--body);display:flex;gap:11px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:30px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 24</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 24 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<section class="slide" data-t="Title" data-act="the three questions">
+  <div>
+    <div class="kicker">class 24 · hour twenty four of fifty</div>
+    <h1>How many additions<br>is a multiply?</h1>
+    <p class="big" style="margin-top:22px;max-width:48ch">You were asked to multiply thirteen by eleven in binary and count the additions. Put your number on the board. For thirty two bits the answer is thirty one, and that is where the trouble starts.</p>
+  </div>
+  <div class="cue">Collect the counts. Two or three, depending on whether they started from zero. Both are right.</div>
+</section>
+
+<section class="slide" data-t="Where we are" data-act="the three questions">
+  <div>
+    <h2>Last session everything was nearly free. That run is over.</h2>
+    <div style="text-align:center;margin-top:2px"><svg viewBox="0 0 1140 250" width="1080" height="219"><g id="figArcTop"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the hour in three questions</div>
+      <ul>
+        <li><strong>What is a binary multiply, really?</strong> It turns out to be easier than the decimal one you were taught.</li>
+        <li><strong>How slow is the obvious way?</strong> Judge it the way you have judged everything since Class 21.</li>
+        <li><strong>Can it be rearranged?</strong> The gate count barely moves. The delay moves by a factor of thirteen.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Flag the third question. The whole hour is that the arrangement matters more than the parts.</div>
+</section>
+
+<!-- ================= ACT 1 ================= -->
+
+<section class="slide" data-t="Binary makes it easier" data-act="1 · what a binary multiply is">
+  <div>
+    <h2>Long multiplication, except binary throws away the hard part.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figPaper"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">why this is good news</div>
+      <ul>
+        <li>In decimal every row needs a times table. In binary the multiplier digit is 0 or 1, so every row is either nothing at all or a copy of the multiplicand, shifted.</li>
+        <li>No multiplication is done anywhere. Multiplying by one bit is an AND gate.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Let the relief land. There is no binary times table to learn, because there is nothing in it.</div>
+</section>
+
+<section class="slide" data-t="Your homework, worked" data-act="1 · what a binary multiply is">
+  <div>
+    <div class="kicker">step through and check it against what you wrote</div>
+    <h2 style="font-size:27px;margin-bottom:0">Thirteen times eleven, the way you did it on paper.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 340" width="1090" height="322"><g id="figWorked"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn hot" id="wRun">run &#9654;</button>
+      <button class="btn" id="wStep">step</button>
+      <button class="btn" id="wReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">Four rows, three of them nonzero, so two additions. Anyone who said three counted the zero start. Fine.</div>
+</section>
+
+<section class="slide" data-t="So what is the circuit" data-act="1 · what a binary multiply is">
+  <div>
+    <h2>Which means a multiplier is two things you already have.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figStructure"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>A grid of AND gates to build the rows. One gate per pair of bits, and they all fire at once, at t = 1.</li>
+        <li>Then a pile of additions. Everything difficult about multiplication is in that pile.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The AND grid is free and parallel. Say so clearly, so the rest of the hour is about the additions only.</div>
+</section>
+
+<!-- ================= ACT 2 ================= -->
+
+<section class="slide" data-t="Count the additions" data-act="2 · how slow is the obvious way">
+  <div>
+    <div class="kicker">guess the delay before you press reveal</div>
+    <h2 style="font-size:27px;margin-bottom:0">Thirty two rows. Add them up one after another.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figChainCost"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn hot" id="cReveal">reveal &#9654;</button>
+      <button class="btn" id="cHide">hide</button>
+    </div>
+  </div>
+  <div class="cue">They will guess something like 24 or 50. It is 372. That number should shock them.</div>
+</section>
+
+<section class="slide" data-t="How bad that is" data-act="2 · how slow is the obvious way">
+  <div>
+    <h2>Put it on the same budget bar you have used since Class 21.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 320" width="1080" height="303"><g id="figBudget"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>7440 picoseconds. A 3 GHz cycle is 333. The multiply needs twenty two of them.</li>
+        <li>Its own ceiling is 134 MHz, which is worse than the ripple adder you rejected in Class 21.</li>
+        <li>And the gates are not the problem. It is the shape they are wired in.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Twenty two cycles. Say it slowly. This is the worst number in the course so far.</div>
+</section>
+
+<section class="slide" data-t="Or do one at a time" data-act="2 · how slow is the obvious way">
+  <div>
+    <div class="kicker">the cheap way out, and it is a real design</div>
+    <h2 style="font-size:27px;margin-bottom:0">You do not need thirty one adders. You could use one, thirty two times.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1090" height="303"><g id="figSequential"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">an honest trade</div>
+      <ul>
+        <li>One adder, one shift register, about five hundred gates instead of seven thousand. Fourteen times smaller.</li>
+        <li>But now a multiply takes thirty two clock cycles instead of one instruction. Every multiply stalls the machine.</li>
+        <li>This is what small processors actually do, and it is the right answer when area is the constraint.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Do not dismiss it. Most microcontrollers ever shipped multiply exactly like this.</div>
+</section>
+
+<!-- ================= ACT 3 ================= -->
+
+<section class="slide" data-t="You have seen this shape" data-act="3 · rearrange them">
+  <div>
+    <div class="tag">CLASS 18, RETURNING</div>
+    <h2 style="font-size:27px;margin-bottom:0">Thirty one additions in a line. You have met a line before.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 310" width="1080" height="294"><g id="figAssoc"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">and this time the escape is open</div>
+      <ul>
+        <li>In Class 21 you wanted to flatten the carry chain into a tree and could not, because carry five did not exist until carry four had happened.</li>
+        <li>Here all thirty two rows exist at t = 1. They came out of AND gates that never waited for anything.</li>
+        <li>So any two of them may be added first. The tree is allowed.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is the payoff for the escape that was closed in Class 21. Make the contrast explicit.</div>
+</section>
+
+<section class="slide" data-t="The same adders, in a tree" data-act="3 · rearrange them">
+  <div>
+    <div class="kicker">watch the depth collapse, not the gate count</div>
+    <h2 style="font-size:27px;margin-bottom:0">Same thirty one adders. Wired as a tree instead of a line.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 430" width="1090" height="392"><g id="figTree"></g></svg></div>
+    <div class="btnrow">
+      <span class="lab">wiring</span>
+      <button class="btn hot" id="tChain">a line</button>
+      <button class="btn" id="tTree">a tree</button>
+    </div>
+  </div>
+  <div class="cue">Flip between the two. Identical gate count, 372 delays against 60. The wiring did all of it.</div>
+</section>
+
+<section class="slide" data-t="Where the time is going" data-act="3 · rearrange them">
+  <div>
+    <h2>Sixty is much better. It is still five multiplies worth of an add. Why?</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 310" width="1090" height="294"><g id="figWhere"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">look at what each adder in the tree is doing</div>
+      <ul>
+        <li>Almost all of an adder's twelve delays is the lookahead network, settling carries across sixty four columns.</li>
+        <li>And the moment it finishes, the result goes straight into another adder, which does it all over again.</li>
+        <li>You are carefully resolving carries five times over, when only the last answer ever leaves the multiplier.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This question is the hinge. Let them see the waste before you name the fix.</div>
+</section>
+
+<!-- ================= ACT 4 ================= -->
+
+<section class="slide" data-t="Stop propagating" data-act="4 · stop resolving carries">
+  <div>
+    <div class="tag win">THE IDEA OF THE HOUR</div>
+    <h2 style="font-size:27px;margin-bottom:0">So do not resolve them. Keep the carries and hand them on.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1090" height="303"><g id="figCarrySave"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">a full adder, read differently</div>
+      <ul>
+        <li>One full adder takes three bits and produces two: a sum bit and a carry bit. You have had this since Class 19.</li>
+        <li>Put sixty four of them side by side with nothing wired between them and you turn three numbers into two, in <strong>two gate delays</strong>, whatever the width.</li>
+        <li>No chain, no lookahead, no waiting. The carries are not lost, they are just not added in yet.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The full adder has not changed since Class 19. Only what you do with its two outputs has.</div>
+</section>
+
+<section class="slide" data-t="Thirty two down to two" data-act="4 · stop resolving carries">
+  <div>
+    <div class="kicker">press step and watch the pile shrink</div>
+    <h2 style="font-size:27px;margin-bottom:0">Every level turns three numbers into two, and costs two delays.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figReduce"></g></svg></div>
+    <div class="btnrow">
+      <button class="btn hot" id="rRun">run &#9654;</button>
+      <button class="btn" id="rStep">step</button>
+      <button class="btn" id="rReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">Eight levels to get from thirty two numbers to two. Then one real addition, and only then.</div>
+</section>
+
+<section class="slide" data-t="One real addition, at the end" data-act="4 · stop resolving carries">
+  <div>
+    <h2>You still have to resolve the carries once. Once is the point.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figFinal"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">the bill for the whole multiply</div>
+      <ul>
+        <li>Sixteen delays to squash thirty two numbers into two, then twelve for the lookahead adder from Class 22. Twenty eight in total.</li>
+        <li>560 picoseconds, so it fits inside two cycles at 3 GHz, against the twenty two it needed at the start of the hour.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The adder from Class 22 appears one final time, doing the one job nothing else can do.</div>
+</section>
+
+<!-- ================= CLOSE ================= -->
+
+<section class="slide" data-t="Same gates, three answers" data-act="closing">
+  <div>
+    <h2>Here is the whole hour in one picture, and notice what did not change.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figBill"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the export from this hour</div>
+      <ul>
+        <li><strong>The parts were identical in all three. Only the wiring changed, and it changed the answer by more than thirteen times.</strong></li>
+        <li>In Class 17 you deleted gates to go faster. Here the gate count never moved at all.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is the lesson. Architecture is arrangement, not components. It returns for pipelines and caches.</div>
+</section>
+
+<section class="slide" data-t="Which one would you build" data-act="closing">
+  <div>
+    <h2>So which multiplier is right? The same question as always.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1140 300" width="1080" height="284"><g id="figChoice"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the actual skill, again</div>
+      <ul>
+        <li>A sensor node that multiplies twice a second should use one adder and thirty two cycles. Seven thousand gates would be a waste of silicon and battery.</li>
+        <li>A processor running a matrix multiply does it billions of times a second, and cannot afford to stall for thirty two cycles.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Same shape as Class 22's close. They should be able to predict this slide by now, and that is good.</div>
+</section>
+
+<section class="slide" data-t="Where we are now" data-act="closing">
+  <div>
+    <h2>Six down, two to go.</h2>
+    <div style="text-align:center;margin:4px 0"><svg viewBox="0 0 1140 250" width="1080" height="219"><g id="figArcEnd"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">what you are carrying into next session</div>
+      <ul>
+        <li>Multiplication is shifts and additions, and the additions are the whole cost.</li>
+        <li>When work can be done in any order, a tree beats a line. When it cannot, no wiring saves you, as Class 21 showed.</li>
+        <li>And carries can be deferred. You only have to settle them when somebody finally needs the answer.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The deferral idea is the one that generalises. It is the same instinct as lazy evaluation and write-back caches.</div>
+</section>
+
+<section class="slide" data-t="Close" data-act="closing">
+  <div class="center">
+    <h2 style="font-size:35px;margin-bottom:16px">Thirty one additions,<br>arranged three different ways.</h2>
+    <p class="big" style="max-width:56ch;color:var(--soft)">372 gate delays, or 60, or 28. The gates never changed. Multiplication was never about multiplying, it was about how you stack up the adding.</p>
+    <p class="big frag" style="margin-top:18px;max-width:54ch">Next session: division. Multiplication let you do everything at once because all the rows existed at the start. Division will not give you that.</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: divide 143 by 11 in binary by long division. At each step, note what you had to know before you could take the next one.</div>
+</section>
+
+</template>
+<script>
+(function(){
+  'use strict';
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  var onSlide=null;
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    if(onSlide) onSlide(i);
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallow=false;
+  document.addEventListener('click',function(e){
+    swallow = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||
+                 e.target.closest('svg')||e.target.closest('.spec'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallow){ swallow=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= helpers ================= */
+  var NS='http://www.w3.org/2000/svg';
+  var GREY='#c6c3ba', HI='#e8952b', INK='#15171b', DEAD='#dedbd3',
+      BLUE='#23408f', RED='#a8231f', GRN='#146b5c', VIO='#6b3fa0', AMB='#b06a12';
+  var D=20, RIPPLE=1300, LOOK=240;
+  function el(tag,a,p){ var e=document.createElementNS(NS,tag);
+    for(var k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e; }
+  function txt(p,x,y,s,o){ var t=el('text',Object.assign({x:x,y:y,'font-size':13,fill:'#8b9096'},o||{}),p);
+    t.textContent=s; return t; }
+  function rct(p,x,y,w,h,o){ return el('rect',Object.assign({x:x,y:y,width:w,height:h,rx:7,
+    fill:'#fff',stroke:GREY,'stroke-width':2},o||{}),p); }
+  function wire(p,x1,y1,x2,y2,v){ return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,
+    stroke:v?HI:DEAD,'stroke-width':v?3.6:2.4,'stroke-linecap':'round'},p); }
+  function pth(p,d,o){ return el('path',Object.assign({d:d,fill:'none',stroke:GREY,'stroke-width':2.4},o||{}),p); }
+  function jn(p,x,y){ return el('circle',{cx:x,cy:y,r:4,fill:INK},p); }
+  function gAnd(p,x,y,h,v){ return el('path',{d:'M'+x+' '+(y-h)+' L'+(x+16)+' '+(y-h)+' A '+h+' '+h+
+    ' 0 0 1 '+(x+16)+' '+(y+h)+' L'+x+' '+(y+h)+' z',fill:v?'#fbf0dc':'#fff',stroke:v?AMB:INK,'stroke-width':2.2},p); }
+  function andTip(x,h){ return x+16+h; }
+  function gOr(p,x,y,h,v){
+    var nose=h*1.4;
+    el('path',{d:'M'+(x-4)+' '+(y-h)+' Q'+(x+h*0.8)+' '+y+' '+(x-4)+' '+(y+h)+
+      ' Q'+(x+nose*0.55)+' '+(y+h*0.85)+' '+(x+nose)+' '+y+' Q'+(x+nose*0.55)+' '+(y-h*0.85)+' '+(x-4)+' '+(y-h)+' z',
+      fill:v?'#fbf0dc':'#fff',stroke:v?AMB:INK,'stroke-width':2.2},p);
+  }
+  function orTip(x,h){ return x+h*1.4; }
+  function ticker(runId,stepId,resetId,max,render){
+    var t=0,timer=null;
+    function set(v){ t=Math.max(0,Math.min(max,v)); render(t); }
+    function stop(){ if(timer){clearInterval(timer);timer=null;}
+      var b=document.getElementById(runId); if(b){b.classList.remove('hot');b.textContent='run \u25B6';} }
+    document.getElementById(runId).onclick=function(){
+      if(timer){ stop(); return; }
+      if(t>=max) set(0);
+      this.classList.add('hot'); this.textContent='\u25A0 stop';
+      timer=setInterval(function(){ if(t>=max){ stop(); return; } set(t+1); },380);
+    };
+    document.getElementById(stepId).onclick=function(){ stop(); set(t>=max?0:t+1); };
+    document.getElementById(resetId).onclick=function(){ stop(); set(0); };
+    set(0);
+    return {stop:stop};
+  }
+  function arcStrip(gid,litIndex,caption){
+    var g=document.getElementById(gid); if(!g) return;
+    var items=[[19,'one column'],[20,'thirty two'],[21,'how slow is slow'],[22,'predict the carry'],
+               [23,'subtraction'],[24,'multiply'],[25,'divide'],[26,'the bill']];
+    var W=128, X0=34;
+    items.forEach(function(it,k){
+      var x=X0+k*(W+8), done=k<litIndex, lit=(k===litIndex);
+      el('rect',{x:x,y:52,width:W,height:104,rx:12,
+        fill:lit?'#eaeef7':(done?'#f2f0ea':'#fbfaf7'),
+        stroke:lit?BLUE:(done?'#c6c3ba':'#e2e0d9'),'stroke-width':lit?2.6:1.5},g);
+      txt(g,x+W/2,80,'CLASS '+it[0],{'font-size':9.5,fill:lit?BLUE:'#c6c3ba','text-anchor':'middle','letter-spacing':1.3});
+      txt(g,x+W/2,112,it[1],{'font-size':12.5,fill:lit?INK:(done?'#8b9096':'#a9a69d'),'text-anchor':'middle','font-weight':700});
+      if(done) txt(g,x+W/2,136,'done',{'font-size':11,fill:GRN,'text-anchor':'middle'});
+      if(lit) txt(g,x+W/2,136,'today',{'font-size':11,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      if(k<items.length-1) pth(g,'M'+(x+W)+' 104 L'+(x+W+8)+' 104',{stroke:'#dedbd3','stroke-width':2});
+    });
+    txt(g,34,198,caption,{'font-size':15.5,fill:INK,'font-weight':700});
+  }
+  arcStrip('figArcTop',5,'add and subtract cost you one circuit and thirteen gate delays. today the generosity runs out.');
+  arcStrip('figArcEnd',5,'the same seven thousand gates can take 372 delays or 28. next: division, where even the arrangement will not save you.');
+
+  
+  
+
+
+
+  /* ================= binary makes it easier ================= */
+  (function(){
+    var g=document.getElementById('figPaper'); if(!g) return;
+    txt(g,34,24,'THE SAME SUM, IN BOTH BASES',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+    function block(x0,title,col,soft,lines,foot,footcol){
+      el('rect',{x:x0,y:48,width:520,height:204,rx:14,fill:soft,stroke:col,'stroke-width':2.2},g);
+      txt(g,x0+26,76,title,{'font-size':11.5,fill:col,'letter-spacing':1.2,'font-weight':700});
+      lines.forEach(function(L,k){
+        var y=106+k*30;
+        txt(g,x0+300,y,L[0],{'font-size':16,fill:L[2]||INK,'text-anchor':'end','font-weight':700});
+        if(L[1]) txt(g,x0+320,y,L[1],{'font-size':12.5,fill:L[2]||'#8b9096'});
+      });
+      txt(g,x0+26,236,foot,{'font-size':13,fill:footcol,'font-weight':700});
+    }
+    block(34,'DECIMAL',RED,'#fdf0ef',
+      [['13',''],['x 11',''],['13','3 x 1, carry the...',RED],['130','1 x 1, shifted',RED]],
+      'every row needs the times table');
+    block(606,'BINARY',GRN,'#e9f2ef',
+      [['1101',''],['x 1011',''],['1101','the 1 bit: copy it',GRN],['0000','the 0 bit: nothing',GRN]],
+      'every row is a copy, or nothing at all');
+    txt(g,580,150,'vs',{'font-size':22,fill:'#c6c3ba','text-anchor':'middle','font-weight':700});
+    txt(g,34,288,'multiplying by a single bit is not multiplication. it is an AND gate.',
+      {'font-size':16,fill:INK,'font-weight':700});
+    txt(g,34,312,'which is why there is no binary times table: there would be nothing in it.',
+      {'font-size':13,fill:'#8b9096'});
+  })();
+
+  /* ================= your homework, worked ================= */
+  var workCtl=null;
+  (function(){
+    var g=document.getElementById('figWorked'); if(!g) return;
+    var rows=[
+      {bits:'0001101',note:'bit 0 of 1011 is 1, so copy 1101',on:true},
+      {bits:'0011010',note:'bit 1 is 1, so copy it shifted once',on:true},
+      {bits:'0000000',note:'bit 2 is 0, so nothing at all',on:false},
+      {bits:'1101000',note:'bit 3 is 1, so copy it shifted three times',on:true}
+    ];
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,34,24,'13 x 11, ONE ROW PER BIT OF THE MULTIPLIER',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+      var X0=360, CW=46;
+      function bitrow(y,s,col,soft,note,dim){
+        for(var k=0;k<s.length;k++){
+          var on=(s[k]==='1');
+          el('rect',{x:X0+k*CW,y:y,width:CW-8,height:34,rx:6,
+            fill:dim?'#fbfaf7':(on?soft:'#f6f4ef'),stroke:dim?'#e2e0d9':(on?col:'#e2e0d9'),'stroke-width':on&&!dim?1.8:1.2},g);
+          txt(g,X0+k*CW+(CW-8)/2,y+23,s[k],{'font-size':14,
+            fill:dim?'#dedbd3':(on?col:'#c6c3ba'),'text-anchor':'middle','font-weight':700});
+        }
+        if(note) txt(g,X0+s.length*CW+14,y+23,note,{'font-size':12.5,fill:dim?'#c6c3ba':col});
+      }
+      txt(g,X0-16,73,'13',{'font-size':15,fill:INK,'text-anchor':'end','font-weight':700});
+      bitrow(50,'0001101',INK,'#f2f0ea','',false);
+      txt(g,X0-16,117,'x 11',{'font-size':15,fill:INK,'text-anchor':'end','font-weight':700});
+      bitrow(94,'0001011',INK,'#f2f0ea','',false);
+      el('line',{x1:X0-8,y1:142,x2:X0+7*CW-8,y2:142,stroke:'#c6c3ba','stroke-width':2},g);
+      rows.forEach(function(r,k){
+        var shown=(t>=k+1);
+        bitrow(154+k*42,r.bits,r.on?AMB:'#8b9096',r.on?'#fbf0dc':'#f6f4ef',shown?r.note:'',!shown);
+      });
+      if(t>=5){
+        el('line',{x1:X0-8,y1:330,x2:X0+7*CW-8,y2:330,stroke:'#c6c3ba','stroke-width':2},g);
+      }
+      /* the running answer */
+      el('rect',{x:34,y:180,width:300,height:120,rx:12,
+        fill:t>=5?'#e9f2ef':'#fbfaf7',stroke:t>=5?GRN:'#c6c3ba','stroke-width':t>=5?2.6:1.8},g);
+      txt(g,58,210,'ADDITIONS SO FAR',{'font-size':10,fill:t>=5?GRN:'#8b9096','letter-spacing':1.3});
+      var adds=Math.max(0,Math.min(t,4)-1);
+      txt(g,58,248,adds,{'font-size':34,fill:t>=5?GRN:INK,'font-weight':700});
+      txt(g,110,248,t>=5?'and the answer is 143':'rows added together so far',
+        {'font-size':13.5,fill:t>=5?GRN:'#8b9096','font-weight':t>=5?700:400});
+      txt(g,58,282,t>=5?'10001111':'three nonzero rows, so two additions',
+        {'font-size':t>=5?18:12.5,fill:t>=5?GRN:'#8b9096','font-weight':700});
+    }
+    workCtl=ticker('wRun','wStep','wReset',5,render);
+  })();
+
+  /* ================= so what is the circuit ================= */
+  (function(){
+    var g=document.getElementById('figStructure'); if(!g) return;
+    txt(g,34,24,'A MULTIPLIER, IN TWO PARTS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+    el('rect',{x:50,y:56,width:440,height:180,rx:14,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,74,86,'PART ONE \u00b7 BUILD THE ROWS',{'font-size':11,fill:GRN,'letter-spacing':1.2,'font-weight':700});
+    for(var r=0;r<4;r++)for(var c=0;c<9;c++){
+      el('rect',{x:78+c*40,y:104+r*24,width:30,height:16,rx:3,fill:'#fff',stroke:GRN,'stroke-width':1},g);
+    }
+    txt(g,74,222,'one AND gate per pair of bits. all 1024 fire at once, at t = 1.',{'font-size':12.5,fill:GRN});
+    pth(g,'M500 146 L560 146',{stroke:'#c6c3ba','stroke-width':2.6});
+    pth(g,'M552 139 l8 7 l-8 7',{stroke:'#c6c3ba','stroke-width':2.6});
+    el('rect',{x:580,y:56,width:520,height:180,rx:14,fill:'#fdf0ef',stroke:RED,'stroke-width':2.4},g);
+    txt(g,604,86,'PART TWO \u00b7 ADD THEM ALL UP',{'font-size':11,fill:RED,'letter-spacing':1.2,'font-weight':700});
+    for(var k=0;k<5;k++){
+      el('rect',{x:620,y:104+k*20,width:330,height:14,rx:3,fill:'#fff',stroke:RED,'stroke-width':1.2},g);
+    }
+    txt(g,970,146,'32 rows',{'font-size':15,fill:RED,'font-weight':700});
+    txt(g,604,222,'everything difficult about multiplying lives in here.',{'font-size':12.5,fill:RED,'font-weight':700});
+    txt(g,34,278,'part one is free and parallel. so for the rest of the hour, only part two matters.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= count the additions ================= */
+  (function(){
+    var g=document.getElementById('figChainCost'); if(!g) return;
+    var shown=false;
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,34,24,'THIRTY TWO ROWS, ADDED ONE AFTER ANOTHER',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+      var X0=60, Y=70, BW=92, N=6;
+      for(var k=0;k<N;k++){
+        var x=X0+k*(BW+58), last=(k===N-1);
+        el('rect',{x:x,y:Y,width:BW,height:44,rx:8,fill:'#fdf0ef',stroke:RED,'stroke-width':1.9},g);
+        txt(g,x+BW/2,Y+28,last?'add 31':('add '+(k+1)),{'font-size':12,fill:RED,'text-anchor':'middle','font-weight':700});
+        if(k<N-1){
+          el('path',{d:'M'+(x+BW)+' '+(Y+22)+' L'+(x+BW+46)+' '+(Y+22),fill:'none',stroke:RED,'stroke-width':2.4},g);
+          if(k===N-3) txt(g,x+BW+23,Y+14,'\u00b7\u00b7\u00b7',{'font-size':14,fill:'#c6c3ba','text-anchor':'middle'});
+        }
+        if(shown) txt(g,x+BW/2,Y+68,(12*(k+1))+(last?'':''),{'font-size':11.5,fill:RED,'text-anchor':'middle','font-weight':700});
+      }
+      if(shown){
+        txt(g,X0,Y+94,'gate delays so far, and each one waits for the one before it',{'font-size':12.5,fill:'#8b9096'});
+        el('rect',{x:60,y:206,width:520,height:96,rx:13,fill:'#fdf0ef',stroke:RED,'stroke-width':2.6},g);
+        txt(g,84,236,'31 ADDITIONS, EACH 12 GATE DELAYS',{'font-size':10.5,fill:RED,'letter-spacing':1.2});
+        txt(g,84,276,'372 gate delays',{'font-size':30,fill:RED,'font-weight':700});
+        el('rect',{x:620,y:206,width:480,height:96,rx:13,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+        txt(g,644,236,'FOR COMPARISON',{'font-size':10.5,fill:'#8b9096','letter-spacing':1.2});
+        txt(g,644,268,'one add is 12. one subtract is 13.',{'font-size':15,fill:INK,'font-weight':700});
+        txt(g,644,292,'a multiply is thirty one times an add.',{'font-size':13,fill:RED,'font-weight':700});
+      } else {
+        el('rect',{x:60,y:206,width:1040,height:96,rx:13,fill:'#fbfaf7',stroke:'#dedbd3',
+          'stroke-width':2,'stroke-dasharray':'8 6'},g);
+        txt(g,580,246,'each addition is 12 gate delays, and there are 31 of them.',
+          {'font-size':16,fill:'#a9a69d','text-anchor':'middle'});
+        txt(g,580,276,'how many delays is the whole multiply?',{'font-size':16,fill:'#a9a69d','text-anchor':'middle'});
+      }
+    }
+    document.getElementById('cReveal').onclick=function(){ shown=true; render(); };
+    document.getElementById('cHide').onclick=function(){ shown=false; render(); };
+    render();
+  })();
+
+  /* ================= how bad that is ================= */
+  (function(){
+    var g=document.getElementById('figBudget'); if(!g) return;
+    txt(g,34,24,'ONE CYCLE AT 3 GHz IS 333 PICOSECONDS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=200, CYC=40, N=22, Y=60;
+    for(var k=0;k<N;k++){
+      el('rect',{x:X0+k*CYC,y:Y,width:CYC-4,height:40,rx:4,fill:'#fbfaf7',stroke:'#dedbd3','stroke-width':1.2},g);
+    }
+    txt(g,X0-16,Y+26,'cycles',{'font-size':12.5,fill:'#8b9096','text-anchor':'end'});
+    el('rect',{x:X0,y:Y+56,width:N*CYC-4,height:42,rx:8,fill:'#fdf0ef',stroke:RED,'stroke-width':2.6},g);
+    txt(g,X0+16,Y+83,'one multiply \u00b7 7440 ps',{'font-size':15,fill:RED,'font-weight':700});
+    txt(g,X0+(N*CYC)/2,Y+128,'twenty two whole clock cycles',{'font-size':16,fill:RED,'text-anchor':'middle','font-weight':700});
+    /* the ceilings */
+    var rows=[['this multiplier','134 MHz',RED,'#fdf0ef'],
+              ['the ripple adder you rejected','0.77 GHz',AMB,'#fbf0dc'],
+              ['the lookahead adder','4.17 GHz',GRN,'#e9f2ef']];
+    rows.forEach(function(r,k){
+      var y=222+k*32;
+      el('rect',{x:200,y:y,width:210,height:26,rx:6,fill:r[3],stroke:r[2],'stroke-width':1.8},g);
+      txt(g,305,y+18,r[1],{'font-size':13,fill:r[2],'text-anchor':'middle','font-weight':700});
+      txt(g,428,y+18,r[0],{'font-size':13,fill:r[2]});
+    });
+    txt(g,34,222,'the ceiling',{'font-size':12.5,fill:'#8b9096','font-weight':700});
+    txt(g,34,244,'it sets',{'font-size':12.5,fill:'#8b9096','font-weight':700});
+  })();
+
+  /* ================= or do one at a time ================= */
+  (function(){
+    var g=document.getElementById('figSequential'); if(!g) return;
+    txt(g,34,24,'ONE ADDER, USED THIRTY TWO TIMES',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    el('rect',{x:420,y:70,width:190,height:76,rx:12,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.6},g);
+    txt(g,515,104,'one adder',{'font-size':16,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    txt(g,515,128,'from class 22',{'font-size':12,fill:BLUE,'text-anchor':'middle'});
+    el('rect',{x:420,y:186,width:190,height:60,rx:11,fill:'#f3eefa',stroke:VIO,'stroke-width':2.2},g);
+    txt(g,515,214,'the running total',{'font-size':13,fill:VIO,'text-anchor':'middle','font-weight':700});
+    txt(g,515,234,'held in a register',{'font-size':11.5,fill:VIO,'text-anchor':'middle'});
+    el('path',{d:'M515 146 L515 182',fill:'none',stroke:VIO,'stroke-width':2.6},g);
+    el('path',{d:'M508 174 l7 8 l7 -8',fill:'none',stroke:VIO,'stroke-width':2.6},g);
+    el('path',{d:'M610 216 L700 216 L700 108 L614 108',fill:'none',stroke:VIO,'stroke-width':2.6},g);
+    el('path',{d:'M622 101 l-8 7 l8 7',fill:'none',stroke:VIO,'stroke-width':2.6},g);
+    txt(g,712,166,'and round again,',{'font-size':13,fill:VIO,'font-weight':700});
+    txt(g,712,186,'thirty two times',{'font-size':13,fill:VIO,'font-weight':700});
+    el('rect',{x:180,y:86,width:190,height:44,rx:9,fill:'#fbf0dc',stroke:AMB,'stroke-width':2},g);
+    txt(g,275,114,'one row at a time',{'font-size':13,fill:AMB,'text-anchor':'middle','font-weight':700});
+    pth(g,'M370 108 L416 108',{stroke:'#c6c3ba','stroke-width':2.2});
+    /* the trade */
+    el('rect',{x:60,y:250,width:500,height:56,rx:11,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.2},g);
+    txt(g,84,274,'ABOUT 500 GATES',{'font-size':10,fill:GRN,'letter-spacing':1.3});
+    txt(g,84,296,'fourteen times smaller than the array',{'font-size':14,fill:GRN,'font-weight':700});
+    el('rect',{x:600,y:250,width:500,height:56,rx:11,fill:'#fdf0ef',stroke:RED,'stroke-width':2.2},g);
+    txt(g,624,274,'THIRTY TWO CLOCK CYCLES',{'font-size':10,fill:RED,'letter-spacing':1.3});
+    txt(g,624,296,'every multiply stalls the machine',{'font-size':14,fill:RED,'font-weight':700});
+  })();
+
+  /* ================= you have seen this shape ================= */
+  (function(){
+    var g=document.getElementById('figAssoc'); if(!g) return;
+    txt(g,34,24,'THE SAME ESCAPE, OFFERED TWICE',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    /* class 21: closed */
+    el('rect',{x:34,y:52,width:520,height:180,rx:14,fill:'#fdf0ef',stroke:RED,'stroke-width':2.2},g);
+    txt(g,58,80,'CLASS 21 \u00b7 THE CARRY CHAIN',{'font-size':11,fill:RED,'letter-spacing':1.2,'font-weight':700});
+    for(var k=0;k<5;k++){
+      var cx=90+k*88;
+      el('circle',{cx:cx,cy:132,r:15,fill:'#fff',stroke:RED,'stroke-width':2},g);
+      txt(g,cx,137,'c'+k,{'font-size':11,fill:RED,'text-anchor':'middle','font-weight':700});
+      if(k<4){ pth(g,'M'+(cx+15)+' 132 L'+(cx+65)+' 132',{stroke:'#e0b6b4','stroke-width':2.2});
+               pth(g,'M'+(cx+57)+' 126 l8 6 l-8 6',{stroke:'#e0b6b4','stroke-width':2.2}); }
+    }
+    txt(g,58,180,'c4 did not exist until c3 had happened,',{'font-size':13,fill:RED,'font-weight':700});
+    txt(g,58,202,'so no rearrangement was allowed. the tree was refused.',{'font-size':13,fill:RED});
+    /* today: open */
+    el('rect',{x:606,y:52,width:520,height:180,rx:14,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.2},g);
+    txt(g,630,80,'TODAY \u00b7 THE THIRTY TWO ROWS',{'font-size':11,fill:GRN,'letter-spacing':1.2,'font-weight':700});
+    for(var m=0;m<5;m++){
+      var x2=662+m*88;
+      el('circle',{cx:x2,cy:132,r:15,fill:'#fff',stroke:GRN,'stroke-width':2},g);
+      txt(g,x2,137,'r'+m,{'font-size':11,fill:GRN,'text-anchor':'middle','font-weight':700});
+      pth(g,'M'+x2+' 100 L'+x2+' 114',{stroke:'#a8cfc4','stroke-width':2});
+    }
+    txt(g,630,96,'all present at t = 1',{'font-size':11.5,fill:GRN});
+    txt(g,630,180,'no row waits for any other row,',{'font-size':13,fill:GRN,'font-weight':700});
+    txt(g,630,202,'so any two of them may be added first. the tree is allowed.',{'font-size':13,fill:GRN});
+    txt(g,34,278,'the escape Class 21 had to refuse is open here, for exactly the reason it was refused there.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= the same adders, in a tree ================= */
+  (function(){
+    var g=document.getElementById('figTree'); if(!g) return;
+    var mode='chain';
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var isTree=(mode==='tree');
+      txt(g,34,24,isTree?'THIRTY ONE ADDERS, WIRED AS A TREE':'THIRTY ONE ADDERS, WIRED AS A LINE',
+        {'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+      var col=isTree?GRN:RED, soft=isTree?'#e9f2ef':'#fdf0ef';
+      if(!isTree){
+        var X0=60, BW=68, Y=96;
+        for(var k=0;k<11;k++){
+          var x=X0+k*(BW+26);
+          el('rect',{x:x,y:Y,width:BW,height:36,rx:7,fill:soft,stroke:col,'stroke-width':1.8},g);
+          if(k<10) pth(g,'M'+(x+BW)+' '+(Y+18)+' L'+(x+BW+26)+' '+(Y+18),{stroke:col,'stroke-width':2.2});
+        }
+        txt(g,60,Y+64,'\u00b7\u00b7\u00b7 thirty one of them, each waiting for the one before it',{'font-size':13,fill:col,'font-weight':700});
+      } else {
+        var TX=60, TW=1040, rows=[[16,96],[8,150],[4,204],[2,258],[1,300]];
+        rows.forEach(function(r,lvl){
+          var n=r[0], y=r[1], cw=TW/n;
+          for(var i=0;i<n;i++){
+            var w=Math.min(cw-10,88);
+            var cx=TX+i*cw+cw/2;
+            el('rect',{x:cx-w/2,y:y,width:w,height:30,rx:6,fill:soft,stroke:col,'stroke-width':1.6},g);
+            if(lvl>0){
+              var pn=rows[lvl-1][0], pcw=TW/pn;
+              for(var c=0;c<2;c++){
+                var ci=i*2+c; if(ci>=pn) continue;
+                pth(g,'M'+(TX+ci*pcw+pcw/2)+' '+(rows[lvl-1][1])+' L'+cx+' '+(y+30),{stroke:'#dedbd3','stroke-width':1});
+              }
+            }
+          }
+          txt(g,34,y+20,(lvl+1),{'font-size':12,fill:col,'text-anchor':'end','font-weight':700});
+        });
+        txt(g,34,74,'level',{'font-size':11,fill:'#8b9096','text-anchor':'end'});
+      }
+      /* the readout */
+      el('rect',{x:isTree?60:60,y:isTree?0:190,width:520,height:0,rx:0,fill:'none'},g);
+      var RY=isTree?0:196;
+      if(!isTree){
+        el('rect',{x:60,y:352,width:500,height:66,rx:13,fill:'#fdf0ef',stroke:RED,'stroke-width':2.6},g);
+        txt(g,84,378,'31 LEVELS DEEP  \u00b7  372 GATE DELAYS',{'font-size':10.5,fill:RED,'letter-spacing':1.2});
+        txt(g,84,406,'7440 ps, a ceiling of 134 MHz',{'font-size':17,fill:RED,'font-weight':700});
+        el('rect',{x:600,y:352,width:500,height:66,rx:13,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+        txt(g,624,378,'GATES USED',{'font-size':10.5,fill:'#8b9096','letter-spacing':1.2});
+        txt(g,624,406,'about 7200',{'font-size':17,fill:INK,'font-weight':700});
+      } else {
+        el('rect',{x:60,y:352,width:500,height:66,rx:13,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.6},g);
+        txt(g,84,378,'5 LEVELS DEEP  \u00b7  60 GATE DELAYS',{'font-size':10.5,fill:GRN,'letter-spacing':1.2});
+        txt(g,84,406,'1200 ps, a ceiling of 833 MHz',{'font-size':17,fill:GRN,'font-weight':700});
+        el('rect',{x:600,y:352,width:500,height:66,rx:13,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+        txt(g,624,378,'GATES USED',{'font-size':10.5,fill:'#8b9096','letter-spacing':1.2});
+        txt(g,624,406,'about 7200. exactly the same.',{'font-size':17,fill:INK,'font-weight':700});
+      }
+    }
+    document.getElementById('tChain').onclick=function(){
+      mode='chain'; this.classList.add('hot'); document.getElementById('tTree').classList.remove('hot'); render(); };
+    document.getElementById('tTree').onclick=function(){
+      mode='tree'; this.classList.add('hot'); document.getElementById('tChain').classList.remove('hot'); render(); };
+    render();
+  })();
+
+  /* ================= where the time is going ================= */
+  (function(){
+    var g=document.getElementById('figWhere'); if(!g) return;
+    txt(g,34,24,'WHAT EACH ADDER IN THE TREE SPENDS ITS TWELVE DELAYS ON',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+    var X0=120, W=880, Y=64;
+    for(var k=0;k<3;k++){
+      var y=Y+k*68;
+      el('rect',{x:X0,y:y,width:W*0.9,height:40,rx:8,fill:'#fdf0ef',stroke:RED,'stroke-width':2},g);
+      txt(g,X0+16,y+26,'settling carries across 64 columns',{'font-size':13.5,fill:RED,'font-weight':700});
+      el('rect',{x:X0+W*0.9,y:y,width:W*0.1,height:40,rx:8,fill:'#e9f2ef',stroke:GRN,'stroke-width':2},g);
+      txt(g,X0-16,y+26,'adder '+(k+1),{'font-size':12.5,fill:'#8b9096','text-anchor':'end','font-weight':700});
+      if(k===0) txt(g,X0+W*0.9+W*0.05,y-10,'the actual adding',{'font-size':11.5,fill:GRN,'text-anchor':'middle','font-weight':700});
+      if(k<2){
+        pth(g,'M'+(X0+W/2)+' '+(y+44)+' L'+(X0+W/2)+' '+(y+62),{stroke:'#c6c3ba','stroke-width':2});
+        txt(g,X0+W/2+14,y+58,'result goes straight into the next one',{'font-size':11.5,fill:'#8b9096'});
+      }
+    }
+    el('rect',{x:X0,y:272,width:W,height:0,fill:'none'},g);
+    txt(g,34,282,'five times over, you carefully resolve every carry, and then immediately add the answer to something else.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= stop propagating ================= */
+  (function(){
+    var g=document.getElementById('figCarrySave'); if(!g) return;
+    txt(g,34,24,'ONE FULL ADDER, FROM CLASS 19, READ A DIFFERENT WAY',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+    /* the single cell */
+    el('rect',{x:120,y:64,width:150,height:110,rx:12,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.6},g);
+    txt(g,195,112,'full adder',{'font-size':15,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    txt(g,195,136,'unchanged',{'font-size':12,fill:BLUE,'text-anchor':'middle'});
+    ['a','b','c'].forEach(function(t,k){
+      var y=84+k*30;
+      pth(g,'M60 '+y+' L116 '+y,{stroke:'#c6c3ba','stroke-width':2});
+      txt(g,50,y+5,t,{'font-size':13,fill:'#8b9096','text-anchor':'end','font-weight':700});
+    });
+    txt(g,60,52,'three bits in',{'font-size':11.5,fill:'#8b9096'});
+    pth(g,'M270 96 L330 96',{stroke:AMB,'stroke-width':2.6});
+    pth(g,'M270 142 L330 142',{stroke:AMB,'stroke-width':2.6});
+    txt(g,340,101,'sum bit',{'font-size':13,fill:AMB,'font-weight':700});
+    txt(g,340,147,'carry bit',{'font-size':13,fill:AMB,'font-weight':700});
+    txt(g,340,52,'two bits out',{'font-size':11.5,fill:'#8b9096'});
+    /* the row of them */
+    el('rect',{x:470,y:64,width:630,height:110,rx:13,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,494,92,'SIXTY FOUR OF THEM, SIDE BY SIDE, WITH NOTHING WIRED BETWEEN THEM',
+      {'font-size':10.5,fill:GRN,'letter-spacing':1.1});
+    for(var k=0;k<16;k++){
+      el('rect',{x:496+k*38,y:106,width:30,height:44,rx:5,fill:'#fff',stroke:GRN,'stroke-width':1.4},g);
+    }
+    txt(g,494,168,'no chain, no lookahead, nothing waiting on anything',{'font-size':12,fill:GRN});
+    /* the result */
+    el('rect',{x:60,y:206,width:500,height:96,rx:13,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.6},g);
+    txt(g,84,236,'THREE NUMBERS IN, TWO NUMBERS OUT',{'font-size':10.5,fill:GRN,'letter-spacing':1.2});
+    txt(g,84,276,'2 gate delays',{'font-size':30,fill:GRN,'font-weight':700});
+    txt(g,84,298,'and it stays 2 however wide the numbers are',{'font-size':12.5,fill:GRN});
+    el('rect',{x:600,y:206,width:500,height:96,rx:13,fill:'#fbf0dc',stroke:AMB,'stroke-width':2.4},g);
+    txt(g,624,236,'THE CARRIES ARE NOT LOST',{'font-size':10.5,fill:AMB,'letter-spacing':1.2});
+    txt(g,624,268,'they are just not added in yet.',{'font-size':17,fill:AMB,'font-weight':700});
+    txt(g,624,292,'you are keeping a promise to settle them later.',{'font-size':12.5,fill:AMB});
+  })();
+
+  /* ================= thirty two down to two ================= */
+  var redCtl=null;
+  (function(){
+    var g=document.getElementById('figReduce'); if(!g) return;
+    var seq=[32,22,15,10,7,5,4,3,2];
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,34,24,'EVERY LEVEL TURNS THREE NUMBERS INTO TWO',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+      var X0=70, Y=62, n=seq[Math.min(t,seq.length-1)];
+      var CW=Math.min(30, 940/n);
+      for(var i=0;i<n;i++){
+        el('rect',{x:X0+i*CW,y:Y,width:Math.max(6,CW-6),height:56,rx:4,
+          fill:'#fbf0dc',stroke:AMB,'stroke-width':1.5},g);
+      }
+      txt(g,X0,Y-12,n+' numbers still to add',{'font-size':13,fill:AMB,'font-weight':700});
+      /* the ladder */
+      var LY=160;
+      seq.forEach(function(v,k){
+        var x=60+k*120, done=(k<=t), cur=(k===Math.min(t,seq.length-1));
+        el('rect',{x:x,y:LY,width:104,height:44,rx:8,
+          fill:cur?'#eaeef7':(done?'#e9f2ef':'#fbfaf7'),
+          stroke:cur?BLUE:(done?GRN:'#dedbd3'),'stroke-width':cur?2.6:1.6},g);
+        txt(g,x+52,LY+28,v,{'font-size':17,fill:cur?BLUE:(done?GRN:'#c6c3ba'),'text-anchor':'middle','font-weight':700});
+        if(k<seq.length-1) txt(g,x+112,LY+28,'\u203a',{'font-size':16,fill:'#c6c3ba','text-anchor':'middle'});
+      });
+      txt(g,X0,LY-10,'numbers remaining, level by level',{'font-size':11.5,fill:'#8b9096'});
+      /* the running cost */
+      var lvl=Math.min(t,8);
+      el('rect',{x:70,y:232,width:480,height:80,rx:12,
+        fill:t>=8?'#e9f2ef':'#fbfaf7',stroke:t>=8?GRN:'#c6c3ba','stroke-width':t>=8?2.6:1.8},g);
+      txt(g,94,260,'LEVELS SO FAR',{'font-size':10,fill:t>=8?GRN:'#8b9096','letter-spacing':1.3});
+      txt(g,94,296,lvl+'  \u00b7  '+(lvl*2)+' gate delays',{'font-size':24,fill:t>=8?GRN:INK,'font-weight':700});
+      if(t>=8){
+        el('rect',{x:590,y:232,width:510,height:80,rx:12,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.6},g);
+        txt(g,614,260,'AND NOW, FINALLY',{'font-size':10,fill:BLUE,'letter-spacing':1.3});
+        txt(g,614,296,'two numbers left. add them properly.',{'font-size':18,fill:BLUE,'font-weight':700});
+      } else {
+        txt(g,590,284,'each level costs two delays, whatever the width.',{'font-size':14,fill:'#8b9096'});
+      }
+    }
+    redCtl=ticker('rRun','rStep','rReset',8,render);
+  })();
+
+  /* ================= one real addition, at the end ================= */
+  (function(){
+    var g=document.getElementById('figFinal'); if(!g) return;
+    txt(g,34,24,'THE WHOLE MULTIPLY, END TO END',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var segs=[[1,'AND gates build the rows',GRN,'#e9f2ef'],
+              [16,'eight carry-save levels squash 32 numbers into 2',AMB,'#fbf0dc'],
+              [12,'one lookahead adder, from Class 22',BLUE,'#eaeef7']];
+    var X0=60, W=1040, total=29;
+    var x=X0;
+    segs.forEach(function(s){
+      var w=W*(s[0]/total);
+      el('rect',{x:x,y:70,width:w-4,height:58,rx:8,fill:s[3],stroke:s[2],'stroke-width':2.2},g);
+      txt(g,x+14,104,s[0],{'font-size':19,fill:s[2],'font-weight':700});
+      x+=w;
+    });
+    var lx=X0;
+    segs.forEach(function(s,k){
+      var w=W*(s[0]/total);
+      txt(g,lx+14,152+k*24,s[1],{'font-size':13,fill:s[2],'font-weight':700});
+      lx+=0;
+    });
+    el('rect',{x:60,y:230,width:500,height:60,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.6},g);
+    txt(g,84,256,'THE WHOLE MULTIPLY',{'font-size':10,fill:GRN,'letter-spacing':1.3});
+    txt(g,84,282,'28 gate delays  \u00b7  560 ps',{'font-size':22,fill:GRN,'font-weight':700});
+    el('rect',{x:600,y:230,width:500,height:60,rx:12,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+    txt(g,624,256,'WHERE IT STARTED',{'font-size':10,fill:'#8b9096','letter-spacing':1.3});
+    txt(g,624,282,'372 delays  \u00b7  7440 ps  \u00b7  thirteen times worse',{'font-size':15,fill:RED,'font-weight':700});
+  })();
+
+  /* ================= same gates, three answers ================= */
+  (function(){
+    var g=document.getElementById('figBill'); if(!g) return;
+    txt(g,34,24,'THREE WAYS TO WIRE THE SAME THIRTY ONE ADDITIONS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+    var rows=[['a line of adders',372,RED,'#fdf0ef'],
+              ['a tree of adders',60,AMB,'#fbf0dc'],
+              ['a carry-save tree',28,GRN,'#e9f2ef']];
+    var X0=250, MAXW=560;
+    rows.forEach(function(r,k){
+      var y=64+k*72, w=Math.max(30,MAXW*Math.pow(r[1]/372,0.6));
+      el('rect',{x:X0,y:y,width:w,height:44,rx:8,fill:r[3],stroke:r[2],'stroke-width':2.2},g);
+      txt(g,X0-16,y+28,r[0],{'font-size':14,fill:r[2],'text-anchor':'end','font-weight':700});
+      txt(g,X0+w-14,y+28,r[1]+' delays',{'font-size':15,fill:r[2],'text-anchor':'end','font-weight':700});
+    });
+    el('rect',{x:X0,y:286,width:MAXW,height:40,rx:8,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+    txt(g,X0-16,312,'gates used',{'font-size':14,fill:'#8b9096','text-anchor':'end','font-weight':700});
+    txt(g,X0+16,312,'about 7200, in all three',{'font-size':16,fill:INK,'font-weight':700});
+    el('rect',{x:880,y:64,width:226,height:188,rx:13,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.6},g);
+    txt(g,904,94,'WHAT CHANGED',{'font-size':10,fill:BLUE,'letter-spacing':1.3});
+    txt(g,904,128,'nothing',{'font-size':26,fill:BLUE,'font-weight':700});
+    txt(g,904,156,'about the parts.',{'font-size':14,fill:BLUE});
+    txt(g,904,196,'only the order',{'font-size':17,fill:BLUE,'font-weight':700});
+    txt(g,904,220,'you put them in.',{'font-size':17,fill:BLUE,'font-weight':700});
+  })();
+
+  /* ================= which one would you build ================= */
+  (function(){
+    var g=document.getElementById('figChoice'); if(!g) return;
+    txt(g,34,24,'TWO MACHINES, TWO RIGHT ANSWERS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    function card(x0,title,col,soft,lines){
+      el('rect',{x:x0,y:52,width:520,height:180,rx:14,fill:soft,stroke:col,'stroke-width':2.4},g);
+      txt(g,x0+26,82,title,{'font-size':12,fill:col,'letter-spacing':1.2,'font-weight':700});
+      lines.forEach(function(L,k){
+        txt(g,x0+26,116+k*30,L,{'font-size':14.5,fill:k===0?INK:col,'font-weight':k===0?700:400});
+      });
+    }
+    card(34,'A SENSOR NODE',GRN,'#e9f2ef',
+      ['one adder, thirty two cycles','multiplies twice a second','500 gates, and the stall costs nothing','seven thousand gates would be wasted silicon']);
+    card(606,'A PROCESSOR RUNNING MATRIX WORK',BLUE,'#eaeef7',
+      ['a carry-save tree','multiplies billions of times a second','7200 gates, and every one of them earns its place','a thirty two cycle stall would be unthinkable']);
+    txt(g,34,270,'the same skill as Class 21 and 22. the design is only right once you have said what it is for.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+  })();
+
+  onSlide=function(idx){ if(workCtl) workCtl.stop(); if(redCtl) redCtl.stop(); };
+  paint();
+})();
+</script>
+</body>
+</html>
