@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 2 · Will I pass?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.prog{display:grid;grid-template-columns:1.02fr .98fr;gap:34px;align-items:start}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+
+pre{background:#14181f;border-radius:10px;padding:18px 22px;font-family:var(--mono);font-size:15px;
+  line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre.xs{font-size:13.5px;line-height:1.45}
+pre .c{color:#7f8896} pre .k{color:#ff96a2}
+pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.term{background:#0f1319;border-radius:10px;padding:16px 20px;font-family:var(--mono);
+  font-size:16px;line-height:1.6;color:#9fe8b8;box-shadow:0 10px 24px rgba(20,22,28,.18);white-space:pre;overflow:hidden}
+.term.xs{font-size:13px;line-height:1.5}
+.term.xxs{font-size:11.5px;line-height:1.45}
+.term .dim{color:#7f8896} .term .hit{color:#ffd47e;font-weight:700}
+.term .bad{color:#ff96a2;font-weight:700} .term .ok{color:#7fe6ad}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+/* data tables (new for this deck, same palette) */
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt td.pos{color:var(--fail)} table.dt td.neg{color:var(--accent)}
+table.dt tr.tot td{background:var(--accent-soft);font-weight:700}
+
+/* formula block */
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+.eq .g{color:var(--soft);font-size:.7em}
+.eq.sm{font-size:21px}
+
+/* five-line loop */
+.five{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:8px}
+.five .b{background:var(--card);border:1px solid var(--rule);border-radius:9px;padding:14px 12px;text-align:center}
+.five .b .n{font-family:var(--display);font-size:34px;color:var(--accent);font-weight:600;line-height:1}
+.five .b .t{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.five .b .d{font-size:15px;color:var(--soft);margin-top:6px;line-height:1.35}
+
+.ctl{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-family:var(--mono);font-size:13px;color:var(--soft);letter-spacing:.06em}
+.ctl label{display:flex;align-items:center;gap:10px}
+.ctl input[type=range]{width:170px;accent-color:var(--accent)}
+.ctl output{font-weight:700;color:var(--ink);min-width:52px;display:inline-block}
+.btn{font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;background:var(--card);border:1px solid var(--rule2);border-radius:7px;padding:8px 13px;color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{color:#fff;opacity:.9}
+.btn.sel{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.ro{font-family:var(--mono);font-size:15px;color:var(--ink);display:flex;gap:22px;flex-wrap:wrap}
+.ro b{color:var(--accent)}
+.ro .neg{color:var(--fail)}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+tr.frag{transition:opacity .28s ease}
+svg:has(#wvar.shown) #bvar{opacity:0}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 02</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 2 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 02 · hour two of forty-five</div>
+    <h1>Will I pass?</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Last week the friend asked how much. This week the friend asks yes or no. The neuron from last week almost works, and watching exactly where it breaks tells us what to build.</p>
+  </div>
+  <div class="cue">Two new mathematical objects today, the sigmoid and the log. Neither appears until the class has felt the need for it.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="A different kind of question" data-act="the problem">
+  <div>
+    <h2>Ten students. Hours studied, and whether they passed.</h2>
+    <div class="panel" style="padding:16px 18px">
+      <svg id="dataLine" viewBox="0 0 1400 150" width="1400" height="150"></svg>
+    </div>
+    <div class="split" style="margin-top:14px;align-items:start">
+      <div class="stack">
+        <p class="frag">Four hours? Everyone says pass. One hour? Fail.</p>
+        <p class="frag">Now <span class="num">2.8</span> hours. Watch the room. "Probably pass." "Could go either way."</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">the first need of the hour</div>
+        <ul>
+          <li>Last week a single number was a complete answer: 60 marks.</li>
+          <li>This week a single yes or no is <em>not</em> complete. The honest answer at 2.8 hours is "more likely yes than no".</li>
+          <li>We need a way to say <strong>how likely</strong>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Point at the 2.5-hour student who passed and the 3-hour student who failed. The data itself disagrees with itself. That is normal.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Need 1 · a number for how likely" data-act="the problem">
+  <div>
+    <h2>Need 1: a number that means "how likely".</h2>
+    <div class="panel" style="padding:18px 22px">
+      <svg id="probBar" viewBox="0 0 1400 120" width="1400" height="120"></svg>
+    </div>
+    <div class="split" style="margin-top:14px;align-items:start">
+      <p>A number between 0 and 1. Zero means certainly no. One means certainly yes. Half means no idea. Call it a probability. That is the only thing we need from the word today.</p>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">the new job</div>
+        <ul>
+          <li>Given hours, produce a number between 0 and 1.</li>
+          <li>Last week: given hours, produce marks. Same shape of problem, different kind of output.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Do not do probability theory. A number between 0 and 1 that means confidence. That is all.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Use what we have" data-act="where it breaks">
+  <div>
+    <h2>We own one tool. Use it and see.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="lineFit" viewBox="0 0 660 360" width="660" height="360"></svg>
+      </div>
+      <div class="stack">
+        <p>Write yes as 1 and no as 0. Fit a line with last week's five lines of NumPy. It gives <span class="num">w = 0.28, b = −0.27</span>.</p>
+        <p class="frag">It does not look ridiculous. It rises. It crosses 0.5 at 2.75 hours, a sensible place to cut.</p>
+        <p class="frag">If all we wanted was a yes or a no, we could stop here. Above the dashed line, say pass.</p>
+        <p class="frag"><strong>But look at the two ends.</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Run last week's code live on the new y. Same five lines, nothing changed. Then show the plot.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Break 1 · the wrong shape" data-act="where it breaks">
+  <div>
+    <h2>Problem 1. The line does not know where probabilities live.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="lineEscape" viewBox="0 0 660 360" width="660" height="360"></svg>
+      </div>
+      <div class="stack">
+        <p>Half an hour: the line says <span class="num">−0.13</span>. Five hours: <span class="num">1.13</span>.</p>
+        <p class="frag">Ask what "minus thirteen percent chance of passing" means. Nothing. "113%"? Nothing.</p>
+        <p class="frag">A line goes to −∞ on one side and +∞ on the other. The answers we want are trapped in a band between 0 and 1.</p>
+        <div class="rem frag">
+          <div class="h">need 2</div>
+          <ul><li>An output that stays inside (0, 1), whatever w, b and x are.</li></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Shade the band on the board. The line leaves the band at both ends and there is nothing w or b can do about it.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Break 2 · the wrong score" data-act="where it breaks">
+  <div>
+    <h2>Problem 2. Last week's score punishes the wrong thing.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="lineEight" viewBox="0 0 660 360" width="660" height="360"></svg>
+      </div>
+      <div class="stack">
+        <p>Add an eleventh student: 8 hours, passed. The line predicts 0.28 × 8 − 0.27 = <span class="num">1.97</span>.</p>
+        <p class="frag">Truth is 1. Squared error: (1.97 − 1)² = <span class="num">0.94</span>. A big penalty.</p>
+        <p class="frag">The model is being punished for saying "this person will definitely pass" about a person who passed. Its crime was enthusiasm in the right direction.</p>
+        <div class="rem frag">
+          <div class="h">need 3</div>
+          <ul><li>A score that rewards confidence in the right answer and punishes confidence in the wrong one.</li></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Two needs on the board now. Take them in order: first the shape of the output, then the score.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Build the squash · what we need" data-act="the squash">
+  <div>
+    <h2>Need 2. Fold the whole number line into a band.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="squashBand" viewBox="0 0 660 360" width="660" height="360"></svg>
+      </div>
+      <div class="stack">
+        <p>z = w·x + b can be any number. We want p in (0, 1). So we need a curve that takes every z and lands inside the band.</p>
+        <p class="frag">Ask the room to draw one. Everybody's first attempt is an S.</p>
+        <div class="rem frag">
+          <div class="h">what the s must do</div>
+          <ul>
+            <li>Far left, p → 0. Far right, p → 1. Never touches either edge: we never want to say "impossible" from finite evidence.</li>
+            <li>At z = 0, p = 0.5. Zero evidence, no opinion. This is what makes b meaningful.</li>
+            <li>Smooth. No corners, no jumps. We are going to do gradient descent on it, and that needs a slope everywhere.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The third property is why the old perceptron (1 if z is positive, else 0) cannot be trained by gradient descent: a step has no slope. Mention it, park it.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Build the squash · which S? · play" data-act="the squash">
+  <div>
+    <h2>Lots of curves are S-shaped. So which one, and why?</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="oddsSvg" viewBox="0 0 660 330" width="660" height="330"></svg>
+        <div class="ctl" style="margin-top:8px">
+          <label>z <input type="range" id="oddsZ" min="-5" max="5" step="0.1" value="0"><output id="oddsZo">0.0</output></label>
+          <div class="ro">odds = e<sup>z</sup> = <b id="oddsO">1.00</b> &nbsp; p = <b id="oddsP">0.500</b></div>
+        </div>
+      </div>
+      <div class="stack">
+        <p>Think about what z should <em>mean</em>. At z = 0, it is 50/50. Each unit you add to z should multiply the odds of yes by the same factor. Odds are the natural language of evidence: "twice as likely".</p>
+        <p class="frag">Odds are p / (1 − p). At p = 0.5 the odds are 1. At 0.9 they are 9. At 0.1 they are 1/9.</p>
+        <p class="frag">z runs over (−∞, ∞). Odds run over (0, ∞). The map from one to the other where <em>adding to the input multiplies the output</em> is the exponential.</p>
+        <div class="eq sm frag">p / (1 − p) = e<sup>z</sup></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Slide z from 0 to 1 to 2 to 3. The odds go 1, 2.7, 7.4, 20. Each step multiplies by e. That is what "z is the log of the odds" means.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Build the squash · solve for p" data-act="the squash">
+  <div>
+    <h2>Solve that for p, and the S falls out.</h2>
+    <div class="split" style="align-items:start">
+      <div class="stack">
+        <div class="eq sm">p / (1 − p) = e<sup>z</sup></div>
+        <div class="eq sm frag" style="margin-top:8px">p = e<sup>z</sup> − p·e<sup>z</sup></div>
+        <div class="eq sm frag" style="margin-top:8px">p (1 + e<sup>z</sup>) = e<sup>z</sup></div>
+        <div class="eq sm frag" style="margin-top:8px">p = e<sup>z</sup> / (1 + e<sup>z</sup>)</div>
+        <div class="eq frag" style="margin-top:8px">p = σ(z) = <span class="v">1 / (1 + e<sup>−z</sup>)</span></div>
+        <p class="frag small" style="max-width:none;margin-top:10px">Divide top and bottom by e<sup>z</sup> for the last step. This is the sigmoid, and it was not pulled from a hat. It is the <em>only</em> curve for which z is the log of the odds.</p>
+      </div>
+      <div>
+        <table class="dt frag" style="width:100%">
+          <tr><th>z</th><th>−6</th><th>−3</th><th>−1</th><th>0</th><th>1</th><th>3</th><th>6</th></tr>
+          <tr><td>σ(z)</td><td>0.002</td><td>0.05</td><td>0.27</td><td>0.5</td><td>0.73</td><td>0.95</td><td>0.998</td></tr>
+        </table>
+        <div class="rem frag">
+          <div class="h">check it by hand</div>
+          <ul>
+            <li>z = 0: 1 / (1 + 1) = 0.5. No evidence, no opinion. Tick.</li>
+            <li>σ(−z) = 1 − σ(z). The probability of no is one minus the probability of yes. Tick.</li>
+            <li>What w means now: each extra hour multiplies your odds of passing by e<sup>w</sup>. Weights are evidence, on a log scale.</li>
+          </ul>
+        </div>
+        <div class="rem frag" style="border-left-color:var(--amber)">
+          <div class="h" style="color:var(--amber)">why e and not 2 or 10</div>
+          <ul><li>Any base works; it only rescales w. We use e because its derivative is itself, and in ten minutes that saves a page of algebra. Saying it now so it is not a surprise.</li></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Do the algebra on the board, four lines, slowly. Students who see the sigmoid derived once never think of it as a magic formula again.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="The model · play" data-act="the squash">
+  <div>
+    <h2>The model now: z = w·x + b, then p = σ(z). Try it on the students.</h2>
+    <div class="panel" style="padding:14px 18px">
+      <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:start">
+        <svg id="sigFit" viewBox="0 0 760 330" width="760" height="330"></svg>
+        <table class="dt" id="sigTable" style="width:100%;font-size:15px"></table>
+      </div>
+      <div class="ctl" style="margin-top:8px">
+        <label>w <input type="range" id="sigW" min="0" max="4" step="0.1" value="1"><output id="sigWo">1.0</output></label>
+        <label>b <input type="range" id="sigB" min="-12" max="2" step="0.1" value="-3"><output id="sigBo">−3.0</output></label>
+        <div class="ro">flips at hours = −b / w = <b id="sigFlip">3.00</b></div>
+      </div>
+    </div>
+    <p class="frag" style="margin-top:12px;max-width:none">With w = 1, b = −3: the 3-hour student gets z = 0, p = 0.5. Five hours, z = 2, p = 0.88. Half an hour, z = −2.5, p = 0.08. Every prediction now reads as a sentence. <strong>Need 2 is met.</strong> Name it: logistic regression.</p>
+  </div>
+  <div class="cue">Slide w up and watch the S get steeper: more hours, more evidence per hour. Slide b and watch the whole S move sideways: b sets where "no opinion" sits.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Need 3 · the surprise game · play" data-act="the score">
+  <div>
+    <h2>Need 3. I will charge you for your surprise.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="surpSvg" viewBox="0 0 660 320" width="660" height="320"></svg>
+        <div class="ctl" style="margin-top:8px">
+          <label>probability you gave to what happened <input type="range" id="surpP" min="1" max="99" step="1" value="50"><output id="surpPo">0.50</output></label>
+        </div>
+      </div>
+      <div class="stack">
+        <p>The student passed. You said 90%: barely surprised, small charge. You said 50%: medium. You said 10%: big charge. You said 0.1%: enormous. You said exactly 0%: you called it impossible and it happened. Infinite.</p>
+        <div class="rem frag">
+          <div class="h">what a surprise function S(p) must do</div>
+          <ul>
+            <li>S(1) = 0. Said certain, was right, no surprise.</li>
+            <li>S falls as p rises. More confidence in the truth, less surprise.</li>
+            <li>S(p) → ∞ as p → 0. Claiming impossibility and being wrong is unforgivable.</li>
+          </ul>
+        </div>
+        <p class="frag">Many functions do all three. So again: which one, and why?</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Play the game with the room before revealing the curve. Ask three people for a probability, tell them the outcome, ask them how surprised they feel. Then drag the slider.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Why the log" data-act="the score">
+  <div>
+    <h2>One more requirement, and it picks the function for us.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="addSvg" viewBox="0 0 660 300" width="660" height="300"></svg>
+      </div>
+      <div class="stack">
+        <p>Two independent students both passed. You had given them p₁ and p₂. Your surprise at <em>both</em> should be your surprise at the first plus your surprise at the second. Surprises add.</p>
+        <p class="frag">But probabilities of independent events <strong>multiply</strong>. The chance of both was p₁ × p₂.</p>
+        <div class="eq sm frag">S(p₁ × p₂) = S(p₁) + S(p₂)</div>
+        <p class="frag">"Turns multiplication into addition" is the definition of a logarithm. That is the whole reason logs are in machine learning.</p>
+        <div class="eq frag">S(p) = <span class="v">−log(p)</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Check the four properties on the board: log 1 = 0; log rises so minus log falls; log p → −∞ so minus log → +∞; log(ab) = log a + log b. Four ticks.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="The loss, written down" data-act="the score">
+  <div>
+    <h2>Charge every student for the surprise at what actually happened. Average.</h2>
+    <div class="split" style="align-items:start">
+      <div class="stack">
+        <p>If they passed, the charge is −log(p). If they failed, we gave "no" a probability of 1 − p, so the charge is −log(1 − p).</p>
+        <p class="frag">Write both cases in one line, using the fact that y is 0 or 1 so exactly one term survives:</p>
+        <div class="eq sm frag">L = −(1/N) Σ [ y·log(p) + (1 − y)·log(1 − p) ]</div>
+        <p class="frag">Read it as English: <em>for every student, the surprise at what happened, averaged.</em> Name it: cross-entropy, or log loss. Same thing.</p>
+      </div>
+      <div>
+        <table class="dt frag" style="width:100%;font-size:15px">
+          <tr><th>p you gave the truth</th><th>0.9</th><th>0.5</th><th>0.1</th><th>0.01</th></tr>
+          <tr><td>−log p</td><td>0.11</td><td>0.69</td><td>2.3</td><td>4.6</td></tr>
+        </table>
+        <div class="rem frag">
+          <div class="h">worked, with w = 1, b = −3</div>
+          <ul>
+            <li>3-hour student, failed. We said p = 0.5, so we gave "fail" 0.5. Charge −log 0.5 = <span class="num">0.69</span>.</li>
+            <li>2.5-hour student, passed. We said 0.38. Charge −log 0.38 = <span class="num">0.97</span>. Our biggest, and it should be: we leaned the wrong way.</li>
+            <li>Average over all ten: <span class="num">0.35</span>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The next slide is the honest question: why not just square the error like last week? Give both reasons.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Why not squared error? · play" data-act="the score">
+  <div>
+    <h2>Why not just square the error like last week?</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="cmpSvg" viewBox="0 0 660 320" width="660" height="320"></svg>
+        <div class="ctl" style="margin-top:8px">
+          <label>you said p = <input type="range" id="cmpP" min="1" max="99" step="1" value="40"><output id="cmpPo">0.40</output></label> <span class="dim">and the student passed</span>
+        </div>
+      </div>
+      <div class="stack">
+        <p><strong>Reason 1, the punishment shape.</strong> Squared error caps out. Saying 1% and being wrong costs (0.01 − 1)² = 0.98. Saying 40% and being wrong costs 0.36. Three times the penalty for forty times the overconfidence.</p>
+        <p class="frag">Cross-entropy charges 4.6 versus 0.92. Five times. It scales with how badly you misjudged, not with distance on a ruler.</p>
+        <div class="rem frag">
+          <div class="h">reason 2, a promise</div>
+          <ul>
+            <li>Squared error through a sigmoid makes the model get <em>stuck</em> when it is confidently wrong.</li>
+            <li>We will see exactly why in a few slides, because it falls straight out of the gradient. Cross-entropy does not stick. That is the deeper reason it is used.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Drag p toward 0.01 and watch the red curve explode while the grey one flattens out at 1. Then drag toward 0.99 and both go to zero.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="The gradient · the chain" data-act="the gradient">
+  <div>
+    <h2>Now the slope. There is a sigmoid and a log in the way. Is it a mess?</h2>
+    <div class="panel" style="padding:18px 22px">
+      <svg id="chainSvg" viewBox="0 0 1400 200" width="1400" height="200"></svg>
+    </div>
+    <div class="split" style="margin-top:14px;align-items:start">
+      <div class="stack">
+        <p>w affects z. z affects p. p affects L. Three links.</p>
+        <p class="frag">A nudge to w becomes a nudge to z, which becomes a nudge to p, which becomes a nudge to L. Each link scales the nudge by its own slope. So the total scaling is the <strong>product</strong> of the three slopes.</p>
+        <p class="frag">That sentence is called the chain rule. We did not need the name; we needed the sentence.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">the three links</div>
+        <ul>
+          <li>Link 3, z from w: z = w·x + b. A nudge to w is multiplied by <span class="num">x</span>. Same as last week.</li>
+          <li>Link 2, p from z: the sigmoid's slope. Next slide.</li>
+          <li>Link 1, L from p: the log's slope. −log(p) has slope <span class="num">−1/p</span>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Draw the chain as three boxes and three arrows. Write the slope over each arrow as you get it. Multiply at the end.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Link 2 · the sigmoid's slope" data-act="the gradient">
+  <div>
+    <h2>Link 2. The sigmoid is steep in the middle and flat at the ends.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="dsigSvg" viewBox="0 0 660 330" width="660" height="330"></svg>
+      </div>
+      <div class="stack">
+        <p>Differentiate p = (1 + e<sup>−z</sup>)<sup>−1</sup>. Here e pays off.</p>
+        <div class="eq sm frag">dp/dz = e<sup>−z</sup> / (1 + e<sup>−z</sup>)²</div>
+        <p class="frag">Now notice: 1/(1 + e<sup>−z</sup>) is p, and e<sup>−z</sup>/(1 + e<sup>−z</sup>) is 1 − p. So:</p>
+        <div class="eq frag">dp/dz = <span class="v">p (1 − p)</span></div>
+        <div class="rem frag">
+          <div class="h">what it means, before moving on</div>
+          <ul>
+            <li>Biggest at p = 0.5 (value 0.25). Tiny when p is near 0 or 1.</li>
+            <li>When the model is very sure, a nudge to z barely moves p.</li>
+            <li>Hold onto this. It is the "stuck" problem, and we are about to see it.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The grey curve is the slope of the blue one. Point at the ends: nearly zero. That flatness is what squared error cannot escape.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Multiply the links · the cancellation" data-act="the gradient">
+  <div>
+    <h2>Multiply the three links. Watch what cancels.</h2>
+    <div class="split" style="align-items:start">
+      <div class="stack">
+        <p>Take a student who passed. Charge is −log(p).</p>
+        <div class="eq sm frag">(−1/p) &nbsp;×&nbsp; p(1 − p) &nbsp;×&nbsp; x</div>
+        <div class="eq sm frag" style="margin-top:8px">= −(1 − p) · x = <span class="v">(p − 1) · x</span></div>
+        <p class="frag">The 1/p from the log and the p from the sigmoid <strong>cancelled</strong>.</p>
+        <p class="frag">A student who failed: charge −log(1 − p), slope +1/(1 − p), times p(1 − p), times x, gives <span class="num">p · x</span>.</p>
+        <p class="frag">(p − 1)·x when y = 1 and p·x when y = 0 are both the same thing:</p>
+        <div class="eq frag">∂L/∂w = (1/N) Σ (<span class="v">p − y</span>) · x &nbsp;&nbsp;&nbsp; ∂L/∂b = (1/N) Σ (<span class="v">p − y</span>)</div>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">stop and let it land</div>
+        <ul>
+          <li>It is last week's formula. <em>Error times input, averaged.</em></li>
+          <li>The error is now p − y: a probability minus a 0 or 1.</li>
+          <li>The log and the sigmoid annihilated each other. That is not luck. Cross-entropy was chosen partly because it does this.</li>
+          <li>The update rule is exactly what it was. The five lines of code change in two places.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Point at last week's formula on the board. Same shape. Students who have followed the chain feel this as a small miracle, and it is.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="The promise · why squared error sticks · play" data-act="the gradient">
+  <div>
+    <h2>Pay off the promise. Same three links, with squared error instead.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="stuckSvg" viewBox="0 0 660 300" width="660" height="300"></svg>
+        <div class="ctl" style="margin-top:8px">
+          <label>model says p = <input type="range" id="stuckP" min="50" max="999" step="1" value="999"><output id="stuckPo">0.999</output></label> <span class="dim">truth is 0. how hard is the push back?</span>
+        </div>
+      </div>
+      <div class="stack">
+        <p>Link 1 for (p − y)² is 2(p − y). Times p(1 − p). Times x.</p>
+        <p class="frag">Confidently wrong: y = 0, p = 0.999.</p>
+        <p class="frag">Cross-entropy slope: (0.999 − 0) · x ≈ <span class="num">1 · x</span>. A strong push in the right direction.</p>
+        <p class="frag">Squared-error slope: 2 × 0.999 × 0.999 × 0.001 · x ≈ <span class="num">0.002 · x</span>. Five hundred times weaker.</p>
+        <div class="rem frag">
+          <div class="h">why this pair goes together</div>
+          <ul>
+            <li>The sigmoid's flatness at the ends strangles the signal, and the model sits there being wrong.</li>
+            <li>Cross-entropy's 1/p was <em>exactly</em> the factor needed to cancel that flatness.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Drag p from 0.5 to 0.999. The blue bar stays strong; the grey bar collapses. That collapse is a model stuck being wrong.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-t="Run it · play" data-act="run it">
+  <div>
+    <h2>Run it. Predict the first line before you press anything.</h2>
+    <div class="panel" style="padding:14px 18px">
+      <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:24px">
+        <svg id="lrFit" viewBox="0 0 760 300" width="760" height="300"></svg>
+        <svg id="lrLoss" viewBox="0 0 620 300" width="620" height="300"></svg>
+      </div>
+      <div class="ctl" style="margin-top:8px;justify-content:space-between">
+        <span>
+          <button class="btn pri" id="lr1">step ×1</button>
+          <button class="btn" id="lr10">×10</button>
+          <button class="btn" id="lr100">×100</button>
+          <button class="btn" id="lr2000">×2000</button>
+          <button class="btn" id="lrReset">reset</button>
+        </span>
+        <div class="ro">step <b id="lrStep">0</b> w <b id="lrW">0.00</b> b <b id="lrB">0.00</b> loss <b id="lrL">0.693</b></div>
+      </div>
+      <div class="term xs" id="lrProbs" style="margin-top:10px;box-shadow:none"></div>
+    </div>
+    <div class="rem frag" style="margin-top:10px">
+      <div class="h">what to point at</div>
+      <ul>
+        <li>w = b = 0 means p = 0.5 for everyone, so every charge is −log 0.5 = 0.693. The loss must start at exactly <span class="num">0.693</span>. It does. That is how you know the code is right before it has done anything.</li>
+        <li>It settles at w = 2.6, b = −7.2, loss 0.25. The two awkward students get 0.34 and 0.66. Unsure is the <em>correct</em> thing to be about them.</li>
+        <li>The loss never reaches zero, because the data overlaps. The loss is telling the truth about the data. And w = 2.6 means each extra hour multiplies your odds of passing by e<sup>2.6</sup> ≈ 13.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Single-step a few times so they see the S rise out of flat. Then ×2000. Then read the ten probabilities aloud.</div>
+</section>
+
+<!-- 20 -->
+<section class="slide" data-t="The code" data-act="run it">
+  <div>
+    <h2>Two lines changed from last week.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="k">import</span> numpy <span class="k">as</span> np
+
+x = np.array([<span class="s">0.5</span>, <span class="s">1</span>, <span class="s">1.5</span>, <span class="s">2</span>, <span class="s">2.5</span>, <span class="s">3</span>, <span class="s">3.5</span>, <span class="s">4</span>, <span class="s">4.5</span>, <span class="s">5</span>])
+y = np.array([<span class="s">0</span>, <span class="s">0</span>, <span class="s">0</span>, <span class="s">0</span>, <span class="s">1</span>, <span class="s">0</span>, <span class="s">1</span>, <span class="s">1</span>, <span class="s">1</span>, <span class="s">1.</span>])
+
+<span class="k">def</span> <span class="f">sigmoid</span>(z): <span class="k">return</span> <span class="s">1</span> / (<span class="s">1</span> + np.exp(-z))
+
+w, b, lr = <span class="s">0.0</span>, <span class="s">0.0</span>, <span class="s">0.5</span>
+<span class="k">for</span> step <span class="k">in</span> <span class="f">range</span>(<span class="s">10001</span>):
+    p    = <span class="f">sigmoid</span>(w * x + b)                         <span class="c"># 1. predict, now a probability   (changed)</span>
+    loss = -np.mean(y*np.log(p) + (<span class="s">1</span>-y)*np.log(<span class="s">1</span>-p))  <span class="c"># 3. average surprise              (changed)</span>
+    dw   = np.mean((p - y) * x)                       <span class="c"># 4. error × input, as before</span>
+    db   = np.mean(p - y)
+    w   -= lr * dw                                    <span class="c"># 5. step downhill, as before</span>
+    b   -= lr * db
+    <span class="k">if</span> step % <span class="s">2000</span> == <span class="s">0</span>:
+        <span class="f">print</span>(<span class="s">f"step {step:5d}  loss {loss:.3f}  w {w:.2f}  b {b:.2f}"</span>)</pre>
+      </div>
+      <div>
+        <div class="term frag">step     0  loss <span class="hit">0.693</span>  w 0.29  b 0.00
+step  2000  loss 0.251  w 2.53  b -6.95
+step  4000  loss 0.251  w 2.59  b -7.13
+step  6000  loss 0.251  w 2.60  b -7.15
+step  8000  loss 0.251  w 2.60  b -7.16
+step 10000  loss <span class="ok">0.251</span>  w <span class="hit">2.60</span>  b <span class="hit">-7.16</span>
+
+probabilities:
+0.00 0.01 0.04 0.12 <span class="hit">0.34</span> <span class="hit">0.66</span> 0.88 0.96 0.99 1.00</div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Line 1 grew a sigmoid. Line 3 became the surprise. Lines 4 and 5 did not change by a character.</li>
+            <li>The gradient line is the same because of the cancellation. If you had used squared error, line 4 would have grown a p(1 − p) and the model would get stuck.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Run it live. The first printed loss is the check: 0.693 or the code is wrong.</div>
+</section>
+
+<!-- 21 -->
+<section class="slide" data-t="Where does it flip?" data-act="the boundary">
+  <div>
+    <h2>Where does "probably fail" become "probably pass"?</h2>
+    <div class="split" style="align-items:start">
+      <div class="stack">
+        <p>Where p = 0.5. From the sigmoid, that is where z = 0. From the model, that is where w·x + b = 0.</p>
+        <div class="eq sm frag">x = −b / w = 7.16 / 2.60 = <span class="v">2.75 hours</span></div>
+        <p class="frag">One point on the number line, read off without a plot.</p>
+        <p class="frag">Now add a second input, hours slept. z = w₁·hours + w₂·sleep + b. The flip is still where z = 0:</p>
+        <div class="eq sm frag">w₁·hours + w₂·sleep + b = 0</div>
+        <p class="frag">An equation in two unknowns. Its solutions are a <strong>straight line</strong> in the hours-sleep plane.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">the decision boundary</div>
+        <ul>
+          <li>One input: a point. Two inputs: a line. Three inputs: a flat plane in 3D.</li>
+          <li>Any number of inputs: it is always <em>flat</em>, because z is always a weighted sum, and "weighted sum equals zero" is always a flat thing.</li>
+          <li>That word, flat, is about to matter.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Write the word FLAT on the board and leave it there for the last two slides.</div>
+</section>
+
+<!-- 22 -->
+<section class="slide" data-t="Two inputs · play" data-act="the boundary">
+  <div>
+    <h2>Sixteen students, hours and sleep. Find the line.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="bndSvg" viewBox="0 0 660 400" width="660" height="400"></svg>
+        <div class="ctl" style="margin-top:8px">
+          <label>w₁ hours <input type="range" id="bW1" min="0" max="3" step="0.1" value="1.4"><output id="bW1o">1.4</output></label>
+          <label>w₂ sleep <input type="range" id="bW2" min="-1" max="2" step="0.1" value="0.6"><output id="bW2o">0.6</output></label>
+          <label>b <input type="range" id="bB" min="-16" max="0" step="0.2" value="-8.2"><output id="bBo">−8.2</output></label>
+        </div>
+      </div>
+      <div class="stack">
+        <p>Green passed, red failed. The blue line is where z = 0. The shading is p: darker means more confident.</p>
+        <p class="frag">Slide w₁ and the line rotates: hours matter more. Slide b and it shifts. At least one student sits on the wrong side whatever you do. That is the overlap again.</p>
+        <div class="ro frag" style="font-size:17px">correct <b id="bndOK">14</b> / 16 &nbsp;·&nbsp; loss <b id="bndL">—</b></div>
+        <div class="rem frag">
+          <div class="h">remember</div>
+          <ul>
+            <li>Training moves the three sliders for you, downhill on this loss.</li>
+            <li>Whatever it finds, the boundary is a straight line. It cannot bend.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Ask someone to get all 16 right. They cannot. Then ask if a curved boundary could. Yes. Hold that.</div>
+</section>
+
+<!-- 23 -->
+<section class="slide" data-t="XOR · play" data-act="the limit">
+  <div>
+    <h2>Four points. Draw one straight line that separates the 1s from the 0s.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="xorSvg" viewBox="0 0 660 380" width="660" height="380"></svg>
+        <div class="ctl" style="margin-top:8px">
+          <label>angle <input type="range" id="xorA" min="0" max="180" step="1" value="45"><output id="xorAo">45°</output></label>
+          <label>shift <input type="range" id="xorS" min="-1" max="1" step="0.02" value="0"><output id="xorSo">0.00</output></label>
+          <div class="ro">separated correctly: <b id="xorOK">2</b> / 4</div>
+        </div>
+      </div>
+      <div class="stack">
+        <table class="dt" style="font-size:16px">
+          <tr><th>in₁</th><th>in₂</th><th>out</th></tr>
+          <tr><td>0</td><td>0</td><td>0</td></tr>
+          <tr><td>0</td><td>1</td><td>1</td></tr>
+          <tr><td>1</td><td>0</td><td>1</td></tr>
+          <tr><td>1</td><td>1</td><td>0</td></tr>
+        </table>
+        <p class="frag">Output is 1 when the inputs <em>differ</em>. Give the room a full minute with the sliders. Let it get uncomfortable.</p>
+        <div class="rem frag">
+          <div class="h">what it means</div>
+          <ul>
+            <li>Our boundary is always flat. This pattern needs a bent one.</li>
+            <li>A single neuron, however long you train it, <strong>cannot</strong> learn this. Not "struggles". Cannot.</li>
+            <li>This is XOR. In 1969 a book pointing this out stalled the field for about fifteen years.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The counter never reaches 4. That is the proof, and the students find it themselves.</div>
+</section>
+
+<!-- 24 -->
+<section class="slide" data-t="The door out" data-act="the limit">
+  <div>
+    <h2>What if one neuron's output became another neuron's input?</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="doorSvg" viewBox="0 0 660 380" width="660" height="380"></svg>
+      </div>
+      <div class="stack">
+        <p class="frag">One neuron learns "in₁ and not in₂". A flat boundary.</p>
+        <p class="frag">Another learns "in₂ and not in₁". Another flat boundary.</p>
+        <p class="frag">A third neuron takes those two answers as <em>its</em> inputs and ORs them.</p>
+        <p class="big frag" style="max-width:none">Three neurons, two layers. Each boundary is flat. The combination bends.</p>
+        <p class="frag">That is next class, and it is the moment the word <strong>network</strong> earns its place.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Click through slowly. Two flat lines appear, then the shaded region between them, which is the bent boundary. Do not explain how to train it yet.</div>
+</section>
+
+<!-- 25 -->
+<section class="slide" data-t="Where the hour lands" data-act="close">
+  <div>
+    <h2>Same neuron. One squash. One new score.</h2>
+    <div class="split" style="margin-top:6px">
+      <div class="rem" style="margin-top:0">
+        <div class="h">the four sentences</div>
+        <ul>
+          <li>A squash on the output, so the neuron speaks in probabilities. It is the sigmoid because z means log-odds.</li>
+          <li>A loss that charges you for surprise. It is the log because surprises add and probabilities multiply.</li>
+          <li>The gradient came out identical to last week: error times input.</li>
+          <li>The boundary is always flat, so one neuron cannot learn XOR.</li>
+        </ul>
+      </div>
+      <div class="rem" style="margin-top:0;border-left-color:var(--ok)">
+        <div class="h" style="color:var(--ok)">questions that always come</div>
+        <ul>
+          <li>Why e? Any base works; e makes the derivative p(1 − p). Convenience, not law.</li>
+          <li>Is 0.5 special? No. Where you cut is a cost decision. For "will the bridge fail" you cut at 0.01.</li>
+          <li>Why does the loss start at 0.693? Because −log 0.5 = 0.693 and the untrained model says 0.5 about everyone. Use it as a test.</li>
+          <li>Could we use a different squash? Yes, but then z is not log-odds, the derivative is not p(1 − p), and the gradient does not simplify. Sigmoid and cross-entropy are a matched pair.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:20px;max-width:none;font-size:26px">Before next class: run the notebook with squared error instead of cross-entropy, starting from w = 5, b = −20. Watch it not move. Bring the loss after 2000 steps.</p>
+  </div>
+  <div class="cue">The homework makes them feel the stuck problem in their own hands before we build the network on Thursday.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+
+
+  /* ================= class 2 widgets ================= */
+  var X=[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5], Y=[0,0,0,0,1,0,1,1,1,1];
+  var GREEN='#146b5c', RED='#a8231f', BLUE='#23408f', INK='#15171b', SOFT='#8b9096', RULE='#c6c3ba';
+  function sig(z){ return 1/(1+Math.exp(-z)); }
+  function svgEl(t,a){ var e=document.createElementNS('http://www.w3.org/2000/svg',t); for(var k in a) e.setAttribute(k,a[k]); return e; }
+  function txt(svg,x,y,s,a){ a=a||{}; a.x=x;a.y=y;a['font-size']=a['font-size']||12;a.fill=a.fill||SOFT; var t=svgEl('text',a); t.textContent=s; svg.appendChild(t); return t; }
+  function fmt(v,d){ return (v<0?'−':'')+Math.abs(v).toFixed(d); }
+  function axes(svg,L,R,T,B){ svg.appendChild(svgEl('line',{x1:L,y1:B,x2:R,y2:B,stroke:RULE,'stroke-width':1.5})); svg.appendChild(svgEl('line',{x1:L,y1:B,x2:L,y2:T,stroke:RULE,'stroke-width':1.5})); }
+  function path(svg,pts,col,w,extra){ var d=''; pts.forEach(function(p,i){ d+=(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)+' '; }); var a={d:d,fill:'none',stroke:col,'stroke-width':w||2.5}; for(var k in (extra||{})) a[k]=extra[k]; svg.appendChild(svgEl('path',a)); }
+  function lossCE(w,b){ var s=0; for(var k=0;k<10;k++){ var p=sig(w*X[k]+b); s+= -(Y[k]*Math.log(p)+(1-Y[k])*Math.log(1-p)); } return s/10; }
+
+  /* 02: data on a number line */
+  (function(){ var s=document.getElementById('dataLine'); if(!s) return;
+    var L=80,R=1340,y=70; var px=function(x){return L+(x-0.25)/(5.5-0.25)*(R-L)};
+    s.appendChild(svgEl('line',{x1:L,y1:y,x2:R,y2:y,stroke:RULE,'stroke-width':2}));
+    for(var h=1;h<=5;h++){ txt(s,px(h),y+40,h+' h',{'text-anchor':'middle','font-size':13}); s.appendChild(svgEl('line',{x1:px(h),y1:y-6,x2:px(h),y2:y+6,stroke:RULE,'stroke-width':1.5})); }
+    X.forEach(function(x,k){ var c=Y[k]?GREEN:RED; s.appendChild(svgEl('circle',{cx:px(x),cy:y,r:13,fill:c})); txt(s,px(x),y+5,Y[k]?'✓':'✗',{'text-anchor':'middle',fill:'#fff','font-size':14,'font-weight':700}); });
+    txt(s,L,28,'passed  ●',{fill:GREEN,'font-size':13}); txt(s,L+110,28,'failed  ●',{fill:RED,'font-size':13});
+    txt(s,px(2.8),y-24,'2.8 h?',{'text-anchor':'middle',fill:INK,'font-size':14,'font-weight':700});
+    s.appendChild(svgEl('line',{x1:px(2.8),y1:y-18,x2:px(2.8),y2:y-8,stroke:INK,'stroke-width':2}));
+  })();
+
+  /* 03: probability bar */
+  (function(){ var s=document.getElementById('probBar'); if(!s) return;
+    var L=80,R=1340,y=55; var g=svgEl('linearGradient',{id:'pg',x1:0,x2:1,y1:0,y2:0}); g.innerHTML='<stop offset="0" stop-color="'+RED+'"/><stop offset="0.5" stop-color="#e6e4de"/><stop offset="1" stop-color="'+GREEN+'"/>'; var d=svgEl('defs',{}); d.appendChild(g); s.appendChild(d);
+    s.appendChild(svgEl('rect',{x:L,y:y-14,width:R-L,height:28,rx:14,fill:'url(#pg)'}));
+    [[0,'0','certainly no'],[0.25,'0.25',''],[0.5,'0.5','no idea'],[0.75,'0.75',''],[1,'1','certainly yes']].forEach(function(t){ var x=L+t[0]*(R-L); txt(s,x,y+42,t[1],{'text-anchor':'middle',fill:INK,'font-size':15,'font-weight':700}); if(t[2]) txt(s,x,y+64,t[2],{'text-anchor':'middle','font-size':13}); s.appendChild(svgEl('line',{x1:x,y1:y+16,x2:x,y2:y+24,stroke:RULE,'stroke-width':1.5})); });
+    txt(s,L,y-30,'p, the probability of passing',{fill:INK,'font-size':13});
+  })();
+
+  /* 04-06: line on 0/1 data */
+  function lineDataPlot(svg,opts){ opts=opts||{}; svg.innerHTML='';
+    var L=60,R=630,T=30,B=310, xmax=opts.xmax||5.5, ymin=-0.5, ymax=opts.ymax||1.5;
+    var px=function(x){return L+(x/xmax)*(R-L)}, py=function(y){return B-((y-ymin)/(ymax-ymin))*(B-T)};
+    if(opts.band){ svg.appendChild(svgEl('rect',{x:L,y:py(1),width:R-L,height:py(0)-py(1),fill:'#eaeef7'})); txt(svg,R-6,py(1)+14,'where probabilities live',{'text-anchor':'end',fill:BLUE}); }
+    axes(svg,L,R,T,B);
+    [0,0.5,1].forEach(function(v){ txt(svg,L-8,py(v)+4,v,{'text-anchor':'end'}); });
+    if(ymax>1.5) txt(svg,L-8,py(2)+4,'2',{'text-anchor':'end'});
+    for(var h=1;h<=Math.floor(xmax);h++) txt(svg,px(h),B+18,h,{'text-anchor':'middle'});
+    txt(svg,(L+R)/2,B+36,'hours',{'text-anchor':'middle'});
+    svg.appendChild(svgEl('line',{x1:L,y1:py(0.5),x2:R,y2:py(0.5),stroke:RULE,'stroke-width':1.5,'stroke-dasharray':'5 5'}));
+    var w=0.279,b=-0.267; svg.appendChild(svgEl('line',{x1:px(0),y1:py(b),x2:px(xmax),y2:py(w*xmax+b),stroke:BLUE,'stroke-width':3}));
+    X.forEach(function(x,k){ svg.appendChild(svgEl('circle',{cx:px(x),cy:py(Y[k]),r:7,fill:Y[k]?GREEN:RED})); });
+    if(opts.escape){ [[0.5,-0.13],[5,1.13]].forEach(function(q){ svg.appendChild(svgEl('circle',{cx:px(q[0]),cy:py(q[1]),r:7,fill:'none',stroke:RED,'stroke-width':3})); txt(svg,px(q[0])+(q[0]<3?12:-12),py(q[1])+(q[0]<3?18:-12),q[1].toFixed(2),{fill:RED,'text-anchor':q[0]<3?'start':'end','font-weight':700,'font-size':14}); }); }
+    if(opts.eight){ svg.appendChild(svgEl('circle',{cx:px(8),cy:py(1),r:7,fill:GREEN})); svg.appendChild(svgEl('circle',{cx:px(8),cy:py(1.97),r:7,fill:'none',stroke:RED,'stroke-width':3})); svg.appendChild(svgEl('line',{x1:px(8),y1:py(1),x2:px(8),y2:py(1.97),stroke:RED,'stroke-width':2,'stroke-dasharray':'4 4'})); txt(svg,px(8)-12,py(1.5)+4,'error 0.97',{'text-anchor':'end',fill:RED,'font-weight':700}); txt(svg,px(8),py(1.97)-12,'1.97',{'text-anchor':'middle',fill:RED,'font-weight':700}); txt(svg,px(8),B+18,'8',{'text-anchor':'middle'}); }
+    txt(svg,px(2.75),py(0.5)-10,'crosses 0.5 at 2.75 h',{'text-anchor':'middle',fill:INK});
+  }
+  (function(){ var s=document.getElementById('lineFit'); if(s) lineDataPlot(s,{}); s=document.getElementById('lineEscape'); if(s) lineDataPlot(s,{band:true,escape:true}); s=document.getElementById('lineEight'); if(s) lineDataPlot(s,{band:true,eight:true,xmax:8.5,ymax:2.2}); })();
+
+  /* 07: the band with z axis */
+  (function(){ var s=document.getElementById('squashBand'); if(!s) return;
+    var L=60,R=630,T=30,B=310; var px=function(z){return L+((z+6)/12)*(R-L)}, py=function(p){return B-((p+0.5)/2)*(B-T)};
+    s.appendChild(svgEl('rect',{x:L,y:py(1),width:R-L,height:py(0)-py(1),fill:'#eaeef7'}));
+    axes(s,L,R,T,B); [0,0.5,1].forEach(function(v){ txt(s,L-8,py(v)+4,v,{'text-anchor':'end'}); });
+    [-6,-3,0,3,6].forEach(function(z){ txt(s,px(z),B+18,z,{'text-anchor':'middle'}); });
+    txt(s,(L+R)/2,B+36,'z = w·x + b, any number at all',{'text-anchor':'middle'});
+    txt(s,L+10,py(1)+16,'p must stay in here',{fill:BLUE});
+    // the line, leaving the band
+    s.appendChild(svgEl('line',{x1:px(-6),y1:py(-0.4),x2:px(6),y2:py(1.4),stroke:RULE,'stroke-width':2,'stroke-dasharray':'5 5'})); txt(s,px(5.2),py(1.45),'a line leaves',{fill:SOFT,'text-anchor':'end'});
+    var pts=[]; for(var i=0;i<=120;i++){ var z=-6+12*i/120; pts.push([px(z),py(sig(z))]); } path(s,pts,BLUE,3);
+    s.appendChild(svgEl('circle',{cx:px(0),cy:py(0.5),r:6,fill:INK})); txt(s,px(0)+10,py(0.5)-8,'z = 0, p = 0.5',{fill:INK});
+  })();
+
+  /* 08: odds explorer */
+  (function(){ var sl=document.getElementById('oddsZ'); if(!sl) return; var s=document.getElementById('oddsSvg');
+    function paint(){ var z=+sl.value, o=Math.exp(z), p=sig(z); document.getElementById('oddsZo').textContent=fmt(z,1); document.getElementById('oddsO').textContent=o<100?o.toFixed(2):o.toFixed(0); document.getElementById('oddsP').textContent=p.toFixed(3);
+      s.innerHTML='';
+      // top: z number line ; middle: odds bar (log) ; bottom: p bar
+      var L=150,R=620;
+      var rows=[[60,'z  (adds)'],[150,'odds  (multiplies)'],[240,'p']];
+      rows.forEach(function(r){ s.appendChild(svgEl('line',{x1:L,y1:r[0],x2:R,y2:r[0],stroke:RULE,'stroke-width':2})); txt(s,L-10,r[0]+4,r[1],{'text-anchor':'end',fill:INK,'font-size':11}); });
+      // z scale
+      [-5,-2.5,0,2.5,5].forEach(function(v){ var x=L+(v+5)/10*(R-L); txt(s,x,60+20,v,{'text-anchor':'middle'}); s.appendChild(svgEl('line',{x1:x,y1:56,x2:x,y2:64,stroke:RULE})); });
+      // odds scale (log): 1/148 .. 148
+      [0.01,0.1,1,10,100].forEach(function(v){ var x=L+(Math.log(v)+5)/10*(R-L); txt(s,x,150+20,v>=1?v:('1/'+Math.round(1/v)),{'text-anchor':'middle'}); s.appendChild(svgEl('line',{x1:x,y1:146,x2:x,y2:154,stroke:RULE})); });
+      // p scale
+      [0,0.25,0.5,0.75,1].forEach(function(v){ var x=L+v*(R-L); txt(s,x,240+20,v,{'text-anchor':'middle'}); s.appendChild(svgEl('line',{x1:x,y1:236,x2:x,y2:244,stroke:RULE})); });
+      var xz=L+(z+5)/10*(R-L), xo=L+(Math.log(o)+5)/10*(R-L), xp=L+p*(R-L);
+      s.appendChild(svgEl('line',{x1:xz,y1:60,x2:xo,y2:150,stroke:BLUE,'stroke-width':1.5,'stroke-dasharray':'3 3'})); s.appendChild(svgEl('line',{x1:xo,y1:150,x2:xp,y2:240,stroke:BLUE,'stroke-width':1.5,'stroke-dasharray':'3 3'}));
+      s.appendChild(svgEl('circle',{cx:xz,cy:60,r:8,fill:INK})); s.appendChild(svgEl('circle',{cx:xo,cy:150,r:8,fill:BLUE})); s.appendChild(svgEl('circle',{cx:xp,cy:240,r:8,fill:p>0.5?GREEN:RED}));
+      txt(s,xz,60-14,fmt(z,1),{'text-anchor':'middle',fill:INK,'font-weight':700}); txt(s,xo,150-14,(o<100?o.toFixed(2):o.toFixed(0))+' : 1',{'text-anchor':'middle',fill:BLUE,'font-weight':700}); txt(s,xp,240-14,p.toFixed(3),{'text-anchor':'middle',fill:INK,'font-weight':700});
+      txt(s,L,300,'+1 on the top line is ×2.72 on the middle line, every time.',{fill:SOFT,'font-size':12});
+    }
+    sl.addEventListener('input',paint); paint();
+  })();
+
+  /* 10: sigmoid fit explorer */
+  (function(){ var sw=document.getElementById('sigW'); if(!sw) return; var sb=document.getElementById('sigB'), s=document.getElementById('sigFit'), tb=document.getElementById('sigTable');
+    function paint(){ var w=+sw.value,b=+sb.value; document.getElementById('sigWo').textContent=w.toFixed(1); document.getElementById('sigBo').textContent=fmt(b,1); document.getElementById('sigFlip').textContent=(w>0?fmt(-b/w,2):'—');
+      s.innerHTML=''; var L=60,R=730,T=20,B=280; var px=function(x){return L+(x/5.5)*(R-L)}, py=function(p){return B-p*(B-T)};
+      axes(s,L,R,T,B); [0,0.5,1].forEach(function(v){ txt(s,L-8,py(v)+4,v,{'text-anchor':'end'}); }); for(var h=1;h<=5;h++) txt(s,px(h),B+18,h+' h',{'text-anchor':'middle'});
+      s.appendChild(svgEl('line',{x1:L,y1:py(0.5),x2:R,y2:py(0.5),stroke:RULE,'stroke-dasharray':'5 5'}));
+      var pts=[]; for(var i=0;i<=150;i++){ var x=5.5*i/150; pts.push([px(x),py(sig(w*x+b))]); } path(s,pts,BLUE,3);
+      var h='<tr><th>hours</th><th>z</th><th>p</th><th>truth</th></tr>';
+      X.forEach(function(x,k){ var z=w*x+b,p=sig(z); s.appendChild(svgEl('circle',{cx:px(x),cy:py(Y[k]),r:7,fill:Y[k]?GREEN:RED})); s.appendChild(svgEl('line',{x1:px(x),y1:py(Y[k]),x2:px(x),y2:py(p),stroke:'#adb1b6','stroke-width':1.5})); s.appendChild(svgEl('circle',{cx:px(x),cy:py(p),r:4,fill:BLUE}));
+        h+='<tr><td>'+x+'</td><td>'+fmt(z,1)+'</td><td class="'+((p>0.5)==(Y[k]==1)?'':'pos')+'">'+p.toFixed(2)+'</td><td>'+(Y[k]?'✓':'✗')+'</td></tr>'; });
+      tb.innerHTML=h;
+      if(w>0){ var xf=-b/w; if(xf>0&&xf<5.5){ s.appendChild(svgEl('line',{x1:px(xf),y1:T,x2:px(xf),y2:B,stroke:INK,'stroke-width':1.5,'stroke-dasharray':'3 4'})); txt(s,px(xf)+6,T+14,'z = 0',{fill:INK}); } }
+    }
+    sw.addEventListener('input',paint); sb.addEventListener('input',paint); paint();
+  })();
+
+  /* 11: surprise game */
+  (function(){ var sl=document.getElementById('surpP'); if(!sl) return; var s=document.getElementById('surpSvg');
+    function paint(){ var p=sl.value/100; document.getElementById('surpPo').textContent=p.toFixed(2);
+      s.innerHTML=''; var L=60,R=630,T=20,B=270; var px=function(v){return L+v*(R-L)}, py=function(c){return B-Math.min(c,5)/5*(B-T)};
+      axes(s,L,R,T,B); [0,0.25,0.5,0.75,1].forEach(function(v){ txt(s,px(v),B+18,v,{'text-anchor':'middle'}); }); [0,1,2,3,4,5].forEach(function(c){ txt(s,L-8,py(c)+4,c,{'text-anchor':'end'}); });
+      txt(s,(L+R)/2,B+38,'probability you gave to what happened',{'text-anchor':'middle'}); txt(s,L+8,T+12,'charge = −log p',{fill:RED});
+      var pts=[]; for(var i=1;i<=200;i++){ var v=i/200; pts.push([px(v),py(-Math.log(v))]); } path(s,pts,RED,3);
+      var c=-Math.log(p); s.appendChild(svgEl('line',{x1:px(p),y1:B,x2:px(p),y2:py(c),stroke:INK,'stroke-dasharray':'3 3'})); s.appendChild(svgEl('circle',{cx:px(p),cy:py(c),r:8,fill:INK}));
+      txt(s,px(p)+12,py(c)-8,'you said '+p.toFixed(2)+'  →  charged '+c.toFixed(2),{fill:INK,'font-weight':700,'font-size':13});
+      var mood=p>0.85?'barely surprised':(p>0.5?'mildly surprised':(p>0.2?'surprised':(p>0.05?'very surprised':'you nearly said impossible')));
+      txt(s,R-6,T+12,mood,{'text-anchor':'end',fill:INK,'font-size':13});
+    }
+    sl.addEventListener('input',paint); paint();
+  })();
+
+  /* 12: surprises add */
+  (function(){ var s=document.getElementById('addSvg'); if(!s) return;
+    var L=40; function box(x,y,w,h,col,l1,l2){ s.appendChild(svgEl('rect',{x:x,y:y,width:w,height:h,rx:9,fill:'#fff',stroke:col,'stroke-width':2})); txt(s,x+w/2,y+26,l1,{'text-anchor':'middle',fill:col,'font-size':13,'font-weight':700}); txt(s,x+w/2,y+50,l2,{'text-anchor':'middle',fill:INK,'font-size':14}); }
+    box(L,30,170,70,GREEN,'student 1 passed','p₁ = 0.5'); box(L+250,30,170,70,GREEN,'student 2 passed','p₂ = 0.5');
+    txt(s,L+235,72,'×',{'text-anchor':'middle',fill:INK,'font-size':22}); txt(s,L+485,72,'=',{'text-anchor':'middle',fill:INK,'font-size':22});
+    box(L+500,30,120,70,INK,'both','0.25');
+    txt(s,L,140,'probabilities multiply',{fill:SOFT,'font-size':12});
+    box(L,170,170,70,RED,'surprise 1','−log 0.5 = 0.69'); box(L+250,170,170,70,RED,'surprise 2','−log 0.5 = 0.69');
+    txt(s,L+235,212,'+',{'text-anchor':'middle',fill:INK,'font-size':22}); txt(s,L+485,212,'=',{'text-anchor':'middle',fill:INK,'font-size':22});
+    box(L+500,170,120,70,INK,'both','1.39');
+    txt(s,L,280,'surprises add   ·   −log 0.25 = 1.39   ·   the log is the only function that does both at once',{fill:SOFT,'font-size':12});
+  })();
+
+  /* 14: CE vs MSE curves */
+  (function(){ var sl=document.getElementById('cmpP'); if(!sl) return; var s=document.getElementById('cmpSvg');
+    function paint(){ var p=sl.value/100; document.getElementById('cmpPo').textContent=p.toFixed(2);
+      s.innerHTML=''; var L=60,R=630,T=20,B=270; var px=function(v){return L+v*(R-L)}, py=function(c){return B-Math.min(c,5)/5*(B-T)};
+      axes(s,L,R,T,B); [0,0.25,0.5,0.75,1].forEach(function(v){ txt(s,px(v),B+18,v,{'text-anchor':'middle'}); }); [0,1,2,3,4,5].forEach(function(c){ txt(s,L-8,py(c)+4,c,{'text-anchor':'end'}); });
+      txt(s,(L+R)/2,B+38,'p you gave to "pass"  (and they passed)',{'text-anchor':'middle'});
+      var a=[],b=[]; for(var i=1;i<=200;i++){ var v=i/200; a.push([px(v),py(-Math.log(v))]); b.push([px(v),py((v-1)*(v-1))]); } path(s,a,RED,3); path(s,b,SOFT,3);
+      txt(s,px(0.06),py(-Math.log(0.06))-10,'cross-entropy −log p',{fill:RED,'font-weight':700}); txt(s,px(0.06),py(0.88)+18,'squared error (p−1)², caps at 1',{fill:SOFT,'font-weight':700});
+      var ce=-Math.log(p), se=(p-1)*(p-1); s.appendChild(svgEl('line',{x1:px(p),y1:B,x2:px(p),y2:py(Math.max(ce,se)),stroke:INK,'stroke-dasharray':'3 3'}));
+      s.appendChild(svgEl('circle',{cx:px(p),cy:py(ce),r:7,fill:RED})); s.appendChild(svgEl('circle',{cx:px(p),cy:py(se),r:7,fill:SOFT}));
+      txt(s,R-6,T+12,'CE '+ce.toFixed(2)+'   SE '+se.toFixed(2)+'   ratio '+(ce/se).toFixed(1)+'×',{'text-anchor':'end',fill:INK,'font-weight':700,'font-size':13});
+    }
+    sl.addEventListener('input',paint); paint();
+  })();
+
+  /* 15: chain diagram */
+  (function(){ var s=document.getElementById('chainSvg'); if(!s) return;
+    var xs=[120,480,840,1200], names=['w','z = w·x + b','p = σ(z)','L = −log p']; var y=90;
+    names.forEach(function(n,k){ s.appendChild(svgEl('rect',{x:xs[k]-110,y:y-32,width:220,height:64,rx:10,fill:'#fff',stroke:k==0?INK:BLUE,'stroke-width':2})); txt(s,xs[k],y+6,n,{'text-anchor':'middle',fill:INK,'font-size':18}); });
+    var sl=['× x','× p(1−p)','× (−1/p)']; var who=['link 3','link 2','link 1'];
+    for(var k=0;k<3;k++){ s.appendChild(svgEl('line',{x1:xs[k]+112,y1:y,x2:xs[k+1]-114,y2:y,stroke:BLUE,'stroke-width':2.5})); s.appendChild(svgEl('path',{d:'M'+(xs[k+1]-122)+' '+(y-6)+' L'+(xs[k+1]-113)+' '+y+' L'+(xs[k+1]-122)+' '+(y+6),fill:'none',stroke:BLUE,'stroke-width':2})); txt(s,(xs[k]+xs[k+1])/2,y-18,sl[k],{'text-anchor':'middle',fill:BLUE,'font-size':15,'font-weight':700}); txt(s,(xs[k]+xs[k+1])/2,y+28,who[k],{'text-anchor':'middle','font-size':11}); }
+    txt(s,700,170,'a nudge to w travels right, and is scaled by each link.  total slope = product of the three.',{'text-anchor':'middle',fill:INK,'font-size':13});
+  })();
+
+  /* 16: sigmoid + derivative */
+  (function(){ var s=document.getElementById('dsigSvg'); if(!s) return;
+    var L=60,R=630,T=20,B=280; var px=function(z){return L+((z+6)/12)*(R-L)}, py=function(v){return B-v*(B-T)};
+    axes(s,L,R,T,B); [-6,-3,0,3,6].forEach(function(z){ txt(s,px(z),B+18,z,{'text-anchor':'middle'}); }); [0,0.25,0.5,1].forEach(function(v){ txt(s,L-8,py(v)+4,v,{'text-anchor':'end'}); });
+    var a=[],b=[]; for(var i=0;i<=200;i++){ var z=-6+12*i/200, p=sig(z); a.push([px(z),py(p)]); b.push([px(z),py(p*(1-p))]); } path(s,a,BLUE,3); path(s,b,SOFT,3);
+    txt(s,px(2.2),py(sig(2.2))-12,'p = σ(z)',{fill:BLUE,'font-weight':700,'font-size':14}); txt(s,px(0),py(0.25)-12,'slope p(1−p), peaks at 0.25',{fill:SOFT,'font-weight':700,'text-anchor':'middle','font-size':13});
+    [-5,5].forEach(function(z){ txt(s,px(z),py(sig(z)*(1-sig(z)))-14,'≈ 0',{fill:RED,'text-anchor':'middle','font-weight':700}); s.appendChild(svgEl('circle',{cx:px(z),cy:py(sig(z)*(1-sig(z))),r:5,fill:RED})); });
+    txt(s,(L+R)/2,B+38,'z',{'text-anchor':'middle'});
+  })();
+
+  /* 18: stuck comparison bars */
+  (function(){ var sl=document.getElementById('stuckP'); if(!sl) return; var s=document.getElementById('stuckSvg');
+    function paint(){ var p=sl.value/1000; document.getElementById('stuckPo').textContent=p.toFixed(3);
+      var ce=p, se=2*p*p*(1-p); s.innerHTML='';
+      var L=230,R=620; var W=function(v){return v*(R-L)};
+      [[60,'cross-entropy  (p − y)',ce,BLUE],[160,'squared error  2(p − y)·p(1−p)',se,SOFT]].forEach(function(r){ txt(s,L-14,r[0]+8,r[1],{'text-anchor':'end',fill:INK,'font-size':12}); s.appendChild(svgEl('rect',{x:L,y:r[0]-16,width:Math.max(2,W(r[2])),height:48,rx:6,fill:r[3]})); txt(s,L+Math.max(2,W(r[2]))+10,r[0]+8,r[2].toFixed(4)+' · x',{fill:INK,'font-weight':700,'font-size':14}); });
+      txt(s,L,260,'ratio '+(ce/se).toFixed(0)+'×  ·  the push back, per unit of x, when the truth is 0',{fill:SOFT,'font-size':12});
+    }
+    sl.addEventListener('input',paint); paint();
+  })();
+
+  /* 19: watch it learn (logistic) */
+  (function(){ var f=document.getElementById('lrFit'); if(!f) return; var ls=document.getElementById('lrLoss'), pr=document.getElementById('lrProbs');
+    var w=0,b=0,step=0,hist=[],lr=0.5;
+    function paintFit(){ f.innerHTML=''; var L=60,R=730,T=20,B=250; var px=function(x){return L+(x/5.5)*(R-L)}, py=function(p){return B-p*(B-T)};
+      axes(f,L,R,T,B); [0,0.5,1].forEach(function(v){ txt(f,L-8,py(v)+4,v,{'text-anchor':'end'}); }); for(var h=1;h<=5;h++) txt(f,px(h),B+18,h+' h',{'text-anchor':'middle'});
+      var pts=[]; for(var i=0;i<=150;i++){ var x=5.5*i/150; pts.push([px(x),py(sig(w*x+b))]); } path(f,pts,BLUE,3);
+      X.forEach(function(x,k){ f.appendChild(svgEl('circle',{cx:px(x),cy:py(Y[k]),r:7,fill:Y[k]?GREEN:RED})); });
+      txt(f,R-6,T+12,'p = σ('+fmt(w,2)+'·x '+(b<0?'− ':'+ ')+Math.abs(b).toFixed(2)+')',{'text-anchor':'end',fill:BLUE,'font-weight':700}); }
+    function paintLoss(){ ls.innerHTML=''; var L=60,R=600,T=20,B=250; var n=Math.max(hist.length,10); var px=function(i){return L+(i/(n-1))*(R-L)}, py=function(v){return B-(v/0.75)*(B-T)};
+      axes(ls,L,R,T,B); [0,0.25,0.5,0.693].forEach(function(v){ txt(ls,L-8,py(v)+4,v,{'text-anchor':'end'}); }); ls.appendChild(svgEl('line',{x1:L,y1:py(0.693),x2:R,y2:py(0.693),stroke:RULE,'stroke-dasharray':'4 4'})); txt(ls,L+8,py(0.693)-6,'−log 0.5: no idea about anyone',{fill:SOFT});
+      ls.appendChild(svgEl('line',{x1:L,y1:py(0.251),x2:R,y2:py(0.251),stroke:'#b6d5cc','stroke-dasharray':'4 4'})); txt(ls,R-6,py(0.251)-6,'0.251, as low as this data allows',{fill:GREEN,'text-anchor':'end'});
+      txt(ls,R,B+18,'step '+step,{'text-anchor':'end'}); if(hist.length>1){ var pts=hist.map(function(v,i){return [px(i),py(v)]}); path(ls,pts,BLUE,2.5); } if(hist.length) ls.appendChild(svgEl('circle',{cx:px(hist.length-1),cy:py(hist[hist.length-1]),r:6,fill:BLUE})); }
+    function paint(){ paintFit(); paintLoss(); document.getElementById('lrStep').textContent=step; document.getElementById('lrW').textContent=fmt(w,2); document.getElementById('lrB').textContent=fmt(b,2); document.getElementById('lrL').textContent=lossCE(w,b).toFixed(3);
+      var t='hours  '+X.map(function(x){return String(x).padStart(5)}).join('')+'\ntruth  '+Y.map(function(y){return String(y).padStart(5)}).join('')+'\np      '; X.forEach(function(x,k){ var p=sig(w*x+b); var cls=(k==4||k==5)?'hit':((p>0.5)==(Y[k]==1)?'ok':'bad'); t+='<span class="'+cls+'">'+p.toFixed(2).padStart(5)+'</span>'; }); pr.innerHTML=t; }
+    function steps(n){ for(var i=0;i<n;i++){ hist.push(lossCE(w,b)); var dw=0,db=0; for(var k=0;k<10;k++){ var e=sig(w*X[k]+b)-Y[k]; dw+=e*X[k]; db+=e; } w-=lr*dw/10; b-=lr*db/10; step++; } if(hist.length>600){ var h2=[]; for(var i=0;i<hist.length;i+=Math.ceil(hist.length/600)) h2.push(hist[i]); h2.push(hist[hist.length-1]); hist=h2; } paint(); }
+    document.getElementById('lr1').onclick=function(){steps(1)}; document.getElementById('lr10').onclick=function(){steps(10)}; document.getElementById('lr100').onclick=function(){steps(100)}; document.getElementById('lr2000').onclick=function(){steps(2000)};
+    document.getElementById('lrReset').onclick=function(){w=0;b=0;step=0;hist=[];paint();};
+    paint();
+  })();
+
+  /* 22: two-input boundary */
+  (function(){ var s=document.getElementById('bndSvg'); if(!s) return;
+    var H=[1,1.5,2,2,2.5,3,3,3.5,4,4,4.5,5,2.5,1.5,3.5,5], S=[4,7,5,8,6,4,7,5,6,8,5,7,9,9,3,4], YY=[0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,1];
+    var ids=['bW1','bW2','bB'];
+    function paint(){ var w1=+document.getElementById('bW1').value, w2=+document.getElementById('bW2').value, b=+document.getElementById('bB').value;
+      document.getElementById('bW1o').textContent=w1.toFixed(1); document.getElementById('bW2o').textContent=fmt(w2,1); document.getElementById('bBo').textContent=fmt(b,1);
+      s.innerHTML=''; var L=60,R=630,T=20,B=350; var px=function(h){return L+(h/6)*(R-L)}, py=function(sl){return B-(sl/10)*(B-T)};
+      // shading grid
+      for(var i=0;i<30;i++) for(var j=0;j<30;j++){ var h=6*(i+0.5)/30, sl=10*(j+0.5)/30, p=sig(w1*h+w2*sl+b); var col=p>0.5?GREEN:RED; s.appendChild(svgEl('rect',{x:px(6*i/30),y:py(10*(j+1)/30),width:(R-L)/30+0.5,height:(B-T)/30+0.5,fill:col,opacity:Math.abs(p-0.5)*0.5,'shape-rendering':'crispEdges'})); }
+      axes(s,L,R,T,B); for(var h=1;h<=5;h++) txt(s,px(h),B+18,h,{'text-anchor':'middle'}); for(var sl=2;sl<=10;sl+=2) txt(s,L-8,py(sl)+4,sl,{'text-anchor':'end'});
+      txt(s,(L+R)/2,B+36,'hours studied',{'text-anchor':'middle'}); txt(s,L+8,T+14,'sleep',{});
+      // boundary line: w1 h + w2 s + b = 0 -> s = -(w1 h + b)/w2
+      if(Math.abs(w2)>1e-6){ var pts=[]; for(var i=0;i<=60;i++){ var h=6*i/60, sl=-(w1*h+b)/w2; if(sl>=0&&sl<=10) pts.push([px(h),py(sl)]); } if(pts.length>1) path(s,pts,BLUE,3); }
+      else { var h0=-b/w1; if(h0>=0&&h0<=6) s.appendChild(svgEl('line',{x1:px(h0),y1:T,x2:px(h0),y2:B,stroke:BLUE,'stroke-width':3})); }
+      var ok=0, Lsum=0; H.forEach(function(h,k){ var p=sig(w1*h+w2*S[k]+b); var right=(p>0.5)==(YY[k]==1); if(right) ok++; Lsum+=-(YY[k]*Math.log(p)+(1-YY[k])*Math.log(1-p)); s.appendChild(svgEl('circle',{cx:px(h),cy:py(S[k]),r:9,fill:YY[k]?GREEN:RED,stroke:right?'#fff':INK,'stroke-width':right?2:3})); });
+      document.getElementById('bndOK').textContent=ok; document.getElementById('bndL').textContent=(Lsum/16).toFixed(3);
+    }
+    ids.forEach(function(id){ document.getElementById(id).addEventListener('input',paint); }); paint();
+  })();
+
+  /* 23: XOR */
+  (function(){ var s=document.getElementById('xorSvg'); if(!s) return;
+    function paint(){ var a=+document.getElementById('xorA').value*Math.PI/180, sh=+document.getElementById('xorS').value; document.getElementById('xorAo').textContent=document.getElementById('xorA').value+'°'; document.getElementById('xorSo').textContent=fmt(sh,2);
+      s.innerHTML=''; var L=130,R=530,T=40,B=340; var px=function(v){return L+(v+0.25)/1.5*(R-L)}, py=function(v){return B-(v+0.25)/1.5*(B-T)};
+      // line: normal n=(cos a, sin a); n·(x-0.5,y-0.5) = sh
+      var nx=Math.cos(a), ny=Math.sin(a);
+      // shade half-plane via many points? simpler: draw line and mark side by sign
+      var pts=[[0,0,0],[0,1,1],[1,0,1],[1,1,0]]; var ok=0;
+      // classify: side>0 => predict 1
+      pts.forEach(function(p){ var side=nx*(p[0]-0.5)+ny*(p[1]-0.5)-sh; var pred=side>0?1:0; if(pred==p[2]) ok++; });
+      // draw the two half planes lightly
+      for(var i=0;i<24;i++) for(var j=0;j<24;j++){ var x=-0.25+1.5*(i+0.5)/24, y=-0.25+1.5*(j+0.5)/24; var side=nx*(x-0.5)+ny*(y-0.5)-sh; s.appendChild(svgEl('rect',{x:px(-0.25+1.5*i/24),y:py(-0.25+1.5*(j+1)/24),width:(R-L)/24+0.5,height:(B-T)/24+0.5,fill:side>0?GREEN:RED,opacity:.09})); }
+      axes(s,L,R,T,B); txt(s,px(0),B+18,'0',{'text-anchor':'middle'}); txt(s,px(1),B+18,'1',{'text-anchor':'middle'}); txt(s,L-8,py(0)+4,'0',{'text-anchor':'end'}); txt(s,L-8,py(1)+4,'1',{'text-anchor':'end'}); txt(s,(L+R)/2,B+36,'in₁',{'text-anchor':'middle'}); txt(s,L-30,T+8,'in₂',{});
+      // line endpoints: direction d=(-ny,nx); point c=(0.5,0.5)+sh*n
+      var cx=0.5+sh*nx, cy=0.5+sh*ny; var x1=cx-ny*3,y1=cy+nx*3,x2=cx+ny*3,y2=cy-nx*3;
+      s.appendChild(svgEl('line',{x1:px(x1),y1:py(y1),x2:px(x2),y2:py(y2),stroke:BLUE,'stroke-width':3}));
+      pts.forEach(function(p){ var side=nx*(p[0]-0.5)+ny*(p[1]-0.5)-sh; var pred=side>0?1:0; s.appendChild(svgEl('circle',{cx:px(p[0]),cy:py(p[1]),r:16,fill:p[2]?GREEN:RED,stroke:pred==p[2]?'#fff':INK,'stroke-width':pred==p[2]?2:4})); txt(s,px(p[0]),py(p[1])+5,p[2],{'text-anchor':'middle',fill:'#fff','font-size':14,'font-weight':700}); });
+      document.getElementById('xorOK').textContent=ok;
+      txt(s,R,T+12,'green side predicts 1',{'text-anchor':'end',fill:GREEN});
+    }
+    ['xorA','xorS'].forEach(function(id){ document.getElementById(id).addEventListener('input',paint); }); paint();
+  })();
+
+  /* 24: the door out */
+  (function(){ var s=document.getElementById('doorSvg'); if(!s) return;
+    var L=130,R=530,T=40,B=340; var px=function(v){return L+(v+0.25)/1.5*(R-L)}, py=function(v){return B-(v+0.25)/1.5*(B-T)};
+    var g1=svgEl('g',{class:'frag'}), g2=svgEl('g',{class:'frag'}), g3=svgEl('g',{class:'frag'});
+    // region between lines x - y = 0.5 and y - x = 0.5 shading
+    var poly=svgEl('polygon',{points:[[px(-0.25),py(0.25)],[px(0.25),py(-0.25)],[px(1.25),py(0.75)],[px(0.75),py(1.25)]].map(function(p){return p.join(',')}).join(' '),fill:GREEN,opacity:.18}); g3.appendChild(poly);
+    s.appendChild(g3);
+    axes(s,L,R,T,B); txt(s,px(0),B+18,'0',{'text-anchor':'middle'}); txt(s,px(1),B+18,'1',{'text-anchor':'middle'}); txt(s,L-8,py(0)+4,'0',{'text-anchor':'end'}); txt(s,L-8,py(1)+4,'1',{'text-anchor':'end'});
+    // line 1: in1 - in2 = 0.5  (in1 and not in2)
+    g1.appendChild(svgEl('line',{x1:px(0.25),y1:py(-0.25),x2:px(1.25),y2:py(0.75),stroke:BLUE,'stroke-width':3})); var t1=txt(g1,px(1.05),py(0.5),'neuron A: in₁ and not in₂',{fill:BLUE,'font-weight':700,'font-size':12});
+    g2.appendChild(svgEl('line',{x1:px(-0.25),y1:py(0.25),x2:px(0.75),y2:py(1.25),stroke:BLUE,'stroke-width':3})); var t2=txt(g2,px(-0.2),py(0.9),'neuron B: in₂ and not in₁',{fill:BLUE,'font-weight':700,'font-size':12});
+    s.appendChild(g1); s.appendChild(g2);
+    var pts=[[0,0,0],[0,1,1],[1,0,1],[1,1,0]]; pts.forEach(function(p){ s.appendChild(svgEl('circle',{cx:px(p[0]),cy:py(p[1]),r:16,fill:p[2]?GREEN:RED,stroke:'#fff','stroke-width':2})); txt(s,px(p[0]),py(p[1])+5,p[2],{'text-anchor':'middle',fill:'#fff','font-size':14,'font-weight':700}); });
+    var t3=txt(g3,px(0.5),py(0.5)+5,'neuron C: A or B',{'text-anchor':'middle',fill:GREEN,'font-weight':700,'font-size':13});
+    s.appendChild(g3);
+  })();
+
+  paint();
+})();
+</script>
+</body>
+</html>
