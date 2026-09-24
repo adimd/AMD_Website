@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 1 · From a line to a neuron</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.prog{display:grid;grid-template-columns:1.02fr .98fr;gap:34px;align-items:start}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+
+pre{background:#14181f;border-radius:10px;padding:18px 22px;font-family:var(--mono);font-size:15px;
+  line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre.xs{font-size:13.5px;line-height:1.45}
+pre .c{color:#7f8896} pre .k{color:#ff96a2}
+pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.term{background:#0f1319;border-radius:10px;padding:16px 20px;font-family:var(--mono);
+  font-size:16px;line-height:1.6;color:#9fe8b8;box-shadow:0 10px 24px rgba(20,22,28,.18);white-space:pre;overflow:hidden}
+.term.xs{font-size:13px;line-height:1.5}
+.term.xxs{font-size:11.5px;line-height:1.45}
+.term .dim{color:#7f8896} .term .hit{color:#ffd47e;font-weight:700}
+.term .bad{color:#ff96a2;font-weight:700} .term .ok{color:#7fe6ad}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+/* data tables (new for this deck, same palette) */
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt td.pos{color:var(--fail)} table.dt td.neg{color:var(--accent)}
+table.dt tr.tot td{background:var(--accent-soft);font-weight:700}
+
+/* formula block */
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+.eq .g{color:var(--soft);font-size:.7em}
+.eq.sm{font-size:21px}
+
+/* five-line loop */
+.five{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:8px}
+.five .b{background:var(--card);border:1px solid var(--rule);border-radius:9px;padding:14px 12px;text-align:center}
+.five .b .n{font-family:var(--display);font-size:34px;color:var(--accent);font-weight:600;line-height:1}
+.five .b .t{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.five .b .d{font-size:15px;color:var(--soft);margin-top:6px;line-height:1.35}
+
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+tr.frag{transition:opacity .28s ease}
+svg:has(#wvar.shown) #bvar{opacity:0}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 01</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 1 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 01 · hour one of forty-five</div>
+    <h1>From a line<br>to a neuron</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Today you will write down a rule, score how wrong it is, and teach a computer to make it less wrong. By the end you will have built a neuron, and you will know exactly what that word means.</p>
+  </div>
+  <div class="cue">No slides about neural networks today. Nobody hears the word until the last five minutes.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="A friend's question" data-act="the problem">
+  <div>
+    <h2>A friend asks: if I study four hours, what will I score?</h2>
+    <div class="split" style="align-items:start">
+      <div class="stack">
+        <p>You have some data from last year. Five students, hours studied and marks obtained.</p>
+        <p class="frag">Most people say <strong>about 60</strong>. Ask them how. They looked at the pattern and filled in the gap.</p>
+        <p class="frag">Push further. Six hours? Ten hours? Half an hour? They keep guessing, roughly along a line.</p>
+      </div>
+      <div>
+        <table class="dt">
+          <tr><th>hours studied</th><th>marks</th></tr>
+          <tr><td>1</td><td>32</td></tr>
+          <tr><td>2</td><td>41</td></tr>
+          <tr><td>3</td><td>55</td></tr>
+          <tr><td>4</td><td>60</td></tr>
+          <tr><td>5</td><td>74</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Let three or four people answer before revealing anything. The point is that they can all do it and none of them can say how.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="What a model is" data-act="the problem">
+  <div>
+    <h2>What you just did has a name.</h2>
+    <p class="big" style="max-width:40ch">You took inputs you had never seen and produced an output, using a pattern you learned from examples.</p>
+    <div class="rem frag" style="max-width:820px">
+      <div class="h">a model is</div>
+      <ul>
+        <li>A rule that turns an input into an output.</li>
+        <li>Learned from examples, not written down by hand.</li>
+        <li>Useful precisely because it works on inputs it has never seen.</li>
+      </ul>
+    </div>
+    <p class="frag" style="margin-top:18px">The rule you used in your head was "marks go up steadily with hours". Today we make the computer learn that rule. To do that we have to say <em>exactly</em> what the rule is.</p>
+  </div>
+  <div class="cue">Say the last line slowly. The whole hour is about replacing "roughly" with a number.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="The simplest rule" data-act="a line">
+  <div>
+    <h2>The simplest rule is a straight line.</h2>
+    <div class="split">
+      <div>
+        <svg viewBox="0 0 640 420" width="640" height="420">
+          <line x1="70" y1="360" x2="600" y2="360" stroke="#c6c3ba" stroke-width="1.5"/>
+          <line x1="70" y1="360" x2="70" y2="30" stroke="#c6c3ba" stroke-width="1.5"/>
+          <text x="335" y="400" font-size="13" fill="#8b9096" text-anchor="middle">HOURS STUDIED</text>
+          <text x="22" y="200" font-size="13" fill="#8b9096" text-anchor="middle" transform="rotate(-90 22 200)">MARKS</text>
+          <g font-size="12" fill="#8b9096" text-anchor="middle">
+            <text x="160" y="380">1</text><text x="250" y="380">2</text><text x="340" y="380">3</text><text x="430" y="380">4</text><text x="520" y="380">5</text>
+          </g>
+          <g font-size="12" fill="#8b9096" text-anchor="end">
+            <text x="60" y="364">0</text><text x="60" y="264">25</text><text x="60" y="164">50</text><text x="60" y="64">75</text>
+          </g>
+          <!-- points: y = 360 - marks*4 -->
+          <g fill="#15171b">
+            <circle cx="160" cy="232" r="7"/><circle cx="250" cy="196" r="7"/><circle cx="340" cy="140" r="7"/><circle cx="430" cy="120" r="7"/><circle cx="520" cy="64" r="7"/>
+          </g>
+          <!-- line w=10 b=22: at x=0 -> 22 -> y=272 ; at x=5.8 -> 80 -> y=40 -->
+          <g class="frag">
+            <line x1="70" y1="272" x2="592" y2="40" stroke="#23408f" stroke-width="3"/>
+            <text x="360" y="200" font-size="13" fill="#23408f">marks = 10 × hours + 22</text>
+          </g>
+        </svg>
+      </div>
+      <div class="stack">
+        <p>Plot the five students. Draw a line through them by eye.</p>
+        <p class="frag">Any straight line can be written with just two numbers:</p>
+        <div class="eq frag">marks = <span class="v">w</span> × hours + <span class="v">b</span></div>
+        <p class="frag small">The <em>shape</em> of the rule is fixed. It is a line. The two numbers are ours to choose. The whole job is choosing them well.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Draw the line by hand on the board first, badly. Then the slide's line. Ask which is better and why. They will say "closer to the dots". Hold that thought.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="What w and b mean" data-act="a line">
+  <div>
+    <h2>Two numbers. Spend a minute on what each one does.</h2>
+    <div class="split">
+      <div>
+        <svg viewBox="0 0 640 420" width="640" height="420">
+          <line x1="70" y1="360" x2="600" y2="360" stroke="#c6c3ba" stroke-width="1.5"/>
+          <line x1="70" y1="360" x2="70" y2="30" stroke="#c6c3ba" stroke-width="1.5"/>
+          <g fill="#c6c3ba"><circle cx="160" cy="232" r="6"/><circle cx="250" cy="196" r="6"/><circle cx="340" cy="140" r="6"/><circle cx="430" cy="120" r="6"/><circle cx="520" cy="64" r="6"/></g>
+          <!-- b varies, w=10 -->
+          <g class="frag" id="bvar">
+            <line x1="70" y1="312" x2="592" y2="80" stroke="#23408f" stroke-width="2" opacity=".35"/>
+            <line x1="70" y1="272" x2="592" y2="40" stroke="#23408f" stroke-width="3"/>
+            <line x1="70" y1="232" x2="580" y2="6" stroke="#23408f" stroke-width="2" opacity=".35"/>
+            <text x="80" y="300" font-size="12" fill="#23408f">b = 12</text>
+            <text x="80" y="258" font-size="12" fill="#23408f">b = 22</text>
+            <text x="80" y="220" font-size="12" fill="#23408f">b = 32</text>
+          </g>
+          <!-- w varies, b=22 -->
+          <g class="frag" id="wvar">
+            <line x1="70" y1="272" x2="592" y2="156" stroke="#a8231f" stroke-width="2" opacity=".45"/>
+            <line x1="70" y1="272" x2="592" y2="40" stroke="#a8231f" stroke-width="3"/>
+            <line x1="70" y1="272" x2="430" y2="32" stroke="#a8231f" stroke-width="2" opacity=".45"/>
+            <text x="540" y="150" font-size="12" fill="#a8231f">w = 5</text>
+            <text x="545" y="34" font-size="12" fill="#a8231f">w = 10</text>
+            <text x="440" y="40" font-size="12" fill="#a8231f">w = 15</text>
+          </g>
+        </svg>
+      </div>
+      <div class="stack">
+        <div class="panel frag">
+          <span class="lab">b · where the line starts</span>
+          <p style="max-width:none">The marks you would get with zero hours. Raise b and the whole line lifts. Lower it and the whole line drops. The slope does not change.</p>
+        </div>
+        <div class="panel frag">
+          <span class="lab">w · how steep it is</span>
+          <p style="max-width:none">How many extra marks each extra hour buys. w = 10 means every hour is worth ten marks. The starting point does not change.</p>
+        </div>
+        <p class="frag">By eye, <span class="num">w = 10</span> and <span class="num">b = 22</span> look about right. Write them down. We are going to check.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The first click shows three lines that differ only in b. The second shows three that differ only in w. Do not show both at once; the point is what stays fixed.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Is it a good line?" data-act="scoring">
+  <div class="center">
+    <h2>Is w = 10, b = 22 a good line?</h2>
+    <p class="big">Someone will say "looks fine".</p>
+    <p class="big frag" style="margin-top:8px">The computer cannot look.</p>
+    <p class="frag" style="margin-top:26px;max-width:44ch">It needs a single number that scores any line, where smaller means better. We are going to build that number from the five students, one row at a time.</p>
+  </div>
+  <div class="cue">This is the pivot of the hour. Everything before was intuition; everything after is making the intuition into arithmetic.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Errors, one row at a time" data-act="scoring">
+  <div>
+    <h2>For each student: what we predicted, what they got, the difference.</h2>
+    <div class="split" style="align-items:start">
+      <div>
+        <table class="dt">
+          <tr><th>hours x</th><th>marks y</th><th>predicted ŷ</th><th>error ŷ − y</th></tr>
+          <tr class="frag"><td>1</td><td>32</td><td>32</td><td>0</td></tr>
+          <tr class="frag"><td>2</td><td>41</td><td>42</td><td class="pos">+1</td></tr>
+          <tr class="frag"><td>3</td><td>55</td><td>52</td><td class="neg">−3</td></tr>
+          <tr class="frag"><td>4</td><td>60</td><td>62</td><td class="pos">+2</td></tr>
+          <tr class="frag"><td>5</td><td>74</td><td>72</td><td class="neg">−2</td></tr>
+        </table>
+      </div>
+      <div class="stack">
+        <p>First student: one hour. The line says 10 × 1 + 22 = <span class="num">32</span>. They scored 32. Error zero. Lovely.</p>
+        <p class="frag">Second student: 10 × 2 + 22 = <span class="num">42</span>. They scored 41. We were one mark too high.</p>
+        <p class="frag">Keep going. Two overshoots, two undershoots, one bang on.</p>
+        <div class="rem frag" style="margin-top:14px">
+          <div class="h">convention</div>
+          <ul>
+            <li>Error is predicted minus actual. Positive means we guessed too high.</li>
+            <li>ŷ (say "y hat") is the prediction. y is the truth.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Fill the table live with the class calling out each prediction. Five rows, five arithmetic problems, no symbols yet.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Five errors into one score" data-act="scoring">
+  <div>
+    <h2>Five errors. How do I turn them into one number?</h2>
+    <div class="split" style="align-items:start">
+      <div class="stack">
+        <p>First instinct: add them up.</p>
+        <div class="eq sm frag">0 + 1 − 3 + 2 − 2 = <span class="v">−2</span></div>
+        <p class="frag">Is that fair? The +1 and the −3 partly cancelled, but both were mistakes. A line that is wildly wrong in both directions could score zero. Adding is broken.</p>
+        <p class="frag">Fix: make every error positive first. Square it.</p>
+        <div class="eq sm frag">0 + 1 + 9 + 4 + 4 = 18 &nbsp;&nbsp;<span class="g">then ÷ 5</span>&nbsp;&nbsp; = <span class="v">3.6</span></div>
+      </div>
+      <div>
+        <table class="dt frag">
+          <tr><th>error</th><th>squared</th></tr>
+          <tr><td>0</td><td>0</td></tr>
+          <tr><td>+1</td><td>1</td></tr>
+          <tr><td>−3</td><td>9</td></tr>
+          <tr><td>+2</td><td>4</td></tr>
+          <tr><td>−2</td><td>4</td></tr>
+          <tr class="tot"><td>sum</td><td>18</td></tr>
+          <tr class="tot"><td>mean</td><td>3.6</td></tr>
+        </table>
+        <div class="rem frag">
+          <div class="h">why square, and not absolute value</div>
+          <ul>
+            <li>Squaring punishes big mistakes much more than small ones. An error of 1 stays 1; an error of 3 becomes 9. That matches how we feel about being off by 30 versus off by 3.</li>
+            <li>Squares are smooth. No sharp corner at zero. That will matter in ten minutes.</li>
+            <li>Dividing by five stops the score growing just because we have more students.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Let them propose "add them" and let it fail. Then someone will propose absolute value; say it also works, and give the two reasons we prefer squares.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Name it: the loss" data-act="scoring">
+  <div>
+    <h2>That number has a name. It is the loss.</h2>
+    <div class="split" style="align-items:start">
+      <div class="stack">
+        <div class="eq">L = <span class="g">(1/N)</span> Σ (<span class="v">ŷ</span> − y)²</div>
+        <p class="frag">Read it as English: <em>the average of the squared mistakes.</em> Point at each symbol. N is five. Σ is "add up over the students". The squared bracket is one row of the table.</p>
+        <p class="frag">Mean squared error. For our line, L = 3.6.</p>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">the sentence that reframes everything</div>
+        <ul>
+          <li>The data does not change. The five students are fixed.</li>
+          <li>If I change w to 11, every prediction changes, every error changes, and the loss changes.</li>
+          <li>So the loss is a function of <strong>w and b</strong>. It is a score for the line I picked.</li>
+          <li>We want the w and b that make it as small as possible.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Write L(w, b) on the board, not just L. The bracket is the point.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="The bowl" data-act="finding the bottom">
+  <div>
+    <h2>Imagine trying every w and plotting the loss.</h2>
+    <div class="split">
+      <div>
+        <svg viewBox="0 0 640 420" width="640" height="420">
+          <line x1="70" y1="360" x2="600" y2="360" stroke="#c6c3ba" stroke-width="1.5"/>
+          <line x1="70" y1="360" x2="70" y2="30" stroke="#c6c3ba" stroke-width="1.5"/>
+          <text x="335" y="400" font-size="13" fill="#8b9096" text-anchor="middle">w   (b fixed at 22)</text>
+          <text x="22" y="200" font-size="13" fill="#8b9096" text-anchor="middle" transform="rotate(-90 22 200)">LOSS</text>
+          <g font-size="12" fill="#8b9096" text-anchor="middle">
+            <text x="160" y="380">5</text><text x="335" y="380">10</text><text x="510" y="380">15</text>
+          </g>
+          <!-- parabola: L(w) = 11 (w-10.3)^2 + 3.26 approx; px x = 70 + (w-2.5)*35 ; y = 360 - L*1.1 -->
+          <path d="M 85 40 Q 335 -300 585 40" fill="none" stroke="#23408f" stroke-width="3"/>
+          <circle cx="345" cy="356" r="7" fill="#23408f"/>
+          <text x="345" y="336" font-size="12" fill="#23408f" text-anchor="middle">3.6</text>
+          <g class="frag">
+            <circle cx="160" cy="45" r="7" fill="#a8231f"/><text x="160" y="30" font-size="12" fill="#a8231f" text-anchor="middle">too flat</text>
+            <circle cx="510" cy="45" r="7" fill="#a8231f"/><text x="510" y="30" font-size="12" fill="#a8231f" text-anchor="middle">too steep</text>
+          </g>
+        </svg>
+      </div>
+      <div class="stack">
+        <p>At w = 10 the loss is small. At w = 5 the line is too flat and the loss is huge. At w = 15 it is too steep, huge again.</p>
+        <p class="frag">It is a bowl. There is a bottom, and the bottom is the best w.</p>
+        <p class="frag">With two parameters it is a bowl-shaped surface. With a million, it is something nobody can picture.</p>
+        <p class="frag"><strong>And we cannot draw it.</strong> Computing the loss at every possible w and b is far too much work. We need a way to find the bottom without seeing the bowl.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Draw the bowl by hand before showing the slide. Then say: real life is this, but in the dark.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Fog on a hill" data-act="finding the bottom">
+  <div>
+    <h2>You are on a hillside in thick fog. How do you get to the bottom?</h2>
+    <div class="split">
+      <div>
+        <svg viewBox="0 0 640 380" width="640" height="380">
+          <path d="M 40 60 C 200 60, 240 330, 380 330 S 560 200, 610 100" fill="none" stroke="#c6c3ba" stroke-width="3"/>
+          <rect x="0" y="0" width="640" height="380" fill="#faf9f6" opacity=".55"/>
+          <g class="frag">
+            <circle cx="150" cy="110" r="9" fill="#15171b"/>
+            <line x1="150" y1="119" x2="150" y2="150" stroke="#15171b" stroke-width="3"/>
+            <line x1="150" y1="150" x2="138" y2="172" stroke="#15171b" stroke-width="3"/>
+            <line x1="150" y1="150" x2="162" y2="172" stroke="#15171b" stroke-width="3"/>
+            <line x1="115" y1="92" x2="185" y2="128" stroke="#a8231f" stroke-width="2.5"/>
+            <text x="200" y="100" font-size="12" fill="#a8231f">the slope under your feet</text>
+          </g>
+          <g class="frag">
+            <path d="M 175 150 L 215 200" stroke="#23408f" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+            <text x="230" y="185" font-size="12" fill="#23408f">one step downhill</text>
+          </g>
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#23408f" stroke-width="1.5"/></marker></defs>
+        </svg>
+      </div>
+      <div class="stack">
+        <p class="frag">You cannot see the valley. You can feel which way the ground tilts.</p>
+        <p class="frag">Feel the slope. Step downhill. Feel again. Step again.</p>
+        <p class="frag">That is the whole algorithm. Its name is <strong>gradient descent</strong>: the gradient is the slope under your feet, and descent is walking down.</p>
+        <div class="rem frag">
+          <div class="h">two questions to answer before we can do it</div>
+          <ul>
+            <li>How do we <em>feel</em> the slope of the loss? That is the next four slides.</li>
+            <li>How big a step do we take? That is the learning rate.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Let the room answer the question before any click. Someone always gets it. Then name it.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Feel the slope by nudging" data-act="the gradient">
+  <div>
+    <h2>Feeling the slope, the brute-force way: nudge w and see.</h2>
+    <div class="prog">
+      <div class="stack">
+        <p>I am standing at w = 10, b = 22. The loss there is 3.6.</p>
+        <p class="frag">Question: if I make w slightly bigger, does the loss go up or down?</p>
+        <p class="frag">Try w = 10.1. Recompute every row. Loss becomes 3.35. It went <strong>down</strong>.</p>
+        <div class="eq sm frag">slope ≈ (3.35 − 3.6) / 0.1 = <span class="v">−2.5</span></div>
+        <p class="frag">Negative slope means downhill is to the right. Increasing w helps.</p>
+      </div>
+      <div>
+        <div class="term xs frag">w = 10.0        w = 10.1
+x  y   ŷ   err²    ŷ     err²
+1  32  32   0.00   32.1   0.01
+2  41  42   1.00   42.2   1.44
+3  55  52   9.00   52.3   7.29
+4  60  62   4.00   62.4   5.76
+5  74  72   4.00   72.5   2.25
+        sum 18.00        16.75
+       loss <span class="hit">3.60</span>          <span class="ok">3.35</span></div>
+        <div class="rem frag">
+          <div class="h">this is the derivative</div>
+          <ul>
+            <li>"How much does the loss change per tiny change in w." Nothing more mysterious than that.</li>
+            <li>We could always do it by nudging. But with a million parameters that is a million recomputations per step.</li>
+            <li>Calculus gives the same answer in one formula. That is all calculus is for here.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Do the 10.1 column by hand with them. It is tedious, and the tedium is the argument for the formula.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="The formula, in words" data-act="the gradient">
+  <div>
+    <h2>The formula, built in words before symbols.</h2>
+    <div class="split" style="align-items:start">
+      <div class="stack">
+        <p>The loss is an average of terms that look like (<span class="num">something</span>)², where the something is w·x + b − y.</p>
+        <p class="frag">The derivative of (something)² is 2 × (something) × (derivative of the something).</p>
+        <p class="frag">The derivative of w·x + b − y with respect to w is just <span class="num">x</span>. w multiplies x and nothing else in there depends on w.</p>
+        <p class="frag">So each student contributes 2 × (error) × (their hours). Average over students:</p>
+        <div class="eq sm frag">∂L/∂w = <span class="g">(2/N)</span> Σ (error<sub>i</sub>) × x<sub>i</sub></div>
+        <div class="eq sm frag" style="margin-top:8px">∂L/∂b = <span class="g">(2/N)</span> Σ (error<sub>i</sub>)</div>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">read them as english</div>
+        <ul>
+          <li>For w: <em>take how wrong we were on each student, multiply by their hours, average.</em></li>
+          <li>Why multiply by hours? For a five-hour student, changing w moves the prediction five times more than for a one-hour student. Their error counts five times as much in deciding how to adjust w.</li>
+          <li>For b: <em>average error, times two.</em> b's influence on every prediction is exactly 1, so nothing to multiply by.</li>
+          <li>If we are predicting too high on average, ∂L/∂b is positive, so lowering b helps. It should feel obvious.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The 2/N confuses people. It is a constant; it gets absorbed into the learning rate. Do not let it eat five minutes.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Does the formula agree?" data-act="the gradient">
+  <div>
+    <h2>Check the formula against the nudge.</h2>
+    <div class="prog">
+      <div>
+        <table class="dt">
+          <tr><th>x</th><th>error</th><th>error × x</th></tr>
+          <tr><td>1</td><td>0</td><td>0</td></tr>
+          <tr><td>2</td><td>+1</td><td>+2</td></tr>
+          <tr><td>3</td><td>−3</td><td>−9</td></tr>
+          <tr><td>4</td><td>+2</td><td>+8</td></tr>
+          <tr><td>5</td><td>−2</td><td>−10</td></tr>
+          <tr class="tot"><td colspan="2">sum</td><td>−9</td></tr>
+          <tr class="tot"><td colspan="2">× 2/5</td><td>−3.6</td></tr>
+        </table>
+      </div>
+      <div class="stack">
+        <p class="frag">The formula says the slope at w = 10 is <span class="num">−3.6</span>.</p>
+        <p class="frag">Nudging gave −2.5. That was a coarse step; it averaged the slope between 10 and 10.1, where the bowl is already flattening. The exact slope at 10 is −3.6.</p>
+        <p class="frag">Same sign, same story: downhill is to the right.</p>
+        <p class="frag">And for b: (2/5) × (0 + 1 − 3 + 2 − 2) = <span class="num">−0.8</span>. Also slightly too low on average, so b should go up a little.</p>
+        <div class="rem frag">
+          <div class="h">the gradient</div>
+          <ul>
+            <li>The pair (−3.6, −0.8) is the gradient. It is just "the slope with respect to each thing we are allowed to change".</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Students like this slide. The formula and the tedium agree. Trust is earned here.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Taking the step" data-act="the update">
+  <div>
+    <h2>Now take the step. Downhill, and not too far.</h2>
+    <div class="split" style="align-items:start">
+      <div class="stack">
+        <p>Slope is −3.6, so increase w. By how much?</p>
+        <p class="frag">If we did w ← w + 3.6 we would jump from 10 to 13.6, straight past the bottom and up the other side. So we scale the step down.</p>
+        <div class="eq frag">w ← w − <span class="v">η</span> × slope</div>
+        <p class="frag small" style="max-width:none">Minus, because we walk <em>against</em> the slope. Positive slope means increasing w hurts, so decrease it.</p>
+        <div class="eq sm frag">w ← 10 − 0.01 × (−3.6) = <span class="v">10.036</span></div>
+        <div class="eq sm frag" style="margin-top:8px">b ← 22 − 0.01 × (−0.8) = <span class="v">22.008</span></div>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">η, the learning rate</div>
+        <ul>
+          <li>Your stride length in the fog. Here 0.01.</li>
+          <li>Too small and you shuffle for hours.</li>
+          <li>Too big and you overshoot the valley and bounce off the walls, or fly off the hill altogether.</li>
+          <li>Both parameters step at once, each in the direction that lowers the loss. Then we recompute the slope and step again. Hundreds of times.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Tiny step, on purpose. Say that it looks pathetic and that it is correct, and that we are about to let the computer take three thousand of them.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Hand it to the computer" data-act="numpy">
+  <div>
+    <h2>Now the code. It should read like a transcript of what we just did.</h2>
+    <div class="prog">
+      <div>
+<pre><span class="k">import</span> numpy <span class="k">as</span> np
+
+x = np.array([<span class="s">1.</span>, <span class="s">2.</span>, <span class="s">3.</span>, <span class="s">4.</span>, <span class="s">5.</span>])
+y = np.array([<span class="s">32.</span>, <span class="s">41.</span>, <span class="s">55.</span>, <span class="s">60.</span>, <span class="s">74.</span>])
+
+w, b = <span class="s">0.0</span>, <span class="s">0.0</span>      <span class="c"># start somewhere bad, on purpose</span>
+lr = <span class="s">0.01</span>           <span class="c"># learning rate: stride length</span>
+
+<span class="k">for</span> step <span class="k">in</span> <span class="f">range</span>(<span class="s">3001</span>):
+    y_hat = w * x + b            <span class="c"># 1. predict</span>
+    err   = y_hat - y            <span class="c"># 2. how wrong, per student</span>
+    loss  = np.mean(err ** <span class="s">2</span>)    <span class="c"># 3. one score</span>
+    dw    = <span class="s">2</span> * np.mean(err * x) <span class="c"># 4. slope w.r.t. w</span>
+    db    = <span class="s">2</span> * np.mean(err)     <span class="c">#    slope w.r.t. b</span>
+    w    -= lr * dw              <span class="c"># 5. step downhill</span>
+    b    -= lr * db
+    <span class="k">if</span> step % <span class="s">500</span> == <span class="s">0</span>:
+        <span class="f">print</span>(<span class="s">f"step {step:4d}  loss {loss:8.2f}  w {w:6.2f}  b {b:6.2f}"</span>)</pre>
+      </div>
+      <div>
+        <div class="term frag">step    0  loss  <span class="bad">2961.20</span>  w   0.00  b   0.00
+step  500  loss     5.11  w  11.18  b  18.32
+step 1000  loss     3.32  w  10.46  b  20.91
+step 1500  loss     3.26  w  10.33  b  21.39
+step 2000  loss     3.26  w  10.31  b  21.48
+step 2500  loss     3.26  w  10.30  b  21.50
+step 3000  loss     <span class="ok">3.26</span>  w  <span class="hit">10.30</span>  b  <span class="hit">21.50</span></div>
+        <div class="rem frag">
+          <div class="h">what to point at</div>
+          <ul>
+            <li>Loss starts near 3000: predicting zero marks for everyone. Falls fast, then settles. That is the bowl, walked.</li>
+            <li>It lands at w = 10.3, b = 21.5. Our by-eye guess of 10 and 22 was close. The computer's line is better: 3.26 against our 3.6.</li>
+            <li>b moves slowly. Its slope is small because its influence is only 1 per student, versus up to 5 for w. You will see this again in every network you train.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Run it live. Do not paste the output. Let the numbers scroll.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Break it" data-act="numpy">
+  <div>
+    <h2>Change one number and break it. Twice.</h2>
+    <div class="split" style="align-items:start">
+      <div>
+        <div class="panel"><span class="lab">lr = 0.1 · ten times bigger</span>
+        <div class="term xs frag" style="box-shadow:none">step 0  loss      2961   w    0.00   b    0.00
+step 1  loss      5473   w   35.56   b   10.48
+step 2  loss     10170   w  -13.40   b   -2.47
+step 3  loss     18930   w   53.12   b   16.54
+step 4  loss     35280   w  -38.11   b   -8.16
+step 5  loss     65810   w   86.19   b   26.82
+step 6  loss    <span class="bad">122800</span>   w  -83.96   b  -19.78</div>
+        <p class="frag small" style="margin-top:10px;max-width:none">Overshooting. Each step flies past the bottom and lands higher on the other wall. w flips sign every step. The loss grows instead of shrinking.</p></div>
+      </div>
+      <div>
+        <div class="panel"><span class="lab">lr = 0.0001 · a hundred times smaller</span>
+        <div class="term xs frag" style="box-shadow:none">step    0  loss  2961.20  w   0.00  b   0.00
+step  100  loss  1865.20  w   3.17  b   0.94
+step  200  loss  1182.66  w   5.66  b   1.69
+step  300  loss   757.56  w   7.63  b   2.30
+step  400  loss   492.74  w   9.18  b   2.79
+step  500  loss   <span class="bad">327.72</span>  w  10.40  b   3.19</div>
+        <p class="frag small" style="margin-top:10px;max-width:none">Shuffling in the fog. Five hundred steps and b has barely moved. It will get there, eventually, if you have the patience.</p></div>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:22px;max-width:none;font-size:26px">That is the learning-rate lesson, learned in thirty seconds instead of a slide.</p>
+  </div>
+  <div class="cue">Change the number live, in the same cell. The fact that it is one character is the lesson.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Five lines" data-act="numpy">
+  <div>
+    <h2>Every training loop you will ever write is these five lines.</h2>
+    <div class="five">
+      <div class="b frag"><div class="n">1</div><div class="t">predict</div><div class="d">run the model forward on the inputs</div></div>
+      <div class="b frag"><div class="n">2</div><div class="t">error</div><div class="d">compare with the truth, per example</div></div>
+      <div class="b frag"><div class="n">3</div><div class="t">loss</div><div class="d">collapse the errors into one score</div></div>
+      <div class="b frag"><div class="n">4</div><div class="t">gradient</div><div class="d">slope of the loss w.r.t. every parameter</div></div>
+      <div class="b frag"><div class="n">5</div><div class="t">update</div><div class="d">step every parameter a little downhill</div></div>
+    </div>
+    <p class="frag" style="margin-top:26px;max-width:none">Including the ones inside PyTorch. Bigger arrays, more parameters, cleverer step four. Same five lines.</p>
+  </div>
+  <div class="cue">Go back to the code slide and point at the five comments. Then come here.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-t="More inputs, same idea" data-act="the neuron">
+  <div>
+    <h2>Marks do not depend only on hours studied.</h2>
+    <div class="split" style="align-items:start">
+      <div class="stack">
+        <p>Say they also depend on hours slept, and on attendance. Three inputs. So three weights.</p>
+        <div class="eq sm frag">ŷ = <span class="v">w₁</span>·hours + <span class="v">w₂</span>·sleep + <span class="v">w₃</span>·attendance + <span class="v">b</span></div>
+        <p class="frag">What does w₂ mean? Marks per hour of sleep. Each weight says how much its input matters.</p>
+        <p class="frag">Put the inputs in a list <span class="num">x</span> and the weights in a list <span class="num">w</span>. The prediction is a dot product:</p>
+        <div class="eq sm frag">ŷ = <span class="v">w</span> · <span class="v">x</span> + b</div>
+      </div>
+      <div class="rem frag" style="margin-top:0">
+        <div class="h">what changes</div>
+        <ul>
+          <li>The loss: nothing. Still the average squared error.</li>
+          <li>The gradient for w₂: multiply the error by <em>sleep</em> instead of hours, because that is the input w₂ touches. Otherwise identical.</li>
+          <li>The update: nothing.</li>
+          <li>In NumPy, <code>w * x</code> becomes <code>x @ w</code>. The rest of the loop does not change by a character.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="cue">If there are five minutes, show a 5×3 array version of the loop and run it. The point is that the code barely changes.</div>
+</section>
+
+<!-- 20 -->
+<section class="slide" data-t="The reveal" data-act="the neuron">
+  <div>
+    <h2>Draw what we just built.</h2>
+    <div class="split">
+      <div>
+        <svg viewBox="0 0 640 380" width="640" height="380">
+          <g font-size="14" fill="#15171b" text-anchor="end">
+            <text x="120" y="96">hours</text><text x="120" y="196">sleep</text><text x="120" y="296">attendance</text>
+          </g>
+          <g fill="#ffffff" stroke="#c6c3ba" stroke-width="2">
+            <circle cx="160" cy="90" r="20"/><circle cx="160" cy="190" r="20"/><circle cx="160" cy="290" r="20"/>
+          </g>
+          <g class="frag">
+            <line x1="182" y1="94" x2="378" y2="176" stroke="#23408f" stroke-width="2.5"/>
+            <line x1="182" y1="190" x2="378" y2="190" stroke="#23408f" stroke-width="2.5"/>
+            <line x1="182" y1="286" x2="378" y2="204" stroke="#23408f" stroke-width="2.5"/>
+            <g font-size="13" fill="#23408f">
+              <text x="262" y="122">w₁</text><text x="262" y="182">w₂</text><text x="262" y="262">w₃</text>
+            </g>
+          </g>
+          <g class="frag">
+            <circle cx="410" cy="190" r="34" fill="#eaeef7" stroke="#23408f" stroke-width="2.5"/>
+            <text x="410" y="196" font-size="18" fill="#23408f" text-anchor="middle">Σ + b</text>
+          </g>
+          <g class="frag">
+            <line x1="446" y1="190" x2="540" y2="190" stroke="#15171b" stroke-width="2.5" marker-end="url(#ah2)"/>
+            <text x="560" y="196" font-size="14" fill="#15171b">ŷ</text>
+          </g>
+          <defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#15171b" stroke-width="1.5"/></marker></defs>
+        </svg>
+      </div>
+      <div class="stack">
+        <p class="frag">Inputs on the left. Each multiplied by a weight. Added up, plus a bias. One number out.</p>
+        <p class="big frag" style="max-width:none">This is a neuron.</p>
+        <p class="frag">That is all it is. The word sounds biological and mysterious. It is not. You just built one, trained it, and watched it learn.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Pause after "this is a neuron". Let it land. Then the next slide.</div>
+</section>
+
+<!-- 21 -->
+<section class="slide" data-t="Where the hour lands" data-act="close">
+  <div>
+    <h2>A model is some numbers.</h2>
+    <div class="split" style="margin-top:6px">
+      <div class="rem" style="margin-top:0">
+        <div class="h">the four sentences</div>
+        <ul>
+          <li>A model is some numbers.</li>
+          <li>A loss says how wrong the numbers are.</li>
+          <li>The gradient says which way to move them.</li>
+          <li>We move a little, and repeat.</li>
+        </ul>
+      </div>
+      <div class="rem" style="margin-top:0;border-left-color:var(--ok)">
+        <div class="h" style="color:var(--ok)">next time</div>
+        <ul>
+          <li>This neuron can only draw straight lines, and only answer "how much".</li>
+          <li>Next class we ask it a yes/no question instead. That needs one small trick on the output.</li>
+          <li>After that, we connect a few of these together. That is a neural network.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="big frag" style="margin-top:20px;max-width:none;font-size:26px">Before Thursday: run the notebook, then change the data so the line cannot fit it well. Notice what the loss does. Bring the number.</p>
+  </div>
+  <div class="cue">Questions that always come: why squared not absolute (both work, squares are smooth); why not solve directly (you can for a line, you cannot for a million weights); how do you know you are at the bottom (the loss stops falling).</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
