@@ -105,6 +105,18 @@ table.dt tr.tot td{background:var(--accent-soft);font-weight:700}
 .five .b .t{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);margin-top:8px}
 .five .b .d{font-size:15px;color:var(--soft);margin-top:6px;line-height:1.35}
 
+.ctl{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-family:var(--mono);font-size:13px;color:var(--soft);letter-spacing:.06em}
+.ctl label{display:flex;align-items:center;gap:10px}
+.ctl input[type=range]{width:170px;accent-color:var(--accent)}
+.ctl output{font-weight:700;color:var(--ink);min-width:52px;display:inline-block}
+.btn{font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;background:var(--card);border:1px solid var(--rule2);border-radius:7px;padding:8px 13px;color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{color:#fff;opacity:.9}
+.btn.sel{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.ro{font-family:var(--mono);font-size:15px;color:var(--ink);display:flex;gap:22px;flex-wrap:wrap}
+.ro b{color:var(--accent)}
+.ro .neg{color:var(--fail)}
 svg text{font-family:'JetBrains Mono',monospace}
 .frag{opacity:0;transition:opacity .28s ease}
 .frag.shown{opacity:1}
@@ -379,116 +391,100 @@ body.cues .cue{display:block}
   <div class="cue">Write L(w, b) on the board, not just L. The bracket is the point.</div>
 </section>
 
+
 <!-- 10 -->
-<section class="slide" data-t="The bowl" data-act="finding the bottom">
+<section class="slide" data-t="The bowl · play" data-act="finding the bottom">
   <div>
-    <h2>Imagine trying every w and plotting the loss.</h2>
-    <div class="split">
-      <div>
-        <svg viewBox="0 0 640 420" width="640" height="420">
-          <line x1="70" y1="360" x2="600" y2="360" stroke="#c6c3ba" stroke-width="1.5"/>
-          <line x1="70" y1="360" x2="70" y2="30" stroke="#c6c3ba" stroke-width="1.5"/>
-          <text x="335" y="400" font-size="13" fill="#8b9096" text-anchor="middle">w   (b fixed at 22)</text>
-          <text x="22" y="200" font-size="13" fill="#8b9096" text-anchor="middle" transform="rotate(-90 22 200)">LOSS</text>
-          <g font-size="12" fill="#8b9096" text-anchor="middle">
-            <text x="160" y="380">5</text><text x="335" y="380">10</text><text x="510" y="380">15</text>
-          </g>
-          <!-- parabola: L(w) = 11 (w-10.3)^2 + 3.26 approx; px x = 70 + (w-2.5)*35 ; y = 360 - L*1.1 -->
-          <path d="M 85 40 Q 335 -300 585 40" fill="none" stroke="#23408f" stroke-width="3"/>
-          <circle cx="345" cy="356" r="7" fill="#23408f"/>
-          <text x="345" y="336" font-size="12" fill="#23408f" text-anchor="middle">3.6</text>
-          <g class="frag">
-            <circle cx="160" cy="45" r="7" fill="#a8231f"/><text x="160" y="30" font-size="12" fill="#a8231f" text-anchor="middle">too flat</text>
-            <circle cx="510" cy="45" r="7" fill="#a8231f"/><text x="510" y="30" font-size="12" fill="#a8231f" text-anchor="middle">too steep</text>
-          </g>
-        </svg>
+    <h2>Every choice of w and b is one point on a bowl. Move it.</h2>
+    <div class="panel" style="padding:14px 18px">
+      <div class="split" style="gap:24px;align-items:start">
+        <div>
+          <svg id="bowlFit" viewBox="0 0 640 330" width="640" height="330"></svg>
+        </div>
+        <div>
+          <svg id="bowlCurve" viewBox="0 0 640 330" width="640" height="330"></svg>
+        </div>
       </div>
-      <div class="stack">
-        <p>At w = 10 the loss is small. At w = 5 the line is too flat and the loss is huge. At w = 15 it is too steep, huge again.</p>
-        <p class="frag">It is a bowl. There is a bottom, and the bottom is the best w.</p>
-        <p class="frag">With two parameters it is a bowl-shaped surface. With a million, it is something nobody can picture.</p>
-        <p class="frag"><strong>And we cannot draw it.</strong> Computing the loss at every possible w and b is far too much work. We need a way to find the bottom without seeing the bowl.</p>
+      <div class="ctl" style="margin-top:8px;justify-content:space-between">
+        <label>w <input type="range" id="bw" min="0" max="20" step="0.1" value="6"><output id="bwo">6.0</output></label>
+        <label>b <input type="range" id="bb" min="0" max="44" step="0.5" value="22"><output id="bbo">22.0</output></label>
+        <div class="ro">loss <b id="bloss">—</b></div>
+        <button class="btn" id="bbest">jump to the best line</button>
       </div>
     </div>
+    <div class="rem frag" style="margin-top:12px">
+      <div class="h">what to notice</div>
+      <ul>
+        <li>Slide w. The point slides along the bowl and the line tilts. There is one bottom, and it is where the line fits best.</li>
+        <li>Slide b. The whole bowl moves. With two parameters the "bowl" is really a surface; this is one slice of it.</li>
+        <li>We could find the bottom by dragging. With a million parameters there is no slider and no picture.</li>
+      </ul>
+    </div>
   </div>
-  <div class="cue">Draw the bowl by hand before showing the slide. Then say: real life is this, but in the dark.</div>
+  <div class="cue">Hand the slider to a student. Ask them to find the lowest loss by feel. They will get close to 10.3 and 21.5 in about ten seconds. Then say: now imagine a million sliders.</div>
 </section>
 
 <!-- 11 -->
-<section class="slide" data-t="Fog on a hill" data-act="finding the bottom">
+<section class="slide" data-t="Fog on a hill · play" data-act="finding the bottom">
   <div>
-    <h2>You are on a hillside in thick fog. How do you get to the bottom?</h2>
-    <div class="split">
-      <div>
-        <svg viewBox="0 0 640 380" width="640" height="380">
-          <path d="M 40 60 C 200 60, 240 330, 380 330 S 560 200, 610 100" fill="none" stroke="#c6c3ba" stroke-width="3"/>
-          <rect x="0" y="0" width="640" height="380" fill="#faf9f6" opacity=".55"/>
-          <g class="frag">
-            <circle cx="150" cy="110" r="9" fill="#15171b"/>
-            <line x1="150" y1="119" x2="150" y2="150" stroke="#15171b" stroke-width="3"/>
-            <line x1="150" y1="150" x2="138" y2="172" stroke="#15171b" stroke-width="3"/>
-            <line x1="150" y1="150" x2="162" y2="172" stroke="#15171b" stroke-width="3"/>
-            <line x1="115" y1="92" x2="185" y2="128" stroke="#a8231f" stroke-width="2.5"/>
-            <text x="200" y="100" font-size="12" fill="#a8231f">the slope under your feet</text>
-          </g>
-          <g class="frag">
-            <path d="M 175 150 L 215 200" stroke="#23408f" stroke-width="3" fill="none" marker-end="url(#ah)"/>
-            <text x="230" y="185" font-size="12" fill="#23408f">one step downhill</text>
-          </g>
-          <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#23408f" stroke-width="1.5"/></marker></defs>
-        </svg>
+    <h2>Now hide the bowl. You can only feel the ground under your feet.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="fogSvg" viewBox="0 0 700 360" width="700" height="360"></svg>
+        <div class="ctl" style="margin-top:10px">
+          <button class="btn pri" id="fogFeel">feel the slope</button>
+          <button class="btn" id="fogStep">take a step</button>
+          <button class="btn" id="fogAuto">walk 20 steps</button>
+          <label>stride <input type="range" id="fogLr" min="0.002" max="0.09" step="0.002" value="0.01"><output id="fogLro">0.010</output></label>
+          <button class="btn" id="fogClear">clear the fog</button>
+          <button class="btn" id="fogReset">reset</button>
+        </div>
       </div>
       <div class="stack">
-        <p class="frag">You cannot see the valley. You can feel which way the ground tilts.</p>
-        <p class="frag">Feel the slope. Step downhill. Feel again. Step again.</p>
-        <p class="frag">That is the whole algorithm. Its name is <strong>gradient descent</strong>: the gradient is the slope under your feet, and descent is walking down.</p>
+        <p class="frag">You cannot see the valley. But wherever you stand, you can feel which way the ground tilts and how steeply.</p>
+        <p class="frag">Feel the slope. Take a step downhill. Feel again. Step again. Every footprint you leave is a point of the bowl you have now measured.</p>
+        <p class="frag">That is the whole algorithm. Its name is <strong>gradient descent</strong>.</p>
         <div class="rem frag">
           <div class="h">two questions to answer before we can do it</div>
           <ul>
-            <li>How do we <em>feel</em> the slope of the loss? That is the next four slides.</li>
-            <li>How big a step do we take? That is the learning rate.</li>
+            <li>How do we <em>feel</em> the slope of the loss? Next three slides.</li>
+            <li>How big a stride? Try the slider. Too long and you fly across the valley; too short and you never arrive.</li>
           </ul>
         </div>
       </div>
     </div>
   </div>
-  <div class="cue">Let the room answer the question before any click. Someone always gets it. Then name it.</div>
+  <div class="cue">Start on the left wall. Feel, step, feel, step, four times by hand. Then "walk 20 steps". Then drag the stride up to 0.09 and walk again: it bounces. Clear the fog last, so the bowl is a reveal.</div>
 </section>
 
 <!-- 12 -->
-<section class="slide" data-t="Feel the slope by nudging" data-act="the gradient">
+<section class="slide" data-t="Feel the slope by nudging · play" data-act="the gradient">
   <div>
-    <h2>Feeling the slope, the brute-force way: nudge w and see.</h2>
-    <div class="prog">
-      <div class="stack">
-        <p>I am standing at w = 10, b = 22. The loss there is 3.6.</p>
-        <p class="frag">Question: if I make w slightly bigger, does the loss go up or down?</p>
-        <p class="frag">Try w = 10.1. Recompute every row. Loss becomes 3.35. It went <strong>down</strong>.</p>
-        <div class="eq sm frag">slope ≈ (3.35 − 3.6) / 0.1 = <span class="v">−2.5</span></div>
-        <p class="frag">Negative slope means downhill is to the right. Increasing w helps.</p>
+    <h2>Feeling the slope, the brute-force way: nudge w and see what the loss does.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="nudgeSvg" viewBox="0 0 640 300" width="640" height="300"></svg>
+        <div class="ctl" style="margin-top:10px">
+          <label>nudge Δw <input type="range" id="nudge" min="0" max="100" step="1" value="0"><output id="nudgeo">1.000</output></label>
+        </div>
+        <div class="term xs" id="nudgeTerm" style="margin-top:10px;box-shadow:none"></div>
       </div>
-      <div>
-        <div class="term xs frag">w = 10.0        w = 10.1
-x  y   ŷ   err²    ŷ     err²
-1  32  32   0.00   32.1   0.01
-2  41  42   1.00   42.2   1.44
-3  55  52   9.00   52.3   7.29
-4  60  62   4.00   62.4   5.76
-5  74  72   4.00   72.5   2.25
-        sum 18.00        16.75
-       loss <span class="hit">3.60</span>          <span class="ok">3.35</span></div>
+      <div class="stack">
+        <p>I am at w = 10, b = 22. Loss is 3.6. If I make w a little bigger, does the loss go up or down?</p>
+        <p class="frag">Try w = 11. Loss is 15.2. Up. So that nudge says <em>uphill</em>. But a whole unit is a big nudge; it jumped clean over the bottom.</p>
+        <p class="frag">Shrink the nudge. At Δw = 0.1 the loss drops to 3.35 and the estimated slope is −2.5. At 0.01 it is −3.5. At 0.001 it is −3.59.</p>
+        <p class="frag">The estimate is settling on a number. That number is <strong>the derivative</strong>: how much the loss changes per tiny change in w.</p>
         <div class="rem frag">
-          <div class="h">this is the derivative</div>
+          <div class="h">remember</div>
           <ul>
-            <li>"How much does the loss change per tiny change in w." Nothing more mysterious than that.</li>
-            <li>We could always do it by nudging. But with a million parameters that is a million recomputations per step.</li>
-            <li>Calculus gives the same answer in one formula. That is all calculus is for here.</li>
+            <li>We could always find the slope by nudging. With a million parameters that is a million recomputations per step.</li>
+            <li>Calculus gives the settled number in one formula. That is all we are using calculus for.</li>
           </ul>
         </div>
       </div>
     </div>
   </div>
-  <div class="cue">Do the 10.1 column by hand with them. It is tedious, and the tedium is the argument for the formula.</div>
+  <div class="cue">Drag the slider slowly from 1.0 down. The secant line swings until it lies flat against the curve. When they see the estimate converge on −3.6 they have understood what a derivative is without a limit symbol.</div>
 </section>
 
 <!-- 13 -->
@@ -519,37 +515,29 @@ x  y   ŷ   err²    ŷ     err²
 </section>
 
 <!-- 14 -->
-<section class="slide" data-t="Does the formula agree?" data-act="the gradient">
+<section class="slide" data-t="Does the formula agree? · play" data-act="the gradient">
   <div>
-    <h2>Check the formula against the nudge.</h2>
-    <div class="prog">
-      <div>
-        <table class="dt">
-          <tr><th>x</th><th>error</th><th>error × x</th></tr>
-          <tr><td>1</td><td>0</td><td>0</td></tr>
-          <tr><td>2</td><td>+1</td><td>+2</td></tr>
-          <tr><td>3</td><td>−3</td><td>−9</td></tr>
-          <tr><td>4</td><td>+2</td><td>+8</td></tr>
-          <tr><td>5</td><td>−2</td><td>−10</td></tr>
-          <tr class="tot"><td colspan="2">sum</td><td>−9</td></tr>
-          <tr class="tot"><td colspan="2">× 2/5</td><td>−3.6</td></tr>
-        </table>
+    <h2>Check the formula against the nudge. Then check it anywhere.</h2>
+    <div class="split" style="gap:28px;align-items:start">
+      <div class="panel" style="padding:14px 16px">
+        <div class="ctl"><label>w <input type="range" id="chkW" min="4" max="16" step="0.1" value="10"><output id="chkWo">10.0</output></label> <span class="dim">b fixed at 22</span></div>
+        <table class="dt" id="chkTable" style="margin-top:10px;width:100%"></table>
       </div>
       <div class="stack">
-        <p class="frag">The formula says the slope at w = 10 is <span class="num">−3.6</span>.</p>
-        <p class="frag">Nudging gave −2.5. That was a coarse step; it averaged the slope between 10 and 10.1, where the bowl is already flattening. The exact slope at 10 is −3.6.</p>
-        <p class="frag">Same sign, same story: downhill is to the right.</p>
-        <p class="frag">And for b: (2/5) × (0 + 1 − 3 + 2 − 2) = <span class="num">−0.8</span>. Also slightly too low on average, so b should go up a little.</p>
+        <p>At w = 10 the formula says <span class="num" id="chkFormula">−3.6</span>. The nudge settled on the same number. Trust is earned.</p>
+        <div class="ro frag" style="font-size:17px">formula&nbsp;<b id="chkF2">−3.60</b> &nbsp;·&nbsp; nudge (Δw = 0.001)&nbsp;<b id="chkN2">−3.59</b></div>
+        <p class="frag">Now slide w. On the left wall every error is negative and large, and so is the slope. Past the bottom the errors turn positive and the slope with them. At the bottom the products cancel and the slope is zero.</p>
+        <p class="frag">And for b: (2/5) × (sum of errors) = <span class="num" id="chkB">−0.8</span>. Slightly too low on average, so b should go up a little.</p>
         <div class="rem frag">
           <div class="h">the gradient</div>
           <ul>
-            <li>The pair (−3.6, −0.8) is the gradient. It is just "the slope with respect to each thing we are allowed to change".</li>
+            <li>The pair (∂L/∂w, ∂L/∂b) is the gradient. Just "the slope with respect to each thing we are allowed to change".</li>
           </ul>
         </div>
       </div>
     </div>
   </div>
-  <div class="cue">Students like this slide. The formula and the tedium agree. Trust is earned here.</div>
+  <div class="cue">Slide w to about 10.3 and show the slope crossing zero. That is the bottom of the bowl, found by formula rather than by looking.</div>
 </section>
 
 <!-- 15 -->
@@ -576,13 +564,52 @@ x  y   ŷ   err²    ŷ     err²
       </div>
     </div>
   </div>
-  <div class="cue">Tiny step, on purpose. Say that it looks pathetic and that it is correct, and that we are about to let the computer take three thousand of them.</div>
+  <div class="cue">Tiny step, on purpose. Say that it looks pathetic and that it is correct, and that we are about to take three thousand of them.</div>
 </section>
 
 <!-- 16 -->
+<section class="slide" data-t="Watch it learn · play" data-act="the update">
+  <div>
+    <h2>Watch it learn. One step at a time, then a thousand.</h2>
+    <div class="panel" style="padding:14px 18px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <svg id="gdFit" viewBox="0 0 640 300" width="640" height="300"></svg>
+        <svg id="gdLoss" viewBox="0 0 640 300" width="640" height="300"></svg>
+      </div>
+      <div class="ctl" style="margin-top:8px;justify-content:space-between">
+        <span>
+          <button class="btn pri" id="gd1">step ×1</button>
+          <button class="btn" id="gd10">×10</button>
+          <button class="btn" id="gd100">×100</button>
+          <button class="btn" id="gd1000">×1000</button>
+          <button class="btn" id="gdReset">reset</button>
+        </span>
+        <span>learning rate
+          <button class="btn" data-lr="0.0001">0.0001</button>
+          <button class="btn" data-lr="0.001">0.001</button>
+          <button class="btn sel" data-lr="0.01">0.01</button>
+          <button class="btn" data-lr="0.03">0.03</button>
+          <button class="btn" data-lr="0.1">0.1</button>
+        </span>
+        <div class="ro">step <b id="gdStep">0</b> w <b id="gdW">0.00</b> b <b id="gdB">0.00</b> loss <b id="gdL">2961.2</b></div>
+      </div>
+    </div>
+    <div class="rem frag" style="margin-top:12px">
+      <div class="h">what to point at</div>
+      <ul>
+        <li>The loss falls fast, then settles. That is the bowl, walked. It lands at w = 10.3, b = 21.5, loss 3.26. Our by-eye guess of 10 and 22 scored 3.6; the computer's line is better.</li>
+        <li>b moves slowly. Its slope is small because its influence is only 1 per student, versus up to 5 for w. You will see this again in every network you train.</li>
+        <li>Now press 0.1. Then 0.0001. Two ways to fail, one character apart.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Single-step five or six times so they see the line tilt up from flat. Then ×1000. Then the two failures live: 0.1 explodes within six steps; 0.0001 is still at loss 300 after 500.</div>
+</section>
+
+<!-- 17 -->
 <section class="slide" data-t="Hand it to the computer" data-act="numpy">
   <div>
-    <h2>Now the code. It should read like a transcript of what we just did.</h2>
+    <h2>What you just clicked is fifteen lines of NumPy.</h2>
     <div class="prog">
       <div>
 <pre><span class="k">import</span> numpy <span class="k">as</span> np
@@ -612,69 +639,20 @@ step 1500  loss     3.26  w  10.33  b  21.39
 step 2000  loss     3.26  w  10.31  b  21.48
 step 2500  loss     3.26  w  10.30  b  21.50
 step 3000  loss     <span class="ok">3.26</span>  w  <span class="hit">10.30</span>  b  <span class="hit">21.50</span></div>
-        <div class="rem frag">
-          <div class="h">what to point at</div>
-          <ul>
-            <li>Loss starts near 3000: predicting zero marks for everyone. Falls fast, then settles. That is the bowl, walked.</li>
-            <li>It lands at w = 10.3, b = 21.5. Our by-eye guess of 10 and 22 was close. The computer's line is better: 3.26 against our 3.6.</li>
-            <li>b moves slowly. Its slope is small because its influence is only 1 per student, versus up to 5 for w. You will see this again in every network you train.</li>
-          </ul>
+        <div class="five frag" style="grid-template-columns:1fr;gap:8px;margin-top:14px">
+          <div class="b" style="text-align:left;display:flex;gap:16px;align-items:center;padding:10px 14px"><div class="n" style="font-size:26px">1</div><div><div class="t">predict</div><div class="d">run the model forward on the inputs</div></div></div>
+          <div class="b" style="text-align:left;display:flex;gap:16px;align-items:center;padding:10px 14px"><div class="n" style="font-size:26px">2</div><div><div class="t">error</div><div class="d">compare with the truth, per example</div></div></div>
+          <div class="b" style="text-align:left;display:flex;gap:16px;align-items:center;padding:10px 14px"><div class="n" style="font-size:26px">3</div><div><div class="t">loss</div><div class="d">collapse the errors into one score</div></div></div>
+          <div class="b" style="text-align:left;display:flex;gap:16px;align-items:center;padding:10px 14px"><div class="n" style="font-size:26px">4</div><div><div class="t">gradient</div><div class="d">slope of the loss w.r.t. every parameter</div></div></div>
+          <div class="b" style="text-align:left;display:flex;gap:16px;align-items:center;padding:10px 14px"><div class="n" style="font-size:26px">5</div><div><div class="t">update</div><div class="d">step every parameter a little downhill</div></div></div>
         </div>
       </div>
     </div>
   </div>
-  <div class="cue">Run it live. Do not paste the output. Let the numbers scroll.</div>
-</section>
-
-<!-- 17 -->
-<section class="slide" data-t="Break it" data-act="numpy">
-  <div>
-    <h2>Change one number and break it. Twice.</h2>
-    <div class="split" style="align-items:start">
-      <div>
-        <div class="panel"><span class="lab">lr = 0.1 · ten times bigger</span>
-        <div class="term xs frag" style="box-shadow:none">step 0  loss      2961   w    0.00   b    0.00
-step 1  loss      5473   w   35.56   b   10.48
-step 2  loss     10170   w  -13.40   b   -2.47
-step 3  loss     18930   w   53.12   b   16.54
-step 4  loss     35280   w  -38.11   b   -8.16
-step 5  loss     65810   w   86.19   b   26.82
-step 6  loss    <span class="bad">122800</span>   w  -83.96   b  -19.78</div>
-        <p class="frag small" style="margin-top:10px;max-width:none">Overshooting. Each step flies past the bottom and lands higher on the other wall. w flips sign every step. The loss grows instead of shrinking.</p></div>
-      </div>
-      <div>
-        <div class="panel"><span class="lab">lr = 0.0001 · a hundred times smaller</span>
-        <div class="term xs frag" style="box-shadow:none">step    0  loss  2961.20  w   0.00  b   0.00
-step  100  loss  1865.20  w   3.17  b   0.94
-step  200  loss  1182.66  w   5.66  b   1.69
-step  300  loss   757.56  w   7.63  b   2.30
-step  400  loss   492.74  w   9.18  b   2.79
-step  500  loss   <span class="bad">327.72</span>  w  10.40  b   3.19</div>
-        <p class="frag small" style="margin-top:10px;max-width:none">Shuffling in the fog. Five hundred steps and b has barely moved. It will get there, eventually, if you have the patience.</p></div>
-      </div>
-    </div>
-    <p class="big frag" style="margin-top:22px;max-width:none;font-size:26px">That is the learning-rate lesson, learned in thirty seconds instead of a slide.</p>
-  </div>
-  <div class="cue">Change the number live, in the same cell. The fact that it is one character is the lesson.</div>
+  <div class="cue">Run it live in the notebook, do not paste. Then point at the five comments. Every training loop they will ever write, including the ones inside PyTorch, is these five lines with bigger arrays.</div>
 </section>
 
 <!-- 18 -->
-<section class="slide" data-t="Five lines" data-act="numpy">
-  <div>
-    <h2>Every training loop you will ever write is these five lines.</h2>
-    <div class="five">
-      <div class="b frag"><div class="n">1</div><div class="t">predict</div><div class="d">run the model forward on the inputs</div></div>
-      <div class="b frag"><div class="n">2</div><div class="t">error</div><div class="d">compare with the truth, per example</div></div>
-      <div class="b frag"><div class="n">3</div><div class="t">loss</div><div class="d">collapse the errors into one score</div></div>
-      <div class="b frag"><div class="n">4</div><div class="t">gradient</div><div class="d">slope of the loss w.r.t. every parameter</div></div>
-      <div class="b frag"><div class="n">5</div><div class="t">update</div><div class="d">step every parameter a little downhill</div></div>
-    </div>
-    <p class="frag" style="margin-top:26px;max-width:none">Including the ones inside PyTorch. Bigger arrays, more parameters, cleverer step four. Same five lines.</p>
-  </div>
-  <div class="cue">Go back to the code slide and point at the five comments. Then come here.</div>
-</section>
-
-<!-- 19 -->
 <section class="slide" data-t="More inputs, same idea" data-act="the neuron">
   <div>
     <h2>Marks do not depend only on hours studied.</h2>
@@ -700,49 +678,31 @@ step  500  loss   <span class="bad">327.72</span>  w  10.40  b   3.19</div>
   <div class="cue">If there are five minutes, show a 5×3 array version of the loop and run it. The point is that the code barely changes.</div>
 </section>
 
-<!-- 20 -->
-<section class="slide" data-t="The reveal" data-act="the neuron">
+<!-- 19 -->
+<section class="slide" data-t="The reveal · play" data-act="the neuron">
   <div>
-    <h2>Draw what we just built.</h2>
-    <div class="split">
-      <div>
-        <svg viewBox="0 0 640 380" width="640" height="380">
-          <g font-size="14" fill="#15171b" text-anchor="end">
-            <text x="120" y="96">hours</text><text x="120" y="196">sleep</text><text x="120" y="296">attendance</text>
-          </g>
-          <g fill="#ffffff" stroke="#c6c3ba" stroke-width="2">
-            <circle cx="160" cy="90" r="20"/><circle cx="160" cy="190" r="20"/><circle cx="160" cy="290" r="20"/>
-          </g>
-          <g class="frag">
-            <line x1="182" y1="94" x2="378" y2="176" stroke="#23408f" stroke-width="2.5"/>
-            <line x1="182" y1="190" x2="378" y2="190" stroke="#23408f" stroke-width="2.5"/>
-            <line x1="182" y1="286" x2="378" y2="204" stroke="#23408f" stroke-width="2.5"/>
-            <g font-size="13" fill="#23408f">
-              <text x="262" y="122">w₁</text><text x="262" y="182">w₂</text><text x="262" y="262">w₃</text>
-            </g>
-          </g>
-          <g class="frag">
-            <circle cx="410" cy="190" r="34" fill="#eaeef7" stroke="#23408f" stroke-width="2.5"/>
-            <text x="410" y="196" font-size="18" fill="#23408f" text-anchor="middle">Σ + b</text>
-          </g>
-          <g class="frag">
-            <line x1="446" y1="190" x2="540" y2="190" stroke="#15171b" stroke-width="2.5" marker-end="url(#ah2)"/>
-            <text x="560" y="196" font-size="14" fill="#15171b">ŷ</text>
-          </g>
-          <defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#15171b" stroke-width="1.5"/></marker></defs>
-        </svg>
+    <h2>Draw what we just built. Then feed it.</h2>
+    <div class="split" style="gap:28px">
+      <div class="panel" style="padding:14px 16px">
+        <svg id="neuSvg" viewBox="0 0 640 340" width="640" height="340"></svg>
+        <div class="ctl" style="margin-top:6px;flex-direction:column;align-items:flex-start;gap:8px">
+          <label>hours &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="range" id="nx1" min="0" max="10" step="0.5" value="4"><output id="nx1o">4.0</output></label>
+          <label>sleep &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="range" id="nx2" min="0" max="10" step="0.5" value="7"><output id="nx2o">7.0</output></label>
+          <label>attendance <input type="range" id="nx3" min="0" max="100" step="5" value="80"><output id="nx3o">80</output></label>
+        </div>
       </div>
       <div class="stack">
         <p class="frag">Inputs on the left. Each multiplied by a weight. Added up, plus a bias. One number out.</p>
         <p class="big frag" style="max-width:none">This is a neuron.</p>
-        <p class="frag">That is all it is. The word sounds biological and mysterious. It is not. You just built one, trained it, and watched it learn.</p>
+        <p class="frag">That is all it is. The word sounds biological and mysterious. It is not. Move the sliders: the numbers on the arrows are the weighted inputs, the circle adds them up, the output is the prediction.</p>
+        <p class="frag small" style="max-width:none">The weights here (6, 2, 0.3, and b = 5) are made up for the picture. Next class we train them from data, exactly the way we trained w and b today.</p>
       </div>
     </div>
   </div>
-  <div class="cue">Pause after "this is a neuron". Let it land. Then the next slide.</div>
+  <div class="cue">Pause after "this is a neuron". Let it land. Then hand the sliders to someone and ask them to make the student fail the exam.</div>
 </section>
 
-<!-- 21 -->
+<!-- 20 -->
 <section class="slide" data-t="Where the hour lands" data-act="close">
   <div>
     <h2>A model is some numbers.</h2>
@@ -827,6 +787,210 @@ step  500  loss   <span class="bad">327.72</span>  w  10.40  b   3.19</div>
     if(swallowClick){ swallowClick=false; return; }
     if(e.clientX<window.innerWidth*0.26) prev(); else next();
   });
+
+
+  /* ================= interactive widgets ================= */
+  var X=[1,2,3,4,5], Y=[32,41,55,60,74];
+  function lossAt(w,b){ var s=0; for(var k=0;k<5;k++){ var e=w*X[k]+b-Y[k]; s+=e*e; } return s/5; }
+  function gradAt(w,b){ var dw=0,db=0; for(var k=0;k<5;k++){ var e=w*X[k]+b-Y[k]; dw+=e*X[k]; db+=e; } return [2*dw/5, 2*db/5]; }
+  function svgEl(t,a){ var e=document.createElementNS('http://www.w3.org/2000/svg',t); for(var k in a) e.setAttribute(k,a[k]); return e; }
+  function fmt(v,d){ return (v<0?'−':'')+Math.abs(v).toFixed(d); }
+
+  /* data + line plot, 640x300 or 330 */
+  function drawFit(svg,w,b,H){
+    H=H||300; svg.innerHTML='';
+    var L=60,R=610,T=20,B=H-40; var px=function(x){return L+(x/5.8)*(R-L)}, py=function(y){return B-(y/100)*(B-T)};
+    svg.appendChild(svgEl('line',{x1:L,y1:B,x2:R,y2:B,stroke:'#c6c3ba','stroke-width':1.5}));
+    svg.appendChild(svgEl('line',{x1:L,y1:B,x2:L,y2:T,stroke:'#c6c3ba','stroke-width':1.5}));
+    [1,2,3,4,5].forEach(function(x){ var t=svgEl('text',{x:px(x),y:B+18,'font-size':11,fill:'#8b9096','text-anchor':'middle'}); t.textContent=x; svg.appendChild(t); });
+    [0,50,100].forEach(function(y){ var t=svgEl('text',{x:L-8,y:py(y)+4,'font-size':11,fill:'#8b9096','text-anchor':'end'}); t.textContent=y; svg.appendChild(t); });
+    // error bars
+    for(var k=0;k<5;k++){ var yh=w*X[k]+b; svg.appendChild(svgEl('line',{x1:px(X[k]),y1:py(Y[k]),x2:px(X[k]),y2:py(Math.max(-5,Math.min(105,yh))),stroke:'#a8231f','stroke-width':2,'stroke-dasharray':'3 3',opacity:.7})); }
+    var y0=b, y1=w*5.8+b;
+    svg.appendChild(svgEl('line',{x1:px(0),y1:py(y0),x2:px(5.8),y2:py(y1),stroke:'#23408f','stroke-width':3}));
+    for(var k=0;k<5;k++) svg.appendChild(svgEl('circle',{cx:px(X[k]),cy:py(Y[k]),r:6,fill:'#15171b'}));
+    var lab=svgEl('text',{x:R,y:T+14,'font-size':12,fill:'#23408f','text-anchor':'end'}); lab.textContent='ŷ = '+w.toFixed(1)+' × hours + '+b.toFixed(1); svg.appendChild(lab);
+  }
+  /* bowl L(w) for fixed b */
+  function drawBowl(svg,w,b,opts){
+    opts=opts||{}; svg.innerHTML='';
+    var W=+svg.getAttribute('viewBox').split(' ')[2], H=+svg.getAttribute('viewBox').split(' ')[3];
+    var L=60,R=W-30,T=20,B=H-40, wmin=0,wmax=20, Lmax=opts.Lmax||1200;
+    var px=function(x){return L+((x-wmin)/(wmax-wmin))*(R-L)}, py=function(v){return B-Math.min(v,Lmax*1.1)/Lmax*(B-T)};
+    svg.appendChild(svgEl('line',{x1:L,y1:B,x2:R,y2:B,stroke:'#c6c3ba','stroke-width':1.5}));
+    svg.appendChild(svgEl('line',{x1:L,y1:B,x2:L,y2:T,stroke:'#c6c3ba','stroke-width':1.5}));
+    [0,5,10,15,20].forEach(function(x){ var t=svgEl('text',{x:px(x),y:B+18,'font-size':11,fill:'#8b9096','text-anchor':'middle'}); t.textContent=x; svg.appendChild(t); });
+    var xl=svgEl('text',{x:(L+R)/2,y:B+34,'font-size':11,fill:'#8b9096','text-anchor':'middle'}); xl.textContent='w   (b = '+b.toFixed(1)+')'; svg.appendChild(xl);
+    var yl=svgEl('text',{x:L-8,y:T+4,'font-size':11,fill:'#8b9096','text-anchor':'end'}); yl.textContent='loss'; svg.appendChild(yl);
+    if(!opts.hide){
+      var d=''; for(var i=0;i<=200;i++){ var ww=wmin+(wmax-wmin)*i/200; d+=(i?'L':'M')+px(ww).toFixed(1)+' '+py(lossAt(ww,b)).toFixed(1)+' '; }
+      svg.appendChild(svgEl('path',{d:d,fill:'none',stroke:'#23408f','stroke-width':2.5,opacity:opts.faint?.35:1}));
+    }
+    return {px:px,py:py,L:L,R:R,T:T,B:B};
+  }
+
+  /* ---- slide 10: the bowl ---- */
+  (function(){
+    var sw=document.getElementById('bw'), sb=document.getElementById('bb'); if(!sw) return;
+    var fit=document.getElementById('bowlFit'), cur=document.getElementById('bowlCurve');
+    function paintB(){
+      var w=+sw.value, b=+sb.value;
+      document.getElementById('bwo').textContent=w.toFixed(1); document.getElementById('bbo').textContent=b.toFixed(1);
+      drawFit(fit,w,b,330);
+      var g=drawBowl(cur,w,b,{Lmax:1200});
+      var Lv=lossAt(w,b);
+      cur.appendChild(svgEl('circle',{cx:g.px(w),cy:g.py(Lv),r:8,fill:'#a8231f'}));
+      var t=svgEl('text',{x:g.px(w)+12,y:g.py(Lv)-8,'font-size':12,fill:'#a8231f'}); t.textContent=Lv.toFixed(1); cur.appendChild(t);
+      document.getElementById('bloss').textContent=Lv.toFixed(2);
+    }
+    sw.addEventListener('input',paintB); sb.addEventListener('input',paintB);
+    document.getElementById('bbest').onclick=function(){ sw.value=10.3; sb.value=21.5; paintB(); };
+    paintB();
+  })();
+
+  /* ---- slide 11: fog ---- */
+  (function(){
+    var svg=document.getElementById('fogSvg'); if(!svg) return;
+    var b=22, w=2.0, lr=0.01, foot=[], felt=false, clear=false;
+    var lrs=document.getElementById('fogLr');
+    function paintF(){
+      var g=drawBowl(svg,w,b,{Lmax:1200,hide:!clear});
+      // fog band
+      if(!clear){ var r=svgEl('rect',{x:g.L,y:g.T,width:g.R-g.L,height:g.B-g.T,fill:'#e6e4de',opacity:.55}); svg.appendChild(r);
+        var t=svgEl('text',{x:(g.L+g.R)/2,y:g.T+40,'font-size':13,fill:'#8b9096','text-anchor':'middle'}); t.textContent='fog'; svg.appendChild(t); }
+      foot.forEach(function(p){ svg.appendChild(svgEl('circle',{cx:g.px(p[0]),cy:g.py(p[1]),r:4,fill:'#8b9096'})); });
+      var Lv=lossAt(w,b), cx=g.px(w), cy=g.py(Lv);
+      if(felt){ var s=gradAt(w,b)[0]; // tangent in pixel space
+        var dxw=1.2, x1=g.px(w-dxw), y1=g.py(Lv-s*dxw), x2=g.px(w+dxw), y2=g.py(Lv+s*dxw);
+        svg.appendChild(svgEl('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:'#a8231f','stroke-width':3}));
+        var lab=svgEl('text',{x:cx+14,y:cy-14,'font-size':12,fill:'#a8231f'}); lab.textContent='slope '+fmt(s,1)+(s<0?'  → downhill is right':'  → downhill is left'); svg.appendChild(lab); }
+      // walker
+      svg.appendChild(svgEl('circle',{cx:cx,cy:cy-26,r:7,fill:'#15171b'}));
+      svg.appendChild(svgEl('line',{x1:cx,y1:cy-19,x2:cx,y2:cy-4,stroke:'#15171b','stroke-width':3}));
+      svg.appendChild(svgEl('line',{x1:cx,y1:cy-4,x2:cx-7,y2:cy+8,stroke:'#15171b','stroke-width':3}));
+      svg.appendChild(svgEl('line',{x1:cx,y1:cy-4,x2:cx+7,y2:cy+8,stroke:'#15171b','stroke-width':3}));
+      var ro=svgEl('text',{x:g.R,y:g.T+14,'font-size':12,fill:'#15171b','text-anchor':'end'}); ro.textContent='w = '+w.toFixed(2)+'   loss = '+Lv.toFixed(1)+'   steps '+foot.length; svg.appendChild(ro);
+    }
+    function step(){ var s=gradAt(w,b)[0]; foot.push([w,lossAt(w,b)]); w=w-lr*s; w=Math.max(0,Math.min(20,w)); felt=false; paintF(); }
+    document.getElementById('fogFeel').onclick=function(){ felt=true; paintF(); };
+    document.getElementById('fogStep').onclick=step;
+    document.getElementById('fogAuto').onclick=function(){ var n=0; var id=setInterval(function(){ step(); if(++n>=20) clearInterval(id); },120); };
+    document.getElementById('fogClear').onclick=function(){ clear=!clear; this.textContent=clear?'bring the fog back':'clear the fog'; paintF(); };
+    document.getElementById('fogReset').onclick=function(){ w=2.0; foot=[]; felt=false; paintF(); };
+    lrs.addEventListener('input',function(){ lr=+lrs.value; document.getElementById('fogLro').textContent=lr.toFixed(3); });
+    paintF();
+  })();
+
+  /* ---- slide 12: nudge ---- */
+  (function(){
+    var sl=document.getElementById('nudge'); if(!sl) return;
+    var svg=document.getElementById('nudgeSvg'), term=document.getElementById('nudgeTerm');
+    function paintN(){
+      var dw=Math.pow(10, -3*sl.value/100); // 1 -> 0.001
+      document.getElementById('nudgeo').textContent=dw.toFixed(3);
+      var w0=10,b=22,L0=lossAt(w0,b),L1=lossAt(w0+dw,b), est=(L1-L0)/dw, tru=gradAt(w0,b)[0];
+      // zoomed bowl around 8..13
+      svg.innerHTML='';
+      var L=60,R=610,T=20,B=260, wmin=8,wmax=13, Lmin=0,Lmax=60;
+      var px=function(x){return L+((x-wmin)/(wmax-wmin))*(R-L)}, py=function(v){return B-((v-Lmin)/(Lmax-Lmin))*(B-T)};
+      svg.appendChild(svgEl('line',{x1:L,y1:B,x2:R,y2:B,stroke:'#c6c3ba','stroke-width':1.5}));
+      svg.appendChild(svgEl('line',{x1:L,y1:B,x2:L,y2:T,stroke:'#c6c3ba','stroke-width':1.5}));
+      [8,9,10,11,12,13].forEach(function(x){ var t=svgEl('text',{x:px(x),y:B+18,'font-size':11,fill:'#8b9096','text-anchor':'middle'}); t.textContent=x; svg.appendChild(t); });
+      var d=''; for(var i=0;i<=200;i++){ var ww=wmin+(wmax-wmin)*i/200; d+=(i?'L':'M')+px(ww).toFixed(1)+' '+py(lossAt(ww,b)).toFixed(1)+' '; }
+      svg.appendChild(svgEl('path',{d:d,fill:'none',stroke:'#23408f','stroke-width':2.5}));
+      // secant, extended
+      var ext=1.6; svg.appendChild(svgEl('line',{x1:px(w0-ext),y1:py(L0-est*ext),x2:px(w0+dw+ext),y2:py(L1+est*ext),stroke:'#a8231f','stroke-width':2.5}));
+      svg.appendChild(svgEl('circle',{cx:px(w0),cy:py(L0),r:6,fill:'#15171b'}));
+      svg.appendChild(svgEl('circle',{cx:px(w0+dw),cy:py(L1),r:6,fill:'#a8231f'}));
+      var t1=svgEl('text',{x:px(w0)-10,y:py(L0)-14,'font-size':12,fill:'#15171b','text-anchor':'end'}); t1.textContent='w = 10, loss 3.6'; svg.appendChild(t1);
+      var t2=svgEl('text',{x:px(w0+dw)+10,y:py(L1)-10,'font-size':12,fill:'#a8231f'}); t2.textContent='w = '+(w0+dw).toFixed(3)+', loss '+L1.toFixed(2); svg.appendChild(t2);
+      term.innerHTML='loss(10)        = 3.6000\nloss(10 + '+dw.toFixed(3)+') = '+L1.toFixed(4)+'\nestimated slope = ('+L1.toFixed(4)+' − 3.6) / '+dw.toFixed(3)+' = <span class="'+(Math.abs(est-tru)<0.2?'ok':'hit')+'">'+fmt(est,3)+'</span>\n<span class="dim">exact slope (next slide)                = '+fmt(tru,3)+'</span>';
+    }
+    sl.addEventListener('input',paintN); paintN();
+  })();
+
+  /* ---- slide 14: check the formula ---- */
+  (function(){
+    var sl=document.getElementById('chkW'); if(!sl) return;
+    var tb=document.getElementById('chkTable');
+    function paintC(){
+      var w=+sl.value,b=22; document.getElementById('chkWo').textContent=w.toFixed(1);
+      var h='<tr><th>x</th><th>error</th><th>error × x</th></tr>', s=0, se=0;
+      for(var k=0;k<5;k++){ var e=w*X[k]+b-Y[k]; s+=e*X[k]; se+=e; h+='<tr><td>'+X[k]+'</td><td class="'+(e>0?'pos':(e<0?'neg':''))+'">'+fmt(e,1)+'</td><td>'+fmt(e*X[k],1)+'</td></tr>'; }
+      var dw=2*s/5, db=2*se/5;
+      h+='<tr class="tot"><td colspan="2">sum</td><td>'+fmt(s,1)+'</td></tr><tr class="tot"><td colspan="2">× 2/5 = ∂L/∂w</td><td>'+fmt(dw,2)+'</td></tr>';
+      tb.innerHTML=h;
+      document.getElementById('chkFormula').textContent=fmt(dw,2);
+      document.getElementById('chkF2').textContent=fmt(dw,2);
+      document.getElementById('chkN2').textContent=fmt((lossAt(w+0.001,b)-lossAt(w,b))/0.001,2);
+      document.getElementById('chkB').textContent=fmt(db,2);
+    }
+    sl.addEventListener('input',paintC); paintC();
+  })();
+
+  /* ---- slide 16: watch it learn ---- */
+  (function(){
+    var fit=document.getElementById('gdFit'); if(!fit) return;
+    var lossSvg=document.getElementById('gdLoss');
+    var w=0,b=0,lr=0.01,step=0,hist=[];
+    function drawLoss(){
+      lossSvg.innerHTML='';
+      var L=60,R=610,T=20,B=260; var n=Math.max(hist.length,10);
+      var maxL=3000, minL=1; var px=function(i){return L+(i/(n-1))*(R-L)}, py=function(v){ var lv=Math.log10(Math.max(minL,Math.min(v,1e7))); var lo=Math.log10(minL), hi=Math.log10(Math.max(maxL,1)); hi=Math.max(hi,Math.log10(Math.max.apply(null,hist.concat([maxL])))); return B-((lv-lo)/(hi-lo))*(B-T); };
+      lossSvg.appendChild(svgEl('line',{x1:L,y1:B,x2:R,y2:B,stroke:'#c6c3ba','stroke-width':1.5}));
+      lossSvg.appendChild(svgEl('line',{x1:L,y1:B,x2:L,y2:T,stroke:'#c6c3ba','stroke-width':1.5}));
+      var yl=svgEl('text',{x:L+8,y:T+4,'font-size':11,fill:'#8b9096'}); yl.textContent='loss, log scale'; lossSvg.appendChild(yl);
+      var xl=svgEl('text',{x:R,y:B+18,'font-size':11,fill:'#8b9096','text-anchor':'end'}); xl.textContent='step '+step; lossSvg.appendChild(xl);
+      if(hist.length>1){ var d=''; hist.forEach(function(v,i){ d+=(i?'L':'M')+px(i).toFixed(1)+' '+py(v).toFixed(1)+' '; }); lossSvg.appendChild(svgEl('path',{d:d,fill:'none',stroke:'#23408f','stroke-width':2.5})); }
+      if(hist.length){ var v=hist[hist.length-1]; lossSvg.appendChild(svgEl('circle',{cx:px(hist.length-1),cy:py(v),r:6,fill:v>3000?'#a8231f':'#23408f'})); }
+    }
+    function paintG(){
+      drawFit(fit,Math.max(-30,Math.min(50,w)),Math.max(-60,Math.min(90,b)),300);
+      drawLoss();
+      document.getElementById('gdStep').textContent=step; document.getElementById('gdW').textContent=fmt(w,2); document.getElementById('gdB').textContent=fmt(b,2);
+      var Lv=lossAt(w,b); var el=document.getElementById('gdL'); el.textContent=Lv>1e6?Lv.toExponential(2):Lv.toFixed(2); el.className=Lv>3000?'neg':'';
+    }
+    function doSteps(n){ for(var k=0;k<n;k++){ hist.push(lossAt(w,b)); var g=gradAt(w,b); w-=lr*g[0]; b-=lr*g[1]; step++; if(!isFinite(w)||Math.abs(w)>1e6){w=1e6;b=0;break;} } if(hist.length>600){ /* thin out for drawing */ var h2=[]; for(var i=0;i<hist.length;i+=Math.ceil(hist.length/600)) h2.push(hist[i]); h2.push(hist[hist.length-1]); hist=h2; } paintG(); }
+    document.getElementById('gd1').onclick=function(){doSteps(1)};
+    document.getElementById('gd10').onclick=function(){doSteps(10)};
+    document.getElementById('gd100').onclick=function(){doSteps(100)};
+    document.getElementById('gd1000').onclick=function(){doSteps(1000)};
+    document.getElementById('gdReset').onclick=function(){ w=0;b=0;step=0;hist=[]; paintG(); };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-lr]'),function(btn){ btn.onclick=function(){ lr=+btn.dataset.lr; Array.prototype.forEach.call(document.querySelectorAll('[data-lr]'),function(x){x.classList.remove('sel')}); btn.classList.add('sel'); w=0;b=0;step=0;hist=[]; paintG(); }; });
+    paintG();
+  })();
+
+  /* ---- slide 19: the neuron ---- */
+  (function(){
+    var svg=document.getElementById('neuSvg'); if(!svg) return;
+    var W=[6,2,0.3], B=5, names=['hours','sleep','attendance'], ids=['nx1','nx2','nx3'];
+    function paintNeu(){
+      var xs=ids.map(function(id){return +document.getElementById(id).value});
+      ids.forEach(function(id,k){ document.getElementById(id+'o').textContent=(k==2?xs[k].toFixed(0):xs[k].toFixed(1)); });
+      svg.innerHTML='';
+      var ys=[70,170,270], cx=380, cy=170, ix=190;
+      var sum=B;
+      names.forEach(function(n,k){
+        var t=svgEl('text',{x:ix-30,y:ys[k]+5,'font-size':14,fill:'#15171b','text-anchor':'end'}); t.textContent=n+' = '+xs[k]; svg.appendChild(t);
+        svg.appendChild(svgEl('circle',{cx:ix,cy:ys[k],r:20,fill:'#fff',stroke:'#c6c3ba','stroke-width':2}));
+        var prod=W[k]*xs[k]; sum+=prod;
+        var wdt=1.5+Math.min(6,Math.abs(prod)/8);
+        svg.appendChild(svgEl('line',{x1:ix+22,y1:ys[k],x2:cx-36,y2:cy+(ys[k]-cy)*0.15,stroke:'#23408f','stroke-width':wdt}));
+        var mx=(ix+22+cx-36)/2, my=(ys[k]+cy+(ys[k]-cy)*0.15)/2, dy=[-6,-10,14][k];
+        var l=svgEl('text',{x:mx,y:my+dy,'font-size':12,fill:'#23408f','text-anchor':'middle',stroke:'#ffffff','stroke-width':5,'paint-order':'stroke','stroke-linejoin':'round'}); l.textContent='w'+(k+1)+' = '+W[k]+'  ×  '+xs[k]+'  =  '+prod.toFixed(1); svg.appendChild(l);
+      });
+      svg.appendChild(svgEl('circle',{cx:cx,cy:cy,r:36,fill:'#eaeef7',stroke:'#23408f','stroke-width':2.5}));
+      var s1=svgEl('text',{x:cx,y:cy-4,'font-size':15,fill:'#23408f','text-anchor':'middle'}); s1.textContent='Σ + b'; svg.appendChild(s1);
+      var s2=svgEl('text',{x:cx,y:cy+16,'font-size':11,fill:'#23408f','text-anchor':'middle'}); s2.textContent='b = '+B; svg.appendChild(s2);
+      svg.appendChild(svgEl('line',{x1:cx+38,y1:cy,x2:500,y2:cy,stroke:'#15171b','stroke-width':2.5}));
+      svg.appendChild(svgEl('path',{d:'M494 164 L504 170 L494 176',fill:'none',stroke:'#15171b','stroke-width':2}));
+      var out=Math.max(0,Math.min(100,sum));
+      var o=svgEl('text',{x:514,y:cy+6,'font-size':18,fill:sum<40?'#a8231f':'#146b5c','font-weight':700}); o.textContent='ŷ = '+sum.toFixed(1); svg.appendChild(o);
+      var o2=svgEl('text',{x:514,y:cy+26,'font-size':11,fill:'#8b9096'}); o2.textContent=sum<40?'fails':'passes'; svg.appendChild(o2);
+    }
+    ids.forEach(function(id){ document.getElementById(id).addEventListener('input',paintNeu); });
+    paintNeu();
+  })();
 
   paint();
 })();
