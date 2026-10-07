@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 27 · How does a circuit choose?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --hi:#e8952b; --lo:#b9bfc6; --violet:#6b3fa0;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:46px 68px 78px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .32s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.eyebrow{position:absolute;top:19px;left:68px;font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:19px;right:68px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:68px;right:68px;bottom:21px;display:flex;gap:1.5px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:68px;bottom:42px;font-family:var(--mono);font-size:12px;color:var(--soft);z-index:5}
+#help{position:absolute;left:68px;bottom:42px;font-family:var(--mono);font-size:11px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+h1{font-family:var(--display);font-weight:600;font-size:60px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:29px;line-height:1.12;letter-spacing:-.015em;color:var(--ink);margin-bottom:6px}
+p{font-size:20px;line-height:1.46;max-width:37ch}
+p+p{margin-top:10px}
+.big{font-size:23.5px;line-height:1.34;color:var(--ink);font-weight:300;max-width:31ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center}
+.stack>*+*{margin-top:9px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 12px}
+.row{display:flex;gap:20px;align-items:flex-start;justify-content:center}
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:9px 14px;margin-top:9px}
+.rem .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.rem.win{border-left-color:var(--ok)} .rem.win .h{color:var(--ok)}
+.rem.bad{border-left-color:var(--fail)} .rem.bad .h{color:var(--fail)}
+.rem ul{list-style:none}
+.rem li{font-size:15.5px;line-height:1.36;color:var(--ink);padding:3.5px 0 3.5px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+.btn{font-family:var(--mono);font-size:12.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:6px 12px;cursor:pointer;min-width:34px}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+.btnrow .lab{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--soft);margin-right:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:4px 11px;border-radius:20px;background:var(--accent-soft);color:var(--accent);margin-bottom:8px}
+.tag.win{background:var(--ok-soft);color:var(--ok)}
+.tag.bad{background:var(--fail-soft);color:var(--fail)}
+.tag.new{background:#efe9f7;color:var(--violet)}
+.spec{display:flex;align-items:stretch;background:var(--card);border:1px solid var(--rule2);border-radius:11px;overflow:hidden;margin-top:8px}
+.spec .c{flex:1;padding:12px 15px;border-right:1px solid var(--rule)}
+.spec .c:last-child{border-right:none}
+.spec .c .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--soft)}
+.spec .c .v{font-family:var(--display);font-size:28px;font-weight:600;color:var(--ink);line-height:1.1;margin-top:3px}
+.spec .c .s{font-size:12.5px;color:var(--soft);margin-top:2px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .32s ease}
+.frag.shown{opacity:1}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+.cue{position:absolute;left:68px;right:68px;bottom:64px;display:none;padding:9px 13px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:14.5px;line-height:1.34;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:38px 68px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:10px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:50px}
+#jump li{padding:3.5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:15px;color:var(--body);display:flex;gap:11px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:30px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 27</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 27 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<section class="slide" data-t="Title" data-act="the question">
+  <div>
+    <div class="kicker">class 27 · hour twenty seven of fifty</div>
+    <h1>How does<br>a circuit choose?</h1>
+    <p class="big" style="margin-top:22px;max-width:49ch">Eight hours of arithmetic produced seven separate circuits. A machine has one pair of operands coming in and one result going out. So how does it use seven circuits?</p>
+  </div>
+  <div class="cue">Draw the seven units on the board before anything goes up. Let them feel the mismatch physically.</div>
+</section>
+
+<section class="slide" data-t="Where we are" data-act="the question">
+  <div>
+    <h2>A new arc. The arithmetic is finished and nothing is connected to anything.</h2>
+    <div style="text-align:center;margin-top:2px"><svg viewBox="0 0 1140 250" width="1080" height="219"><g id="figArcTop"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the hour in three questions</div>
+      <ul>
+        <li><strong>Do you route the operands, or send them everywhere?</strong> One of those is much easier to build than it sounds.</li>
+        <li><strong>What does a chooser look like, in gates?</strong> You have had the machinery to answer this since Class 15.</li>
+        <li><strong>And what exactly are its control inputs?</strong> The answer to that one sets up the whole second half of the course.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Flag the third question. It is the one that matters, and they will not see why until Class 37.</div>
+</section>
+
+<!-- ================= ACT 1 ================= -->
+
+<section class="slide" data-t="Seven circuits, one machine" data-act="1 · the problem, physically">
+  <div>
+    <h2>Everything you have built, and the problem with all of it at once.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figSeven"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the mismatch</div>
+      <ul>
+        <li>Seven circuits, each with two inputs and one output. The machine has one pair of inputs and one output.</li>
+        <li>Nothing you have built so far decides anything. Every circuit computes its one function and always has.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Count them out loud. Add, subtract, multiply, divide, AND, OR, XOR. Seven boxes, one wire in, one wire out.</div>
+</section>
+
+<section class="slide" data-t="Route it, or send it everywhere" data-act="1 · the problem, physically">
+  <div>
+    <div class="kicker">argue it out before the next slide</div>
+    <h2 style="font-size:27px;margin-bottom:0">Two ways to connect them, and the obvious one is the trap.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figRoute"></g></svg></div>
+    <div class="btnrow">
+      <span class="lab">show</span>
+      <button class="btn hot" id="rRoute">route the operands</button>
+      <button class="btn" id="rBroad">send them everywhere</button>
+    </div>
+  </div>
+  <div class="cue">Let the room argue properly. Routing sounds efficient and is circular. Let somebody discover that.</div>
+</section>
+
+<section class="slide" data-t="Both are selection" data-act="1 · the problem, physically">
+  <div class="center">
+    <div class="tag">THE REFRAME</div>
+    <h2 style="font-size:34px;margin-bottom:16px">Routing needs a circuit that decides where to send.<br>Broadcasting needs a circuit that decides what to keep.</h2>
+    <p class="big" style="max-width:54ch;color:var(--soft)">Both are the same problem. But deciding where to send things is the problem you started with, one step earlier, which gets you nowhere.</p>
+    <p class="big frag" style="margin-top:18px;max-width:54ch">Deciding what to keep is a circuit you can write a truth table for. So compute everything, and throw almost all of it away.</p>
+  </div>
+  <div class="cue">The waste is deliberate and it is the right call. Say so now, and defend it properly later in the hour.</div>
+</section>
+
+<!-- ================= ACT 2 ================= -->
+
+<section class="slide" data-t="Write the table" data-act="2 · the multiplexer, from gates">
+  <div>
+    <div class="kicker">three inputs, so eight rows. you have done this since Class 15</div>
+    <h2 style="font-size:27px;margin-bottom:0">Two data inputs, one select input, one output.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 350" width="1090" height="330"><g id="figTruth"></g></svg></div>
+    <div class="btnrow">
+      <span class="lab">highlight</span>
+      <button class="btn hot" id="tAll">all eight rows</button>
+      <button class="btn" id="tS0">the rows where s = 0</button>
+      <button class="btn" id="tS1">the rows where s = 1</button>
+    </div>
+  </div>
+  <div class="cue">When s is zero the output copies a and ignores b entirely. Make them see that in the table before the algebra.</div>
+</section>
+
+<section class="slide" data-t="Turn it into gates" data-act="2 · the multiplexer, from gates">
+  <div>
+    <h2>Four product terms from the table, and the map folds two of them away.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figMux2"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Four gates in total: one inverter, two ANDs and an OR. Two gate delays from any input to the output.</li>
+        <li>Checked on all eight rows, which is the entire specification. There is nothing else a multiplexer has to do.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Have them do the minimisation on the board. It is a four cell map and it takes ninety seconds.</div>
+</section>
+
+<section class="slide" data-t="Read it aloud" data-act="2 · the multiplexer, from gates">
+  <div>
+    <div class="tag win">THE READING IS THE INTUITION</div>
+    <h2 style="font-size:27px;margin-bottom:0">A multiplexer is a set of gates and a promise.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 310" width="1090" height="294"><g id="figRead"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">three parts, and the promise is the third</div>
+      <ul>
+        <li>Each data input is guarded by a condition. One guard opens when select is zero, the other when select is one.</li>
+        <li>Exactly one condition is true, always, because a bit is either zero or one.</li>
+        <li>So the OR never has to choose. It collects whichever input survived its guard, and the other one is zero.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">That phrasing generalises to every width. Say it once properly and refer back to it all hour.</div>
+</section>
+
+<!-- ================= ACT 3 ================= -->
+
+<section class="slide" data-t="Make it wider" data-act="3 · what the select lines are">
+  <div>
+    <div class="kicker">four to one, then eight to one</div>
+    <h2 style="font-size:27px;margin-bottom:0">Same promise, more guards.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figWiden"></g></svg></div>
+    <div class="btnrow">
+      <span class="lab">width</span>
+      <button class="btn" data-w="2">2 to 1</button>
+      <button class="btn hot" data-w="4">4 to 1</button>
+      <button class="btn" data-w="8">8 to 1</button>
+    </div>
+  </div>
+  <div class="cue">Build each one in Logisim as you go. The pattern is obvious by the third and that is the point.</div>
+</section>
+
+<section class="slide" data-t="Now stop and look" data-act="3 · what the select lines are">
+  <div class="center">
+    <div class="tag new">THE QUESTION OF THE HOUR</div>
+    <h2 style="font-size:36px;margin-bottom:18px">What <em>are</em> the select lines?</h2>
+    <p class="big" style="max-width:50ch;color:var(--soft)">Two of them chose between four inputs. Three of them chose between eight. Before you are told, say what they are.</p>
+    <p class="big frag" style="margin-top:20px;max-width:52ch">They are a <strong>binary number</strong>. Two lines count from zero to three and name one of four. Three count from zero to seven and name one of eight.</p>
+  </div>
+  <div class="cue">Wait for the room. Somebody will say it. It is much better coming from them than from you.</div>
+</section>
+
+<section class="slide" data-t="So how wide is the control" data-act="3 · what the select lines are">
+  <div>
+    <div class="kicker">change the number of options and watch the field</div>
+    <h2 style="font-size:27px;margin-bottom:0">The width of a control field is set by one thing and nothing else.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figField"></g></svg></div>
+    <div class="btnrow">
+      <span class="lab">circuits to choose between</span>
+      <button class="btn" data-n="4">4</button>
+      <button class="btn" data-n="8">8</button>
+      <button class="btn hot" data-n="16">16</button>
+      <button class="btn" data-n="17">17</button>
+      <button class="btn" data-n="32">32</button>
+    </div>
+  </div>
+  <div class="cue">The jump from sixteen to seventeen is the send-off. Let them see the fifteen wasted patterns appear.</div>
+</section>
+
+<!-- ================= ACT 4 ================= -->
+
+<section class="slide" data-t="Two ways to build the same thing" data-act="4 · two constructions">
+  <div>
+    <div class="kicker">flip between them</div>
+    <h2 style="font-size:27px;margin-bottom:0">An eight to one multiplexer, built two completely different ways.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 340" width="1090" height="322"><g id="figTwoBuilds"></g></svg></div>
+    <div class="btnrow">
+      <span class="lab">build it</span>
+      <button class="btn hot" id="bFlat">flat, with a decoder</button>
+      <button class="btn" id="bTree">as a tree of 2 to 1s</button>
+    </div>
+  </div>
+  <div class="cue">Same function, same eight rows, completely different silicon. They have the vocabulary for this from Class 22.</div>
+</section>
+
+<section class="slide" data-t="Which one wins" data-act="4 · two constructions">
+  <div>
+    <h2>Count them honestly, with Class 18's limit switched on.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1090" height="312"><g id="figCompare"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the honest answer, which is not the expected one</div>
+      <ul>
+        <li>The flat version is <em>shallower and smaller</em> at every width. The tree is not automatically the winner here.</li>
+        <li>Class 22's tree won because its chain cost two delays per link. A multiplexer has no chain to flatten, so there is nothing to win back.</li>
+        <li>What the tree does buy is that no gate anywhere ever sees more than two inputs, and it is built from one part repeated.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Do not pretend the tree wins. The useful lesson is that the frontier has to be re-measured for every problem.</div>
+</section>
+
+<!-- ================= CLOSE ================= -->
+
+<section class="slide" data-t="Computing things you throw away" data-act="closing">
+  <div>
+    <h2>Every cycle, six of the seven answers are discarded.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 310" width="1090" height="294"><g id="figWaste"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">why that is the right call anyway</div>
+      <ul>
+        <li>The circuits exist whether you use them or not. They were paid for in silicon the moment they were etched.</li>
+        <li>Running them all costs power, and nothing else. Choosing first would cost a decision circuit, which is the problem you were trying to solve.</li>
+        <li>Hardware computes everything and selects afterwards. In software you would do the opposite, and that difference is worth sitting with.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">They implement both in C for the assignment and find the software answer is the opposite. Do not spoil it.</div>
+</section>
+
+<section class="slide" data-t="Nothing marks the control" data-act="closing">
+  <div>
+    <div class="tag new">LEAVE THIS ON THE BOARD</div>
+    <h2 style="font-size:27px;margin-bottom:0">Look at the wires again. Which ones are the control?</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 310" width="1090" height="294"><g id="figSame"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">remember</div>
+      <ul>
+        <li>Nothing in the circuit marks one input as control and the others as data. They are all wires carrying bits.</li>
+        <li>Swap them over and the circuit computes something else quite happily, without noticing anything unusual happened.</li>
+        <li>You met this in Class 16, relabelling an HDMI switch. It is about to become the foundation of the entire second half of this course.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Say explicitly that this returns in Class 37, and then leave it alone. Do not explain the payoff yet.</div>
+</section>
+
+<section class="slide" data-t="Where we are now" data-act="closing">
+  <div>
+    <h2>One down, four to go.</h2>
+    <div style="text-align:center;margin:4px 0"><svg viewBox="0 0 1140 250" width="1080" height="219"><g id="figArcEnd"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">what you are carrying into next session</div>
+      <ul>
+        <li>A multiplexer: guarded inputs, exactly one guard open, an OR to collect the survivor.</li>
+        <li>The width of any control field is the logarithm of how many options exist. Nothing else goes into that decision.</li>
+        <li>And the control lines are indistinguishable from the data lines, which is a fact you should find slightly unsettling.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Three things. The third is the one that matters, and they will not know why for ten more sessions.</div>
+</section>
+
+<section class="slide" data-t="Close" data-act="closing">
+  <div class="center">
+    <h2 style="font-size:35px;margin-bottom:16px">You have seven circuits<br>and now something that can choose.</h2>
+    <p class="big" style="max-width:56ch;color:var(--soft)">Still nothing wired together. But the hard part of wiring them is already solved, because selection turned out to be a truth table like any other.</p>
+    <p class="big frag" style="margin-top:18px;max-width:55ch">Next session: two units are still missing from the pile, and both turn out to be built entirely from things you already own.</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: build a four to one multiplexer using only two to one multiplexers. How many, and how arranged? Then: sixteen circuits to choose between, how wide is the select field? Now seventeen. How wide now, and what happened to the sixteen unused patterns?</div>
+</section>
+
+</template>
+<script>
+(function(){
+  'use strict';
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  var onSlide=null;
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    if(onSlide) onSlide(i);
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallow=false;
+  document.addEventListener('click',function(e){
+    swallow = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||
+                 e.target.closest('svg')||e.target.closest('.spec'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallow){ swallow=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= helpers ================= */
+  var NS='http://www.w3.org/2000/svg';
+  var GREY='#c6c3ba', HI='#e8952b', INK='#15171b', DEAD='#dedbd3',
+      BLUE='#23408f', RED='#a8231f', GRN='#146b5c', VIO='#6b3fa0', AMB='#b06a12';
+  var D=20, RIPPLE=1300, LOOK=240;
+  function el(tag,a,p){ var e=document.createElementNS(NS,tag);
+    for(var k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e; }
+  function txt(p,x,y,s,o){ var t=el('text',Object.assign({x:x,y:y,'font-size':13,fill:'#8b9096'},o||{}),p);
+    t.textContent=s; return t; }
+  function rct(p,x,y,w,h,o){ return el('rect',Object.assign({x:x,y:y,width:w,height:h,rx:7,
+    fill:'#fff',stroke:GREY,'stroke-width':2},o||{}),p); }
+  function wire(p,x1,y1,x2,y2,v){ return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,
+    stroke:v?HI:DEAD,'stroke-width':v?3.6:2.4,'stroke-linecap':'round'},p); }
+  function pth(p,d,o){ return el('path',Object.assign({d:d,fill:'none',stroke:GREY,'stroke-width':2.4},o||{}),p); }
+  function jn(p,x,y){ return el('circle',{cx:x,cy:y,r:4,fill:INK},p); }
+  function gAnd(p,x,y,h,v){ return el('path',{d:'M'+x+' '+(y-h)+' L'+(x+16)+' '+(y-h)+' A '+h+' '+h+
+    ' 0 0 1 '+(x+16)+' '+(y+h)+' L'+x+' '+(y+h)+' z',fill:v?'#fbf0dc':'#fff',stroke:v?AMB:INK,'stroke-width':2.2},p); }
+  function andTip(x,h){ return x+16+h; }
+  function gOr(p,x,y,h,v){
+    var nose=h*1.4;
+    el('path',{d:'M'+(x-4)+' '+(y-h)+' Q'+(x+h*0.8)+' '+y+' '+(x-4)+' '+(y+h)+
+      ' Q'+(x+nose*0.55)+' '+(y+h*0.85)+' '+(x+nose)+' '+y+' Q'+(x+nose*0.55)+' '+(y-h*0.85)+' '+(x-4)+' '+(y-h)+' z',
+      fill:v?'#fbf0dc':'#fff',stroke:v?AMB:INK,'stroke-width':2.2},p);
+  }
+  function orTip(x,h){ return x+h*1.4; }
+  function ticker(runId,stepId,resetId,max,render){
+    var t=0,timer=null;
+    function set(v){ t=Math.max(0,Math.min(max,v)); render(t); }
+    function stop(){ if(timer){clearInterval(timer);timer=null;}
+      var b=document.getElementById(runId); if(b){b.classList.remove('hot');b.textContent='run \u25B6';} }
+    document.getElementById(runId).onclick=function(){
+      if(timer){ stop(); return; }
+      if(t>=max) set(0);
+      this.classList.add('hot'); this.textContent='\u25A0 stop';
+      timer=setInterval(function(){ if(t>=max){ stop(); return; } set(t+1); },380);
+    };
+    document.getElementById(stepId).onclick=function(){ stop(); set(t>=max?0:t+1); };
+    document.getElementById(resetId).onclick=function(){ stop(); set(0); };
+    set(0);
+    return {stop:stop};
+  }
+  function arcStrip(gid,litIndex,caption){
+    var g=document.getElementById(gid); if(!g) return;
+    var items=[[27,'how it chooses'],[28,'sideways'],[29,'adding floats'],[30,'the ALU'],[31,'what it needs']];
+    var W=186, X0=78;
+    items.forEach(function(it,k){
+      var x=X0+k*(W+8), done=k<litIndex, lit=(k===litIndex);
+      el('rect',{x:x,y:52,width:W,height:104,rx:12,
+        fill:lit?'#eaeef7':(done?'#f2f0ea':'#fbfaf7'),
+        stroke:lit?BLUE:(done?'#c6c3ba':'#e2e0d9'),'stroke-width':lit?2.6:1.5},g);
+      txt(g,x+W/2,80,'CLASS '+it[0],{'font-size':9.5,fill:lit?BLUE:'#c6c3ba','text-anchor':'middle','letter-spacing':1.3});
+      txt(g,x+W/2,112,it[1],{'font-size':12,fill:lit?INK:(done?'#8b9096':'#a9a69d'),'text-anchor':'middle','font-weight':700});
+      if(done) txt(g,x+W/2,136,'done',{'font-size':11,fill:GRN,'text-anchor':'middle'});
+      if(lit) txt(g,x+W/2,136,'today',{'font-size':11,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      if(k<items.length-1) pth(g,'M'+(x+W)+' 104 L'+(x+W+8)+' 104',{stroke:'#dedbd3','stroke-width':2});
+    });
+    txt(g,34,198,caption,{'font-size':15.5,fill:INK,'font-weight':700});
+  }
+  arcStrip('figArcTop',0,'eight hours of arithmetic left you seven separate circuits. now you wire them together.');
+  arcStrip('figArcEnd',0,'a circuit that chooses, and a control input that is just a binary number.');
+
+  
+  
+
+
+
+
+
+  /* ================= seven circuits, one machine ================= */
+  (function(){
+    var g=document.getElementById('figSeven'); if(!g) return;
+    txt(g,34,24,'EVERYTHING YOU HAVE BUILT SO FAR',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+    var units=[['adder','class 22'],['subtractor','class 23'],['multiplier','class 25'],['divider','class 26'],
+               ['AND','class 15'],['OR','class 15'],['XOR','class 19']];
+    var X0=300, CW=112, Y=92;
+    units.forEach(function(u,k){
+      var x=X0+(k%4)*CW, y=Y+Math.floor(k/4)*86;
+      el('rect',{x:x,y:y,width:CW-14,height:60,rx:10,fill:'#eaeef7',stroke:BLUE,'stroke-width':2},g);
+      txt(g,x+(CW-14)/2,y+28,u[0],{'font-size':12.5,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      txt(g,x+(CW-14)/2,y+48,u[1],{'font-size':10.5,fill:'#8b9096','text-anchor':'middle'});
+      pth(g,'M'+(x+(CW-14)/2-18)+' '+(y-12)+' L'+(x+(CW-14)/2-18)+' '+y,{stroke:'#dedbd3','stroke-width':1.6});
+      pth(g,'M'+(x+(CW-14)/2+18)+' '+(y-12)+' L'+(x+(CW-14)/2+18)+' '+y,{stroke:'#dedbd3','stroke-width':1.6});
+      pth(g,'M'+(x+(CW-14)/2)+' '+(y+60)+' L'+(x+(CW-14)/2)+' '+(y+72),{stroke:'#dedbd3','stroke-width':1.6});
+    });
+    /* the machine's single pair of wires */
+    el('rect',{x:60,y:96,width:180,height:52,rx:10,fill:'#fbf0dc',stroke:AMB,'stroke-width':2.4},g);
+    txt(g,150,128,'one pair in',{'font-size':14,fill:AMB,'text-anchor':'middle','font-weight':700});
+    el('rect',{x:60,y:198,width:180,height:52,rx:10,fill:'#fbf0dc',stroke:AMB,'stroke-width':2.4},g);
+    txt(g,150,230,'one result out',{'font-size':14,fill:AMB,'text-anchor':'middle','font-weight':700});
+    txt(g,60,176,'and in between,',{'font-size':12.5,fill:'#8b9096'});
+    txt(g,60,194,'seven of these.',{'font-size':12.5,fill:'#8b9096'});
+    txt(g,34,308,'not one of them decides anything. each computes its one function, always, whether you wanted it or not.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= route it, or send it everywhere ================= */
+  (function(){
+    var g=document.getElementById('figRoute'); if(!g) return;
+    var mode='route';
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var broad=(mode==='broad');
+      txt(g,34,24,broad?'SEND THE OPERANDS TO EVERY UNIT':'ROUTE THE OPERANDS TO THE RIGHT UNIT',
+        {'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+      var col=broad?GRN:RED, soft=broad?'#e9f2ef':'#fdf0ef';
+      el('rect',{x:60,y:118,width:140,height:56,rx:10,fill:'#fbf0dc',stroke:AMB,'stroke-width':2.2},g);
+      txt(g,130,152,'operands',{'font-size':13.5,fill:AMB,'text-anchor':'middle','font-weight':700});
+      /* the decision box, or not */
+      if(!broad){
+        el('rect',{x:252,y:106,width:150,height:80,rx:11,fill:soft,stroke:col,'stroke-width':2.6},g);
+        txt(g,327,140,'a circuit that',{'font-size':12.5,fill:col,'text-anchor':'middle','font-weight':700});
+        txt(g,327,160,'decides where',{'font-size':12.5,fill:col,'text-anchor':'middle','font-weight':700});
+        pth(g,'M200 146 L248 146',{stroke:'#c6c3ba','stroke-width':2.2});
+      } else {
+        pth(g,'M200 146 L420 146',{stroke:AMB,'stroke-width':2.6});
+      }
+      /* the units */
+      var UX=440, UY=58, N=4;
+      for(var k=0;k<N;k++){
+        var y=UY+k*52, used=broad||k===2;
+        el('rect',{x:UX,y:y,width:160,height:40,rx:8,
+          fill:used?'#eaeef7':'#fbfaf7',stroke:used?BLUE:'#dedbd3','stroke-width':used?2:1.3},g);
+        txt(g,UX+80,y+26,'unit '+(k+1),{'font-size':12,fill:used?BLUE:'#c6c3ba','text-anchor':'middle','font-weight':700});
+        var sx=broad?420:402;
+        pth(g,'M'+sx+' 146 L'+(UX-6)+' '+(y+20),{stroke:used?AMB:'#e4e2db','stroke-width':used?2:1.2});
+        if(broad||k===2) pth(g,'M'+(UX+160)+' '+(y+20)+' L'+(UX+214)+' '+(y+20),{stroke:used?'#dedbd3':'#e4e2db','stroke-width':1.6});
+      }
+      if(broad){
+        el('rect',{x:654,y:106,width:150,height:80,rx:11,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.6},g);
+        txt(g,729,140,'a circuit that',{'font-size':12.5,fill:GRN,'text-anchor':'middle','font-weight':700});
+        txt(g,729,160,'decides what to keep',{'font-size':11.5,fill:GRN,'text-anchor':'middle','font-weight':700});
+      }
+      /* the verdict */
+      el('rect',{x:830,y:96,width:296,height:110,rx:13,fill:soft,stroke:col,'stroke-width':2.6},g);
+      txt(g,854,124,broad?'WASTEFUL, AND BUILDABLE':'EFFICIENT, AND CIRCULAR',{'font-size':10,fill:col,'letter-spacing':1.2});
+      if(broad){
+        txt(g,854,156,'six answers thrown away,',{'font-size':14,fill:col,'font-weight':700});
+        txt(g,854,178,'and the keeper is a',{'font-size':14,fill:col,'font-weight':700});
+        txt(g,854,198,'truth table you can write.',{'font-size':14,fill:col,'font-weight':700});
+      } else {
+        txt(g,854,156,'to route, you must first',{'font-size':14,fill:col,'font-weight':700});
+        txt(g,854,178,'decide. which is the',{'font-size':14,fill:col,'font-weight':700});
+        txt(g,854,198,'problem you started with.',{'font-size':14,fill:col,'font-weight':700});
+      }
+      txt(g,34,296,broad?'compute all seven, keep one. the deciding happens at the output, where it is a table with eight rows.'
+                        :'the router needs to know which unit to pick, and knowing that is exactly the thing you cannot do yet.',
+        {'font-size':15.5,fill:INK,'font-weight':700});
+    }
+    document.getElementById('rRoute').onclick=function(){
+      mode='route'; this.classList.add('hot'); document.getElementById('rBroad').classList.remove('hot'); render(); };
+    document.getElementById('rBroad').onclick=function(){
+      mode='broad'; this.classList.add('hot'); document.getElementById('rRoute').classList.remove('hot'); render(); };
+    render();
+  })();
+
+  /* ================= write the table ================= */
+  (function(){
+    var g=document.getElementById('figTruth'); if(!g) return;
+    var mode='all';
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,34,24,'TWO DATA INPUTS, ONE SELECT, EIGHT ROWS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+      var X0=300, CW=92, Y=58;
+      ['a','b','s','out'].forEach(function(h,k){
+        txt(g,X0+k*CW+34,Y,h,{'font-size':12,fill:'#8b9096','text-anchor':'middle','letter-spacing':1.1});
+      });
+      for(var r=0;r<8;r++){
+        var a=(r>>2)&1, b=(r>>1)&1, s=r&1, out=s?b:a;
+        var dim = (mode==='s0'&&s===1)||(mode==='s1'&&s===0);
+        var y=Y+22+r*28;
+        el('rect',{x:X0-10,y:y,width:4*CW,height:28,rx:6,
+          fill:dim?'#fbfaf7':(s?'#f3eefa':'#eaeef7'),stroke:dim?'#ededea':(s?VIO:BLUE),'stroke-width':dim?1:1.6},g);
+        [a,b,s,out].forEach(function(v,k){
+          var isOut=(k===3), isCopied = (!dim) && ((s===0&&k===0)||(s===1&&k===1));
+          txt(g,X0+k*CW+34,y+19,v,{'font-size':14,
+            fill:dim?'#dedbd3':(isOut?(s?VIO:BLUE):(isCopied?INK:'#a9a69d')),
+            'text-anchor':'middle','font-weight':(isOut||isCopied)?700:400});
+        });
+        if(!dim && mode!=='all'){
+          txt(g,X0+4*CW+16,y+19,(s===0?'out copies a':'out copies b'),{'font-size':12,fill:s?VIO:BLUE,'font-weight':700});
+        }
+      }
+      el('rect',{x:X0+3*CW-10,y:Y+22,width:CW,height:8*28-4,rx:6,fill:'none',stroke:AMB,'stroke-width':2.2},g);
+      txt(g,34,336,mode==='s0'?'when select is zero the output copies a, and b could be anything at all.'
+        :(mode==='s1'?'when select is one the output copies b, and now a is the one being ignored.'
+        :'the whole specification of a multiplexer is these eight rows. there is nothing else it has to do.'),
+        {'font-size':15.5,fill:INK,'font-weight':700});
+    }
+    function hot(id){ ['tAll','tS0','tS1'].forEach(function(x){document.getElementById(x).classList.remove('hot');});
+      document.getElementById(id).classList.add('hot'); }
+    document.getElementById('tAll').onclick=function(){ mode='all'; hot('tAll'); render(); };
+    document.getElementById('tS0').onclick=function(){ mode='s0'; hot('tS0'); render(); };
+    document.getElementById('tS1').onclick=function(){ mode='s1'; hot('tS1'); render(); };
+    render();
+  })();
+
+  /* ================= turn it into gates ================= */
+  (function(){
+    var g=document.getElementById('figMux2'); if(!g) return;
+    txt(g,34,24,'FROM THE TABLE, THEN MINIMISED',{'font-size':10.5,fill:BLUE,'letter-spacing':1.7});
+    el('rect',{x:60,y:52,width:480,height:72,rx:11,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':2},g);
+    txt(g,84,78,'STRAIGHT FROM THE FOUR TRUE ROWS',{'font-size':10,fill:'#8b9096','letter-spacing':1.2});
+    txt(g,84,106,'a\u00b7b\u00b7s\u0305  +  a\u00b7b\u0305\u00b7s\u0305  +  a\u00b7b\u00b7s  +  a\u0305\u00b7b\u00b7s',{'font-size':16,fill:INK,'font-weight':700});
+    pth(g,'M300 132 L300 156',{stroke:'#c6c3ba','stroke-width':2.2});
+    pth(g,'M292 148 l8 9 l8 -9',{stroke:'#c6c3ba','stroke-width':2.2});
+    txt(g,316,150,'the map folds b away from the first pair, and a from the second',{'font-size':12.5,fill:'#8b9096'});
+    el('rect',{x:60,y:166,width:480,height:64,rx:11,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.6},g);
+    txt(g,84,192,'THE CLASSIC FORM',{'font-size':10,fill:GRN,'letter-spacing':1.2});
+    txt(g,84,218,'out  =  a\u00b7s\u0305  +  b\u00b7s',{'font-size':20,fill:GRN,'font-weight':700});
+    /* the circuit */
+    var CX=620;
+    rct(g,CX,70,70,30,{fill:'#fbfaf7',stroke:'#c6c3ba'});
+    txt(g,CX+35,90,'a',{'font-size':13,fill:INK,'text-anchor':'middle','font-weight':700});
+    rct(g,CX,180,70,30,{fill:'#fbfaf7',stroke:'#c6c3ba'});
+    txt(g,CX+35,200,'b',{'font-size':13,fill:INK,'text-anchor':'middle','font-weight':700});
+    rct(g,CX,250,70,30,{fill:'#f3eefa',stroke:VIO});
+    txt(g,CX+35,270,'s',{'font-size':13,fill:VIO,'text-anchor':'middle','font-weight':700});
+    el('circle',{cx:CX+110,cy:265,r:9,fill:'#fff',stroke:VIO,'stroke-width':2},g);
+    txt(g,CX+110,269,'\u00ac',{'font-size':13,fill:VIO,'text-anchor':'middle','font-weight':700});
+    pth(g,'M'+(CX+70)+' 265 L'+(CX+101)+' 265',{stroke:VIO,'stroke-width':2});
+    gAnd(g,CX+170,100,22,1);
+    gAnd(g,CX+170,196,22,1);
+    pth(g,'M'+(CX+70)+' 85 L'+(CX+166)+' 85',{stroke:'#c6c3ba','stroke-width':2});
+    pth(g,'M'+(CX+119)+' 265 L'+(CX+140)+' 265 L'+(CX+140)+' 115 L'+(CX+166)+' 115',{stroke:VIO,'stroke-width':2});
+    pth(g,'M'+(CX+70)+' 195 L'+(CX+166)+' 195',{stroke:'#c6c3ba','stroke-width':2});
+    pth(g,'M'+(CX+70)+' 265 L'+(CX+128)+' 265 L'+(CX+128)+' 217 L'+(CX+166)+' 217',{stroke:VIO,'stroke-width':2});
+    pth(g,'M'+andTip(CX+170,22)+' 100 L'+(CX+280)+' 100 L'+(CX+280)+' 132',{stroke:HI,'stroke-width':2.6});
+    pth(g,'M'+andTip(CX+170,22)+' 196 L'+(CX+280)+' 196 L'+(CX+280)+' 164',{stroke:HI,'stroke-width':2.6});
+    gOr(g,CX+290,148,30,1);
+    wire(g,orTip(CX+290,30),148,CX+400,148,1);
+    rct(g,CX+400,128,80,40,{fill:'#fbf0dc',stroke:AMB});
+    txt(g,CX+440,153,'out',{'font-size':14,fill:AMB,'text-anchor':'middle','font-weight':700});
+    txt(g,CX-60,310,'four gates, two gate delays, correct on all eight rows.',{'font-size':14,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= read it aloud ================= */
+  (function(){
+    var g=document.getElementById('figRead'); if(!g) return;
+    txt(g,34,24,'THE SAME EXPRESSION, READ AS THREE PROMISES',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+    var parts=[['a \u00b7 s\u0305','a is let through only when select is zero',BLUE,'#eaeef7'],
+               ['b \u00b7 s','b is let through only when select is one',VIO,'#f3eefa'],
+               ['+','and the OR collects whichever one survived',AMB,'#fbf0dc']];
+    parts.forEach(function(p,k){
+      var y=58+k*68;
+      el('rect',{x:60,y:y,width:170,height:52,rx:10,fill:p[3],stroke:p[2],'stroke-width':2.4},g);
+      txt(g,145,y+33,p[0],{'font-size':19,fill:p[2],'text-anchor':'middle','font-weight':700});
+      txt(g,254,y+33,p[1],{'font-size':15.5,fill:INK});
+    });
+    el('rect',{x:60,y:266,width:1066,height:36,rx:8,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,84,290,'exactly one guard is open at any moment, because a bit is either zero or one. so the OR never has to choose.',
+      {'font-size':15,fill:GRN,'font-weight':700});
+  })();
+
+  /* ================= make it wider ================= */
+  (function(){
+    var g=document.getElementById('figWiden'); if(!g) return;
+    var W=4;
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var sel=Math.ceil(Math.log2(W));
+      txt(g,34,24,W+' TO 1, WITH '+sel+' SELECT LINE'+(sel===1?'':'S'),{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+      var X0=120, Y=60, GAP=Math.min(50, 230/W);
+      for(var k=0;k<W;k++){
+        var y=Y+k*GAP;
+        el('rect',{x:X0,y:y,width:120,height:GAP-10,rx:6,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.6},g);
+        txt(g,X0+60,y+(GAP-10)/2+5,'input '+k,{'font-size':11.5,fill:INK,'text-anchor':'middle','font-weight':700});
+        /* the guard */
+        var gx=X0+150;
+        el('rect',{x:gx,y:y,width:104,height:GAP-10,rx:6,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.6},g);
+        txt(g,gx+52,y+(GAP-10)/2+5,'guard '+k,{'font-size':11,fill:BLUE,'text-anchor':'middle','font-weight':700});
+        pth(g,'M'+(X0+120)+' '+(y+(GAP-10)/2)+' L'+gx+' '+(y+(GAP-10)/2),{stroke:'#dedbd3','stroke-width':1.6});
+        pth(g,'M'+(gx+104)+' '+(y+(GAP-10)/2)+' L'+(X0+330)+' '+(y+(GAP-10)/2),{stroke:HI,'stroke-width':2});
+      }
+      var midY=Y+(W*GAP-10)/2;
+      gOr(g,X0+340,midY,Math.max(30,(W*GAP)/2-8),1);
+      wire(g,orTip(X0+340,Math.max(30,(W*GAP)/2-8)),midY,X0+470,midY,1);
+      el('rect',{x:X0+470,y:midY-22,width:90,height:44,rx:9,fill:'#fbf0dc',stroke:AMB,'stroke-width':2.2},g);
+      txt(g,X0+515,midY+6,'out',{'font-size':14,fill:AMB,'text-anchor':'middle','font-weight':700});
+      /* the select lines */
+      var sy=Y+W*GAP+12;
+      for(var s=0;s<sel;s++){
+        el('rect',{x:X0+150+s*58,y:sy,width:52,height:18,rx:4,fill:'#f3eefa',stroke:VIO,'stroke-width':1.6},g);
+        txt(g,X0+176+s*58,sy+13,'s'+s,{'font-size':11,fill:VIO,'text-anchor':'middle','font-weight':700});
+      }
+      txt(g,X0,sy+13,sel+' select line'+(sel===1?'':'s'),{'font-size':12.5,fill:VIO,'font-weight':700});
+      el('rect',{x:760,y:60,width:366,height:120,rx:13,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+      txt(g,784,88,'THE PROMISE IS UNCHANGED',{'font-size':10,fill:GRN,'letter-spacing':1.2});
+      txt(g,784,120,W+' guards,',{'font-size':20,fill:GRN,'font-weight':700});
+      txt(g,784,146,'exactly one of them open,',{'font-size':14,fill:GRN,'font-weight':700});
+      txt(g,784,168,'and one OR to collect the survivor.',{'font-size':14,fill:GRN,'font-weight':700});
+      el('rect',{x:760,y:198,width:366,height:92,rx:13,fill:'#f3eefa',stroke:VIO,'stroke-width':2.4},g);
+      txt(g,784,226,'SELECT LINES NEEDED',{'font-size':10,fill:VIO,'letter-spacing':1.2});
+      txt(g,784,262,sel,{'font-size':32,fill:VIO,'font-weight':700});
+      txt(g,830,262,'for '+W+' inputs',{'font-size':15,fill:VIO,'font-weight':700});
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-w]'),function(b){
+      b.onclick=function(){
+        Array.prototype.forEach.call(document.querySelectorAll('[data-w]'),function(o){o.classList.remove('hot');});
+        b.classList.add('hot'); W=+b.getAttribute('data-w'); render();
+      };
+    });
+    render();
+  })();
+
+  /* ================= so how wide is the control ================= */
+  (function(){
+    var g=document.getElementById('figField'); if(!g) return;
+    var N=16;
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var w=Math.ceil(Math.log2(N)), patterns=Math.pow(2,w), unused=patterns-N;
+      txt(g,34,24,'CHOOSING BETWEEN '+N+' CIRCUITS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+      /* the field, drawn as bits */
+      var X0=120, BW=74, Y=64;
+      for(var k=0;k<w;k++){
+        el('rect',{x:X0+k*BW,y:Y,width:BW-12,height:54,rx:8,fill:'#f3eefa',stroke:VIO,'stroke-width':2.2},g);
+        txt(g,X0+k*BW+(BW-12)/2,Y+34,'s'+(w-1-k),{'font-size':15,fill:VIO,'text-anchor':'middle','font-weight':700});
+      }
+      txt(g,X0,Y-12,w+' select lines',{'font-size':12.5,fill:VIO,'font-weight':700});
+      /* the patterns */
+      var PX=120, PY=152, PCW=Math.min(30, 940/patterns);
+      for(var p=0;p<patterns;p++){
+        var used=(p<N);
+        el('rect',{x:PX+p*PCW,y:PY,width:Math.max(5,PCW-4),height:42,rx:3,
+          fill:used?'#e9f2ef':'#fdf0ef',stroke:used?GRN:RED,'stroke-width':used?1.4:1.4},g);
+      }
+      txt(g,PX,PY-10,patterns+' patterns those lines can make',{'font-size':12.5,fill:'#8b9096'});
+      el('rect',{x:120,y:226,width:480,height:86,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+      txt(g,144,254,'THE RULE',{'font-size':10,fill:GRN,'letter-spacing':1.3});
+      txt(g,144,292,w+' bits for '+N+' options',{'font-size':24,fill:GRN,'font-weight':700});
+      el('rect',{x:640,y:226,width:486,height:86,rx:12,
+        fill:unused?'#fdf0ef':'#fbfaf7',stroke:unused?RED:'#c6c3ba','stroke-width':unused?2.6:2},g);
+      txt(g,664,254,unused?'AND WASTED':'NOTHING WASTED',{'font-size':10,fill:unused?RED:'#8b9096','letter-spacing':1.3});
+      txt(g,664,292,unused?(unused+' patterns name nothing at all'):'every pattern names a circuit',
+        {'font-size':unused?17:17,fill:unused?RED:INK,'font-weight':700});
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-n]'),function(b){
+      b.onclick=function(){
+        Array.prototype.forEach.call(document.querySelectorAll('[data-n]'),function(o){o.classList.remove('hot');});
+        b.classList.add('hot'); N=+b.getAttribute('data-n'); render();
+      };
+    });
+    render();
+  })();
+
+  /* ================= two ways to build the same thing ================= */
+  (function(){
+    var g=document.getElementById('figTwoBuilds'); if(!g) return;
+    var mode='flat';
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var tree=(mode==='tree');
+      txt(g,34,24,tree?'AS A TREE OF SEVEN TWO-TO-ONE MULTIPLEXERS':'FLAT, WITH A DECODER AND ONE WIDE OR',
+        {'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+      if(!tree){
+        /* decoder, one-hot ANDs, wide OR */
+        el('rect',{x:60,y:96,width:130,height:120,rx:11,fill:'#f3eefa',stroke:VIO,'stroke-width':2.4},g);
+        txt(g,125,146,'3 to 8',{'font-size':14,fill:VIO,'text-anchor':'middle','font-weight':700});
+        txt(g,125,168,'decoder',{'font-size':14,fill:VIO,'text-anchor':'middle','font-weight':700});
+        txt(g,60,86,'3 select lines in',{'font-size':11,fill:VIO});
+        for(var k=0;k<8;k++){
+          var y=68+k*26;
+          pth(g,'M190 '+(96+k*15+4)+' L250 '+(y+9),{stroke:'#e0d6ee','stroke-width':1.3});
+          el('rect',{x:250,y:y,width:74,height:18,rx:4,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.4},g);
+          txt(g,287,y+13,'AND',{'font-size':9.5,fill:BLUE,'text-anchor':'middle','font-weight':700});
+          pth(g,'M190 '+(y+9)+' L246 '+(y+9),{stroke:'#e4e2db','stroke-width':1});
+          pth(g,'M324 '+(y+9)+' L420 '+(y+9),{stroke:HI,'stroke-width':1.8});
+        }
+        txt(g,250,56,'one AND per input, opened by its own line',{'font-size':11,fill:BLUE});
+        gOr(g,430,172,108,1);
+        wire(g,orTip(430,108),172,610,172,1);
+        el('rect',{x:610,y:150,width:90,height:44,rx:9,fill:'#fbf0dc',stroke:AMB,'stroke-width':2.2},g);
+        txt(g,655,178,'out',{'font-size':14,fill:AMB,'text-anchor':'middle','font-weight':700});
+        txt(g,430,300,'one OR with eight inputs, which Class 18 says you may not build as one gate.',
+          {'font-size':13.5,fill:RED,'font-weight':700});
+      } else {
+        /* tree of 2:1 */
+        var levels=[[8,70],[4,150],[2,215],[1,275]];
+        var X0=90, W=700;
+        levels.forEach(function(L,li){
+          var n=L[0], y=L[1], cw=W/n;
+          for(var i=0;i<n;i++){
+            var cx=X0+i*cw+cw/2;
+            if(li===0){
+              el('rect',{x:cx-30,y:y,width:60,height:26,rx:5,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.4},g);
+              txt(g,cx,y+18,'in '+i,{'font-size':10,fill:'#8b9096','text-anchor':'middle'});
+            } else {
+              el('rect',{x:cx-38,y:y,width:76,height:30,rx:6,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.8},g);
+              txt(g,cx,y+20,'2 to 1',{'font-size':10.5,fill:BLUE,'text-anchor':'middle','font-weight':700});
+              var pn=levels[li-1][0], pcw=W/pn;
+              for(var c=0;c<2;c++){
+                var pi=i*2+c;
+                pth(g,'M'+(X0+pi*pcw+pcw/2)+' '+(levels[li-1][1]+(li===1?26:30))+' L'+cx+' '+y,
+                  {stroke:'#dedbd3','stroke-width':1.2});
+              }
+            }
+          }
+          if(li>0) txt(g,52,y+20,'level '+li,{'font-size':11,fill:BLUE,'text-anchor':'end','font-weight':700});
+        });
+        txt(g,X0,56,'eight inputs',{'font-size':11,fill:'#8b9096'});
+        txt(g,430,316,'seven identical parts, and no gate anywhere sees more than two inputs.',
+          {'font-size':13.5,fill:GRN,'font-weight':700});
+      }
+      /* the numbers */
+      el('rect',{x:830,y:70,width:296,height:200,rx:13,fill:tree?'#e9f2ef':'#f3eefa',stroke:tree?GRN:VIO,'stroke-width':2.6},g);
+      txt(g,854,98,tree?'THE TREE':'THE FLAT ONE',{'font-size':10,fill:tree?GRN:VIO,'letter-spacing':1.3});
+      var rows=tree?[['depth','6 gate delays'],['gates','28'],['widest gate','2 inputs'],['parts','one, repeated 7 times']]
+                   :[['depth','5 gate delays'],['gates','21'],['widest gate','8 inputs'],['parts','decoder, ANDs, one big OR']];
+      rows.forEach(function(r,k){
+        txt(g,854,134+k*34,r[0],{'font-size':12,fill:'#8b9096'});
+        txt(g,1102,134+k*34,r[1],{'font-size':13.5,fill:tree?GRN:VIO,'text-anchor':'end','font-weight':700});
+      });
+    }
+    document.getElementById('bFlat').onclick=function(){
+      mode='flat'; this.classList.add('hot'); document.getElementById('bTree').classList.remove('hot'); render(); };
+    document.getElementById('bTree').onclick=function(){
+      mode='tree'; this.classList.add('hot'); document.getElementById('bFlat').classList.remove('hot'); render(); };
+    render();
+  })();
+
+  /* ================= which one wins ================= */
+  (function(){
+    var g=document.getElementById('figCompare'); if(!g) return;
+    txt(g,34,24,'BOTH CONSTRUCTIONS, WITH THE FAN-IN LIMIT SWITCHED ON',{'font-size':10.5,fill:BLUE,'letter-spacing':1.4});
+    var data=[[2,2,4,4,6],[4,4,12,4,11],[8,6,28,5,21],[16,8,60,5,40],[32,10,124,6,77]];
+    var X0=60, CW=204, Y=58;
+    ['width','tree depth','tree gates','flat depth','flat gates'].forEach(function(h,k){
+      txt(g,X0+k*CW+90,Y,h,{'font-size':10.5,fill:'#8b9096','text-anchor':'end','letter-spacing':1.1});
+    });
+    data.forEach(function(r,i){
+      var y=Y+20+i*33;
+      el('rect',{x:X0-10,y:y,width:5*CW-20,height:29,rx:6,fill:i%2?'#fbfaf7':'#fff',stroke:'#e2e0d9','stroke-width':1.2},g);
+      r.forEach(function(v,k){
+        var col = k===0?INK : (k<3?GRN:VIO);
+        txt(g,X0+k*CW+90,y+20,k===0?(v+' to 1'):v,
+          {'font-size':14,fill:col,'text-anchor':'end','font-weight':700});
+      });
+    });
+    el('rect',{x:60,y:256,width:520,height:66,rx:12,fill:'#f3eefa',stroke:VIO,'stroke-width':2.4},g);
+    txt(g,84,280,'THE FLAT ONE IS SHALLOWER AND SMALLER',{'font-size':10,fill:VIO,'letter-spacing':1.2});
+    txt(g,84,308,'at every width. the tree is not automatically right.',{'font-size':15,fill:VIO,'font-weight':700});
+    el('rect',{x:606,y:256,width:520,height:66,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,630,280,'WHAT THE TREE DOES BUY',{'font-size':10,fill:GRN,'letter-spacing':1.2});
+    txt(g,630,308,'no gate ever sees more than two inputs.',{'font-size':15,fill:GRN,'font-weight':700});
+  })();
+
+  /* ================= computing things you throw away ================= */
+  (function(){
+    var g=document.getElementById('figWaste'); if(!g) return;
+    txt(g,34,24,'WHAT HAPPENS ON EVERY SINGLE CYCLE',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var names=['adder','subtractor','multiplier','divider','AND','OR','XOR'];
+    var X0=70, CW=150, Y=70;
+    names.forEach(function(n,k){
+      var kept=(k===0);
+      el('rect',{x:X0+k*CW,y:Y,width:CW-16,height:58,rx:9,
+        fill:kept?'#e9f2ef':'#fbfaf7',stroke:kept?GRN:'#dedbd3','stroke-width':kept?2.4:1.4},g);
+      txt(g,X0+(CW-16)/2+k*CW,Y+26,n,{'font-size':12,fill:kept?GRN:'#a9a69d','text-anchor':'middle','font-weight':700});
+      txt(g,X0+(CW-16)/2+k*CW,Y+46,kept?'kept':'discarded',{'font-size':10.5,fill:kept?GRN:'#c6c3ba','text-anchor':'middle'});
+      pth(g,'M'+(X0+(CW-16)/2+k*CW)+' '+(Y+58)+' L'+(X0+(CW-16)/2+k*CW)+' '+(Y+88),
+        {stroke:kept?GRN:'#e4e2db','stroke-width':kept?2.6:1.2});
+    });
+    el('rect',{x:X0,y:158,width:7*CW-16,height:40,rx:9,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.4},g);
+    txt(g,X0+(7*CW-16)/2,184,'the multiplexer',{'font-size':15,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    el('rect',{x:60,y:220,width:520,height:70,rx:12,fill:'#fbf0dc',stroke:AMB,'stroke-width':2.4},g);
+    txt(g,84,246,'WHAT THE WASTE ACTUALLY COSTS',{'font-size':10,fill:AMB,'letter-spacing':1.2});
+    txt(g,84,274,'power, and nothing else. the silicon was already there.',{'font-size':15,fill:AMB,'font-weight':700});
+    el('rect',{x:606,y:220,width:520,height:70,rx:12,fill:'#e9f2ef',stroke:GRN,'stroke-width':2.4},g);
+    txt(g,630,246,'WHAT CHOOSING FIRST WOULD COST',{'font-size':10,fill:GRN,'letter-spacing':1.2});
+    txt(g,630,274,'a decision circuit, which is the problem you started with.',{'font-size':15,fill:GRN,'font-weight':700});
+  })();
+
+  /* ================= nothing marks the control ================= */
+  (function(){
+    var g=document.getElementById('figSame'); if(!g) return;
+    txt(g,34,24,'THE SAME CIRCUIT, WITH THE LABELS TAKEN OFF',{'font-size':10.5,fill:BLUE,'letter-spacing':1.5});
+    var X0=120, Y=70;
+    ['wire','wire','wire'].forEach(function(t,k){
+      var y=Y+k*54;
+      el('rect',{x:X0,y:y,width:150,height:40,rx:8,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.8},g);
+      txt(g,X0+75,y+26,t,{'font-size':13,fill:'#8b9096','text-anchor':'middle','font-weight':700});
+      pth(g,'M'+(X0+150)+' '+(y+20)+' L'+(X0+240)+' '+(y+20),{stroke:'#dedbd3','stroke-width':1.8});
+    });
+    el('rect',{x:X0+240,y:Y,width:160,height:148,rx:11,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.4},g);
+    txt(g,X0+320,Y+80,'a circuit',{'font-size':15,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    pth(g,'M'+(X0+400)+' '+(Y+74)+' L'+(X0+480)+' '+(Y+74),{stroke:'#dedbd3','stroke-width':1.8});
+    el('rect',{x:X0+480,y:Y+54,width:150,height:40,rx:8,fill:'#fbfaf7',stroke:'#c6c3ba','stroke-width':1.8},g);
+    txt(g,X0+555,Y+80,'wire',{'font-size':13,fill:'#8b9096','text-anchor':'middle','font-weight':700});
+    txt(g,X0,Y-12,'three wires carrying bits',{'font-size':12,fill:'#8b9096'});
+    el('rect',{x:800,y:70,width:326,height:148,rx:13,fill:'#f3eefa',stroke:VIO,'stroke-width':2.6},g);
+    txt(g,824,98,'WHICH ONE IS THE CONTROL?',{'font-size':10,fill:VIO,'letter-spacing':1.2});
+    txt(g,824,134,'nothing in the circuit',{'font-size':17,fill:VIO,'font-weight':700});
+    txt(g,824,158,'says. they are all just',{'font-size':17,fill:VIO,'font-weight':700});
+    txt(g,824,182,'wires carrying bits.',{'font-size':17,fill:VIO,'font-weight':700});
+    txt(g,824,206,'swap them and it computes something else.',{'font-size':11.5,fill:'#8b9096'});
+    txt(g,34,276,'you met this in Class 16, relabelling an HDMI switch. it is about to become the foundation of everything after Class 37.',
+      {'font-size':15.5,fill:INK,'font-weight':700});
+  })();
+
+  onSlide=function(idx){};
+  paint();
+})();
+</script>
+</body>
+</html>
