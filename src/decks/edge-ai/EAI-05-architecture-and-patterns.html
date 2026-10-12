@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 5 · Architecture and Design Patterns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 05</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 5 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 05 · unit I · architecture and design patterns</div>
+    <h1>Five ways to arrange<br>the parts</h1>
+    <p class="big" style="margin-top:26px;max-width:44ch">Last class we took the box apart. Today we put boxes together: one blueprint every edge AI system follows, and five patterns for splitting the work between device and cloud.</p>
+  </div>
+  <div class="cue">Start with the recall slide; the answer to last class's exit ticket is on it.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall: does it fit?" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>300 KB of weights, 150 KB of working memory. Does it fit?</h2>
+    <svg viewBox="0 0 1432 300" width="1432" height="300">
+      <g class="frag">
+        <text x="0" y="60" font-size="18" fill="#15171b" font-weight="700">weights → flash</text>
+        <rect x="260" y="38" width="1100" height="34" rx="8" fill="#fbf0dc" stroke="#b06a12"/>
+        <rect x="260" y="38" width="20" height="34" rx="4" fill="#b06a12"/>
+        <text x="1372" y="62" font-size="15" fill="#b06a12" text-anchor="start"></text>
+        <text x="300" y="100" font-size="15" fill="#4b5057">300 KB of 16 MB · under 2%. Easily.</text>
+      </g>
+      <g class="frag">
+        <text x="0" y="180" font-size="18" fill="#15171b" font-weight="700">activations → SRAM</text>
+        <rect x="260" y="158" width="1100" height="34" rx="8" fill="#e6f1ee" stroke="#146b5c"/>
+        <rect x="260" y="158" width="322" height="34" rx="4" fill="#146b5c"/>
+        <text x="270" y="220" font-size="15" fill="#4b5057">150 KB of 512 KB · about 29%. It fits, but…</text>
+      </g>
+      <g class="frag">
+        <rect x="582" y="158" width="440" height="34" fill="#a8231f" opacity=".25"/>
+        <text x="594" y="181" font-size="14" fill="#a8231f">Wi-Fi, buffers, the rest of the firmware: ?</text>
+        <text x="270" y="266" font-size="16" fill="#a8231f">…the model is not the only thing living in SRAM.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="cue">The red segment is deliberately unlabelled in size: it depends on the firmware. The lesson is that "fits" means fits alongside everything else.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="The reference architecture" data-act="the blueprint">
+  <div>
+    <h2>One blueprint. Every edge AI system.</h2>
+    <svg viewBox="0 0 1432 380" width="1432" height="380"><defs><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker><marker id="g1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#146b5c"/></marker></defs><g class="frag"><rect x="0" y="90" width="250" height="110" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="18" y="124" font-size="18" fill="#15171b" font-weight="700">1 · Sense</text><text x="18" y="150" font-size="14" fill="#4b5057">capture the signal</text><line x1="254" y1="145" x2="284" y2="145" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m1)"/></g><g class="frag"><rect x="290" y="90" width="250" height="110" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="308" y="124" font-size="18" fill="#15171b" font-weight="700">2 · Prepare</text><text x="308" y="150" font-size="14" fill="#4b5057">clean, window, features</text><line x1="544" y1="145" x2="574" y2="145" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m1)"/></g><g class="frag"><rect x="580" y="90" width="250" height="110" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="598" y="124" font-size="18" fill="#15171b" font-weight="700">3 · Infer</text><text x="598" y="150" font-size="14" fill="#4b5057">the model gives scores</text><line x1="834" y1="145" x2="864" y2="145" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m1)"/></g><g class="frag"><rect x="870" y="90" width="250" height="110" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="888" y="124" font-size="18" fill="#15171b" font-weight="700">4 · Decide</text><text x="888" y="150" font-size="14" fill="#4b5057">threshold, smooth, act?</text><line x1="1124" y1="145" x2="1154" y2="145" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m1)"/></g><g class="frag"><rect x="1160" y="90" width="250" height="110" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="1178" y="124" font-size="18" fill="#15171b" font-weight="700">5 · Act</text><text x="1178" y="150" font-size="14" fill="#4b5057">LED, motor, alarm</text></g><g class="frag"><rect x="0" y="290" width="1410" height="70" rx="12" fill="#f2f1ec" stroke="#c6c3ba" stroke-dasharray="6 5"/><text x="20" y="322" font-size="17" fill="#15171b" font-weight="700">6 · Connect and manage (optional)</text><text x="20" y="346" font-size="14" fill="#4b5057">send results · receive firmware and model updates · log data for retraining</text><line x1="1000" y1="286" x2="1000" y2="206" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m1)"/><line x1="420" y1="206" x2="420" y2="286" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m1)"/></g></svg>
+  </div>
+  <div class="cue">Blocks 1 to 5 run on the device every time. Block 6 is used only when the product needs it. Compare with Class 4's software stack: block 2 is the DSP layer, block 3 the runtime and model, blocks 4 and 5 the application.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Trace one event" data-act="the blueprint">
+  <div>
+    <div class="kicker">the doorbell hears someone say "open"</div>
+    <h2>Follow one second of sound through the five blocks.</h2>
+    <svg viewBox="0 0 1432 320" width="1432" height="320"><defs><marker id="m2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker><marker id="g2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#146b5c"/></marker></defs><rect x="0" y="40" width="250" height="90" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="18" y="74" font-size="18" fill="#15171b" font-weight="700">1 · Sense</text><line x1="254" y1="85" x2="284" y2="85" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m2)"/><rect x="290" y="40" width="250" height="90" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="308" y="74" font-size="18" fill="#15171b" font-weight="700">2 · Prepare</text><line x1="544" y1="85" x2="574" y2="85" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m2)"/><rect x="580" y="40" width="250" height="90" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="598" y="74" font-size="18" fill="#15171b" font-weight="700">3 · Infer</text><line x1="834" y1="85" x2="864" y2="85" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m2)"/><rect x="870" y="40" width="250" height="90" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="888" y="74" font-size="18" fill="#15171b" font-weight="700">4 · Decide</text><line x1="1124" y1="85" x2="1154" y2="85" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m2)"/><rect x="1160" y="40" width="250" height="90" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="1178" y="74" font-size="18" fill="#15171b" font-weight="700">5 · Act</text><g class="frag"><line x1="125" y1="134" x2="125" y2="166" stroke="#146b5c" stroke-width="2"/><rect x="0" y="170" width="250" height="74" rx="10" fill="#e6f1ee" stroke="#146b5c"/><text x="16" y="200" font-size="14" fill="#15171b">16,000 samples a second</text><text x="16" y="222" font-size="14" fill="#15171b">from the mic</text></g><g class="frag"><line x1="415" y1="134" x2="415" y2="166" stroke="#146b5c" stroke-width="2"/><rect x="290" y="170" width="250" height="74" rx="10" fill="#e6f1ee" stroke="#146b5c"/><text x="306" y="200" font-size="14" fill="#15171b">1 s window →</text><text x="306" y="222" font-size="14" fill="#15171b">spectrogram, 49 × 40</text></g><g class="frag"><line x1="705" y1="134" x2="705" y2="166" stroke="#146b5c" stroke-width="2"/><rect x="580" y="170" width="250" height="74" rx="10" fill="#e6f1ee" stroke="#146b5c"/><text x="596" y="200" font-size="14" fill="#15171b">open 0.93 · noise 0.04</text><text x="596" y="222" font-size="14" fill="#15171b">· other 0.03</text></g><g class="frag"><line x1="995" y1="134" x2="995" y2="166" stroke="#146b5c" stroke-width="2"/><rect x="870" y="170" width="250" height="74" rx="10" fill="#e6f1ee" stroke="#146b5c"/><text x="886" y="200" font-size="14" fill="#15171b">0.93 > 0.8, twice in a</text><text x="886" y="222" font-size="14" fill="#15171b">row → yes</text></g><g class="frag"><line x1="1285" y1="134" x2="1285" y2="166" stroke="#146b5c" stroke-width="2"/><rect x="1160" y="170" width="250" height="74" rx="10" fill="#e6f1ee" stroke="#146b5c"/><text x="1176" y="200" font-size="14" fill="#15171b">unlock · event to the</text><text x="1176" y="222" font-size="14" fill="#15171b">owner's phone</text></g></svg>
+  </div>
+  <div class="cue">One block per click. The numbers are a worked example in the style of the TFLite Micro speech demo; Class 8 explains where 49 × 40 comes from.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Why the decide block matters" data-act="the blueprint">
+  <div>
+    <h2>Never act on a single prediction.</h2>
+    <svg viewBox="0 0 1432 420" width="1432" height="420">
+      <text x="0" y="30" font-size="13" fill="#8b9096">SCORE FOR "OPEN", ONE BAR PER AUDIO WINDOW</text>
+      <line x1="50" y1="330" x2="1430" y2="330" stroke="#c6c3ba" stroke-width="1.5"/>
+      <rect x="62" y="306" width="36" height="24" rx="4" fill="#23408f"/><rect x="119" y="287" width="36" height="43" rx="4" fill="#23408f"/><rect x="177" y="298" width="36" height="32" rx="4" fill="#23408f"/><rect x="234" y="283" width="36" height="47" rx="4" fill="#23408f"/><rect x="292" y="281" width="36" height="49" rx="4" fill="#23408f"/><rect x="349" y="317" width="36" height="13" rx="4" fill="#23408f"/><rect x="406" y="81" width="36" height="249" rx="4" fill="#b06a12"/><rect x="464" y="268" width="36" height="62" rx="4" fill="#23408f"/><rect x="521" y="305" width="36" height="25" rx="4" fill="#23408f"/><rect x="579" y="306" width="36" height="24" rx="4" fill="#23408f"/><rect x="636" y="258" width="36" height="72" rx="4" fill="#23408f"/><rect x="693" y="291" width="36" height="39" rx="4" fill="#23408f"/><rect x="751" y="268" width="36" height="62" rx="4" fill="#23408f"/><rect x="808" y="291" width="36" height="39" rx="4" fill="#23408f"/><rect x="865" y="281" width="36" height="49" rx="4" fill="#23408f"/><rect x="923" y="312" width="36" height="18" rx="4" fill="#23408f"/><rect x="980" y="69" width="36" height="261" rx="4" fill="#b06a12"/><rect x="1038" y="60" width="36" height="270" rx="4" fill="#b06a12"/><rect x="1095" y="288" width="36" height="42" rx="4" fill="#23408f"/><rect x="1152" y="274" width="36" height="56" rx="4" fill="#23408f"/><rect x="1210" y="278" width="36" height="52" rx="4" fill="#23408f"/><rect x="1267" y="317" width="36" height="13" rx="4" fill="#23408f"/><rect x="1325" y="273" width="36" height="57" rx="4" fill="#23408f"/><rect x="1382" y="284" width="36" height="46" rx="4" fill="#23408f"/>
+      <line x1="50" y1="98" x2="1430" y2="98" stroke="#a8231f" stroke-width="1.5" stroke-dasharray="8 6"/>
+      <text x="1430" y="90" font-size="14" fill="#a8231f" text-anchor="end">threshold 0.8</text>
+      <g class="frag"><circle cx="424" cy="55" r="16" fill="none" stroke="#a8231f" stroke-width="2.5"/><text x="424" y="364" font-size="14" fill="#a8231f" text-anchor="middle">one spike: a TV, a cough</text><text x="424" y="384" font-size="14" fill="#a8231f" text-anchor="middle">ignored</text></g>
+      <g class="frag"><rect x="968" y="20" width="117" height="310" rx="10" fill="none" stroke="#146b5c" stroke-width="2.5"/><text x="1027" y="364" font-size="14" fill="#146b5c" text-anchor="middle">two in a row</text><text x="1027" y="384" font-size="14" fill="#146b5c" text-anchor="middle">act</text></g>
+    </svg>
+    <p class="frag small">Thresholds, "k in a row", averaging over a few windows: cheap tricks in block 4 that cut false alarms a lot.</p>
+  </div>
+  <div class="cue">Illustrative scores. Ask: what does it cost to raise the threshold to 0.95? (More missed real commands.) That trade-off returns when we evaluate systems in Unit V.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Five patterns" data-act="patterns">
+  <div>
+    <h2>Five patterns for splitting the work.</h2>
+    <svg viewBox="0 0 1432 280" width="1432" height="280"><g class="frag"><rect x="0" y="20" width="260" height="200" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><rect x="30" y="80" width="200" height="70" rx="10" fill="#e6f1ee" stroke="#146b5c"/><text x="130" y="121" font-size="14" fill="#146b5c" text-anchor="middle">sense → infer → act</text><line x1="200" y1="40" x2="240" y2="70" stroke="#a8231f" stroke-width="3"/><line x1="240" y1="40" x2="200" y2="70" stroke="#a8231f" stroke-width="3"/><text x="0" y="256" font-size="18" fill="#15171b" font-weight="700">1 · On-device</text></g><g class="frag"><rect x="293" y="20" width="260" height="200" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><line x1="313" y1="115" x2="393" y2="115" stroke="#23408f" stroke-width="16"/><rect x="393" y="90" width="60" height="50" rx="8" fill="#e6f1ee" stroke="#146b5c"/><line x1="453" y1="115" x2="533" y2="115" stroke="#23408f" stroke-width="3"/><text x="293" y="256" font-size="18" fill="#15171b" font-weight="700">2 · Edge filter</text></g><g class="frag"><rect x="586" y="20" width="260" height="200" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><rect x="606" y="96" width="60" height="40" rx="8" fill="#e6f1ee" stroke="#146b5c"/><rect x="706" y="80" width="120" height="72" rx="10" fill="#f2f1ec" stroke="#8b9096" stroke-dasharray="5 4"/><line x1="666" y1="116" x2="704" y2="116" stroke="#8b9096" stroke-width="2"/><text x="766" y="121" font-size="13" fill="#8b9096" text-anchor="middle">asleep</text><text x="586" y="256" font-size="18" fill="#15171b" font-weight="700">3 · Cascade</text></g><g class="frag"><rect x="879" y="20" width="260" height="200" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><circle cx="919" cy="56" r="9" fill="#23408f"/><line x1="928" y1="56" x2="1029" y2="116" stroke="#c6c3ba" stroke-width="1.5"/><circle cx="919" cy="86" r="9" fill="#23408f"/><line x1="928" y1="86" x2="1029" y2="116" stroke="#c6c3ba" stroke-width="1.5"/><circle cx="919" cy="116" r="9" fill="#23408f"/><line x1="928" y1="116" x2="1029" y2="116" stroke="#c6c3ba" stroke-width="1.5"/><circle cx="919" cy="146" r="9" fill="#23408f"/><line x1="928" y1="146" x2="1029" y2="116" stroke="#c6c3ba" stroke-width="1.5"/><circle cx="919" cy="176" r="9" fill="#23408f"/><line x1="928" y1="176" x2="1029" y2="116" stroke="#c6c3ba" stroke-width="1.5"/><rect x="1029" y="90" width="80" height="52" rx="10" fill="#e6f1ee" stroke="#146b5c"/><text x="879" y="256" font-size="18" fill="#15171b" font-weight="700">4 · Gateway</text></g><g class="frag"><rect x="1172" y="20" width="260" height="200" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><rect x="1202" y="96.0" width="24" height="40.0" rx="4" fill="#146b5c" opacity=".8"/><rect x="1238" y="88.0" width="24" height="56.0" rx="4" fill="#146b5c" opacity=".8"/><rect x="1274" y="80.0" width="24" height="72.0" rx="4" fill="#146b5c" opacity=".8"/><rect x="1310" y="80.0" width="24" height="72.0" rx="4" fill="#23408f" opacity=".8"/><rect x="1346" y="88.0" width="24" height="56.0" rx="4" fill="#23408f" opacity=".8"/><rect x="1382" y="96.0" width="24" height="40.0" rx="4" fill="#23408f" opacity=".8"/><line x1="1306" y1="50" x2="1306" y2="180" stroke="#a8231f" stroke-width="2" stroke-dasharray="6 5"/><text x="1172" y="256" font-size="18" fill="#15171b" font-weight="700">5 · Split model</text></g></svg>
+    <p class="frag" style="margin-top:20px;max-width:70ch">Real products often combine two. The doorbell, by the end of today, uses two of these at once.</p>
+  </div>
+  <div class="cue">Just the shapes for now. Ask them to guess what each one does from the picture before the detailed slides.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Pattern 1: fully on-device" data-act="patterns">
+  <div>
+    <div class="kicker">pattern 1</div>
+    <h2>Fully on-device: sense, decide and act in one box.</h2>
+    <svg viewBox="0 0 1432 360" width="1432" height="360"><defs><marker id="m3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker><marker id="g3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#146b5c"/></marker></defs><rect x="200" y="30" width="1000" height="260" rx="20" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.8"/><text x="224" y="64" font-size="15" fill="#146b5c" font-weight="700">ONE DEVICE</text><rect x="260" y="100" width="240" height="110" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="278" y="134" font-size="18" fill="#15171b" font-weight="700">sensor</text><text x="278" y="160" font-size="14" fill="#4b5057">accelerometer</text><line x1="504" y1="155" x2="566" y2="155" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m3)"/><rect x="570" y="100" width="240" height="110" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="588" y="134" font-size="18" fill="#15171b" font-weight="700">model</text><text x="588" y="160" font-size="14" fill="#4b5057">rep or not a rep?</text><line x1="814" y1="155" x2="876" y2="155" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m3)"/><rect x="880" y="100" width="260" height="110" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="898" y="134" font-size="18" fill="#15171b" font-weight="700">action</text><text x="898" y="160" font-size="14" fill="#4b5057">count goes up by one</text><g class="frag"><circle cx="1250" cy="140" r="48" fill="#eaeef7"/><circle cx="1320" cy="118" r="62" fill="#eaeef7"/><circle cx="1390" cy="144" r="44" fill="#eaeef7"/><rect x="1202" y="140" width="236" height="56" rx="28" fill="#eaeef7"/><text x="1320" y="156" font-size="16" fill="#23408f" text-anchor="middle" font-weight="700">cloud</text><line x1="1262" y1="100" x2="1380" y2="200" stroke="#a8231f" stroke-width="5"/><line x1="1380" y1="100" x2="1262" y2="200" stroke="#a8231f" stroke-width="5"/><text x="1320" y="250" font-size="14" fill="#a8231f" text-anchor="middle">not needed</text></g></svg>
+    <div class="split frag" style="margin-top:6px;gap:24px;align-items:stretch">
+      <div class="rem"><div class="h">real examples</div><ul><li>a fitness band counting reps; a voice-controlled toy; a smoke alarm with a learned sensor</li></ul></div>
+      <div class="rem green"><div class="h">use it when</div><ul><li>privacy is strict, there is no network, or the product must be cheap and simple</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">The simplest pattern and the one TinyML is built for. Ask: what do you lose? (No updates without a cable; no fleet-wide learning.)</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Pattern 2: edge filter" data-act="patterns">
+  <div>
+    <div class="kicker">pattern 2</div>
+    <h2>Edge filter, cloud analysis: the device decides what is worth sending.</h2>
+    <svg viewBox="0 0 1432 360" width="1432" height="360"><defs><marker id="m4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker><marker id="g4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#146b5c"/></marker></defs><rect x="0" y="110" width="230" height="110" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="18" y="144" font-size="18" fill="#15171b" font-weight="700">camera</text><text x="18" y="170" font-size="14" fill="#4b5057">30 frames a second</text><line x1="234" y1="165" x2="400" y2="165" stroke="#23408f" stroke-width="22" opacity=".8"/><text x="317" y="140" font-size="14" fill="#23408f" text-anchor="middle">all video</text><rect x="410" y="90" width="300" height="150" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.6"/><text x="428" y="124" font-size="18" fill="#15171b" font-weight="700">edge model</text><text x="428" y="150" font-size="14" fill="#4b5057">is there a person?</text><text x="428" y="172" font-size="14" fill="#4b5057">drop everything else</text><g class="frag"><line x1="714" y1="165" x2="1040" y2="165" stroke="#23408f" stroke-width="3" marker-end="url(#m4)"/><text x="877" y="140" font-size="14" fill="#23408f" text-anchor="middle">a few clips a day</text><circle cx="1140" cy="150" r="48" fill="#eaeef7"/><circle cx="1210" cy="128" r="62" fill="#eaeef7"/><circle cx="1280" cy="154" r="44" fill="#eaeef7"/><rect x="1092" y="150" width="236" height="56" rx="28" fill="#eaeef7"/><text x="1210" y="166" font-size="16" fill="#23408f" text-anchor="middle" font-weight="700">cloud</text><text x="1210" y="188" font-size="13" fill="#4b5057" text-anchor="middle">who is it? search history</text></g></svg>
+    <div class="split frag" style="margin-top:6px;gap:24px;align-items:stretch">
+      <div class="rem"><div class="h">real examples</div><ul><li>CCTV that uploads only clips with people; a factory camera that sends only defects for review</li></ul></div>
+      <div class="rem green"><div class="h">use it when</div><ul><li>bandwidth or cost is the problem, but some deeper analysis still needs the cloud</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">Point at the arrow widths: fat in, thin out. That ratio is the bandwidth saving, the B in BLERP.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Pattern 3: cascade" data-act="patterns">
+  <div>
+    <div class="kicker">pattern 3</div>
+    <h2>Cascade: a tiny model wakes a bigger one only when needed.</h2>
+    <svg viewBox="0 0 1432 360" width="1432" height="360"><defs><marker id="m5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker><marker id="g5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#146b5c"/></marker></defs><rect x="0" y="30" width="280" height="100" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.6"/><text x="18" y="64" font-size="18" fill="#15171b" font-weight="700">tiny model</text><text x="18" y="90" font-size="14" fill="#4b5057">always on · milliwatts</text><line x1="284" y1="80" x2="370" y2="80" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m5)"/><text x="327" y="66" font-size="13" fill="#8b9096" text-anchor="middle">wakes</text><rect x="374" y="30" width="300" height="100" rx="12" fill="#f2f1ec" stroke="#8b9096" stroke-width="1.6" stroke-dasharray="6 5"/><text x="392" y="64" font-size="18" fill="#15171b" font-weight="700">big model or processor</text><text x="392" y="90" font-size="14" fill="#4b5057">asleep until needed</text><line x1="678" y1="80" x2="764" y2="80" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m5)"/><rect x="768" y="30" width="260" height="100" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="786" y="64" font-size="18" fill="#15171b" font-weight="700">cloud (optional)</text><text x="786" y="90" font-size="14" fill="#4b5057">the full answer</text><g class="frag"><text x="0" y="190" font-size="13" fill="#8b9096">POWER OVER TIME</text><line x1="80" y1="320" x2="1380" y2="320" stroke="#c6c3ba"/><path d="M80,308 L93,308 L106,308 L119,308 L132,308 L145,308 L158,308 L171,308 L184,308 L197,308 L210,308 L223,308 L236,308 L249,308 L262,308 L275,308 L288,308 L301,308 L314,308 L327,308 L340,308 L353,308 L366,308 L379,308 L392,308 L405,308 L418,308 L431,308 L444,308 L457,308 L470,210 L483,210 L496,210 L509,210 L522,210 L535,210 L548,308 L561,308 L574,308 L587,308 L600,308 L613,308 L626,308 L639,308 L652,308 L665,308 L678,308 L691,308 L704,308 L717,308 L730,308 L743,308 L756,308 L769,308 L782,308 L795,308 L808,308 L821,308 L834,308 L847,308 L860,308 L873,308 L886,308 L899,308 L912,308 L925,308 L938,308 L951,308 L964,308 L977,308 L990,210 L1003,210 L1016,210 L1029,210 L1042,210 L1055,210 L1068,210 L1081,210 L1094,308 L1107,308 L1120,308 L1133,308 L1146,308 L1159,308 L1172,308 L1185,308 L1198,308 L1211,308 L1224,308 L1237,308 L1250,308 L1263,308 L1276,308 L1289,308 L1302,308 L1315,308 L1328,308 L1341,308 L1354,308 L1367,308" fill="none" stroke="#b06a12" stroke-width="3"/><text x="509" y="198" font-size="13" fill="#b06a12" text-anchor="middle">wake word</text><text x="1042" y="198" font-size="13" fill="#b06a12" text-anchor="middle">wake word</text><text x="756" y="298" font-size="13" fill="#146b5c" text-anchor="middle">most of the time: only the tiny model</text></g></svg>
+    <div class="split frag" style="margin-top:6px;gap:24px;align-items:stretch">
+      <div class="rem"><div class="h">real examples</div><ul><li>"Hey Google" waking the assistant; the smartwatch from Class 3 asking for an ECG; a camera woken by motion</li></ul></div>
+      <div class="rem green"><div class="h">use it when</div><ul><li>most of the time nothing interesting happens, and battery life matters</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">You have now seen this pattern three times: the smart speaker in Class 1, the watch in Class 3, and here. The power trace is illustrative.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Pattern 4: gateway aggregation" data-act="patterns">
+  <div>
+    <div class="kicker">pattern 4</div>
+    <h2>Gateway aggregation: many simple sensors, one shared brain.</h2>
+    <svg viewBox="0 0 1432 360" width="1432" height="360"><defs><marker id="m6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker><marker id="g6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#146b5c"/></marker></defs><rect x="0" y="20" width="230" height="52" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><text x="18" y="52" font-size="15" fill="#15171b">vibration sensor 1</text><line x1="234" y1="46" x2="520" y2="170" stroke="#8b9096" stroke-width="1.6"/><rect x="0" y="86" width="230" height="52" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><text x="18" y="118" font-size="15" fill="#15171b">vibration sensor 2</text><line x1="234" y1="112" x2="520" y2="170" stroke="#8b9096" stroke-width="1.6"/><rect x="0" y="152" width="230" height="52" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><text x="18" y="184" font-size="15" fill="#15171b">vibration sensor 3</text><line x1="234" y1="178" x2="520" y2="170" stroke="#8b9096" stroke-width="1.6"/><rect x="0" y="218" width="230" height="52" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><text x="18" y="250" font-size="15" fill="#15171b">vibration sensor 4</text><line x1="234" y1="244" x2="520" y2="170" stroke="#8b9096" stroke-width="1.6"/><rect x="0" y="284" width="230" height="52" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><text x="18" y="316" font-size="15" fill="#15171b">vibration sensor 5</text><line x1="234" y1="310" x2="520" y2="170" stroke="#8b9096" stroke-width="1.6"/><rect x="524" y="110" width="330" height="130" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.6"/><text x="542" y="144" font-size="18" fill="#15171b" font-weight="700">gateway</text><text x="542" y="170" font-size="14" fill="#4b5057">one edge box runs the model</text><text x="542" y="192" font-size="14" fill="#4b5057">for every machine</text><g class="frag"><line x1="858" y1="150" x2="980" y2="110" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m6)"/><rect x="984" y="50" width="260" height="90" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="1002" y="84" font-size="18" fill="#15171b" font-weight="700">alarm on the floor</text><line x1="858" y1="200" x2="980" y2="250" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m6)"/><circle cx="1050" cy="270" r="48" fill="#eaeef7"/><circle cx="1120" cy="248" r="62" fill="#eaeef7"/><circle cx="1190" cy="274" r="44" fill="#eaeef7"/><rect x="1002" y="270" width="236" height="56" rx="28" fill="#eaeef7"/><text x="1120" y="286" font-size="16" fill="#23408f" text-anchor="middle" font-weight="700">cloud</text><text x="1120" y="308" font-size="13" fill="#4b5057" text-anchor="middle">weekly report</text></g></svg>
+    <div class="split frag" style="margin-top:6px;gap:24px;align-items:stretch">
+      <div class="rem"><div class="h">real examples</div><ul><li>vibration sensors across a factory feeding one edge box; soil sensors on a farm reporting to one hub</li></ul></div>
+      <div class="rem green"><div class="h">use it when</div><ul><li>each sensor is too small or too cheap to run a model, or the decision needs several sensors together</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">The sensors here only measure and transmit. Ask: what happens if the gateway fails? (Everything goes blind: a single point of failure.)</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Pattern 5: split computation" data-act="patterns">
+  <div>
+    <div class="kicker">pattern 5</div>
+    <h2>Split computation: cut the model in two.</h2>
+    <svg viewBox="0 0 1432 360" width="1432" height="360"><defs><marker id="m7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker><marker id="g7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#146b5c"/></marker></defs><rect x="200" y="110" width="70" height="120" rx="8" fill="#146b5c" opacity=".85"/><line x1="270" y1="170" x2="350" y2="170" stroke="#8b9096" stroke-width="2"/><rect x="350" y="80" width="70" height="180" rx="8" fill="#146b5c" opacity=".85"/><line x1="420" y1="170" x2="500" y2="170" stroke="#8b9096" stroke-width="2"/><rect x="500" y="60" width="70" height="220" rx="8" fill="#146b5c" opacity=".85"/><line x1="570" y1="170" x2="650" y2="170" stroke="#8b9096" stroke-width="2"/><rect x="650" y="80" width="70" height="180" rx="8" fill="#23408f" opacity=".85"/><line x1="720" y1="170" x2="800" y2="170" stroke="#8b9096" stroke-width="2"/><rect x="800" y="110" width="70" height="120" rx="8" fill="#23408f" opacity=".85"/><line x1="870" y1="170" x2="950" y2="170" stroke="#8b9096" stroke-width="2"/><rect x="950" y="140" width="70" height="60" rx="8" fill="#23408f" opacity=".85"/><text x="0" y="176" font-size="15" fill="#15171b">input</text><line x1="60" y1="170" x2="196" y2="170" stroke="#8b9096" stroke-width="2"/><g class="frag"><line x1="635" y1="46" x2="635" y2="320" stroke="#a8231f" stroke-width="2.5" stroke-dasharray="8 6"/><text x="420" y="306" font-size="16" fill="#146b5c" text-anchor="middle" font-weight="700">first layers · on the device</text><text x="900" y="306" font-size="16" fill="#23408f" text-anchor="middle" font-weight="700">last layers · on a server</text><rect x="535" y="6" width="200" height="34" rx="17" fill="#fbeeed" stroke="#a8231f"/><text x="635" y="28" font-size="13" fill="#a8231f" text-anchor="middle">features sent, not raw data</text></g><text x="1150" y="176" font-size="15" fill="#15171b">answer</text></svg>
+    <div class="split frag" style="margin-top:6px;gap:24px;align-items:stretch">
+      <div class="rem"><div class="h">real examples</div><ul><li>mostly research and some phone-to-cloud systems today; an active area</li></ul></div>
+      <div class="rem green"><div class="h">use it when</div><ul><li>the full model is too big for the device, but the raw data should not leave it</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">This is a preview of "segmentation of AI models" and "sharing of AI computation" in Unit IV. Ask: where would you cut, and why there? (Where the features are small.)</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Choosing a pattern" data-act="patterns">
+  <div>
+    <h2>A rough guide to choosing.</h2>
+    <svg viewBox="0 0 1432 400" width="1432" height="400"><defs><marker id="m8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker><marker id="g8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#146b5c"/></marker></defs><g class="frag"><rect x="0" y="10" width="640" height="58" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><text x="20" y="46" font-size="17" fill="#15171b">Is there a reliable network at all?</text><line x1="644" y1="39" x2="830" y2="39" stroke="#146b5c" stroke-width="2.5" marker-end="url(#g8)"/><text x="736" y="31" font-size="14" fill="#146b5c" text-anchor="middle">no</text><rect x="840" y="10" width="360" height="58" rx="29" fill="#e6f1ee" stroke="#146b5c"/><text x="1020" y="46" font-size="17" fill="#146b5c" text-anchor="middle" font-weight="700">Fully on-device</text><line x1="320" y1="72" x2="320" y2="84" stroke="#8b9096" stroke-width="2" marker-end="url(#m8)"/></g><g class="frag"><rect x="0" y="88" width="640" height="58" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><text x="20" y="124" font-size="17" fill="#15171b">Is each sensor too small to run a model?</text><line x1="644" y1="117" x2="830" y2="117" stroke="#146b5c" stroke-width="2.5" marker-end="url(#g8)"/><text x="736" y="109" font-size="14" fill="#146b5c" text-anchor="middle">yes</text><rect x="840" y="88" width="360" height="58" rx="29" fill="#e6f1ee" stroke="#146b5c"/><text x="1020" y="124" font-size="17" fill="#146b5c" text-anchor="middle" font-weight="700">Gateway aggregation</text><line x1="320" y1="150" x2="320" y2="162" stroke="#8b9096" stroke-width="2" marker-end="url(#m8)"/></g><g class="frag"><rect x="0" y="166" width="640" height="58" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><text x="20" y="202" font-size="17" fill="#15171b">Is nothing happening most of the time?</text><line x1="644" y1="195" x2="830" y2="195" stroke="#146b5c" stroke-width="2.5" marker-end="url(#g8)"/><text x="736" y="187" font-size="14" fill="#146b5c" text-anchor="middle">yes</text><rect x="840" y="166" width="360" height="58" rx="29" fill="#e6f1ee" stroke="#146b5c"/><text x="1020" y="202" font-size="17" fill="#146b5c" text-anchor="middle" font-weight="700">Cascade</text><line x1="320" y1="228" x2="320" y2="240" stroke="#8b9096" stroke-width="2" marker-end="url(#m8)"/></g><g class="frag"><rect x="0" y="244" width="640" height="58" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><text x="20" y="280" font-size="17" fill="#15171b">Is the raw data heavy, but deeper analysis wanted?</text><line x1="644" y1="273" x2="830" y2="273" stroke="#146b5c" stroke-width="2.5" marker-end="url(#g8)"/><text x="736" y="265" font-size="14" fill="#146b5c" text-anchor="middle">yes</text><rect x="840" y="244" width="360" height="58" rx="29" fill="#e6f1ee" stroke="#146b5c"/><text x="1020" y="280" font-size="17" fill="#146b5c" text-anchor="middle" font-weight="700">Edge filter, cloud analysis</text><line x1="320" y1="306" x2="320" y2="318" stroke="#8b9096" stroke-width="2" marker-end="url(#m8)"/></g><g class="frag"><rect x="0" y="322" width="640" height="58" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/><text x="20" y="358" font-size="17" fill="#15171b">Is the model too big for the device?</text><line x1="644" y1="351" x2="830" y2="351" stroke="#146b5c" stroke-width="2.5" marker-end="url(#g8)"/><text x="736" y="343" font-size="14" fill="#146b5c" text-anchor="middle">yes</text><rect x="840" y="322" width="360" height="58" rx="29" fill="#e6f1ee" stroke="#146b5c"/><text x="1020" y="358" font-size="17" fill="#146b5c" text-anchor="middle" font-weight="700">Split computation</text></g></svg>
+  </div>
+  <div class="cue">A teaching aid, not a law: several answers can be yes, and then patterns combine. Run two products from Class 3's cards through it.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Three ideas every design needs" data-act="patterns">
+  <div>
+    <h2>Whatever the pattern, plan for three things.</h2>
+    <div class="ngrid" style="grid-template-columns:1fr 1fr 1fr;gap:30px;text-align:left;margin-top:10px">
+      <div class="cellx frag"><div class="big-n" style="font-size:40px">When unsure</div><div class="nlab" style="margin-bottom:12px">graceful degradation</div><p style="font-size:20px">What does the product do when the model is not confident, or the network is down? A safe default beats a guess.</p></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:40px">Ask a human</div><div class="nlab" style="margin-bottom:12px">human in the loop</div><p style="font-size:20px">Send low-confidence cases to a person. Their answers become labelled data for the next model.</p></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:40px">Plan v2</div><div class="nlab" style="margin-bottom:12px">over-the-air updates</div><p style="font-size:20px">The model you ship on day one will not be the last. Design the update path before you need it.</p></div>
+    </div>
+  </div>
+  <div class="cue">Ask each team to say which of the three their Class 3 product would need most, and why.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Team activity: draw it" data-act="activity">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">team activity · your Class 3 product</div><h2 style="margin-bottom:6px">Draw its architecture.</h2></div>
+      <div class="panel timer" data-secs="900"><span class="tdisp">15:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)">
+      <div class="wbox" style="min-height:220px"><div class="wk">1 · the blocks</div><div class="wa" style="font-size:19px">Draw sense → prepare → infer → decide → act, with the real sensor and model names.</div></div>
+      <div class="wbox" style="min-height:220px"><div class="wk">2 · the pattern</div><div class="wa" style="font-size:19px">Which of the five? Or which two? Mark what runs on the device and what does not.</div></div>
+      <div class="wbox" style="min-height:220px"><div class="wk">3 · the stress test</div><div class="wa" style="font-size:19px">What happens when the battery is at 10%? When Wi-Fi drops? When the model is unsure?</div></div>
+    </div>
+  </div>
+  <div class="cue">Same teams and cards as Class 3, so they build on their own worksheet. Walk round with the box-3 questions; one team presents in the last five minutes.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="The doorbell's architecture" data-act="closing">
+  <div>
+    <div class="kicker">our running example</div>
+    <h2>The doorbell uses two patterns at once.</h2>
+    <svg viewBox="0 0 1432 380" width="1432" height="380"><defs><marker id="m9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker><marker id="g9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#146b5c"/></marker></defs><rect x="0" y="40" width="220" height="100" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="18" y="74" font-size="18" fill="#15171b" font-weight="700">microphone</text><text x="18" y="100" font-size="14" fill="#4b5057">always on</text><line x1="224" y1="90" x2="290" y2="90" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m9)"/><rect x="294" y="40" width="280" height="100" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.6"/><text x="312" y="74" font-size="18" fill="#15171b" font-weight="700">keyword model</text><text x="312" y="100" font-size="14" fill="#4b5057">tiny, always running</text><g class="frag"><text x="434" y="168" font-size="13" fill="#146b5c" text-anchor="middle">"open", or the button pressed</text><line x1="434" y1="144" x2="434" y2="206" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m9)"/><rect x="0" y="210" width="220" height="100" rx="12" fill="#f2f1ec" stroke="#8b9096" stroke-width="1.6" stroke-dasharray="6 5"/><text x="18" y="244" font-size="18" fill="#15171b" font-weight="700">camera</text><text x="18" y="270" font-size="14" fill="#4b5057">asleep until woken</text><line x1="224" y1="260" x2="290" y2="260" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m9)"/><rect x="294" y="210" width="280" height="100" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="312" y="244" font-size="18" fill="#15171b" font-weight="700">person detector</text><text x="312" y="270" font-size="14" fill="#4b5057">bigger, runs briefly</text><rect x="0" y="330" width="574" height="34" rx="17" fill="#fbf0dc" stroke="#b06a12"/><text x="287" y="352" font-size="14" fill="#b06a12" text-anchor="middle" font-weight="700">pattern 3 · cascade</text></g><g class="frag"><line x1="578" y1="260" x2="690" y2="260" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m9)"/><rect x="694" y="210" width="240" height="100" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="712" y="244" font-size="18" fill="#15171b" font-weight="700">decide and act</text><text x="712" y="270" font-size="14" fill="#4b5057">chime · unlock?</text><line x1="938" y1="260" x2="1110" y2="260" stroke="#23408f" stroke-width="3" marker-end="url(#m9)"/><text x="1024" y="244" font-size="13" fill="#23408f" text-anchor="middle">one short clip</text><circle cx="1200" cy="250" r="48" fill="#eaeef7"/><circle cx="1270" cy="228" r="62" fill="#eaeef7"/><circle cx="1340" cy="254" r="44" fill="#eaeef7"/><rect x="1152" y="250" width="236" height="56" rx="28" fill="#eaeef7"/><text x="1270" y="266" font-size="16" fill="#23408f" text-anchor="middle" font-weight="700">cloud</text><text x="1270" y="288" font-size="13" fill="#4b5057" text-anchor="middle">history · notifications</text><rect x="694" y="330" width="738" height="34" rx="17" fill="#fbf0dc" stroke="#b06a12"/><text x="1063" y="352" font-size="14" fill="#b06a12" text-anchor="middle" font-weight="700">pattern 2 · edge filter, cloud analysis</text></g></svg>
+  </div>
+  <div class="cue">Class 2 split the doorbell by BLERP, Class 3 gave it sensors and tasks, Class 4 picked its parts. Today it gets its architecture. Ask why the camera sleeps: power, and fewer chances for a false "person".</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:46px;max-width:30ch;margin:0 auto">Draw the architecture of a smart speaker in five blocks. Which two patterns does it use?</h2>
+    <p class="small frag" style="margin-top:34px">Next class: <strong>the data pipeline</strong>. What actually flows along those arrows, and how much memory it takes.</p>
+  </div>
+  <div class="cue">Expected answer: cascade (wake word wakes the rest) and edge filter, cloud analysis (only the question after the wake word goes to the cloud).</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
