@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 4 · Hardware and Software Components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+
+/* class 4 */
+pre{background:#14181f;border-radius:10px;padding:22px 26px;font-family:var(--mono);font-size:17px;line-height:1.55;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+.stackcol{display:flex;flex-direction:column-reverse;gap:8px}
+.layer{display:grid;grid-template-columns:44px 280px 1fr;align-items:center;background:var(--card);border:1px solid var(--rule2);border-radius:9px;padding:12px 16px}
+.layer .ln{font-family:var(--display);font-size:26px;font-weight:600;color:var(--soft)}
+.layer .la{font-size:19px;font-weight:600;color:var(--ink)}
+.layer .lb{font-size:15px;color:var(--body)}
+.layer.hl{background:var(--accent-soft);border-color:var(--accent);border-width:2px}
+.layer.hl .ln,.layer.hl .la{color:var(--accent)}
+.mquiz{padding:8px 22px}
+.mq{display:grid;grid-template-columns:1fr 330px;align-items:center;gap:6px 20px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.mq:last-child{border-bottom:none}
+.mq .mi{font-size:21px;color:var(--ink)}
+.mq .mb{display:flex;gap:8px;justify-content:flex-end}
+.mq button{width:100px;height:40px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:15px;color:var(--ink);cursor:pointer}
+.mq button.right{background:var(--ok);border-color:var(--ok);color:#fff}
+.mq button.wrong{background:var(--fail-soft);border-color:var(--fail);color:var(--fail)}
+.mq .mw{grid-column:1 / -1;font-size:16px;color:var(--soft);display:none}
+.mq.answered .mw{display:block}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 04</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 4 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 04 · unit I · hardware and software components</div>
+    <h1>Open the box</h1>
+    <p class="big" style="margin-top:26px;max-width:44ch">For three classes we treated the device as a black box. Today we take it apart: the chips, the memory, and the seven layers of software between a sensor and a prediction.</p>
+  </div>
+  <div class="cue">Hand one ESP32-S3 board to each team before you start. Ask them not to plug anything in yet.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Meet the board" data-act="the board">
+  <div>
+    <h2 style="margin-bottom:4px">The board in your hands.</h2>
+    <svg viewBox="0 0 1432 520" width="1432" height="520">
+      <rect x="80" y="120" width="1240" height="260" rx="14" fill="#1d2a30"/>
+      <rect x="600" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="600" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="624" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="624" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="648" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="648" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="672" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="672" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="696" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="696" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="720" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="720" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="744" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="744" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="768" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="768" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="792" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="792" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="816" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="816" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="840" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="840" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="864" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="864" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="888" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="888" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="912" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="912" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="936" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="936" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="960" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="960" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="984" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="984" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1008" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1008" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1032" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1032" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1056" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1056" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1080" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1080" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1104" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1104" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1128" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1128" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1152" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1152" y="358" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1176" y="132" width="10" height="10" rx="2" fill="#d6b45a"/><rect x="1176" y="358" width="10" height="10" rx="2" fill="#d6b45a"/>
+      <rect x="160" y="150" width="400" height="200" rx="6" fill="#c9ccd1" stroke="#9aa0a8" stroke-width="2"/>
+      <text x="360" y="244" font-size="16" fill="#4b5057" text-anchor="middle">ESP32-S3</text>
+      <text x="360" y="266" font-size="12" fill="#6b7078" text-anchor="middle">N16R8</text>
+      <rect x="96" y="150" width="64" height="200" fill="#26363d"/>
+      <path d="M100 175 h18 v20 h18 v-20 h18 v20 h18 v-20" fill="none" stroke="#d6b45a" stroke-width="3"/>
+      <rect x="1060" y="150" width="40" height="40" rx="6" fill="#3a4a52"/><circle cx="1080" cy="170" r="11" fill="#15171b"/>
+      <rect x="1060" y="300" width="40" height="40" rx="6" fill="#3a4a52"/><circle cx="1080" cy="320" r="11" fill="#15171b"/>
+      <rect x="866" y="316" width="28" height="28" rx="4" fill="#faf9f6"/>
+      <rect x="1250" y="170" width="86" height="56" rx="16" fill="#9aa0a8"/><rect x="1250" y="276" width="86" height="56" rx="16" fill="#9aa0a8"/>
+      <g class="frag"><line x1="470" y1="310" x2="170" y2="100" stroke="#23408f" stroke-width="1.6"/><circle cx="470" cy="310" r="7" fill="none" stroke="#23408f" stroke-width="2.5"/>
+<text x="160" y="60" font-size="17" fill="#23408f" font-weight="700">ESP32-S3-WROOM-1 module</text><text x="160" y="82" font-size="13" fill="#4b5057">chip + 16 MB flash + 8 MB PSRAM, under the shield</text></g><g class="frag"><line x1="120" y1="250" x2="130" y2="444" stroke="#23408f" stroke-width="1.6"/><circle cx="120" cy="250" r="7" fill="none" stroke="#23408f" stroke-width="2.5"/>
+<text x="120" y="470" font-size="17" fill="#23408f" font-weight="700">antenna</text><text x="120" y="492" font-size="13" fill="#4b5057">Wi-Fi and Bluetooth, printed on the board</text></g><g class="frag"><line x1="1250" y1="250" x2="1110" y2="444" stroke="#23408f" stroke-width="1.6"/><circle cx="1250" cy="250" r="7" fill="none" stroke="#23408f" stroke-width="2.5"/>
+<text x="1100" y="470" font-size="17" fill="#23408f" font-weight="700">USB ports</text><text x="1100" y="492" font-size="13" fill="#4b5057">power, flashing, serial monitor</text></g><g class="frag"><line x1="1080" y1="170" x2="1070" y2="100" stroke="#23408f" stroke-width="1.6"/><circle cx="1080" cy="170" r="7" fill="none" stroke="#23408f" stroke-width="2.5"/>
+<text x="1060" y="60" font-size="17" fill="#23408f" font-weight="700">BOOT and RESET buttons</text><text x="1060" y="82" font-size="13" fill="#4b5057">flashing mode; restart</text></g><g class="frag"><line x1="880" y1="330" x2="770" y2="444" stroke="#23408f" stroke-width="1.6"/><circle cx="880" cy="330" r="7" fill="none" stroke="#23408f" stroke-width="2.5"/>
+<text x="760" y="470" font-size="17" fill="#23408f" font-weight="700">RGB LED</text><text x="760" y="492" font-size="13" fill="#4b5057">the simplest output you have: a colour</text></g><g class="frag"><line x1="700" y1="142" x2="710" y2="100" stroke="#23408f" stroke-width="1.6"/><circle cx="700" cy="142" r="7" fill="none" stroke="#23408f" stroke-width="2.5"/>
+<text x="700" y="60" font-size="17" fill="#23408f" font-weight="700">pin headers</text><text x="700" y="82" font-size="13" fill="#4b5057">where sensors and other parts connect</text></g>
+    </svg>
+  </div>
+  <div class="cue">One label per click; teams find each part on their own board before you reveal it. The labels are a simplified drawing, not an exact layout of every revision of the board.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Five hardware components" data-act="hardware">
+  <div>
+    <h2>Every edge device is the same five parts.</h2>
+    <svg viewBox="0 0 1432 470" width="1432" height="470">
+      <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs>
+      <g class="frag">
+        <rect x="0" y="120" width="290" height="150" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+        <text x="20" y="160" font-size="20" fill="#15171b" font-weight="700">1 · Sensors</text>
+        <text x="20" y="190" font-size="14" fill="#4b5057">microphone, camera, IMU</text>
+        <text x="20" y="214" font-size="14" fill="#4b5057">analog ones need an ADC;</text>
+        <text x="20" y="236" font-size="14" fill="#4b5057">digital ones use I2C, SPI, I2S</text>
+        <line x1="296" y1="195" x2="390" y2="195" stroke="#8b9096" stroke-width="2.5" marker-end="url(#a1)"/>
+      </g>
+      <g class="frag">
+        <rect x="400" y="90" width="360" height="210" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.5"/>
+        <text x="420" y="130" font-size="20" fill="#23408f" font-weight="700">2 · Processor</text>
+        <text x="420" y="160" font-size="14" fill="#4b5057">CPU cores that run the code</text>
+        <rect x="420" y="190" width="150" height="80" rx="8" fill="#ffffff" stroke="#23408f"/><text x="495" y="236" font-size="14" fill="#23408f" text-anchor="middle">CPU core</text>
+        <rect x="590" y="190" width="150" height="80" rx="8" fill="#ffffff" stroke="#23408f" stroke-dasharray="5 4"/><text x="665" y="226" font-size="14" fill="#23408f" text-anchor="middle">accelerator</text><text x="665" y="248" font-size="12" fill="#8b9096" text-anchor="middle">if it has one</text>
+      </g>
+      <g class="frag">
+        <line x1="580" y1="306" x2="580" y2="340" stroke="#8b9096" stroke-width="2.5" marker-end="url(#a1)"/>
+        <rect x="400" y="350" width="360" height="110" rx="12" fill="#fbf0dc" stroke="#b06a12" stroke-width="1.5"/>
+        <text x="420" y="388" font-size="20" fill="#b06a12" font-weight="700">3 · Memory</text>
+        <text x="420" y="416" font-size="14" fill="#4b5057">flash · SRAM · PSRAM</text>
+        <text x="420" y="440" font-size="14" fill="#4b5057">usually the tightest limit</text>
+      </g>
+      <g class="frag">
+        <line x1="766" y1="195" x2="890" y2="195" stroke="#8b9096" stroke-width="2.5" marker-end="url(#a1)"/>
+        <rect x="900" y="120" width="300" height="150" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+        <text x="920" y="160" font-size="20" fill="#15171b" font-weight="700">4 · Connectivity</text>
+        <text x="920" y="190" font-size="14" fill="#4b5057">Wi-Fi, Bluetooth LE, LoRa,</text>
+        <text x="920" y="214" font-size="14" fill="#4b5057">cellular · for results and</text>
+        <text x="920" y="238" font-size="14" fill="#4b5057">updates, not raw streams</text>
+      </g>
+      <g class="frag">
+        <rect x="0" y="20" width="1200" height="44" rx="10" fill="#e6f1ee" stroke="#146b5c"/>
+        <text x="20" y="49" font-size="17" fill="#146b5c" font-weight="700">5 · Power</text>
+        <text x="140" y="49" font-size="15" fill="#4b5057">battery, mains or harvested · it decides how often the device can afford to think</text>
+      </g>
+    </svg>
+  </div>
+  <div class="cue">Build it in order. Point at the BrickML specs from Class 1: five sensors, a processor, memory, BLE, and a 1 µA standby current. Power sits above everything because it constrains everything.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Three kinds of memory" data-act="hardware">
+  <div>
+    <h2>Three kinds of memory, drawn to scale.</h2>
+    <div class="split" style="grid-template-columns:1.05fr .95fr;align-items:center">
+      <svg viewBox="0 0 760 420" width="760" height="420">
+        <g class="frag">
+          <rect x="0" y="60" width="300" height="300" fill="#fbf0dc" stroke="#b06a12" stroke-width="2"/>
+          <text x="16" y="94" font-size="20" fill="#b06a12" font-weight="700">Flash · 16 MB</text>
+          <text x="16" y="120" font-size="14" fill="#4b5057">firmware + model weights</text>
+          <text x="16" y="142" font-size="14" fill="#4b5057">kept when power is off</text>
+        </g>
+        <g class="frag">
+          <rect x="330" y="148" width="212" height="212" fill="#eaeef7" stroke="#23408f" stroke-width="2"/>
+          <text x="344" y="180" font-size="18" fill="#23408f" font-weight="700">PSRAM · 8 MB</text>
+          <text x="344" y="204" font-size="14" fill="#4b5057">camera frames,</text>
+          <text x="344" y="224" font-size="14" fill="#4b5057">big buffers · slower</text>
+        </g>
+        <g class="frag">
+          <rect x="572" y="307" width="53" height="53" fill="#e6f1ee" stroke="#146b5c" stroke-width="2"/>
+          <text x="572" y="267" font-size="18" fill="#146b5c" font-weight="700">SRAM · 512 KB</text>
+          <text x="572" y="291" font-size="14" fill="#4b5057">fast · activations</text>
+        </g>
+        <text x="0" y="396" font-size="13" fill="#8b9096">AREA ∝ CAPACITY · ESP32-S3 N16R8</text>
+      </svg>
+      <div class="stack">
+        <p>The smallest square is the one that matters most. Every calculation the model does happens in SRAM.</p>
+        <p class="frag">At this scale, your laptop's 16 GB of RAM would be a square <strong>9.6 metres</strong> wide.</p>
+        <p class="frag small">A model can fit in flash and still fail to run, because its working memory does not fit in SRAM. Remember that sentence; it comes back in Class 7.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Squares are drawn with area proportional to capacity. The 9.6 m figure: √(16,384 MB ÷ 16 MB) × 300 px ≈ 9,600 px, roughly the width of the classroom. Walk to the back wall to show it.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="ESP32-S3 by the numbers" data-act="hardware">
+  <div>
+    <div class="kicker">ESP32-S3 DevKitC-1 · N16R8</div>
+    <h2>Your board, by the numbers.</h2>
+    <div class="ntiles"><div class="ntile frag"><div class="nb">2</div><div class="nk">cores</div><div class="ns">Xtensa LX7</div></div><div class="ntile frag"><div class="nb">240 MHz</div><div class="nk">clock</div><div class="ns">up to</div></div><div class="ntile frag"><div class="nb">512 KB</div><div class="nk">SRAM</div><div class="ns">on the chip</div></div><div class="ntile frag"><div class="nb">8 MB</div><div class="nk">PSRAM</div><div class="ns">the “R8”</div></div><div class="ntile frag"><div class="nb">16 MB</div><div class="nk">flash</div><div class="ns">the “N16”</div></div><div class="ntile frag"><div class="nb">Wi-Fi + BLE 5</div><div class="nk">radio</div><div class="ns">2.4 GHz</div></div><div class="ntile frag"><div class="nb">vector</div><div class="nk">instructions</div><div class="ns">many multiply-adds at once</div></div></div>
+    <p class="frag" style="margin-top:22px;max-width:70ch">Read the part name now: <code>N16R8</code> = <strong>16 MB</strong> of flash, <strong>8 MB</strong> of PSRAM. It is why this course bought this variant: the PSRAM holds camera frames.</p>
+  </div>
+  <div class="cue">Figures from the Espressif ESP32-S3 datasheet. Ask: which of these numbers limits the model most? (SRAM.) Which limits the camera? (PSRAM.)</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="The ladder of edge compute" data-act="hardware">
+  <div>
+    <h2 style="margin-bottom:6px">Four rungs of edge compute.</h2>
+    <svg viewBox="0 0 1432 480" width="1432" height="480"><g class="frag"><rect x="0" y="290" width="340" height="180" rx="10" fill="#ffffff" stroke="#146b5c" stroke-width="1.8"/>
+<rect x="0" y="290" width="340" height="8" fill="#146b5c"/>
+<text x="18" y="332" font-size="19" fill="#146b5c" font-weight="700">Microcontroller</text>
+<text x="18" y="356" font-size="13" fill="#4b5057">ESP32-S3, STM32, Arduino Nano 33</text>
+<text x="18" y="390" font-size="12" fill="#8b9096">MEMORY</text><text x="110" y="390" font-size="14" fill="#15171b">KB to a few MB</text>
+<text x="18" y="414" font-size="12" fill="#8b9096">POWER</text><text x="110" y="414" font-size="14" fill="#15171b">milliwatts</text><text x="18" y="440" font-size="12" fill="#8b9096">RUNS</text><text x="18" y="462" font-size="13" fill="#15171b">keyword spotting, gestures, tiny vision</text></g><g class="frag"><rect x="352" y="210" width="340" height="260" rx="10" fill="#ffffff" stroke="#23408f" stroke-width="1.8"/>
+<rect x="352" y="210" width="340" height="8" fill="#23408f"/>
+<text x="370" y="252" font-size="19" fill="#23408f" font-weight="700">Application processor</text>
+<text x="370" y="276" font-size="13" fill="#4b5057">Raspberry Pi, phone chips</text>
+<text x="370" y="310" font-size="12" fill="#8b9096">MEMORY</text><text x="462" y="310" font-size="14" fill="#15171b">gigabytes</text>
+<text x="370" y="334" font-size="12" fill="#8b9096">POWER</text><text x="462" y="334" font-size="14" fill="#15171b">1 to 10 W</text><text x="370" y="360" font-size="12" fill="#8b9096">RUNS</text><text x="370" y="382" font-size="13" fill="#15171b">Linux, larger CNNs</text></g><g class="frag"><rect x="704" y="130" width="340" height="340" rx="10" fill="#ffffff" stroke="#b06a12" stroke-width="1.8"/>
+<rect x="704" y="130" width="340" height="8" fill="#b06a12"/>
+<text x="722" y="172" font-size="19" fill="#b06a12" font-weight="700">SoC + accelerator</text>
+<text x="722" y="196" font-size="13" fill="#4b5057">phone NPUs, Google Coral, NVIDIA Jetson</text>
+<text x="722" y="230" font-size="12" fill="#8b9096">MEMORY</text><text x="814" y="230" font-size="14" fill="#15171b">gigabytes</text>
+<text x="722" y="254" font-size="12" fill="#8b9096">POWER</text><text x="814" y="254" font-size="14" fill="#15171b">5 to 30 W</text><text x="722" y="280" font-size="12" fill="#8b9096">RUNS</text><text x="722" y="302" font-size="13" fill="#15171b">real-time detection</text></g><g class="frag"><rect x="1056" y="50" width="340" height="420" rx="10" fill="#ffffff" stroke="#a8231f" stroke-width="1.8"/>
+<rect x="1056" y="50" width="340" height="8" fill="#a8231f"/>
+<text x="1074" y="92" font-size="19" fill="#a8231f" font-weight="700">Edge server</text>
+<text x="1074" y="116" font-size="13" fill="#4b5057">a GPU box in a store or factory</text>
+<text x="1074" y="150" font-size="12" fill="#8b9096">MEMORY</text><text x="1166" y="150" font-size="14" fill="#15171b">tens of GB</text>
+<text x="1074" y="174" font-size="12" fill="#8b9096">POWER</text><text x="1166" y="174" font-size="14" fill="#15171b">hundreds of W</text><text x="1074" y="200" font-size="12" fill="#8b9096">RUNS</text><text x="1074" y="222" font-size="13" fill="#15171b">many camera streams at once</text></g>
+      <text x="1400" y="20" font-size="13" fill="#8b9096" text-anchor="end">MORE MEMORY, MORE POWER, MORE COST ↗</text>
+    </svg>
+  </div>
+  <div class="cue">Figures are typical and approximate. Ask where the BrickML sits (first rung) and where a Tesla's computer sits (third). Unit II spends a whole class on each rung.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Why accelerators exist" data-act="hardware">
+  <div>
+    <h2>A neural network is mostly one operation, repeated millions of times.</h2>
+    <div class="eq" style="font-size:22px">multiply-accumulate: <span class="v">sum = sum + weight × input</span></div>
+    <svg viewBox="0 0 1432 360" width="1432" height="360" style="margin-top:14px">
+      <g class="frag"><text x="0" y="90" font-size="19" fill="#15171b" font-weight="700">plain CPU core</text><text x="0" y="112" font-size="14" fill="#8b9096">one multiply-add per step</text><rect x="0" y="120" width="22" height="22" rx="4" fill="#23408f"/></g>
+      <g class="frag"><text x="440" y="90" font-size="19" fill="#15171b" font-weight="700">CPU with vector instructions</text><text x="440" y="112" font-size="14" fill="#8b9096">several per step · the ESP32-S3</text><rect x="440" y="120" width="22" height="22" rx="4" fill="#146b5c"/><rect x="466" y="120" width="22" height="22" rx="4" fill="#146b5c"/><rect x="492" y="120" width="22" height="22" rx="4" fill="#146b5c"/><rect x="518" y="120" width="22" height="22" rx="4" fill="#146b5c"/><rect x="544" y="120" width="22" height="22" rx="4" fill="#146b5c"/><rect x="570" y="120" width="22" height="22" rx="4" fill="#146b5c"/><rect x="596" y="120" width="22" height="22" rx="4" fill="#146b5c"/><rect x="622" y="120" width="22" height="22" rx="4" fill="#146b5c"/><rect x="440" y="146" width="22" height="22" rx="4" fill="#146b5c"/><rect x="466" y="146" width="22" height="22" rx="4" fill="#146b5c"/><rect x="492" y="146" width="22" height="22" rx="4" fill="#146b5c"/><rect x="518" y="146" width="22" height="22" rx="4" fill="#146b5c"/><rect x="544" y="146" width="22" height="22" rx="4" fill="#146b5c"/><rect x="570" y="146" width="22" height="22" rx="4" fill="#146b5c"/><rect x="596" y="146" width="22" height="22" rx="4" fill="#146b5c"/><rect x="622" y="146" width="22" height="22" rx="4" fill="#146b5c"/></g>
+      <g class="frag"><text x="900" y="90" font-size="19" fill="#15171b" font-weight="700">dedicated accelerator (NPU)</text><text x="900" y="112" font-size="14" fill="#8b9096">a whole grid per step</text><rect x="900" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="926" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="952" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="978" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1004" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1030" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1056" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1082" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1108" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1134" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1160" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1186" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1212" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1238" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1264" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1290" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1316" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1342" y="120" width="22" height="22" rx="4" fill="#b06a12"/><rect x="900" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="926" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="952" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="978" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1004" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1030" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1056" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1082" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1108" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1134" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1160" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1186" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1212" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1238" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1264" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1290" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1316" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1342" y="146" width="22" height="22" rx="4" fill="#b06a12"/><rect x="900" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="926" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="952" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="978" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1004" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1030" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1056" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1082" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1108" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1134" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1160" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1186" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1212" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1238" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1264" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1290" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1316" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1342" y="172" width="22" height="22" rx="4" fill="#b06a12"/><rect x="900" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="926" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="952" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="978" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1004" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1030" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1056" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1082" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1108" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1134" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1160" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1186" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1212" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1238" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1264" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1290" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1316" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1342" y="198" width="22" height="22" rx="4" fill="#b06a12"/><rect x="900" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="926" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="952" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="978" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1004" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1030" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1056" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1082" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1108" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1134" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1160" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1186" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1212" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1238" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1264" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1290" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1316" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1342" y="224" width="22" height="22" rx="4" fill="#b06a12"/><rect x="900" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="926" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="952" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="978" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1004" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1030" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1056" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1082" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1108" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1134" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1160" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1186" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1212" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1238" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1264" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1290" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1316" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1342" y="250" width="22" height="22" rx="4" fill="#b06a12"/><rect x="900" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="926" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="952" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="978" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1004" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1030" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1056" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1082" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1108" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1134" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1160" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1186" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1212" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1238" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1264" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1290" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1316" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1342" y="276" width="22" height="22" rx="4" fill="#b06a12"/><rect x="900" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="926" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="952" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="978" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1004" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1030" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1056" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1082" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1108" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1134" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1160" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1186" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1212" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1238" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1264" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1290" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1316" y="302" width="22" height="22" rx="4" fill="#b06a12"/><rect x="1342" y="302" width="22" height="22" rx="4" fill="#b06a12"/></g>
+    </svg>
+    <p class="frag small">Squares are illustrative, not exact counts. The idea: do more multiply-adds per tick of the clock, and the same model runs faster on less energy.</p>
+  </div>
+  <div class="cue">Ask the room to count roughly how many multiply-adds a tiny network does (Class 7 does this properly). Then: why does it matter how many happen per clock tick? Speed and battery.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="The software stack" data-act="software">
+  <div class="split" style="grid-template-columns:1.25fr .75fr;align-items:center">
+    <div class="stackcol"><div class="layer frag"><span class="ln">1</span><span class="la">Bootloader and firmware</span><span class="lb">the program flashed onto the chip</span></div><div class="layer frag"><span class="ln">2</span><span class="la">RTOS / OS</span><span class="lb">FreeRTOS inside ESP-IDF · Linux on a Pi</span></div><div class="layer frag"><span class="ln">3</span><span class="la">Drivers</span><span class="lb">code that talks to the mic and camera</span></div><div class="layer frag"><span class="ln">4</span><span class="la">DSP / features</span><span class="lb">raw signal → spectrogram, statistics</span></div><div class="layer frag"><span class="ln">5</span><span class="la">Inference runtime</span><span class="lb">runs the model: TFLite Micro, ESP-DL, ONNX Runtime</span></div><div class="layer frag hl"><span class="ln">6</span><span class="la">The model</span><span class="lb">a file of weights + a graph of operations</span></div><div class="layer frag"><span class="ln">7</span><span class="la">Application logic</span><span class="lb">chime, log, alert, decide what to do</span></div></div>
+    <div class="stack">
+      <h2>Seven layers between a sensor and a decision.</h2>
+      <p class="frag big" style="font-size:30px">The model is <span style="color:var(--accent);font-weight:600">one layer of seven.</span></p>
+      <p class="frag small">Most of the engineering effort in edge AI sits in the other six. That is why this course is not just a machine learning course.</p>
+    </div>
+  </div>
+  <div class="cue">The stack builds from the bottom up, layer 1 first. For each layer ask: who writes this? (The chip vendor, the OS, you, the ML engineer, the runtime authors.)</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="What the inference runtime does" data-act="software">
+  <div>
+    <h2>The inference runtime: the engine that runs your model.</h2>
+    <svg viewBox="0 0 1432 380" width="1432" height="380">
+      <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs>
+      <rect x="0" y="80" width="300" height="200" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+      <text x="20" y="118" font-size="19" fill="#15171b" font-weight="700">the model file</text>
+      <rect x="20" y="138" width="260" height="56" rx="8" fill="#eaeef7"/><text x="34" y="162" font-size="13" fill="#23408f">GRAPH</text><text x="34" y="182" font-size="13" fill="#4b5057">conv → relu → dense → softmax</text>
+      <rect x="20" y="204" width="260" height="56" rx="8" fill="#fbf0dc"/><text x="34" y="228" font-size="13" fill="#b06a12">WEIGHTS</text><text x="34" y="248" font-size="13" fill="#4b5057">thousands of numbers</text>
+      <g class="frag">
+        <line x1="306" y1="180" x2="420" y2="180" stroke="#8b9096" stroke-width="2.5" marker-end="url(#a2)"/>
+        <rect x="430" y="60" width="420" height="240" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.5"/>
+        <text x="450" y="98" font-size="19" fill="#23408f" font-weight="700">inference runtime</text>
+        <text x="450" y="130" font-size="14" fill="#4b5057">reads the graph, one operation at a time</text>
+        <text x="450" y="156" font-size="14" fill="#4b5057">plans where activations live in memory</text>
+        <text x="450" y="182" font-size="14" fill="#4b5057">calls a kernel for each operation</text>
+        <rect x="450" y="206" width="380" height="74" rx="8" fill="#ffffff" stroke="#23408f"/>
+        <text x="466" y="234" font-size="13" fill="#23408f">KERNELS · tuned for this chip</text>
+        <text x="466" y="258" font-size="13" fill="#4b5057">e.g. ESP-NN, using vector instructions</text>
+      </g>
+      <g class="frag">
+        <line x1="856" y1="180" x2="960" y2="180" stroke="#8b9096" stroke-width="2.5" marker-end="url(#a2)"/>
+        <rect x="970" y="110" width="200" height="140" rx="12" fill="#1d2a30"/>
+        <text x="1070" y="176" font-size="17" fill="#faf9f6" text-anchor="middle" font-weight="700">ESP32-S3</text>
+        <text x="1070" y="200" font-size="13" fill="#c6c3ba" text-anchor="middle">the chip</text>
+        <line x1="1176" y1="180" x2="1250" y2="180" stroke="#8b9096" stroke-width="2.5" marker-end="url(#a2)"/>
+        <rect x="1260" y="140" width="172" height="80" rx="40" fill="#e6f1ee" stroke="#146b5c"/>
+        <text x="1346" y="187" font-size="16" fill="#146b5c" text-anchor="middle" font-weight="700">"person" 0.91</text>
+      </g>
+    </svg>
+    <p class="frag small" style="max-width:90ch">Runtimes you will meet: <strong>TensorFlow Lite for Microcontrollers</strong> (now part of Google's LiteRT), Espressif's <strong>ESP-DL</strong>, <strong>ONNX Runtime</strong> on phones and PCs, NVIDIA <strong>TensorRT</strong> on Jetson.</p>
+  </div>
+  <div class="cue">The key idea: the same model file can run on many chips because the runtime and its kernels change per chip, not the model.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="A model is just bytes" data-act="software">
+  <div class="split" style="grid-template-columns:1.1fr .9fr;align-items:center">
+    <pre><span class="c">// model_data.cc · generated from model.tflite</span>
+<span class="k">alignas</span>(16) <span class="k">const unsigned char</span> <span class="f">g_model</span>[] = {
+  0x1c, 0x00, 0x00, 0x00, 0x54, 0x46, 0x4c, 0x33,
+  0x14, 0x00, 0x20, 0x00, 0x1c, 0x00, 0x18, 0x00,
+  0x14, 0x00, 0x10, 0x00, 0x0c, 0x00, 0x00, 0x00,
+  <span class="c">// ... thousands more lines ...</span>
+};
+<span class="k">const int</span> <span class="f">g_model_len</span> = <span class="s">18712</span>;</pre>
+    <div class="stack">
+      <h2>On a microcontroller, a model is just an array of bytes.</h2>
+      <p class="frag">It is compiled into the firmware like any other constant and stored in flash.</p>
+      <p class="frag">No file system. No download. It is part of the program.</p>
+      <p class="frag small">The bytes <code>54 46 4c 33</code> spell "TFL3" in ASCII: the model format's signature. The length here is an example.</p>
+    </div>
+  </div>
+  <div class="cue">This demystifies "deploying a model". Ask: so how do you update the model on ten thousand devices? (Flash new firmware, over the air.) That is the "updating is hard" row from Class 2.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="From laptop to board" data-act="software">
+  <div>
+    <h2>The toolchain: from a notebook to a blinking LED.</h2>
+    <svg viewBox="0 0 1432 420" width="1432" height="420">
+      <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs>
+      <rect x="0" y="40" width="820" height="300" rx="16" fill="#eaeef7"/>
+      <text x="20" y="76" font-size="14" fill="#23408f" font-weight="700">ON YOUR LAPTOP</text>
+      <rect x="880" y="40" width="552" height="300" rx="16" fill="#e6f1ee"/>
+      <text x="900" y="76" font-size="14" fill="#146b5c" font-weight="700">ON THE BOARD</text>
+      <g class="frag"><rect x="20" y="110" width="180" height="110" rx="10" fill="#ffffff" stroke="#23408f"/><text x="36" y="146" font-size="16" fill="#15171b" font-weight="700">1 · train</text><text x="36" y="172" font-size="13" fill="#4b5057">Python, Colab,</text><text x="36" y="192" font-size="13" fill="#4b5057">PyTorch or TF</text></g>
+      <g class="frag"><line x1="204" y1="165" x2="228" y2="165" stroke="#8b9096" stroke-width="2.5" marker-end="url(#a3)"/><rect x="232" y="110" width="180" height="110" rx="10" fill="#ffffff" stroke="#23408f"/><text x="248" y="146" font-size="16" fill="#15171b" font-weight="700">2 · shrink</text><text x="248" y="172" font-size="13" fill="#4b5057">quantise to 8-bit</text><text x="248" y="192" font-size="13" fill="#4b5057">(Unit IV)</text></g>
+      <g class="frag"><line x1="416" y1="165" x2="440" y2="165" stroke="#8b9096" stroke-width="2.5" marker-end="url(#a3)"/><rect x="444" y="110" width="170" height="110" rx="10" fill="#ffffff" stroke="#23408f"/><text x="460" y="146" font-size="16" fill="#15171b" font-weight="700">3 · convert</text><text x="460" y="172" font-size="13" fill="#4b5057">.tflite file →</text><text x="460" y="192" font-size="13" fill="#4b5057">C byte array</text></g>
+      <g class="frag"><line x1="618" y1="165" x2="636" y2="165" stroke="#8b9096" stroke-width="2.5" marker-end="url(#a3)"/><rect x="640" y="110" width="166" height="110" rx="10" fill="#ffffff" stroke="#23408f"/><text x="656" y="146" font-size="16" fill="#15171b" font-weight="700">4 · build</text><text x="656" y="172" font-size="13" fill="#4b5057">Arduino IDE or</text><text x="656" y="192" font-size="13" fill="#4b5057">ESP-IDF</text></g>
+      <g class="frag"><line x1="810" y1="165" x2="900" y2="165" stroke="#146b5c" stroke-width="3" marker-end="url(#a3)"/><text x="852" y="150" font-size="13" fill="#146b5c" text-anchor="middle">USB</text><rect x="904" y="110" width="240" height="110" rx="10" fill="#ffffff" stroke="#146b5c"/><text x="920" y="146" font-size="16" fill="#15171b" font-weight="700">5 · flash</text><text x="920" y="172" font-size="13" fill="#4b5057">firmware + model</text><text x="920" y="192" font-size="13" fill="#4b5057">written to flash</text></g>
+      <g class="frag"><line x1="1148" y1="165" x2="1172" y2="165" stroke="#8b9096" stroke-width="2.5" marker-end="url(#a3)"/><rect x="1176" y="110" width="236" height="110" rx="10" fill="#ffffff" stroke="#146b5c"/><text x="1192" y="146" font-size="16" fill="#15171b" font-weight="700">6 · run</text><text x="1192" y="172" font-size="13" fill="#4b5057">inference, forever</text><text x="1192" y="192" font-size="13" fill="#4b5057">no laptop needed</text></g>
+      <g class="frag"><path d="M1294 226 V290 H110 V226" fill="none" stroke="#a8231f" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#a3)"/><text x="700" y="316" font-size="14" fill="#a8231f" text-anchor="middle">not accurate enough, too slow, too big? go round again</text></g>
+      <g class="frag"><rect x="0" y="360" width="1432" height="44" rx="10" fill="#fbf0dc" stroke="#b06a12"/><text x="20" y="389" font-size="15" fill="#b06a12" font-weight="700">EDGE IMPULSE</text><text x="160" y="389" font-size="14" fill="#4b5057">does steps 1 to 5 in one web platform, including data collection from your phone or board</text></g>
+    </svg>
+  </div>
+  <div class="cue">Stress the loop: nobody gets it right the first time. Every unit of this course is one trip round this loop, done more carefully.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="The doorbell, opened" data-act="closing">
+  <div>
+    <div class="kicker">our running example</div>
+    <h2>The doorbell, part by part.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:22%">part</th><th>our choice</th></tr>
+      <tr class="frag"><td>sensors</td><td>OV2640 camera · INMP441 microphone</td></tr><tr class="frag"><td>processor</td><td>ESP32-S3, using its vector instructions</td></tr><tr class="frag"><td>memory</td><td>model in flash · frames in PSRAM · activations in SRAM</td></tr><tr class="frag"><td>connectivity</td><td>Wi-Fi, for clips and notifications</td></tr><tr class="frag"><td>power</td><td>USB from the existing doorbell wiring</td></tr><tr class="frag"><td>runtime</td><td>TFLite Micro with ESP-NN kernels</td></tr><tr class="frag"><td>models</td><td>person detector + keyword spotter</td></tr><tr class="frag"><td>application</td><td>ring the chime; send a clip when someone rings</td></tr>
+    </table>
+  </div>
+  <div class="cue">One possible design, not the only one. Ask a team to argue for a different processor rung, and what it would cost in power and price.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Quiz: which memory?" data-act="practice">
+  <div>
+    <h2>Where does each one live? Vote, then click.</h2>
+    <div class="panel mquiz"><div class="mq" data-ans="flash"><span class="mi">the model's weights</span><span class="mb"><button>flash</button><button>SRAM</button><button>PSRAM</button></span><span class="mw">kept when power is off; read-only while running</span></div><div class="mq" data-ans="flash"><span class="mi">the firmware itself</span><span class="mb"><button>flash</button><button>SRAM</button><button>PSRAM</button></span><span class="mw">the program lives where the model lives</span></div><div class="mq" data-ans="PSRAM"><span class="mi">one 640×480 colour camera frame</span><span class="mb"><button>flash</button><button>SRAM</button><button>PSRAM</button></span><span class="mw">about 600 KB: bigger than all of SRAM</span></div><div class="mq" data-ans="SRAM"><span class="mi">the current one-second audio window</span><span class="mb"><button>flash</button><button>SRAM</button><button>PSRAM</button></span><span class="mw">32 KB, needed fast, again and again</span></div><div class="mq" data-ans="SRAM"><span class="mi">activations while the model runs</span><span class="mb"><button>flash</button><button>SRAM</button><button>PSRAM</button></span><span class="mw">the fastest memory, used every operation</span></div><div class="mq" data-ans="flash"><span class="mi">the last 100 alerts, kept after a reboot</span><span class="mb"><button>flash</button><button>SRAM</button><button>PSRAM</button></span><span class="mw">must survive power-off</span></div></div>
+  </div>
+  <div class="cue">Take a show of hands for each row before clicking. A wrong click turns red and still shows the reason; the right button turns green.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">A doorbell model has 300 KB of weights and needs 150 KB of working memory while it runs. Where does each part live on the ESP32-S3, and does it fit?</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>architecture and design patterns</strong>. Five ways to arrange these parts into a working system.</p>
+  </div>
+  <div class="cue">Answer for Class 5's recall: weights in flash (300 KB of 16 MB, easily); activations in SRAM (150 KB of 512 KB, fits, but Wi-Fi and the rest of the firmware also need SRAM, so it is tighter than it looks).</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.mq button'); if(!b) return; b.blur();
+    var row=b.closest('.mq'), ans=row.dataset.ans;
+    if(b.textContent===ans){ row.querySelectorAll('button').forEach(function(x){ if(x.textContent===ans) x.classList.add('right'); }); }
+    else b.classList.add('wrong');
+    row.classList.add('answered');
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
