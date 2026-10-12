@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 6 · The Data Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 06</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 6 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 06 · unit I · the data pipeline</div>
+    <h1>Data that never stops</h1>
+    <p class="big" style="margin-top:26px;max-width:44ch">Last class drew arrows between boxes. Today we look at what flows along them: how data gets in, what happens to it, and what is worth keeping.</p>
+  </div>
+  <div class="cue">Recall first: the smart-speaker exit ticket. Cascade plus edge filter.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Stream vs dataset" data-act="the shift">
+  <div>
+    <h2>In your ML courses, data was a table. Here, it is a river.</h2>
+    <div class="split" style="align-items:start;grid-template-columns:.8fr 1.2fr">
+      <div class="panel">
+        <span class="lab">a dataset · what you are used to</span>
+        <table class="dt" style="width:100%;font-size:16px"><tr><th>#</th><th>ax</th><th>ay</th><th>az</th><th>label</th></tr><tr><td>1</td><td>-0.10</td><td>0.12</td><td>9.85</td><td>run</td></tr><tr><td>2</td><td>-0.10</td><td>0.71</td><td>8.38</td><td>sit</td></tr><tr><td>3</td><td>-0.05</td><td>0.23</td><td>8.37</td><td>run</td></tr><tr><td>4</td><td>-0.39</td><td>-0.82</td><td>9.62</td><td>sit</td></tr><tr><td>5</td><td>0.27</td><td>0.19</td><td>8.79</td><td>run</td></tr><tr><td>6</td><td>0.31</td><td>0.23</td><td>8.31</td><td>walk</td></tr><tr><td>7</td><td>0.66</td><td>-0.87</td><td>8.07</td><td>walk</td></tr></table>
+        <p class="small" style="margin-top:10px">Finite. Shuffle it, load it whole, go back to row 3.</p>
+      </div>
+      <div class="panel frag">
+        <span class="lab">a stream · what the device sees</span>
+        <div class="river"><svg viewBox="0 0 1700 120" width="1700" height="120" class="rv"><circle cx="20" cy="61" r="6" fill="#23408f"/><circle cx="48" cy="82" r="6" fill="#23408f"/><circle cx="76" cy="89" r="6" fill="#23408f"/><circle cx="104" cy="96" r="6" fill="#23408f"/><circle cx="132" cy="85" r="6" fill="#23408f"/><circle cx="160" cy="70" r="6" fill="#23408f"/><circle cx="188" cy="52" r="6" fill="#23408f"/><circle cx="216" cy="31" r="6" fill="#23408f"/><circle cx="244" cy="22" r="6" fill="#23408f"/><circle cx="272" cy="28" r="6" fill="#23408f"/><circle cx="300" cy="34" r="6" fill="#23408f"/><circle cx="328" cy="53" r="6" fill="#23408f"/><circle cx="356" cy="76" r="6" fill="#23408f"/><circle cx="384" cy="82" r="6" fill="#23408f"/><circle cx="412" cy="92" r="6" fill="#23408f"/><circle cx="440" cy="95" r="6" fill="#23408f"/><circle cx="468" cy="81" r="6" fill="#23408f"/><circle cx="496" cy="57" r="6" fill="#23408f"/><circle cx="524" cy="45" r="6" fill="#23408f"/><circle cx="552" cy="25" r="6" fill="#23408f"/><circle cx="580" cy="20" r="6" fill="#23408f"/><circle cx="608" cy="28" r="6" fill="#23408f"/><circle cx="636" cy="39" r="6" fill="#23408f"/><circle cx="664" cy="57" r="6" fill="#23408f"/><circle cx="692" cy="83" r="6" fill="#23408f"/><circle cx="720" cy="89" r="6" fill="#23408f"/><circle cx="748" cy="100" r="6" fill="#23408f"/><circle cx="776" cy="81" r="6" fill="#23408f"/><circle cx="804" cy="69" r="6" fill="#23408f"/><circle cx="832" cy="54" r="6" fill="#23408f"/><circle cx="860" cy="34" r="6" fill="#23408f"/><circle cx="888" cy="27" r="6" fill="#23408f"/><circle cx="916" cy="23" r="6" fill="#23408f"/><circle cx="944" cy="40" r="6" fill="#23408f"/><circle cx="972" cy="53" r="6" fill="#23408f"/><circle cx="1000" cy="71" r="6" fill="#23408f"/><circle cx="1028" cy="83" r="6" fill="#23408f"/><circle cx="1056" cy="94" r="6" fill="#23408f"/><circle cx="1084" cy="96" r="6" fill="#23408f"/><circle cx="1112" cy="74" r="6" fill="#23408f"/><circle cx="1140" cy="62" r="6" fill="#23408f"/><circle cx="1168" cy="36" r="6" fill="#23408f"/><circle cx="1196" cy="28" r="6" fill="#23408f"/><circle cx="1224" cy="25" r="6" fill="#23408f"/><circle cx="1252" cy="34" r="6" fill="#23408f"/><circle cx="1280" cy="43" r="6" fill="#23408f"/><circle cx="1308" cy="66" r="6" fill="#23408f"/><circle cx="1336" cy="89" r="6" fill="#23408f"/><circle cx="1364" cy="97" r="6" fill="#23408f"/><circle cx="1392" cy="93" r="6" fill="#23408f"/><circle cx="1420" cy="83" r="6" fill="#23408f"/><circle cx="1448" cy="67" r="6" fill="#23408f"/><circle cx="1476" cy="55" r="6" fill="#23408f"/><circle cx="1504" cy="27" r="6" fill="#23408f"/><circle cx="1532" cy="30" r="6" fill="#23408f"/><circle cx="1560" cy="34" r="6" fill="#23408f"/><circle cx="1588" cy="41" r="6" fill="#23408f"/><circle cx="1616" cy="64" r="6" fill="#23408f"/><circle cx="1644" cy="71" r="6" fill="#23408f"/><circle cx="1672" cy="86" r="6" fill="#23408f"/><circle cx="120" cy="61" r="6" fill="#23408f"/><circle cx="148" cy="82" r="6" fill="#23408f"/><circle cx="176" cy="89" r="6" fill="#23408f"/><circle cx="1104" cy="96" r="6" fill="#23408f"/><circle cx="1132" cy="85" r="6" fill="#23408f"/><circle cx="1160" cy="70" r="6" fill="#23408f"/><circle cx="1188" cy="52" r="6" fill="#23408f"/><circle cx="1216" cy="31" r="6" fill="#23408f"/><circle cx="1244" cy="22" r="6" fill="#23408f"/><circle cx="1272" cy="28" r="6" fill="#23408f"/><circle cx="1300" cy="34" r="6" fill="#23408f"/><circle cx="1328" cy="53" r="6" fill="#23408f"/><circle cx="1356" cy="76" r="6" fill="#23408f"/><circle cx="1384" cy="82" r="6" fill="#23408f"/><circle cx="1412" cy="92" r="6" fill="#23408f"/><circle cx="1440" cy="95" r="6" fill="#23408f"/><circle cx="1468" cy="81" r="6" fill="#23408f"/><circle cx="1496" cy="57" r="6" fill="#23408f"/><circle cx="1524" cy="45" r="6" fill="#23408f"/><circle cx="1552" cy="25" r="6" fill="#23408f"/><circle cx="1580" cy="20" r="6" fill="#23408f"/><circle cx="1608" cy="28" r="6" fill="#23408f"/><circle cx="1636" cy="39" r="6" fill="#23408f"/><circle cx="1664" cy="57" r="6" fill="#23408f"/><circle cx="1692" cy="83" r="6" fill="#23408f"/><circle cx="1720" cy="89" r="6" fill="#23408f"/><circle cx="1748" cy="100" r="6" fill="#23408f"/><circle cx="1776" cy="81" r="6" fill="#23408f"/><circle cx="1804" cy="69" r="6" fill="#23408f"/><circle cx="1832" cy="54" r="6" fill="#23408f"/><circle cx="1860" cy="34" r="6" fill="#23408f"/><circle cx="1888" cy="27" r="6" fill="#23408f"/><circle cx="1916" cy="23" r="6" fill="#23408f"/><circle cx="1944" cy="40" r="6" fill="#23408f"/><circle cx="1972" cy="53" r="6" fill="#23408f"/><circle cx="11000" cy="71" r="6" fill="#23408f"/><circle cx="11028" cy="83" r="6" fill="#23408f"/><circle cx="11056" cy="94" r="6" fill="#23408f"/><circle cx="11084" cy="96" r="6" fill="#23408f"/><circle cx="11112" cy="74" r="6" fill="#23408f"/><circle cx="11140" cy="62" r="6" fill="#23408f"/><circle cx="11168" cy="36" r="6" fill="#23408f"/><circle cx="11196" cy="28" r="6" fill="#23408f"/><circle cx="11224" cy="25" r="6" fill="#23408f"/><circle cx="11252" cy="34" r="6" fill="#23408f"/><circle cx="11280" cy="43" r="6" fill="#23408f"/><circle cx="11308" cy="66" r="6" fill="#23408f"/><circle cx="11336" cy="89" r="6" fill="#23408f"/><circle cx="11364" cy="97" r="6" fill="#23408f"/><circle cx="11392" cy="93" r="6" fill="#23408f"/><circle cx="11420" cy="83" r="6" fill="#23408f"/><circle cx="11448" cy="67" r="6" fill="#23408f"/><circle cx="11476" cy="55" r="6" fill="#23408f"/><circle cx="11504" cy="27" r="6" fill="#23408f"/><circle cx="11532" cy="30" r="6" fill="#23408f"/><circle cx="11560" cy="34" r="6" fill="#23408f"/><circle cx="11588" cy="41" r="6" fill="#23408f"/><circle cx="11616" cy="64" r="6" fill="#23408f"/><circle cx="11644" cy="71" r="6" fill="#23408f"/><circle cx="11672" cy="86" r="6" fill="#23408f"/></svg><div class="now">now</div></div>
+        <div class="rmeta"><span>← already gone</span><span>still arriving →</span></div>
+        <p class="small" style="margin-top:10px">Endless, in order, in real time. The device can hold only a few seconds of it. Everything in this class follows from that.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The dots move continuously. Ask: what would it mean to "shuffle" a stream? To "go back to row 3"? You cannot; the past is gone unless you chose to keep it.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Three stages" data-act="the shift">
+  <div>
+    <h2>The pipeline has three stages.</h2>
+    <svg viewBox="0 0 1432 340" width="1432" height="340"><defs><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><g class="frag"><rect x="0" y="20" width="440" height="300" rx="14" fill="#eaeef7" stroke="#23408f" stroke-width="1.8"/><text x="24" y="62" font-size="24" fill="#23408f" font-weight="700">1 · Ingestion</text><text x="24" y="90" font-size="15" fill="#4b5057">getting data in</text><rect x="24" y="112" width="392" height="38" rx="19" fill="#ffffff" stroke="#23408f"/><text x="44" y="137" font-size="16" fill="#15171b">sampling rate</text><rect x="24" y="160" width="392" height="38" rx="19" fill="#ffffff" stroke="#23408f"/><text x="44" y="185" font-size="16" fill="#15171b">resolution (bits)</text><rect x="24" y="208" width="392" height="38" rx="19" fill="#ffffff" stroke="#23408f"/><text x="44" y="233" font-size="16" fill="#15171b">sensor interfaces</text><rect x="24" y="256" width="392" height="38" rx="19" fill="#ffffff" stroke="#23408f"/><text x="44" y="281" font-size="16" fill="#15171b">timestamps</text><line x1="446" y1="170" x2="484" y2="170" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m1)"/></g><g class="frag"><rect x="490" y="20" width="440" height="300" rx="14" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.8"/><text x="514" y="62" font-size="24" fill="#146b5c" font-weight="700">2 · Processing</text><text x="514" y="90" font-size="15" fill="#4b5057">making it useful</text><rect x="514" y="112" width="392" height="38" rx="19" fill="#ffffff" stroke="#146b5c"/><text x="534" y="137" font-size="16" fill="#15171b">buffering</text><rect x="514" y="160" width="392" height="38" rx="19" fill="#ffffff" stroke="#146b5c"/><text x="534" y="185" font-size="16" fill="#15171b">windowing</text><rect x="514" y="208" width="392" height="38" rx="19" fill="#ffffff" stroke="#146b5c"/><text x="534" y="233" font-size="16" fill="#15171b">cleaning, scaling</text><rect x="514" y="256" width="392" height="38" rx="19" fill="#ffffff" stroke="#146b5c"/><text x="534" y="281" font-size="16" fill="#15171b">features, resizing</text><line x1="936" y1="170" x2="974" y2="170" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m1)"/></g><g class="frag"><rect x="980" y="20" width="440" height="300" rx="14" fill="#fbf0dc" stroke="#b06a12" stroke-width="1.8"/><text x="1004" y="62" font-size="24" fill="#b06a12" font-weight="700">3 · Storage</text><text x="1004" y="90" font-size="15" fill="#4b5057">deciding what to keep</text><rect x="1004" y="112" width="392" height="38" rx="19" fill="#ffffff" stroke="#b06a12"/><text x="1024" y="137" font-size="16" fill="#15171b">SRAM · PSRAM</text><rect x="1004" y="160" width="392" height="38" rx="19" fill="#ffffff" stroke="#b06a12"/><text x="1024" y="185" font-size="16" fill="#15171b">flash · SD card</text><rect x="1004" y="208" width="392" height="38" rx="19" fill="#ffffff" stroke="#b06a12"/><text x="1024" y="233" font-size="16" fill="#15171b">the cloud</text><rect x="1004" y="256" width="392" height="38" rx="19" fill="#ffffff" stroke="#b06a12"/><text x="1024" y="281" font-size="16" fill="#15171b">keep results, not raw</text></g></svg>
+    <p class="frag small" style="margin-top:14px">In Class 5's blueprint, ingestion is block 1, processing is block 2, and storage runs underneath all of them.</p>
+  </div>
+  <div class="cue">This slide is the map for the hour. Come back to it between sections.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Ingestion: sampling and resolution" data-act="ingestion">
+  <div>
+    <div class="kicker">1 · ingestion</div>
+    <h2>Two numbers describe every digital signal.</h2>
+    <div class="split" style="align-items:start;gap:40px">
+      <div class="panel">
+        <span class="lab">sampling rate · how often</span>
+        <svg viewBox="0 0 660 180" width="100%">
+          <polyline fill="none" stroke="#c6c3ba" stroke-width="2.5" points="0,90 4,87 8,83 12,80 16,76 20,73 24,70 28,67 32,64 36,60 40,58 44,55 48,52 52,49 56,47 60,45 64,42 68,40 72,39 76,37 80,35 84,34 88,33 92,32 96,31 100,31 104,30 108,30 112,30 116,30 120,31 124,31 128,32 132,33 136,34 140,35 144,37 148,39 152,41 156,43 160,45 164,47 168,49 172,52 176,55 180,58 184,61 188,64 192,67 196,70 200,73 204,76 208,80 212,83 216,87 220,90 224,94 228,97 232,100 236,104 240,107 244,110 248,113 252,117 256,120 260,123 264,125 268,128 272,131 276,133 280,135 284,138 288,140 292,141 296,143 300,145 304,146 308,147 312,148 316,149 320,149 324,150 328,150 332,150 336,150 340,149 344,149 348,148 352,147 356,146 360,145 364,143 368,141 372,139 376,137 380,135 384,133 388,130 392,128 396,125 400,122 404,119 408,116 412,113 416,110 420,107 424,103 428,100 432,97 436,93 440,90 444,86 448,83 452,80 456,76 460,73 464,70 468,66 472,63 476,60 480,57 484,55 488,52 492,49 496,47 500,45 504,42 508,40 512,39 516,37 520,35 524,34 528,33 532,32 536,31 540,31 544,30 548,30 552,30 556,30 560,31 564,31 568,32 572,33 576,34 580,36 584,37 588,39 592,41 596,43 600,45 604,47 608,50 612,52 616,55 620,58 624,61 628,64 632,67 636,70 640,73 644,77 648,80 652,83 656,87"/>
+          <g class="frag"><circle cx="0" cy="90" r="7" fill="#a8231f"/><line x1="0" y1="160" x2="0" y2="90" stroke="#a8231f" stroke-width="1.5" opacity=".5"/><circle cx="110" cy="30" r="7" fill="#a8231f"/><line x1="110" y1="160" x2="110" y2="30" stroke="#a8231f" stroke-width="1.5" opacity=".5"/><circle cx="220" cy="90" r="7" fill="#a8231f"/><line x1="220" y1="160" x2="220" y2="90" stroke="#a8231f" stroke-width="1.5" opacity=".5"/><circle cx="330" cy="150" r="7" fill="#a8231f"/><line x1="330" y1="160" x2="330" y2="150" stroke="#a8231f" stroke-width="1.5" opacity=".5"/><circle cx="440" cy="90" r="7" fill="#a8231f"/><line x1="440" y1="160" x2="440" y2="90" stroke="#a8231f" stroke-width="1.5" opacity=".5"/><circle cx="550" cy="30" r="7" fill="#a8231f"/><line x1="550" y1="160" x2="550" y2="30" stroke="#a8231f" stroke-width="1.5" opacity=".5"/><text x="650" y="176" font-size="14" fill="#a8231f" text-anchor="end">too slow: the shape is lost</text></g>
+          <g class="frag"><circle cx="0" cy="90" r="7" fill="#146b5c"/><line x1="0" y1="160" x2="0" y2="90" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="22" cy="71" r="7" fill="#146b5c"/><line x1="22" y1="160" x2="22" y2="71" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="44" cy="55" r="7" fill="#146b5c"/><line x1="44" y1="160" x2="44" y2="55" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="66" cy="41" r="7" fill="#146b5c"/><line x1="66" y1="160" x2="66" y2="41" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="88" cy="33" r="7" fill="#146b5c"/><line x1="88" y1="160" x2="88" y2="33" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="110" cy="30" r="7" fill="#146b5c"/><line x1="110" y1="160" x2="110" y2="30" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="132" cy="33" r="7" fill="#146b5c"/><line x1="132" y1="160" x2="132" y2="33" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="154" cy="41" r="7" fill="#146b5c"/><line x1="154" y1="160" x2="154" y2="41" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="176" cy="55" r="7" fill="#146b5c"/><line x1="176" y1="160" x2="176" y2="55" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="198" cy="72" r="7" fill="#146b5c"/><line x1="198" y1="160" x2="198" y2="72" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="220" cy="90" r="7" fill="#146b5c"/><line x1="220" y1="160" x2="220" y2="90" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="242" cy="109" r="7" fill="#146b5c"/><line x1="242" y1="160" x2="242" y2="109" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="264" cy="125" r="7" fill="#146b5c"/><line x1="264" y1="160" x2="264" y2="125" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="286" cy="139" r="7" fill="#146b5c"/><line x1="286" y1="160" x2="286" y2="139" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="308" cy="147" r="7" fill="#146b5c"/><line x1="308" y1="160" x2="308" y2="147" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="330" cy="150" r="7" fill="#146b5c"/><line x1="330" y1="160" x2="330" y2="150" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="352" cy="147" r="7" fill="#146b5c"/><line x1="352" y1="160" x2="352" y2="147" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="374" cy="138" r="7" fill="#146b5c"/><line x1="374" y1="160" x2="374" y2="138" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="396" cy="125" r="7" fill="#146b5c"/><line x1="396" y1="160" x2="396" y2="125" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="418" cy="108" r="7" fill="#146b5c"/><line x1="418" y1="160" x2="418" y2="108" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="440" cy="90" r="7" fill="#146b5c"/><line x1="440" y1="160" x2="440" y2="90" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="462" cy="71" r="7" fill="#146b5c"/><line x1="462" y1="160" x2="462" y2="71" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="484" cy="55" r="7" fill="#146b5c"/><line x1="484" y1="160" x2="484" y2="55" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="506" cy="41" r="7" fill="#146b5c"/><line x1="506" y1="160" x2="506" y2="41" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="528" cy="33" r="7" fill="#146b5c"/><line x1="528" y1="160" x2="528" y2="33" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="550" cy="30" r="7" fill="#146b5c"/><line x1="550" y1="160" x2="550" y2="30" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="572" cy="33" r="7" fill="#146b5c"/><line x1="572" y1="160" x2="572" y2="33" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="594" cy="42" r="7" fill="#146b5c"/><line x1="594" y1="160" x2="594" y2="42" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="616" cy="55" r="7" fill="#146b5c"/><line x1="616" y1="160" x2="616" y2="55" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><circle cx="638" cy="72" r="7" fill="#146b5c"/><line x1="638" y1="160" x2="638" y2="72" stroke="#146b5c" stroke-width="1.5" opacity=".5"/><text x="650" y="20" font-size="14" fill="#146b5c" text-anchor="end">fast enough: the shape survives</text></g>
+        </svg>
+        <p class="small">IMU 50–100 per second · voice 16,000 per second · camera 5–30 frames per second</p>
+      </div>
+      <div class="panel frag">
+        <span class="lab">resolution · how finely</span>
+        <svg viewBox="0 0 660 180" width="100%">
+          <polyline fill="none" stroke="#c6c3ba" stroke-width="2.5" points="0,90 4,87 8,83 12,80 16,76 20,73 24,70 28,67 32,64 36,60 40,58 44,55 48,52 52,49 56,47 60,45 64,42 68,40 72,39 76,37 80,35 84,34 88,33 92,32 96,31 100,31 104,30 108,30 112,30 116,30 120,31 124,31 128,32 132,33 136,34 140,35 144,37 148,39 152,41 156,43 160,45 164,47 168,49 172,52 176,55 180,58 184,61 188,64 192,67 196,70 200,73 204,76 208,80 212,83 216,87 220,90 224,94 228,97 232,100 236,104 240,107 244,110 248,113 252,117 256,120 260,123 264,125 268,128 272,131 276,133 280,135 284,138 288,140 292,141 296,143 300,145 304,146 308,147 312,148 316,149 320,149 324,150 328,150 332,150 336,150 340,149 344,149 348,148 352,147 356,146 360,145 364,143 368,141 372,139 376,137 380,135 384,133 388,130 392,128 396,125 400,122 404,119 408,116 412,113 416,110 420,107 424,103 428,100 432,97 436,93 440,90 444,86 448,83 452,80 456,76 460,73 464,70 468,66 472,63 476,60 480,57 484,55 488,52 492,49 496,47 500,45 504,42 508,40 512,39 516,37 520,35 524,34 528,33 532,32 536,31 540,31 544,30 548,30 552,30 556,30 560,31 564,31 568,32 572,33 576,34 580,36 584,37 588,39 592,41 596,43 600,45 604,47 608,50 612,52 616,55 620,58 624,61 628,64 632,67 636,70 640,73 644,77 648,80 652,83 656,87"/>
+          <polyline fill="none" stroke="#b06a12" stroke-width="3" points="0,94 4,94 8,94 12,94 16,62 20,62 24,62 28,62 32,62 36,62 40,62 44,62 48,62 52,62 56,62 60,30 64,30 68,30 72,30 76,30 80,30 84,30 88,30 92,30 96,30 100,30 104,30 108,30 112,30 116,30 120,30 124,30 128,30 132,30 136,30 140,30 144,30 148,30 152,30 156,30 160,30 164,62 168,62 172,62 176,62 180,62 184,62 188,62 192,62 196,62 200,62 204,62 208,94 212,94 216,94 220,94 224,94 228,94 232,94 236,94 240,94 244,126 248,126 252,126 256,126 260,126 264,126 268,126 272,126 276,126 280,126 284,126 288,126 292,126 296,158 300,158 304,158 308,158 312,158 316,158 320,158 324,158 328,158 332,158 336,158 340,158 344,158 348,158 352,158 356,158 360,158 364,158 368,126 372,126 376,126 380,126 384,126 388,126 392,126 396,126 400,126 404,126 408,126 412,126 416,126 420,94 424,94 428,94 432,94 436,94 440,94 444,94 448,94 452,94 456,62 460,62 464,62 468,62 472,62 476,62 480,62 484,62 488,62 492,62 496,62 500,30 504,30 508,30 512,30 516,30 520,30 524,30 528,30 532,30 536,30 540,30 544,30 548,30 552,30 556,30 560,30 564,30 568,30 572,30 576,30 580,30 584,30 588,30 592,30 596,30 600,30 604,62 608,62 612,62 616,62 620,62 624,62 628,62 632,62 636,62 640,62 644,62 648,94 652,94 656,94"/>
+          <text x="650" y="176" font-size="14" fill="#b06a12" text-anchor="end">only 5 levels: a staircase</text>
+        </svg>
+        <p class="small">8-bit = 256 levels · 16-bit audio = 65,536 levels. More bits, more bytes.</p>
+      </div>
+    </div>
+    <p class="frag" style="margin-top:16px;max-width:70ch"><strong>Bytes per second = samples per second × bytes per sample × channels.</strong> Every memory sum in this course starts here.</p>
+  </div>
+  <div class="cue">The "how fast is fast enough" rule (Nyquist) is Class 8. Today just the intuition: sample too slowly and you lose the shape.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Data-rate calculator" data-act="ingestion">
+  <div>
+    <div class="kicker">try it live</div>
+    <h2>How much memory does one window need?</h2>
+    <div class="panel calc">
+      <div class="crow"><span class="cl">sensor</span><span class="cb" data-g="sensor">
+        <button data-k="mic" class="sel">microphone</button><button data-k="imu">IMU</button><button data-k="qvga">camera, QVGA grey</button><button data-k="vga">camera, VGA colour</button><button data-k="temp">temperature</button></span></div>
+      <div class="crow"><span class="cl">window</span><span class="cb" data-g="win">
+        <button data-w="0.1">0.1 s</button><button data-w="1" class="sel">1 s</button><button data-w="2">2 s</button><button data-w="10">10 s</button></span></div>
+      <div class="cformula"></div>
+      <div class="cbars">
+        <div class="cbar"><span class="cbl">vs SRAM · 512 KB</span><div class="ctrack"><div class="cfill" data-cap="524288"></div></div><span class="cpct"></span></div>
+        <div class="cbar"><span class="cbl">vs PSRAM · 8 MB</span><div class="ctrack"><div class="cfill" data-cap="8388608"></div></div><span class="cpct"></span></div>
+      </div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Ask the class to predict before each click. Good sequence: microphone 1 s (fits easily), VGA colour 1 s (does not fit SRAM, barely fits PSRAM), then temperature 10 s (almost nothing). Rates are typical values, set in the deck's code.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="One frame is bigger than SRAM" data-act="ingestion">
+  <div class="split" style="grid-template-columns:1fr 1fr;align-items:center">
+    <svg viewBox="0 0 640 440" width="640" height="440">
+      <g class="frag"><rect x="20" y="40" width="480" height="360" fill="#eaeef7" stroke="#23408f" stroke-width="2"/>
+      <text x="36" y="74" font-size="18" fill="#23408f" font-weight="700">one VGA colour frame</text>
+      <text x="36" y="98" font-size="14" fill="#4b5057">640 × 480 × 2 bytes = 614,400 bytes</text></g>
+      <g class="frag"><rect x="20" y="112" width="384" height="288" fill="none" stroke="#146b5c" stroke-width="3" stroke-dasharray="8 6"/>
+      <text x="394" y="136" font-size="15" fill="#146b5c" text-anchor="end" font-weight="700">all of SRAM · 512 KB</text></g>
+      <text x="20" y="430" font-size="13" fill="#8b9096">AREA ∝ BYTES</text>
+    </svg>
+    <div class="stack">
+      <h2>A single photo does not fit in the chip's own memory.</h2>
+      <p class="frag">That is why camera projects need PSRAM, and why this course bought the N16R8 board.</p>
+      <p class="frag small">And why vision models on microcontrollers work on tiny images: a 96 × 96 grey image is 9 KB.</p>
+    </div>
+  </div>
+  <div class="cue">Area is proportional to bytes: the dashed SRAM rectangle sits inside the frame. RGB565 means 2 bytes per pixel.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Processing: the ring buffer" data-act="processing">
+  <div class="split" style="grid-template-columns:.95fr 1.05fr;align-items:center">
+    <div class="panel ring" style="text-align:center">
+      <svg viewBox="0 0 460 440" width="460" height="440">
+        <g class="slot" data-i="0"><circle cx="230" cy="50" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="230" y="56" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="1"><circle cx="315" cy="73" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="315" y="79" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="2"><circle cx="377" cy="135" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="377" y="141" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="3"><circle cx="400" cy="220" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="400" y="226" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="4"><circle cx="377" cy="305" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="377" y="311" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="5"><circle cx="315" cy="367" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="315" y="373" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="6"><circle cx="230" cy="390" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="230" y="396" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="7"><circle cx="145" cy="367" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="145" y="373" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="8"><circle cx="83" cy="305" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="83" y="311" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="9"><circle cx="60" cy="220" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="60" y="226" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="10"><circle cx="83" cy="135" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="83" y="141" font-size="17" fill="#15171b" text-anchor="middle"></text></g><g class="slot" data-i="11"><circle cx="145" cy="73" r="34" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="145" y="79" font-size="17" fill="#15171b" text-anchor="middle"></text></g>
+        <line class="head" x1="230" y1="220" x2="230" y2="110" stroke="#a8231f" stroke-width="4"/>
+        <circle cx="230" cy="220" r="8" fill="#a8231f"/>
+        <text x="230" y="260" font-size="13" fill="#a8231f" text-anchor="middle">write head</text>
+      </svg>
+      <div class="rbtns"><button data-r="1">add a sample</button><button data-r="10">add ten</button><button data-r="0">reset</button></div>
+    </div>
+    <div class="stack">
+      <div class="kicker">2 · processing</div>
+      <h2>A ring buffer keeps the latest N samples, forever.</h2>
+      <p>Twelve slots in a circle. Each new sample goes where the write head points, then the head moves on.</p>
+      <p class="frag">When it comes round again, the <strong>oldest</strong> sample is overwritten. Memory never grows.</p>
+      <p class="frag small">Darker = newer. On the doorbell, a ring of 16,000 slots always holds the last second of sound.</p>
+    </div>
+  </div>
+  <div class="cue">Click "add a sample" a few times, then "add ten" to show wrap-around. Ask: what happens to sample 1 when sample 13 arrives?</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Processing: windows and overlap" data-act="processing">
+  <div>
+    <h2>The model sees fixed-size windows. Where you cut matters.</h2>
+    <svg viewBox="0 0 1432 360" width="1432" height="360">
+      <polyline fill="none" stroke="#8b9096" stroke-width="2" points="0,140 3,143 6,145 9,147 12,148 15,148 18,147 21,146 24,144 27,141 30,138 33,136 36,134 39,133 42,132 45,132 48,133 51,135 54,138 57,140 60,143 63,145 66,147 69,148 72,148 75,147 78,146 81,143 84,141 87,138 90,136 93,134 96,132 99,132 102,132 105,134 108,136 111,138 114,141 117,143 120,146 123,147 126,148 129,148 132,147 135,145 138,143 141,140 144,138 147,135 150,133 153,132 156,132 159,133 162,134 165,136 168,139 171,141 174,144 177,146 180,147 183,148 186,148 189,147 192,145 195,143 198,140 201,137 204,135 207,133 210,132 213,132 216,133 219,134 222,136 225,139 228,142 231,144 234,146 237,147 240,148 243,148 246,146 249,145 252,142 255,140 258,137 261,135 264,133 267,132 270,132 273,133 276,135 279,137 282,139 285,142 288,144 291,146 294,148 297,148 300,148 303,146 306,144 309,142 312,139 315,137 318,134 321,133 324,132 327,132 330,133 333,135 336,137 339,140 342,142 345,145 348,147 351,148 354,148 357,147 360,146 363,144 366,141 369,139 372,136 375,134 378,133 381,132 384,132 387,133 390,135 393,138 396,140 399,143 402,145 405,147 408,148 411,148 414,147 417,146 420,144 423,141 426,138 429,136 432,134 435,133 438,132 441,132 444,134 447,135 450,138 453,141 456,143 459,145 462,147 465,148 468,148 471,147 474,145 477,143 480,141 483,138 486,136 489,134 492,132 495,132 498,133 501,134 504,136 507,138 510,141 513,143 516,146 519,147 522,146 525,146 528,147 531,147 534,147 537,145 540,143 543,139 546,134 549,129 552,125 555,123 558,123 561,128 564,135 567,145 570,155 573,163 576,167 579,164 582,156 585,144 588,130 591,118 594,111 597,111 600,118 603,132 606,148 609,163 612,171 615,171 618,162 621,146 624,128 627,112 630,103 633,104 636,115 639,134 642,155 645,173 648,183 651,183 654,172 657,153 660,131 663,111 666,98 669,95 672,102 675,117 678,136 681,155 684,168 687,175 690,173 693,165 696,153 699,140 702,130 705,124 708,122 711,124 714,129 717,134 720,139 723,142 726,143 729,143 732,141 735,140 738,140 741,140 744,142 747,144 750,146 753,147 756,147 759,146 762,141 765,139 768,136 771,134 774,133 777,132 780,132 783,133 786,135 789,138 792,140 795,143 798,145 801,147 804,148 807,148 810,147 813,146 816,143 819,141 822,138 825,136 828,134 831,132 834,132 837,132 840,134 843,136 846,138 849,141 852,143 855,145 858,147 861,148 864,148 867,147 870,145 873,143 876,140 879,138 882,135 885,134 888,132 891,132 894,133 897,134 900,136 903,138 906,141 909,144 912,146 915,147 918,148 921,148 924,147 927,145 930,143 933,140 936,137 939,135 942,133 945,132 948,132 951,133 954,134 957,136 960,139 963,141 966,144 969,146 972,147 975,148 978,148 981,147 984,145 987,142 990,140 993,137 996,135 999,133 1002,132 1005,132 1008,133 1011,134 1014,137 1017,139 1020,142 1023,144 1026,146 1029,148 1032,148 1035,148 1038,146 1041,144 1044,142 1047,139 1050,137 1053,134 1056,133 1059,132 1062,132 1065,133 1068,135 1071,137 1074,140 1077,142 1080,145 1083,147 1086,148 1089,148 1092,147 1095,146 1098,144 1101,142 1104,139 1107,136 1110,134 1113,133 1116,132 1119,132 1122,133 1125,135 1128,137 1131,140 1134,143 1137,145 1140,147 1143,148 1146,148 1149,147 1152,146 1155,144 1158,141 1161,138 1164,136 1167,134 1170,133 1173,132 1176,132 1179,134 1182,135 1185,138 1188,140 1191,143 1194,145 1197,147 1200,148 1203,148 1206,147 1209,145 1212,143 1215,141 1218,138 1221,136 1224,134 1227,132 1230,132 1233,132 1236,134 1239,136 1242,138 1245,141 1248,143 1251,146 1254,147 1257,148 1260,148 1263,147 1266,145 1269,143 1272,140 1275,138 1278,135 1281,133 1284,132 1287,132 1290,133 1293,134 1296,136 1299,139 1302,141 1305,144 1308,146 1311,147 1314,148 1317,148 1320,147 1323,145 1326,143 1329,140 1332,137 1335,135 1338,133 1341,132 1344,132 1347,133 1350,134 1353,136 1356,139 1359,142 1362,144 1365,146 1368,147 1371,148 1374,148 1377,146 1380,145 1383,142 1386,140 1389,137 1392,135 1395,133 1398,132"/>
+      <text x="640" y="244" font-size="16" fill="#15171b" text-anchor="middle" font-weight="700">"open"</text>
+      <g class="frag"><rect x="0" y="60" width="400" height="160" fill="none" stroke="#23408f" stroke-width="2"/><text x="200" y="50" font-size="14" fill="#23408f" text-anchor="middle">window 1</text><rect x="400" y="60" width="400" height="160" fill="none" stroke="#23408f" stroke-width="2"/><text x="600" y="50" font-size="14" fill="#23408f" text-anchor="middle">window 2</text><rect x="800" y="60" width="400" height="160" fill="none" stroke="#23408f" stroke-width="2"/><text x="1000" y="50" font-size="14" fill="#23408f" text-anchor="middle">window 3</text><line x1="800" y1="60" x2="800" y2="220" stroke="#a8231f" stroke-width="4"/><text x="816" y="246" font-size="15" fill="#a8231f">no overlap: the word is cut in half</text></g>
+      <g class="frag"><text x="0" y="300" font-size="14" fill="#8b9096">50% OVERLAP</text><rect x="400" y="60" width="400" height="160" fill="#e6f1ee" opacity=".55" stroke="#146b5c" stroke-width="2.5"/><rect x="0" y="270" width="400" height="10" rx="5" fill="#c6c3ba"/><rect x="200" y="284" width="400" height="10" rx="5" fill="#c6c3ba"/><rect x="400" y="270" width="400" height="10" rx="5" fill="#146b5c"/><rect x="600" y="284" width="400" height="10" rx="5" fill="#c6c3ba"/><rect x="800" y="270" width="400" height="10" rx="5" fill="#c6c3ba"/><rect x="1000" y="284" width="400" height="10" rx="5" fill="#c6c3ba"/><text x="600" y="330" font-size="15" fill="#146b5c" text-anchor="middle">one window now holds the whole word</text></g>
+    </svg>
+    <p class="frag small">The price: twice as many windows, so twice as many inferences per second.</p>
+  </div>
+  <div class="cue">The overlap bars underneath show windows starting every half window. Ask: what overlap would you pick on a battery device, and why?</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Processing: cleaning and scaling" data-act="processing">
+  <div>
+    <h2>Clean it, then scale it the same way every time.</h2>
+    <div class="split" style="align-items:start;gap:30px">
+      <div class="panel">
+        <span class="lab">cleaning</span>
+        <svg viewBox="0 0 620 200" width="100%">
+          <polyline fill="none" stroke="#a8231f" stroke-width="2" points="0,76 6,76 12,79 18,76 24,81 30,86 36,82 42,89 48,91 54,84 60,77 66,75 72,76 78,65 84,65 90,64 96,54 102,57 108,57 114,48 120,51 126,54 132,53 138,54 144,62 150,68 156,65 162,75 168,78 174,84 180,83 186,86 192,83 198,83 204,82 210,86 216,80 222,82 228,74 234,70 240,5 246,63 252,59 258,61 264,59 270,48 276,52 282,55 288,56 294,52 300,57 306,69 312,71 318,68 324,76 330,78 336,78 342,84 348,88 354,94 360,82 366,81 372,83 378,78 384,79 390,72 396,73 402,65 408,65 414,56 420,52 426,50 432,46 438,54 444,49 450,51 456,57 462,59 468,63 474,71 480,75 486,75 492,89 498,89 504,83 510,94 516,86 522,81 528,83 534,76 540,81 546,78 552,63 558,64 564,54 570,59 576,53 582,47 588,47 594,47"/>
+          <text x="610" y="20" font-size="13" fill="#a8231f" text-anchor="end">raw: offset, noise, a spike</text>
+          <g class="frag"><polyline fill="none" stroke="#146b5c" stroke-width="3" points="0,120 6,124 12,128 18,132 24,135 30,137 36,138 42,138 48,137 54,135 60,132 66,129 72,125 78,120 84,116 90,112 96,108 102,105 108,103 114,102 120,102 126,103 132,105 138,108 144,111 150,115 156,119 162,124 168,128 174,131 180,134 186,136 192,138 198,138 204,137 210,135 216,133 222,129 228,125 234,121 240,117 246,113 252,109 258,106 264,104 270,102 276,102 282,103 288,104 294,107 300,110 306,114 312,118 318,123 324,127 330,131 336,134 342,136 348,138 354,138 360,137 366,136 372,133 378,130 384,126 390,122 396,118 402,113 408,110 414,106 420,104 426,103 432,102 438,103 444,104 450,106 456,110 462,113 468,118 474,122 480,126 486,130 492,133 498,136 504,137 510,138 516,138 522,136 528,134 534,131 540,127 546,123 552,118 558,114 564,110 570,107 576,104 582,103 588,102 594,102"/><text x="610" y="190" font-size="13" fill="#146b5c" text-anchor="end">cleaned: centred, smoothed, spike removed</text></g>
+        </svg>
+      </div>
+      <div class="panel frag" style="border-left:4px solid var(--fail)">
+        <span class="lab" style="color:var(--fail)">the classic bug</span>
+        <div class="ngrid" style="grid-template-columns:1fr 1fr;margin-top:6px">
+          <div class="cellx"><div class="big-n" style="font-size:42px">0 – 1</div><div class="nlab">pixels in training</div></div>
+          <div class="cellx"><div class="big-n red" style="font-size:42px">0 – 255</div><div class="nlab">pixels on the device</div></div>
+        </div>
+        <p style="margin-top:14px;font-size:20px">Same model, same images, garbage answers. The scaling on the device must match training exactly.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This bug has wasted more student project hours than any other. Make them say it: same scaling in training and on the device.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Processing: make it smaller" data-act="processing">
+  <div>
+    <h2>Before the model, shrink the data.</h2>
+    <div class="split" style="align-items:center;gap:30px">
+      <svg viewBox="0 0 640 330" width="640" height="330">
+        <rect x="0" y="20" width="352" height="264" fill="#eaeef7" stroke="#23408f" stroke-width="2"/>
+        <text x="12" y="46" font-size="15" fill="#23408f" font-weight="700">640 × 480 · 307,200 pixels</text>
+        <g class="frag"><rect x="392" y="231" width="53" height="53" fill="#e6f1ee" stroke="#146b5c" stroke-width="2"/>
+        <text x="459" y="254" font-size="15" fill="#146b5c" font-weight="700">96 × 96</text>
+        <text x="459" y="274" font-size="13" fill="#4b5057">9,216 pixels · 33× fewer</text></g>
+        <text x="0" y="320" font-size="13" fill="#8b9096">DRAWN TO SCALE</text>
+      </svg>
+      <div class="stack frag">
+        <div class="panel"><span class="lab">motion · a 2-second window</span>
+          <div class="ngrid" style="grid-template-columns:1fr 60px 1fr;align-items:center">
+            <div><div class="big-n" style="font-size:44px">600</div><div class="nlab">raw numbers</div></div>
+            <div style="font-size:30px;color:var(--soft)">→</div>
+            <div><div class="big-n green" style="font-size:44px">12</div><div class="nlab">features</div></div>
+          </div>
+          <p class="small" style="margin-top:12px">Per axis: mean, spread, peak, strongest frequency. 3 axes × 100 Hz × 2 s = 600 in; 3 × 4 = 12 out.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Two kinds of shrinking: resizing (keep the data, fewer of it) and feature extraction (describe the data in a few numbers). Class 8 builds the features properly.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Storage: what goes where" data-act="storage">
+  <div>
+    <div class="kicker">3 · storage</div>
+    <h2>Four places to keep data. Each step down is bigger and further away.</h2>
+    <svg viewBox="0 0 1432 330" width="1432" height="330"><g class="frag"><rect x="0" y="0" width="760" height="70" rx="10" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.6"/><text x="20" y="30" font-size="19" fill="#146b5c" font-weight="700">SRAM</text><text x="20" y="54" font-size="14" fill="#15171b">the current window, activations</text><text x="744" y="42" font-size="13" fill="#4b5057" text-anchor="end">smallest, fastest, lost at power-off</text></g><g class="frag"><rect x="0" y="82" width="970" height="70" rx="10" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="20" y="112" font-size="19" fill="#23408f" font-weight="700">PSRAM</text><text x="20" y="136" font-size="14" fill="#15171b">camera frames, big buffers</text><text x="954" y="124" font-size="13" fill="#4b5057" text-anchor="end">larger, slower, lost at power-off</text></g><g class="frag"><rect x="0" y="164" width="1180" height="70" rx="10" fill="#fbf0dc" stroke="#b06a12" stroke-width="1.6"/><text x="20" y="194" font-size="19" fill="#b06a12" font-weight="700">Flash / SD card</text><text x="20" y="218" font-size="14" fill="#15171b">model, logs, a few saved samples</text><text x="1164" y="206" font-size="13" fill="#4b5057" text-anchor="end">kept when off · wears out with too many writes</text></g><g class="frag"><rect x="0" y="246" width="1390" height="70" rx="10" fill="#f2f1ec" stroke="#8b9096" stroke-width="1.6"/><text x="20" y="276" font-size="19" fill="#8b9096" font-weight="700">Cloud or local server</text><text x="20" y="300" font-size="14" fill="#15171b">labelled data for retraining, summaries</text><text x="1374" y="288" font-size="13" fill="#4b5057" text-anchor="end">costs bandwidth · raises privacy questions</text></g></svg>
+    <div class="rem green frag" style="max-width:1000px"><div class="h">the rule</div><ul><li><strong>Keep results, not raw data.</strong> Except the samples the model was unsure about: those are the most valuable data for the next model.</li></ul></div>
+  </div>
+  <div class="cue">Ask which tier the BrickML's alerts live in before they are sent (flash, so they survive a reboot), and which tier the doorbell's clip goes to (cloud).</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Skew and drift" data-act="storage">
+  <div>
+    <h2>Two ways the data betrays you after you ship.</h2>
+    <div class="split" style="align-items:start;gap:30px">
+      <div class="panel">
+        <span class="lab">training–serving skew · it was never the same</span>
+        <svg viewBox="0 0 560 240" width="100%">
+          <polyline fill="none" stroke="#146b5c" stroke-width="2.5" points="0,80 4,84 8,89 12,92 16,96 20,98 24,99 28,100 32,100 36,98 40,96 44,93 48,89 52,85 56,81 60,76 64,72 68,68 72,65 76,62 80,61 84,60 88,60 92,62 96,64 100,67 104,70 108,74 112,79 116,83 120,87 124,91 128,95 132,97 136,99 140,100 144,100 148,99 152,97 156,94 160,90 164,86 168,82 172,77 176,73 180,69 184,66 188,63 192,61 196,60 200,60 204,61 208,63 212,66 216,69 220,73 224,78 228,82 232,86 236,90 240,94 244,97 248,99 252,100 256,100 260,99 264,97 268,95 272,91 276,87 280,83 284,79 288,74 292,70 296,67 300,64 304,62 308,60 312,60 316,61 320,62 324,65 328,68 332,72 336,76 340,81 344,85 348,89 352,93 356,96 360,98 364,100 368,100 372,99 376,98 380,95 384,92 388,88 392,84 396,80 400,75 404,71 408,67 412,64 416,62 420,61 424,60 428,60 432,62 436,64 440,67 444,71 448,75 452,80 456,84 460,88 464,92 468,95 472,98 476,99 480,100 484,100 488,98 492,96 496,93 500,90 504,85 508,81 512,77 516,72 520,68 524,65 528,63 532,61 536,60 540,60 544,61 548,63 552,66 556,70"/>
+          <text x="550" y="20" font-size="13" fill="#146b5c" text-anchor="end">recorded in a quiet lab</text>
+          <g class="frag"><polyline fill="none" stroke="#a8231f" stroke-width="1.6" points="0,153 4,164 8,175 12,175 16,205 20,196 24,188 28,188 32,191 36,189 40,187 44,174 48,161 52,154 56,191 60,149 64,174 68,165 72,154 76,170 80,145 84,134 88,155 92,152 96,165 100,150 104,179 108,164 112,157 116,169 120,167 124,187 128,198 132,199 136,176 140,177 144,177 148,207 152,174 156,168 160,174 164,194 168,152 172,148 176,184 180,173 184,139 188,152 192,170 196,165 200,145 204,152 208,161 212,165 216,174 220,169 224,160 228,186 232,167 236,185 240,192 244,177 248,182 252,196 256,193 260,195 264,183 268,171 272,193 276,167 280,185 284,182 288,186 292,143 296,139 300,155 304,158 308,145 312,131 316,137 320,167 324,144 328,168 332,173 336,168 340,150 344,163 348,192 352,185 356,206 360,188 364,211 368,175 372,205 376,197 380,173 384,178 388,196 392,169 396,168 400,152 404,178 408,136 412,157 416,159 420,151 424,164 428,144 432,144 436,175 440,140 444,177 448,178 452,188 456,157 460,167 464,177 468,167 472,179 476,210 480,209 484,179 488,198 492,165 496,183 500,159 504,168 508,168 512,157 516,181 520,146 524,171 528,149 532,130 536,152 540,158 544,170 548,152 552,178 556,178"/><text x="550" y="236" font-size="13" fill="#a8231f" text-anchor="end">heard on a noisy street</text></g>
+        </svg>
+      </div>
+      <div class="panel frag">
+        <span class="lab">data drift · it slowly stops being the same</span>
+        <svg viewBox="0 0 600 220" width="100%">
+          <line x1="30" y1="190" x2="580" y2="190" stroke="#c6c3ba"/>
+          <polyline fill="none" stroke="#b06a12" stroke-width="3" points="30,46 78,46 126,52 174,52 222,58 270,70 318,82 366,100 414,118 462,136 510,154 558,172"/>
+          <text x="30" y="20" font-size="13" fill="#8b9096">ACCURACY IN THE FIELD</text>
+          <text x="580" y="212" font-size="13" fill="#8b9096" text-anchor="end">MONTHS AFTER SHIPPING →</text>
+          <text x="40" y="170" font-size="13" fill="#b06a12">a worn motor, new accents, new lighting</text>
+        </svg>
+      </div>
+    </div>
+    <p class="frag small" style="margin-top:12px">The fix for both lives in the pipeline: collect training data the way the device will see it, and keep watching after you ship.</p>
+  </div>
+  <div class="cue">Illustrative curves. Ask: how would the device even know its accuracy is dropping, with no labels in the field? (Watch the confidence; save the unsure samples; have a human check a few.)</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Live demo: a real stream" data-act="demo">
+  <div class="split" style="grid-template-columns:1.1fr .9fr;align-items:center">
+    <pre><span class="c">// ESP32-S3 + MPU6050 · print a 3-axis stream</span>
+<span class="k">#include</span> <span class="s">&lt;Adafruit_MPU6050.h&gt;</span>
+Adafruit_MPU6050 mpu;
+
+<span class="k">void</span> <span class="f">setup</span>() {
+  Serial.begin(115200);
+  Wire.begin();          <span class="c">// SDA, SCL: your board's I2C pins</span>
+  mpu.begin();
+}
+
+<span class="k">void</span> <span class="f">loop</span>() {
+  sensors_event_t a, g, t;
+  mpu.getEvent(&amp;a, &amp;g, &amp;t);
+  Serial.print(a.acceleration.x); Serial.print(<span class="s">','</span>);
+  Serial.print(a.acceleration.y); Serial.print(<span class="s">','</span>);
+  Serial.println(a.acceleration.z);
+  delay(10);             <span class="c">// about 100 samples a second</span>
+}</pre>
+    <div class="stack">
+      <div class="kicker">live demo · 8 minutes</div>
+      <h2>Shake the board. Watch the river.</h2>
+      <p class="frag">Open the Arduino Serial Plotter and shake, tilt, tap.</p>
+      <p class="frag">Then freeze it and mark 2-second windows on the screen. Ask: what would a model see in each one?</p>
+      <p class="frag small">The <code>delay(10)</code> sets the sampling rate. Change it to 100 and watch the shape degrade, exactly like slide 4.</p>
+    </div>
+  </div>
+  <div class="cue">Uses the Adafruit MPU6050 library. On the ESP32-S3, Wire.begin() with no arguments uses the board's default I2C pins; check the pin map for your board revision before class, or pass SDA and SCL explicitly.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="The doorbell's pipeline" data-act="closing">
+  <div>
+    <div class="kicker">our running example</div>
+    <h2>The doorbell's pipeline, with numbers.</h2>
+    <svg viewBox="0 0 1432 260" width="1432" height="260"><defs><marker id="m2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><g class="frag"><rect x="0" y="20" width="230" height="84" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.6"/><text x="16" y="54" font-size="18" fill="#15171b" font-weight="700">mic</text><text x="16" y="80" font-size="13" fill="#4b5057">16 kHz · 16-bit</text><line x1="234" y1="62" x2="264" y2="62" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m2)"/><rect x="270" y="20" width="230" height="84" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.6"/><text x="286" y="54" font-size="18" fill="#15171b" font-weight="700">ring buffer</text><text x="286" y="80" font-size="13" fill="#4b5057">last 1 s · 32 KB · SRAM</text><line x1="504" y1="62" x2="534" y2="62" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m2)"/><rect x="540" y="20" width="230" height="84" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.6"/><text x="556" y="54" font-size="18" fill="#15171b" font-weight="700">spectrogram</text><text x="556" y="80" font-size="13" fill="#4b5057">49 × 40</text><line x1="774" y1="62" x2="804" y2="62" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m2)"/><rect x="810" y="20" width="230" height="84" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.6"/><text x="826" y="54" font-size="18" fill="#15171b" font-weight="700">keyword model</text><text x="826" y="80" font-size="13" fill="#4b5057">open? ring?</text></g><g class="frag"><rect x="0" y="150" width="230" height="84" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="16" y="184" font-size="18" fill="#15171b" font-weight="700">camera</text><text x="16" y="210" font-size="13" fill="#4b5057">when woken</text><line x1="234" y1="192" x2="264" y2="192" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m2)"/><rect x="270" y="150" width="230" height="84" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="286" y="184" font-size="18" fill="#15171b" font-weight="700">frame</text><text x="286" y="210" font-size="13" fill="#4b5057">QVGA grey · 75 KB · PSRAM</text><line x1="504" y1="192" x2="534" y2="192" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m2)"/><rect x="540" y="150" width="230" height="84" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="556" y="184" font-size="18" fill="#15171b" font-weight="700">resize</text><text x="556" y="210" font-size="13" fill="#4b5057">96 × 96 · 9 KB</text><line x1="774" y1="192" x2="804" y2="192" stroke="#8b9096" stroke-width="2.5" marker-end="url(#m2)"/><rect x="810" y="150" width="230" height="84" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="826" y="184" font-size="18" fill="#15171b" font-weight="700">person model</text><text x="826" y="210" font-size="13" fill="#4b5057">person?</text></g><g class="frag"><rect x="1100" y="20" width="330" height="214" rx="12" fill="#fbf0dc" stroke="#b06a12" stroke-width="1.6"/><text x="1118" y="56" font-size="18" fill="#b06a12" font-weight="700">storage</text><text x="1118" y="90" font-size="14" fill="#15171b">short clip → cloud</text><text x="1118" y="118" font-size="14" fill="#15171b">unsure windows → flash,</text><text x="1118" y="138" font-size="14" fill="#15171b">for the next model</text><text x="1118" y="172" font-size="14" fill="#15171b">everything else: gone</text><text x="1118" y="196" font-size="14" fill="#15171b">after a second</text></g></svg>
+    <p class="frag" style="margin-top:20px;max-width:70ch">Every number on this slide you can now calculate yourself. That is the skill: a pipeline is a budget.</p>
+  </div>
+  <div class="cue">Have students verify two numbers aloud: 16,000 × 2 bytes = 32 KB; 320 × 240 × 1 = 76,800 bytes ≈ 75 KB.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">A gesture band samples a 3-axis IMU at 50 Hz with 16-bit values, in 2-second windows with 50% overlap. How many bytes is one window? How many windows per minute?</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>embedded ML and TinyML</strong>. What a model actually is, and how to tell if it will fit.</p>
+  </div>
+  <div class="cue">Answer: 3 × 50 × 2 bytes × 2 s = 600 bytes. A new window starts every second, so about 60 per minute (59 complete ones in the first minute).</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('pre')||e.target.closest('.calc')||e.target.closest('.ring'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  var P={mic:{r:16000,b:2,c:1,u:'samples/s',n:'microphone'},imu:{r:100,b:4,c:3,u:'samples/s',n:'IMU'},qvga:{r:10,b:76800,c:1,u:'frames/s',n:'QVGA grey frame'},vga:{r:10,b:614400,c:1,u:'frames/s',n:'VGA colour frame'},temp:{r:0.2,b:4,c:1,u:'readings/s',n:'temperature'}};
+  function fb(x){ if(x<1024) return Math.round(x)+' B'; if(x<1048576) return (x/1024).toFixed(x<10240?1:0)+' KB'; return (x/1048576).toFixed(2)+' MB'; }
+  function calc(cl){
+    var k=cl.querySelector('[data-g="sensor"] .sel').dataset.k, w=+cl.querySelector('[data-g="win"] .sel').dataset.w, p=P[k];
+    var bps=p.r*p.b*p.c, win=bps*w;
+    cl.querySelector('.cformula').innerHTML=p.r+' '+p.u+' × '+(p.b>=1024?fb(p.b):p.b+' B')+' × '+p.c+(p.c>1?' channels':' channel')+' = <b>'+fb(bps)+' per second</b> &nbsp;·&nbsp; × '+w+' s = <b>'+fb(win)+'</b>';
+    var over=false;
+    cl.querySelectorAll('.cbar').forEach(function(bar){ var f=bar.querySelector('.cfill'), cap=+f.dataset.cap, pc=win/cap*100;
+      f.style.width=Math.min(pc,100)+'%'; f.classList.toggle('over',pc>100);
+      bar.querySelector('.cpct').textContent=pc<0.1?'< 0.1%':(pc>100?'too big':pc.toFixed(pc<10?1:0)+'%'); if(pc>100&&cap<1e6) over=true; });
+    var v= win/8388608>1?'Does not fit even in PSRAM. Shorten the window or shrink the data.':(over?'Too big for SRAM: it has to live in PSRAM.':(win/524288>0.5?'Fits in SRAM, but takes over half of it.':'Fits comfortably in SRAM.'));
+    cl.querySelector('.cverdict').textContent=v;
+  }
+  deck.querySelectorAll('.calc').forEach(calc);
+  var rb={n:0,i:0};
+  function ringPaint(ring){
+    var sl=ring.querySelectorAll('.slot');
+    sl.forEach(function(g,k){ var v=g.dataset.v, c=g.querySelector('circle'), t=g.querySelector('text');
+      if(v===undefined){ c.setAttribute('fill','#ffffff'); t.textContent=''; return; }
+      var age=rb.n-(+v); var shade=Math.max(0.15,1-age/12);
+      c.setAttribute('fill','rgba(35,64,143,'+shade+')'); t.textContent=v; t.setAttribute('fill',shade>0.5?'#ffffff':'#15171b'); });
+    var a=rb.i*30; ring.querySelector('.head').setAttribute('transform','rotate('+a+' 230 220)');
+  }
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.calc button');
+    if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(x){x.classList.remove('sel');}); b.classList.add('sel'); calc(b.closest('.calc')); return; }
+    var r=e.target.closest('.rbtns button'); if(!r) return; r.blur();
+    var ring=r.closest('.ring'), k=+r.dataset.r;
+    if(k===0){ rb={n:0,i:0}; ring.querySelectorAll('.slot').forEach(function(g){ delete g.dataset.v; }); ringPaint(ring); return; }
+    var step=0; (function one(){ rb.n++; ring.querySelectorAll('.slot')[rb.i].dataset.v=rb.n; rb.i=(rb.i+1)%12; ringPaint(ring); if(++step<k) setTimeout(one,180); })();
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
