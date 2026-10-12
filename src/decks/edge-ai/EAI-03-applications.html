@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 3 · Applications of Edge AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 03</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 3 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 03 · unit I · applications of edge AI</div>
+    <h1>Every edge AI product<br>is the same recipe</h1>
+    <p class="big" style="margin-top:26px;max-width:44ch">Today we tour real applications, from heart monitors to forests. By the end you will see the same three ingredients in every one of them.</p>
+  </div>
+  <div class="cue">Open with the two best exit-ticket arguments from Class 2, one for moving an app's AI on-device and one for keeping it in the cloud.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="The recipe" data-act="the recipe">
+  <div>
+    <h2>Three ingredients. Every time.</h2>
+    <svg viewBox="0 0 1432 380" width="1432" height="380">
+      <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs>
+      <rect x="0" y="40" width="400" height="150" rx="14" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+      <text x="30" y="90" font-size="15" fill="#8b9096">1</text>
+      <text x="30" y="128" font-size="30" fill="#15171b" font-weight="700">SENSOR</text>
+      <text x="30" y="162" font-size="15" fill="#4b5057">what it measures</text>
+      <rect x="516" y="40" width="400" height="150" rx="14" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+      <text x="546" y="90" font-size="15" fill="#8b9096">2</text>
+      <text x="546" y="128" font-size="30" fill="#15171b" font-weight="700">DECISION</text>
+      <text x="546" y="162" font-size="15" fill="#4b5057">what the model decides</text>
+      <rect x="1032" y="40" width="400" height="150" rx="14" fill="#eaeef7" stroke="#23408f" stroke-width="1.5"/>
+      <text x="1062" y="90" font-size="15" fill="#23408f">3</text>
+      <text x="1062" y="128" font-size="30" fill="#23408f" font-weight="700">REASON</text>
+      <text x="1062" y="162" font-size="15" fill="#4b5057">the BLERP letter that keeps it local</text>
+      <line x1="406" y1="115" x2="508" y2="115" stroke="#8b9096" stroke-width="2.5" marker-end="url(#ar3)"/>
+      <line x1="922" y1="115" x2="1024" y2="115" stroke="#8b9096" stroke-width="2.5" marker-end="url(#ar3)"/>
+      <g class="frag">
+        <text x="0" y="262" font-size="13" fill="#8b9096">THE BRICKML, AS A RECIPE</text>
+        <rect x="0" y="278" width="400" height="56" rx="28" fill="#e6f1ee" stroke="#146b5c"/><text x="200" y="313" font-size="18" fill="#15171b" text-anchor="middle">vibration on a motor</text>
+        <rect x="516" y="278" width="400" height="56" rx="28" fill="#e6f1ee" stroke="#146b5c"/><text x="716" y="313" font-size="18" fill="#15171b" text-anchor="middle">normal, or an anomaly?</text>
+        <rect x="1032" y="278" width="400" height="56" rx="28" fill="#e6f1ee" stroke="#146b5c"/><text x="1232" y="313" font-size="18" fill="#15171b" text-anchor="middle">B · R · E</text>
+      </g>
+    </svg>
+  </div>
+  <div class="cue">Draw these three boxes on the board and leave them up all class. Every application today gets written into them.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="The recipe, three more times" data-act="the recipe">
+  <div>
+    <h2>Fill the three boxes for these.</h2>
+    <div class="rhead"><span></span><span>sensor</span><span></span><span>decision</span><span></span><span>reason</span></div>
+    <div class="rrow frag"><div class="rlab">smartwatch</div><div class="rc">light sensor on the wrist (PPG)</div><div class="rarr">→</div><div class="rc">is the heart rhythm irregular?</div><div class="rarr">→</div><div class="rc rr">L · R · P</div></div>
+    <div class="rrow frag"><div class="rlab">earbuds</div><div class="rc">microphone in the earbud</div><div class="rarr">→</div><div class="rc">was the wake word spoken?</div><div class="rarr">→</div><div class="rc rr">E · P</div></div>
+    <div class="rrow frag"><div class="rlab">farmer's phone</div><div class="rc">phone camera, in a field</div><div class="rarr">→</div><div class="rc">which disease is on this leaf?</div><div class="rarr">→</div><div class="rc rr">R</div></div>
+    <div class="rrow frag"><div class="rlab">traffic camera</div><div class="rc">camera above a road</div><div class="rarr">→</div><div class="rc">how many vehicles passed?</div><div class="rarr">→</div><div class="rc rr">B · P</div></div>
+  </div>
+  <div class="cue">Read the product name, ask the room for the three boxes, then reveal. Accept any reason they can defend.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Applications by sensor" data-act="by sensor">
+  <div>
+    <h2 style="margin-bottom:8px">Start from the sensor.</h2>
+    <svg viewBox="0 0 1432 600" width="1432" height="600">
+      <g class="frag"><line x1="716" y1="300" x2="716" y2="48" stroke="#c6c3ba" stroke-width="2"/>
+<rect x="566" y="0" width="300" height="96" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+<text x="586" y="32" font-size="18" fill="#23408f" font-weight="700">Microphone</text>
+<text x="586" y="58" font-size="14" fill="#4b5057">wake words · glass breaking</text>
+<text x="586" y="80" font-size="14" fill="#4b5057">machine faults by sound</text></g><g class="frag"><line x1="716" y1="300" x2="1242" y2="158" stroke="#c6c3ba" stroke-width="2"/>
+<rect x="1092" y="110" width="300" height="96" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+<text x="1112" y="142" font-size="18" fill="#23408f" font-weight="700">Camera</text>
+<text x="1112" y="168" font-size="14" fill="#4b5057">person detection</text>
+<text x="1112" y="190" font-size="14" fill="#4b5057">defects on a production line</text></g><g class="frag"><line x1="716" y1="300" x2="1242" y2="448" stroke="#c6c3ba" stroke-width="2"/>
+<rect x="1092" y="400" width="300" height="96" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+<text x="1112" y="432" font-size="18" fill="#23408f" font-weight="700">Vibration</text>
+<text x="1112" y="458" font-size="14" fill="#4b5057">predictive maintenance</text>
+<text x="1112" y="480" font-size="14" fill="#4b5057">pumps, motors, bearings</text></g><g class="frag"><line x1="716" y1="300" x2="716" y2="548" stroke="#c6c3ba" stroke-width="2"/>
+<rect x="566" y="500" width="300" height="96" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+<text x="586" y="532" font-size="18" fill="#23408f" font-weight="700">Biosignals</text>
+<text x="586" y="558" font-size="14" fill="#4b5057">irregular heart rhythm</text>
+<text x="586" y="580" font-size="14" fill="#4b5057">blood oxygen on a wearable</text></g><g class="frag"><line x1="716" y1="300" x2="190" y2="448" stroke="#c6c3ba" stroke-width="2"/>
+<rect x="40" y="400" width="300" height="96" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+<text x="60" y="432" font-size="18" fill="#23408f" font-weight="700">Environment</text>
+<text x="60" y="458" font-size="14" fill="#4b5057">gas leak alarms</text>
+<text x="60" y="480" font-size="14" fill="#4b5057">cold-chain monitoring</text></g><g class="frag"><line x1="716" y1="300" x2="190" y2="158" stroke="#c6c3ba" stroke-width="2"/>
+<rect x="40" y="110" width="300" height="96" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+<text x="60" y="142" font-size="18" fill="#23408f" font-weight="700">Motion (IMU)</text>
+<text x="60" y="168" font-size="14" fill="#4b5057">fall detection · gestures</text>
+<text x="60" y="190" font-size="14" fill="#4b5057">steps and workouts</text></g>
+      <circle cx="716" cy="300" r="92" fill="#23408f"/>
+      <text x="716" y="296" font-size="20" fill="#faf9f6" text-anchor="middle" font-weight="700">EDGE AI</text>
+      <text x="716" y="322" font-size="13" fill="#eaeef7" text-anchor="middle">ON THE DEVICE</text>
+    </svg>
+  </div>
+  <div class="cue">One spoke per click. For each, ask for one more example from the room before revealing the box.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="What the data looks like" data-act="by sensor">
+  <div>
+    <h2>Each sensor speaks a different shape of data.</h2>
+    <div class="siggrid"><div class="panel sigp"><span class="lab">Microphone</span><svg viewBox="0 0 420 120" width="420" height="120"><polyline fill="none" stroke="#23408f" stroke-width="1.4" points="10,58 12,57 14,59 16,60 18,60 20,58 22,62 24,58 26,63 28,59 30,57 32,59 34,58 36,62 38,60 40,59 42,57 44,58 46,60 48,60 50,59 52,61 54,60 56,62 58,59 60,58 62,61 64,60 66,60 68,61 70,60 72,61 74,60 76,64 78,61 80,60 82,63 84,60 86,61 88,58 90,56 92,59 94,56 96,61 98,57 100,63 102,65 104,57 106,61 108,63 110,54 112,56 114,60 116,52 118,58 120,69 122,61 124,61 126,71 128,71 130,57 132,50 134,44 136,49 138,52 140,40 142,44 144,44 146,63 148,48 150,51 152,80 154,58 156,36 158,50 160,77 162,34 164,60 166,60 168,65 170,86 172,42 174,37 176,64 178,45 180,88 182,91 184,88 186,37 188,45 190,17 192,40 194,101 196,103 198,102 200,32 202,29 204,74 206,92 208,76 210,21 212,101 214,84 216,31 218,46 220,104 222,53 224,79 226,24 228,98 230,31 232,103 234,48 236,26 238,99 240,65 242,57 244,83 246,40 248,42 250,43 252,38 254,50 256,68 258,58 260,60 262,58 264,55 266,37 268,44 270,71 272,52 274,64 276,45 278,49 280,70 282,64 284,73 286,63 288,61 290,59 292,62 294,67 296,68 298,64 300,64 302,53 304,52 306,55 308,66 310,57 312,60 314,67 316,60 318,59 320,66 322,57 324,59 326,57 328,58 330,60 332,57 334,61 336,61 338,64 340,57 342,60 344,57 346,62 348,59 350,62 352,61 354,57 356,60 358,62 360,62 362,62 364,62 366,59 368,63 370,58 372,58 374,58 376,58 378,59 380,59 382,58 384,57 386,57 388,60 390,60 392,58 394,60 396,62 398,60 400,63 402,62 404,61 406,59 408,58"/></svg><div class="rate">about 16,000 samples a second</div></div><div class="panel sigp"><span class="lab">Camera</span><svg viewBox="0 0 420 120" width="420" height="120"><rect x="10" y="4" width="24" height="18" fill="rgb(150,150,150)"/><rect x="35" y="4" width="24" height="18" fill="rgb(191,191,191)"/><rect x="60" y="4" width="24" height="18" fill="rgb(212,212,212)"/><rect x="85" y="4" width="24" height="18" fill="rgb(205,205,205)"/><rect x="110" y="4" width="24" height="18" fill="rgb(179,179,179)"/><rect x="135" y="4" width="24" height="18" fill="rgb(153,153,153)"/><rect x="160" y="4" width="24" height="18" fill="rgb(147,147,147)"/><rect x="185" y="4" width="24" height="18" fill="rgb(165,165,165)"/><rect x="210" y="4" width="24" height="18" fill="rgb(200,200,200)"/><rect x="235" y="4" width="24" height="18" fill="rgb(229,229,229)"/><rect x="260" y="4" width="24" height="18" fill="rgb(235,235,235)"/><rect x="285" y="4" width="24" height="18" fill="rgb(212,212,212)"/><rect x="310" y="4" width="24" height="18" fill="rgb(172,172,172)"/><rect x="335" y="4" width="24" height="18" fill="rgb(135,135,135)"/><rect x="360" y="4" width="24" height="18" fill="rgb(121,121,121)"/><rect x="385" y="4" width="24" height="18" fill="rgb(132,132,132)"/><rect x="10" y="23" width="24" height="18" fill="rgb(220,220,220)"/><rect x="35" y="23" width="24" height="18" fill="rgb(234,234,234)"/><rect x="60" y="23" width="24" height="18" fill="rgb(220,220,220)"/><rect x="85" y="23" width="24" height="18" fill="rgb(187,187,187)"/><rect x="110" y="23" width="24" height="18" fill="rgb(157,157,157)"/><rect x="135" y="23" width="24" height="18" fill="rgb(148,148,148)"/><rect x="160" y="23" width="24" height="18" fill="rgb(164,164,164)"/><rect x="185" y="23" width="24" height="18" fill="rgb(193,193,193)"/><rect x="210" y="23" width="24" height="18" fill="rgb(215,215,215)"/><rect x="235" y="23" width="24" height="18" fill="rgb(212,212,212)"/><rect x="260" y="23" width="24" height="18" fill="rgb(183,183,183)"/><rect x="285" y="23" width="24" height="18" fill="rgb(139,139,139)"/><rect x="310" y="23" width="24" height="18" fill="rgb(103,103,103)"/><rect x="335" y="23" width="24" height="18" fill="rgb(91,91,91)"/><rect x="360" y="23" width="24" height="18" fill="rgb(105,105,105)"/><rect x="385" y="23" width="24" height="18" fill="rgb(133,133,133)"/><rect x="10" y="42" width="24" height="18" fill="rgb(235,235,235)"/><rect x="35" y="42" width="24" height="18" fill="rgb(214,214,214)"/><rect x="60" y="42" width="24" height="18" fill="rgb(174,174,174)"/><rect x="85" y="42" width="24" height="18" fill="rgb(141,141,141)"/><rect x="110" y="42" width="24" height="18" fill="rgb(130,130,130)"/><rect x="135" y="42" width="24" height="18" fill="rgb(144,144,144)"/><rect x="160" y="42" width="24" height="18" fill="rgb(170,170,170)"/><rect x="185" y="42" width="24" height="18" fill="rgb(187,187,187)"/><rect x="210" y="42" width="24" height="18" fill="rgb(180,180,180)"/><rect x="235" y="42" width="24" height="18" fill="rgb(148,148,148)"/><rect x="260" y="42" width="24" height="18" fill="rgb(105,105,105)"/><rect x="285" y="42" width="24" height="18" fill="rgb(74,74,74)"/><rect x="310" y="42" width="24" height="18" fill="rgb(69,69,69)"/><rect x="335" y="42" width="24" height="18" fill="rgb(91,91,91)"/><rect x="360" y="42" width="24" height="18" fill="rgb(124,124,124)"/><rect x="385" y="42" width="24" height="18" fill="rgb(147,147,147)"/><rect x="10" y="61" width="24" height="18" fill="rgb(188,188,188)"/><rect x="35" y="61" width="24" height="18" fill="rgb(144,144,144)"/><rect x="60" y="61" width="24" height="18" fill="rgb(110,110,110)"/><rect x="85" y="61" width="24" height="18" fill="rgb(101,101,101)"/><rect x="110" y="61" width="24" height="18" fill="rgb(117,117,117)"/><rect x="135" y="61" width="24" height="18" fill="rgb(144,144,144)"/><rect x="160" y="61" width="24" height="18" fill="rgb(161,161,161)"/><rect x="185" y="61" width="24" height="18" fill="rgb(153,153,153)"/><rect x="210" y="61" width="24" height="18" fill="rgb(123,123,123)"/><rect x="235" y="61" width="24" height="18" fill="rgb(85,85,85)"/><rect x="260" y="61" width="24" height="18" fill="rgb(61,61,61)"/><rect x="285" y="61" width="24" height="18" fill="rgb(66,66,66)"/><rect x="310" y="61" width="24" height="18" fill="rgb(96,96,96)"/><rect x="335" y="61" width="24" height="18" fill="rgb(135,135,135)"/><rect x="360" y="61" width="24" height="18" fill="rgb(161,161,161)"/><rect x="385" y="61" width="24" height="18" fill="rgb(163,163,163)"/><rect x="10" y="80" width="24" height="18" fill="rgb(110,110,110)"/><rect x="35" y="80" width="24" height="18" fill="rgb(79,79,79)"/><rect x="60" y="80" width="24" height="18" fill="rgb(76,76,76)"/><rect x="85" y="80" width="24" height="18" fill="rgb(98,98,98)"/><rect x="110" y="80" width="24" height="18" fill="rgb(129,129,129)"/><rect x="135" y="80" width="24" height="18" fill="rgb(148,148,148)"/><rect x="160" y="80" width="24" height="18" fill="rgb(143,143,143)"/><rect x="185" y="80" width="24" height="18" fill="rgb(116,116,116)"/><rect x="210" y="80" width="24" height="18" fill="rgb(85,85,85)"/><rect x="235" y="80" width="24" height="18" fill="rgb(71,71,71)"/><rect x="260" y="80" width="24" height="18" fill="rgb(84,84,84)"/><rect x="285" y="80" width="24" height="18" fill="rgb(121,121,121)"/><rect x="310" y="80" width="24" height="18" fill="rgb(164,164,164)"/><rect x="335" y="80" width="24" height="18" fill="rgb(190,190,190)"/><rect x="360" y="80" width="24" height="18" fill="rgb(190,190,190)"/><rect x="385" y="80" width="24" height="18" fill="rgb(168,168,168)"/><rect x="10" y="99" width="24" height="18" fill="rgb(62,62,62)"/><rect x="35" y="99" width="24" height="18" fill="rgb(67,67,67)"/><rect x="60" y="99" width="24" height="18" fill="rgb(97,97,97)"/><rect x="85" y="99" width="24" height="18" fill="rgb(134,134,134)"/><rect x="110" y="99" width="24" height="18" fill="rgb(157,157,157)"/><rect x="135" y="99" width="24" height="18" fill="rgb(154,154,154)"/><rect x="160" y="99" width="24" height="18" fill="rgb(130,130,130)"/><rect x="185" y="99" width="24" height="18" fill="rgb(105,105,105)"/><rect x="210" y="99" width="24" height="18" fill="rgb(97,97,97)"/><rect x="235" y="99" width="24" height="18" fill="rgb(116,116,116)"/><rect x="260" y="99" width="24" height="18" fill="rgb(156,156,156)"/><rect x="285" y="99" width="24" height="18" fill="rgb(198,198,198)"/><rect x="310" y="99" width="24" height="18" fill="rgb(220,220,220)"/><rect x="335" y="99" width="24" height="18" fill="rgb(215,215,215)"/><rect x="360" y="99" width="24" height="18" fill="rgb(188,188,188)"/><rect x="385" y="99" width="24" height="18" fill="rgb(160,160,160)"/></svg><div class="rate">5 to 30 frames a second</div></div><div class="panel sigp"><span class="lab">Motion (IMU)</span><svg viewBox="0 0 420 120" width="420" height="120"><polyline fill="none" stroke="#23408f" stroke-width="1.6" points="10,57 14,65 18,66 22,69 26,71 30,79 34,82 38,83 42,83 46,85 50,87 54,89 58,88 62,90 66,88 70,92 74,91 78,87 82,83 86,86 90,79 94,77 98,71 102,70 106,68 110,64 114,59 118,57 122,51 126,49 130,44 134,43 138,38 142,35 146,35 150,32 154,33 158,31 162,32 166,31 170,31 174,33 178,31 182,32 186,38 190,35 194,41 198,43 202,42 206,50 210,54 214,56 218,60 222,64 226,64 230,69 234,73 238,78 242,81 246,83 250,84 254,88 258,89 262,90 266,88 270,87 274,88 278,89 282,86 286,89 290,86 294,84 298,82 302,80 306,75 310,69 314,71 318,67 322,62 326,59 330,56 334,49 338,49 342,43 346,39 350,38 354,38 358,33 362,34 366,34 370,31 374,29 378,30 382,32 386,33 390,33 394,35 398,33 402,36 406,40"/><polyline fill="none" stroke="#146b5c" stroke-width="1.6" points="10,83 14,81 18,82 22,79 26,79 30,79 34,81 38,80 42,78 46,74 50,73 54,71 58,68 62,64 66,66 70,59 74,61 78,58 82,50 86,50 90,50 94,49 98,44 102,41 106,39 110,43 114,37 118,39 122,36 126,38 130,41 134,37 138,42 142,41 146,45 150,46 154,45 158,51 162,51 166,51 170,53 174,59 178,61 182,63 186,64 190,68 194,70 198,75 202,72 206,79 210,81 214,78 218,83 222,83 226,84 230,81 234,81 238,80 242,83 246,80 250,77 254,75 258,73 262,69 266,67 270,69 274,63 278,64 282,58 286,55 290,54 294,50 298,48 302,50 306,47 310,45 314,42 318,43 322,42 326,39 330,39 334,35 338,40 342,38 346,41 350,42 354,41 358,41 362,48 366,46 370,50 374,52 378,54 382,59 386,63 390,61 394,66 398,67 402,71 406,72"/><polyline fill="none" stroke="#b06a12" stroke-width="1.6" points="10,69 14,67 18,66 22,68 26,64 30,61 34,63 38,61 42,56 46,53 50,51 54,49 58,49 62,46 66,46 70,45 74,46 78,47 82,46 86,43 90,44 94,44 98,44 102,45 106,44 110,46 114,52 118,48 122,52 126,55 130,58 134,56 138,58 142,60 146,63 150,65 154,69 158,71 162,72 166,69 170,70 174,75 178,77 182,75 186,76 190,73 194,75 198,78 202,77 206,77 210,77 214,71 218,69 222,68 226,68 230,68 234,67 238,64 242,62 246,61 250,57 254,56 258,51 262,54 266,49 270,51 274,48 278,45 282,43 286,43 290,45 294,45 298,42 302,42 306,45 310,46 314,45 318,46 322,49 326,47 330,50 334,53 338,58 342,58 346,61 350,60 354,61 358,63 362,69 366,69 370,68 374,68 378,72 382,74 386,74 390,74 394,77 398,78 402,74 406,73"/></svg><div class="rate">50 to 100 samples a second × 3 axes</div></div><div class="panel sigp"><span class="lab">Vibration</span><svg viewBox="0 0 420 120" width="420" height="120"><polyline fill="none" stroke="#23408f" stroke-width="1" points="10,60 11,91 12,79 13,79 14,49 15,22 16,46 17,57 18,79 19,99 20,64 21,48 22,37 23,27 24,68 25,85 26,81 27,82 28,41 29,28 30,46 31,52 32,88 33,94 34,62 35,54 36,29 37,31 38,72 39,78 40,88 41,79 42,35 43,35 44,41 45,53 46,94 47,86 48,65 49,54 50,22 51,39 52,70 53,75 54,95 55,72 56,36 57,40 58,35 59,60 60,95 61,79 62,72 63,49 64,20 65,47 66,64 67,78 68,98 69,63 70,41 71,39 72,30 73,68 74,90 75,78 76,77 77,41 78,24 79,50 80,58 81,86 82,96 83,58 84,48 85,33 86,31 87,75 88,83 89,83 90,77 91,34 92,31 93,47 94,56 95,93 96,88 97,59 98,51 99,25 100,38 101,76 102,78 103,90 104,72 105,31 106,38 107,41 108,60 109,97 110,81 111,64 112,49 113,20 114,46 115,71 116,78 117,95 118,64 119,35 120,40 121,35 122,68 123,95 124,76 125,71 126,42 127,21 128,52 129,65 130,83 131,96 132,56 133,41 134,36 135,33 136,76 137,89 138,78 139,74 140,34 141,27 142,53 143,60 144,91 145,91 146,54 147,47 148,29 149,37 150,80 151,82 152,84 153,71 154,29 155,35 156,48 157,61 158,97 159,82 160,57 161,48 162,23 163,45 164,78 165,79 166,91 167,64 168,29 169,40 170,41 171,67 172,98 173,76 174,64 175,43 176,21 177,53 178,72 179,81 180,94 181,55 182,35 183,39 184,37 185,76 186,94 187,74 188,69 189,35 190,24 191,57 192,66 193,88 194,92 195,50 196,42 197,34 198,38 199,82 200,86 201,78 202,69 203,28 204,32 205,54 206,64 207,96 208,84 209,51 210,46 211,26 212,44 213,83 214,81 215,85 216,64 217,26 218,39 219,48 220,67 221,100 222,76 223,56 224,44 225,22 226,53 227,79 228,80 229,91 230,56 231,29 232,41 233,42 234,75 235,97 236,72 237,63 238,37 239,23 240,59 241,72 242,85 243,91 244,48 245,36 246,38 247,40 248,83 249,91 250,73 251,66 252,29 253,29 254,60 255,68 256,93 257,86 258,46 259,42 260,31 261,44 262,87 263,83 264,79 265,63 266,24 267,37 268,55 269,68 270,99 271,77 272,49 273,43 274,25 275,53 276,85 277,80 278,85 279,56 280,25 281,42 282,49 283,74 284,100 285,70 286,56 287,39 288,23 289,61 290,79 291,82 292,89 293,48 294,30 295,42 296,44 297,83 298,95 299,69 300,61 301,31 302,27 303,64 304,73 305,89 306,86 307,42 308,38 309,37 310,46 311,89 312,87 313,72 314,61 315,24 316,35 317,62 318,70 319,96 320,78 321,43 322,42 323,30 324,52 325,90 326,81 327,79 328,56 329,22 330,42 331,56 332,74 333,100 334,70 335,48 336,40 337,25 338,61 339,85 340,80 341,84 342,48 343,26 344,45 345,50 346,81 347,97 348,65 349,55 350,34 351,26 352,67 353,78 354,85 355,85 356,41 357,33 358,42 359,48 360,89 361,90 362,66 363,58 364,26 365,33 366,68 367,74 368,92 369,79 370,38 371,39 372,35 373,52 374,93 375,83 376,72 377,56 378,21 379,41 380,63 381,74 382,98 383,71 384,41 385,41 386,29 387,60 388,91 389,79 390,79 391,49 392,22 393,46 394,57 395,80 396,99 397,64 398,48 399,37 400,27 401,68 402,85 403,81 404,82 405,40 406,28 407,47 408,52 409,88"/></svg><div class="rate">thousands of samples a second</div></div><div class="panel sigp"><span class="lab">Environment</span><svg viewBox="0 0 420 120" width="420" height="120"><polyline fill="none" stroke="#146b5c" stroke-width="2" points="10,89 30,88 50,88 70,84 90,85 110,83 130,80 150,78 170,79 190,75 210,75 230,71 250,70 270,70 290,67 310,68 330,64 350,62 370,60 390,59 410,59"/><circle cx="10" cy="89" r="3.5" fill="#146b5c"/><circle cx="30" cy="88" r="3.5" fill="#146b5c"/><circle cx="50" cy="88" r="3.5" fill="#146b5c"/><circle cx="70" cy="84" r="3.5" fill="#146b5c"/><circle cx="90" cy="85" r="3.5" fill="#146b5c"/><circle cx="110" cy="83" r="3.5" fill="#146b5c"/><circle cx="130" cy="80" r="3.5" fill="#146b5c"/><circle cx="150" cy="78" r="3.5" fill="#146b5c"/><circle cx="170" cy="79" r="3.5" fill="#146b5c"/><circle cx="190" cy="75" r="3.5" fill="#146b5c"/><circle cx="210" cy="75" r="3.5" fill="#146b5c"/><circle cx="230" cy="71" r="3.5" fill="#146b5c"/><circle cx="250" cy="70" r="3.5" fill="#146b5c"/><circle cx="270" cy="70" r="3.5" fill="#146b5c"/><circle cx="290" cy="67" r="3.5" fill="#146b5c"/><circle cx="310" cy="68" r="3.5" fill="#146b5c"/><circle cx="330" cy="64" r="3.5" fill="#146b5c"/><circle cx="350" cy="62" r="3.5" fill="#146b5c"/><circle cx="370" cy="60" r="3.5" fill="#146b5c"/><circle cx="390" cy="59" r="3.5" fill="#146b5c"/><circle cx="410" cy="59" r="3.5" fill="#146b5c"/></svg><div class="rate">one reading every few seconds</div></div><div class="panel sigp"><span class="lab">ECG / biosignals</span><svg viewBox="0 0 420 120" width="420" height="120"><polyline fill="none" stroke="#a8231f" stroke-width="1.8" points="10,75 20,75 24,69 28,75 34,75 37,81 40,23 43,89 46,75 58,75 66,63 74,75 90,75 90,75 100,75 104,69 108,75 114,75 117,81 120,23 123,89 126,75 138,75 146,63 154,75 170,75 170,75 180,75 184,69 188,75 194,75 197,81 200,23 203,89 206,75 218,75 226,63 234,75 250,75 250,75 260,75 264,69 268,75 274,75 277,81 280,23 283,89 286,75 298,75 306,63 314,75 330,75 330,75 340,75 344,69 348,75 354,75 357,81 360,23 363,89 366,75 378,75 386,63 394,75 410,75"/></svg><div class="rate">a few hundred samples a second</div></div></div>
+    <p class="small" style="margin-top:12px">Typical rates; they vary by device. Fast streams like audio and vibration are why Class 8 (signal processing) matters.</p>
+  </div>
+  <div class="cue">Point out the range: from one number every few seconds to sixteen thousand a second. The model, the memory and the battery all follow from this.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="ML task families" data-act="the decision">
+  <div>
+    <h2>The decision box: five kinds of question a model answers.</h2>
+    <svg viewBox="0 0 1432 320" width="1432" height="320" style="margin-top:10px"><g class="frag"><rect x="0" y="20" width="240" height="170" rx="10" fill="#e2e0d9"/><circle cx="120" cy="70" r="16" fill="#4b5057"/><rect x="100" y="90" width="40" height="56" rx="12" fill="#4b5057"/><rect x="40" y="208" width="160" height="34" rx="17" fill="#eaeef7" stroke="#23408f"/><text x="120" y="230" font-size="15" fill="#23408f" text-anchor="middle">person · 0.94</text><text x="0" y="280" font-size="18" fill="#15171b" font-weight="700">Classification</text><text x="0" y="304" font-size="14" fill="#8b9096">which class is it?</text></g><g class="frag"><rect x="298" y="20" width="240" height="170" rx="10" fill="#e2e0d9"/><circle cx="378" cy="70" r="16" fill="#4b5057"/><rect x="358" y="90" width="40" height="56" rx="12" fill="#4b5057"/><rect x="350" y="46" width="56" height="112" fill="none" stroke="#146b5c" stroke-width="3" stroke-dasharray="6 4"/><rect x="350" y="28" width="66" height="18" fill="#146b5c"/><text x="383" y="42" font-size="12" fill="#faf9f6" text-anchor="middle">person</text><text x="298" y="280" font-size="18" fill="#15171b" font-weight="700">Detection</text><text x="298" y="304" font-size="14" fill="#8b9096">what, and where?</text></g><g class="frag"><rect x="596" y="20" width="240" height="170" rx="10" fill="#e2e0d9"/><rect x="704" y="54" width="7" height="7" fill="#b06a12"/><rect x="712" y="54" width="7" height="7" fill="#b06a12"/><rect x="720" y="54" width="7" height="7" fill="#b06a12"/><rect x="704" y="62" width="7" height="7" fill="#b06a12"/><rect x="712" y="62" width="7" height="7" fill="#b06a12"/><rect x="720" y="62" width="7" height="7" fill="#b06a12"/><rect x="704" y="70" width="7" height="7" fill="#b06a12"/><rect x="712" y="70" width="7" height="7" fill="#b06a12"/><rect x="720" y="70" width="7" height="7" fill="#b06a12"/><rect x="704" y="78" width="7" height="7" fill="#b06a12"/><rect x="712" y="78" width="7" height="7" fill="#b06a12"/><rect x="720" y="78" width="7" height="7" fill="#b06a12"/><rect x="696" y="86" width="7" height="7" fill="#b06a12"/><rect x="704" y="86" width="7" height="7" fill="#b06a12"/><rect x="712" y="86" width="7" height="7" fill="#b06a12"/><rect x="720" y="86" width="7" height="7" fill="#b06a12"/><rect x="728" y="86" width="7" height="7" fill="#b06a12"/><rect x="696" y="94" width="7" height="7" fill="#b06a12"/><rect x="704" y="94" width="7" height="7" fill="#b06a12"/><rect x="712" y="94" width="7" height="7" fill="#b06a12"/><rect x="720" y="94" width="7" height="7" fill="#b06a12"/><rect x="728" y="94" width="7" height="7" fill="#b06a12"/><rect x="696" y="102" width="7" height="7" fill="#b06a12"/><rect x="704" y="102" width="7" height="7" fill="#b06a12"/><rect x="712" y="102" width="7" height="7" fill="#b06a12"/><rect x="720" y="102" width="7" height="7" fill="#b06a12"/><rect x="728" y="102" width="7" height="7" fill="#b06a12"/><rect x="696" y="110" width="7" height="7" fill="#b06a12"/><rect x="704" y="110" width="7" height="7" fill="#b06a12"/><rect x="712" y="110" width="7" height="7" fill="#b06a12"/><rect x="720" y="110" width="7" height="7" fill="#b06a12"/><rect x="728" y="110" width="7" height="7" fill="#b06a12"/><rect x="696" y="118" width="7" height="7" fill="#b06a12"/><rect x="704" y="118" width="7" height="7" fill="#b06a12"/><rect x="712" y="118" width="7" height="7" fill="#b06a12"/><rect x="720" y="118" width="7" height="7" fill="#b06a12"/><rect x="728" y="118" width="7" height="7" fill="#b06a12"/><rect x="696" y="126" width="7" height="7" fill="#b06a12"/><rect x="704" y="126" width="7" height="7" fill="#b06a12"/><rect x="712" y="126" width="7" height="7" fill="#b06a12"/><rect x="720" y="126" width="7" height="7" fill="#b06a12"/><rect x="728" y="126" width="7" height="7" fill="#b06a12"/><rect x="696" y="134" width="7" height="7" fill="#b06a12"/><rect x="704" y="134" width="7" height="7" fill="#b06a12"/><rect x="712" y="134" width="7" height="7" fill="#b06a12"/><rect x="720" y="134" width="7" height="7" fill="#b06a12"/><rect x="728" y="134" width="7" height="7" fill="#b06a12"/><rect x="696" y="142" width="7" height="7" fill="#b06a12"/><rect x="704" y="142" width="7" height="7" fill="#b06a12"/><rect x="712" y="142" width="7" height="7" fill="#b06a12"/><rect x="720" y="142" width="7" height="7" fill="#b06a12"/><rect x="728" y="142" width="7" height="7" fill="#b06a12"/><rect x="696" y="150" width="7" height="7" fill="#b06a12"/><rect x="704" y="150" width="7" height="7" fill="#b06a12"/><rect x="712" y="150" width="7" height="7" fill="#b06a12"/><rect x="720" y="150" width="7" height="7" fill="#b06a12"/><rect x="728" y="150" width="7" height="7" fill="#b06a12"/><rect x="696" y="158" width="7" height="7" fill="#b06a12"/><rect x="704" y="158" width="7" height="7" fill="#b06a12"/><rect x="712" y="158" width="7" height="7" fill="#b06a12"/><rect x="720" y="158" width="7" height="7" fill="#b06a12"/><rect x="728" y="158" width="7" height="7" fill="#b06a12"/><rect x="696" y="166" width="7" height="7" fill="#b06a12"/><rect x="704" y="166" width="7" height="7" fill="#b06a12"/><rect x="712" y="166" width="7" height="7" fill="#b06a12"/><rect x="720" y="166" width="7" height="7" fill="#b06a12"/><rect x="728" y="166" width="7" height="7" fill="#b06a12"/><text x="596" y="280" font-size="18" fill="#15171b" font-weight="700">Segmentation</text><text x="596" y="304" font-size="14" fill="#8b9096">which pixels belong to it?</text></g><g class="frag"><rect x="894" y="20" width="240" height="170" rx="10" fill="#ffffff" stroke="#e2e0d9"/><rect x="900" y="98" width="228" height="44" fill="#e6f1ee"/><polyline fill="none" stroke="#23408f" stroke-width="2" points="904,129 915,113 926,118 937,114 948,129 959,113 970,111 981,111 992,118 1003,128 1014,128 1025,125 1036,130 1047,129 1058,117 1069,48 1080,129 1091,125 1102,111 1113,123 1124,118"/><circle cx="1069" cy="48" r="7" fill="#a8231f"/><text x="1024" y="176" font-size="12" fill="#146b5c">normal band</text><text x="894" y="280" font-size="18" fill="#15171b" font-weight="700">Anomaly detection</text><text x="894" y="304" font-size="14" fill="#8b9096">is this normal?</text></g><g class="frag"><rect x="1192" y="20" width="240" height="170" rx="10" fill="#ffffff" stroke="#e2e0d9"/><path d="M1232 150 A80 80 0 0 1 1392 150" fill="none" stroke="#e2e0d9" stroke-width="14"/><path d="M1232 150 A80 80 0 0 1 1342 76" fill="none" stroke="#23408f" stroke-width="14"/><line x1="1312" y1="150" x2="1344" y2="88" stroke="#15171b" stroke-width="3"/><text x="1312" y="180" font-size="18" fill="#15171b" text-anchor="middle" font-weight="700">72 bpm</text><text x="1192" y="280" font-size="18" fill="#15171b" font-weight="700">Regression</text><text x="1192" y="304" font-size="14" fill="#8b9096">how much?</text></g></svg>
+    <p class="frag" style="margin-top:18px;max-width:70ch"><strong>Keyword spotting</strong>, the wake word, is classification on audio. Most TinyML products are classification or anomaly detection: they are the cheapest questions to answer.</p>
+  </div>
+  <div class="cue">Ask which of the five the BrickML uses (anomaly detection) and which the doorbell uses (detection for the person, classification for the keyword).</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Applications by domain" data-act="by domain">
+  <div>
+    <h2>Now start from the industry.</h2>
+    <div class="tiles"><div class="tile"><div class="tk">healthcare</div><div class="tp">Irregular heart rhythm alert</div><div class="ts">light sensor · classification</div><div class="tl"><span class="bl">B</span><span class="bl on">L</span><span class="bl">E</span><span class="bl on">R</span><span class="bl on">P</span></div></div><div class="tile"><div class="tk">agriculture</div><div class="tp">Crop disease from a leaf photo</div><div class="ts">phone camera · classification</div><div class="tl"><span class="bl">B</span><span class="bl">L</span><span class="bl">E</span><span class="bl on">R</span><span class="bl">P</span></div></div><div class="tile"><div class="tk">manufacturing</div><div class="tp">Motor fault, weeks early</div><div class="ts">vibration · anomaly detection</div><div class="tl"><span class="bl on">B</span><span class="bl">L</span><span class="bl on">E</span><span class="bl on">R</span><span class="bl">P</span></div></div><div class="tile"><div class="tk">automotive</div><div class="tp">Driver drowsiness alert</div><div class="ts">cabin camera · classification</div><div class="tl"><span class="bl">B</span><span class="bl on">L</span><span class="bl">E</span><span class="bl">R</span><span class="bl on">P</span></div></div><div class="tile"><div class="tk">smart cities</div><div class="tp">Vehicle counts, not video</div><div class="ts">road camera · detection</div><div class="tl"><span class="bl on">B</span><span class="bl">L</span><span class="bl">E</span><span class="bl">R</span><span class="bl on">P</span></div></div><div class="tile"><div class="tk">consumer</div><div class="tp">Wake word in earbuds</div><div class="ts">microphone · keyword spotting</div><div class="tl"><span class="bl">B</span><span class="bl">L</span><span class="bl on">E</span><span class="bl">R</span><span class="bl on">P</span></div></div><div class="tile"><div class="tk">conservation</div><div class="tp">Chainsaw heard in a forest</div><div class="ts">microphone · audio classification</div><div class="tl"><span class="bl on">B</span><span class="bl">L</span><span class="bl">E</span><span class="bl on">R</span><span class="bl">P</span></div></div><div class="tile"><div class="tk">retail</div><div class="tp">Empty shelf spotted</div><div class="ts">shelf camera · detection</div><div class="tl"><span class="bl on">B</span><span class="bl">L</span><span class="bl on">E</span><span class="bl">R</span><span class="bl">P</span></div></div></div>
+    <p class="small frag" style="margin-top:16px">Highlighted letters are the reasons that keep the AI on the device. Notice how few rows need more than two.</p>
+  </div>
+  <div class="cue">Let the slide sit for a minute while they read. Then pick two tiles and ask the room to defend the letters.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Case: the heart-rhythm watch" data-act="case studies">
+  <div>
+    <div class="kicker">case study · healthcare</div>
+    <h2>A cheap model screens. A careful step confirms.</h2>
+    <svg viewBox="0 0 1432 400" width="1432" height="400">
+      <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs>
+      <rect x="0" y="120" width="270" height="100" rx="12" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.5"/>
+      <text x="20" y="160" font-size="18" fill="#15171b" font-weight="700">light sensor</text>
+      <text x="20" y="186" font-size="14" fill="#4b5057">on the wrist, always on</text>
+      <line x1="276" y1="170" x2="366" y2="170" stroke="#8b9096" stroke-width="2.5" marker-end="url(#ar4)"/>
+      <g class="frag">
+        <polygon points="480,80 600,170 480,260 360,170" fill="#eaeef7" stroke="#23408f" stroke-width="1.5"/>
+        <text x="480" y="160" font-size="15" fill="#23408f" text-anchor="middle" font-weight="700">tiny model:</text>
+        <text x="480" y="182" font-size="15" fill="#23408f" text-anchor="middle">irregular?</text>
+        <path d="M480 260 V330 H135 V226" fill="none" stroke="#8b9096" stroke-width="2" marker-end="url(#ar4)"/>
+        <text x="300" y="352" font-size="14" fill="#8b9096" text-anchor="middle">no · keep watching, quietly</text>
+      </g>
+      <g class="frag">
+        <line x1="606" y1="170" x2="700" y2="170" stroke="#146b5c" stroke-width="2.5" marker-end="url(#ar4)"/>
+        <text x="650" y="156" font-size="14" fill="#146b5c" text-anchor="middle">yes</text>
+        <rect x="710" y="120" width="330" height="100" rx="12" fill="#ffffff" stroke="#146b5c" stroke-width="1.5"/>
+        <text x="730" y="160" font-size="18" fill="#15171b" font-weight="700">ask for a careful reading</text>
+        <text x="730" y="186" font-size="14" fill="#4b5057">an ECG, a finger on the watch</text>
+      </g>
+      <g class="frag">
+        <line x1="1046" y1="170" x2="1110" y2="170" stroke="#146b5c" stroke-width="2.5" marker-end="url(#ar4)"/>
+        <rect x="1120" y="120" width="312" height="100" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.5"/>
+        <text x="1140" y="160" font-size="18" fill="#15171b" font-weight="700">tell the wearer</text>
+        <text x="1140" y="186" font-size="14" fill="#4b5057">and suggest seeing a doctor</text>
+      </g>
+    </svg>
+    <p class="frag" style="max-width:70ch">This shape, a small always-on model waking up a bigger or more careful step, is the <strong>cascade</strong> pattern. It returns in Class 5.</p>
+  </div>
+  <div class="cue">Be clear that a watch does not diagnose; it flags and suggests. Ask why the screening model must be on the wrist: L (instant), R (no phone nearby), P (heart data is personal), and battery.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Case: crop disease in the field" data-act="case studies">
+  <div>
+    <div class="kicker">case study · agriculture</div>
+    <h2>In the field, offline inference is the whole product.</h2>
+    <div class="split" style="grid-template-columns:.8fr 1.2fr;align-items:center">
+      <div class="stack">
+        <p>A farmer photographs a sick leaf. Out here there is often no mobile data.</p>
+        <p class="frag">A model on the phone names the likely disease and suggests what to do next, before the farmer has walked back to the road.</p>
+        <p class="frag small">Real systems of this kind exist; the result card here is an illustration, not output from a specific app.</p>
+      </div>
+      <svg viewBox="0 0 860 440" width="860" height="440">
+        <rect x="40" y="10" width="230" height="420" rx="30" fill="#15171b"/>
+        <rect x="54" y="40" width="202" height="360" rx="14" fill="#faf9f6"/>
+        <g transform="translate(70,60)">
+          <rect x="0" y="0" width="34" height="8" rx="2" fill="#c6c3ba"/>
+        </g>
+        <g fill="#8b9096"><rect x="200" y="64" width="6" height="8"/><rect x="210" y="60" width="6" height="12"/><rect x="220" y="56" width="6" height="16"/><rect x="230" y="52" width="6" height="20"/></g>
+        <line x1="196" y1="50" x2="242" y2="76" stroke="#a8231f" stroke-width="3"/>
+        <ellipse cx="155" cy="210" rx="70" ry="110" fill="#146b5c" transform="rotate(-20 155 210)"/>
+        <line x1="120" y1="310" x2="190" y2="110" stroke="#0e4d42" stroke-width="3"/>
+        <circle cx="140" cy="180" r="12" fill="#8a5a1a"/><circle cx="175" cy="235" r="9" fill="#8a5a1a"/><circle cx="130" cy="250" r="7" fill="#8a5a1a"/><circle cx="168" cy="160" r="6" fill="#8a5a1a"/>
+        <g class="frag">
+          <line x1="290" y1="220" x2="420" y2="220" stroke="#23408f" stroke-width="2.5"/>
+          <path d="M418 212 L434 220 L418 228 z" fill="#23408f"/>
+          <rect x="300" y="236" width="120" height="30" rx="15" fill="#eaeef7" stroke="#23408f"/><text x="360" y="256" font-size="13" fill="#23408f" text-anchor="middle">model on phone</text>
+          <rect x="450" y="120" width="390" height="200" rx="14" fill="#ffffff" stroke="#146b5c" stroke-width="1.5"/>
+          <text x="474" y="160" font-size="13" fill="#8b9096">LIKELY</text>
+          <text x="474" y="192" font-size="24" fill="#15171b" font-weight="700">leaf blight</text>
+          <rect x="474" y="208" width="300" height="12" rx="6" fill="#e2e0d9"/><rect x="474" y="208" width="255" height="12" rx="6" fill="#146b5c"/>
+          <text x="784" y="220" font-size="14" fill="#146b5c">85%</text>
+          <text x="474" y="258" font-size="15" fill="#4b5057">next: remove affected leaves,</text>
+          <text x="474" y="282" font-size="15" fill="#4b5057">ask the local extension officer</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <div class="cue">Ask what goes wrong if this needed the cloud: the farmer waits, the photo never uploads, the advice comes too late. Also ask: what happens when the model sees a disease it was never trained on? That question returns in Unit III.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Case: the motor that warned early" data-act="case studies">
+  <div>
+    <div class="kicker">case study · manufacturing</div>
+    <h2>The value is the weeks of warning.</h2>
+    <svg viewBox="0 0 1432 420" width="1432" height="420">
+      <line x1="80" y1="360" x2="1400" y2="360" stroke="#c6c3ba" stroke-width="1.5"/>
+      <text x="80" y="384" font-size="13" fill="#8b9096" text-anchor="middle">0</text><text x="300" y="384" font-size="13" fill="#8b9096" text-anchor="middle">2</text><text x="520" y="384" font-size="13" fill="#8b9096" text-anchor="middle">4</text><text x="740" y="384" font-size="13" fill="#8b9096" text-anchor="middle">6</text><text x="960" y="384" font-size="13" fill="#8b9096" text-anchor="middle">8</text><text x="1180" y="384" font-size="13" fill="#8b9096" text-anchor="middle">10</text><text x="1400" y="384" font-size="13" fill="#8b9096" text-anchor="middle">12</text>
+      <text x="740" y="410" font-size="13" fill="#8b9096" text-anchor="middle">WEEKS</text>
+      <text x="0" y="301" font-size="13" fill="#8b9096">normal</text>
+      <text x="0" y="40" font-size="13" fill="#8b9096">ANOMALY SCORE</text>
+      <polyline fill="none" stroke="#23408f" stroke-width="3" points="80,302 190,296 300,306 410,293 520,299 630,296 740,283 850,251"/>
+      <g class="frag">
+        <polyline fill="none" stroke="#b06a12" stroke-width="3" points="850,251 960,200 1070,149 1180,117 1290,85 1400,56"/>
+        <line x1="80" y1="168" x2="1400" y2="168" stroke="#a8231f" stroke-width="1.5" stroke-dasharray="8 6"/>
+        <text x="86" y="158" font-size="14" fill="#a8231f">alert threshold</text>
+        <circle cx="1070" cy="149" r="9" fill="#a8231f"/>
+        <text x="1056" y="131" font-size="15" fill="#a8231f" text-anchor="end" font-weight="700">alert sent: week 9</text>
+      </g>
+      <g class="frag">
+        <rect x="1070" y="40" width="330" height="320" fill="#e6f1ee" opacity=".7"/>
+        <polyline fill="none" stroke="#b06a12" stroke-width="3" points="850,251 960,200 1070,149 1180,117 1290,85 1400,56"/>
+        <text x="1235" y="340" font-size="16" fill="#146b5c" text-anchor="middle" font-weight="700">weeks to plan a repair</text>
+        <path d="M1388 44 l24 24 M1412 44 l-24 24" stroke="#a8231f" stroke-width="4"/>
+        <text x="1380" y="64" font-size="15" fill="#a8231f" text-anchor="end" font-weight="700">would have failed here</text>
+      </g>
+    </svg>
+    <p class="small">Illustrative curve. The device sends one alert, not twelve weeks of vibration: B, R and E all at once.</p>
+  </div>
+  <div class="cue">This is the BrickML story told as a chart. Ask: who decides where the threshold goes, and what does a false alarm cost a factory compared with a missed one?</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Team activity: use-case cards" data-act="activity">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">team activity · teams of four</div><h2 style="margin-bottom:6px">Design one of these.</h2></div>
+      <div class="panel timer" data-secs="1200"><span class="tdisp">20:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards"><div class="ucard"><div class="un">01</div><div class="ut">Elephant intrusion alert</div><div class="ud">warn a village before elephants reach the fields</div></div><div class="ucard"><div class="un">02</div><div class="ut">Posture-correcting chair</div><div class="ud">nudge someone who slouches for too long</div></div><div class="ucard"><div class="un">03</div><div class="ut">Earthquake early warning</div><div class="ud">detect the first tremor and warn seconds ahead</div></div><div class="ucard"><div class="un">04</div><div class="ut">Smart traffic signal</div><div class="ud">change the light by the queue it sees</div></div><div class="ucard"><div class="un">05</div><div class="ut">Beehive health monitor</div><div class="ud">hear when a colony is stressed or queenless</div></div><div class="ucard"><div class="un">06</div><div class="ut">Shopping-cart recogniser</div><div class="ud">identify items as they go into the cart</div></div><div class="ucard"><div class="un">07</div><div class="ut">Cough detector in a clinic</div><div class="ud">count coughs in a waiting room</div></div><div class="ucard"><div class="un">08</div><div class="ut">Railway-track crack detector</div><div class="ud">find cracks from a passing train</div></div></div>
+  </div>
+  <div class="cue">Assign cards by team number modulo 8. Twenty minutes: fifteen to fill the worksheet on the next slide, then two teams present in ninety seconds each. Click start on the timer; the arrow keys still work.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="The worksheet" data-act="activity">
+  <div>
+    <h2>Fill five boxes. Nothing else.</h2>
+    <div class="wrow"><div class="wbox"><div class="wk">sensor</div><div class="wq">what does it measure?</div></div><div class="wbox"><div class="wk">ML task</div><div class="wq">which of the five?</div></div><div class="wbox"><div class="wk">output</div><div class="wq">what happens next?</div></div><div class="wbox"><div class="wk">BLERP, ranked</div><div class="wq">why on the device?</div></div><div class="wbox"><div class="wk">what could go wrong</div><div class="wq">one honest failure</div></div></div>
+    <p class="frag" style="margin-top:22px;max-width:70ch">The last box matters most. A team that cannot name one way its product fails has not thought about it yet.</p>
+  </div>
+  <div class="cue">Leave this slide up while teams work. Walk the room and push on box five.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Worked example: elephants" data-act="activity">
+  <div>
+    <div class="kicker">one team's answer, to compare with yours</div>
+    <h2>Elephant intrusion alert.</h2>
+    <div class="wrow"><div class="wbox filled"><div class="wk">sensor</div><div class="wa">camera at the village edge, infrared at night</div></div><div class="wbox filled"><div class="wk">ML task</div><div class="wa">detection: elephant, or something else?</div></div><div class="wbox filled"><div class="wk">output</div><div class="wa">siren, and a text to forest watchers</div></div><div class="wbox filled"><div class="wk">BLERP, ranked</div><div class="wa">R · L · B · no network at the forest edge; minutes matter; no video upload</div></div><div class="wbox filled"><div class="wk">what could go wrong</div><div class="wa">cattle trigger false alarms; elephants learn to ignore the siren</div></div></div>
+  </div>
+  <div class="cue">Show this only after the presentations, or teams will copy its shape. Ask the room which box they would argue with.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="The doorbell as a recipe" data-act="closing">
+  <div>
+    <div class="kicker">our running example</div>
+    <h2>The doorbell, in the same five boxes.</h2>
+    <div class="wrow"><div class="wbox filled blue"><div class="wk">sensor</div><div class="wa">camera and microphone at the door</div></div><div class="wbox filled blue"><div class="wk">ML task</div><div class="wa">detection (person) and keyword spotting</div></div><div class="wbox filled blue"><div class="wk">output</div><div class="wa">chime; a short clip to the owner</div></div><div class="wbox filled blue"><div class="wk">BLERP, ranked</div><div class="wa">P · B · L · video of a home; no constant upload; instant chime</div></div><div class="wbox filled blue"><div class="wk">what could go wrong</div><div class="wa">a cat counts as a person; a TV says the keyword</div></div></div>
+  </div>
+  <div class="cue">Two classes of doorbell now: Class 2 split it between device and cloud; today it gets its sensors and tasks. Next class we open the box and pick the hardware.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:46px;max-width:30ch;margin:0 auto">Invent one edge AI product for your hometown. Write its sensor, its decision, and the letter that keeps it on the device.</h2>
+    <p class="small frag" style="margin-top:34px">Next class: <strong>we open the box</strong>. The chips, memory and software that every one of today's products is made of.</p>
+  </div>
+  <div class="cue">The best three hometown ideas make good use-case cards for next year.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
