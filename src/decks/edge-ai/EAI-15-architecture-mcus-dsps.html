@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 15 · Hardware Architecture, MCUs and DSPs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 15 */
+pre{font-size:15px;line-height:1.38}
+.stepper{padding:18px 24px}
+.instrs{font-family:var(--mono);font-size:19px}
+.instrs div{padding:8px 12px;border-radius:6px;margin-bottom:4px;border:1px solid var(--rule);background:var(--card);display:flex;justify-content:space-between}
+.instrs div.cur{background:var(--accent);border-color:var(--accent);color:#fff}
+.instrs div.done{color:var(--soft)}
+.instrs div span{font-size:13px;letter-spacing:.1em;text-transform:uppercase}
+.sbtns{display:flex;gap:10px;margin-top:10px}
+.sbtns button{height:42px;padding:0 20px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:15px;color:var(--ink);cursor:pointer}
+.sbtns button[data-s="step"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.stepinfo{font-size:21px;color:var(--ink);margin-top:10px;min-height:56px}
+.mcalc{padding:14px 22px}
+.mrate{font-family:var(--mono);font-size:24px;width:180px;padding:6px 10px;border:1px solid var(--rule2);border-radius:8px}
+.mcalc .crow{display:grid;align-items:center}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 15</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 15 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 15 · unit II · hardware architecture, microcontrollers and DSPs</div>
+    <h1>What actually does<br>the multiply-add?</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Five classes on sensors. Now the other half of Unit II: the chips that turn those numbers into a decision. We start inside a microcontroller, and end by timing one.</p>
+  </div>
+  <div class="cue">Theory runs to slide 13; the lab is one block at the end (slides 14 to 17). The lab needs PSRAM enabled in the board settings (OPI PSRAM on the N16R8): check before class.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>A patient leaving bed, without cameras.</h2>
+    <table class="dt txt" style="width:100%;max-width:1150px">
+      <tr><th style="width:30%">sensor</th><th>fooled by</th></tr>
+      <tr class="frag"><td>mmWave radar</td><td>a fan, a moving curtain</td></tr>
+      <tr class="frag"><td>pressure mat or load cell</td><td>the patient shifting; a visitor sitting on the bed</td></tr>
+      <tr class="frag"><td>PIR</td><td>a nurse walking past</td></tr>
+    </table>
+    <p class="frag" style="margin-top:18px;max-width:72ch">The best answers combined two. Today: once the data is in, what does the arithmetic, and how fast?</p>
+  </div>
+  <div class="cue">Two minutes. That closes the sensor half of the unit.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="How long does it take?" data-act="the hook">
+  <div>
+    <div class="kicker">guess first</div>
+    <h2>Class 7's gesture network needs 3,328 multiply-adds. How long on the ESP32-S3?</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr);margin-top:14px">
+      <div class="ntile frag"><div class="nb">3 s</div><div class="ns">hands up</div></div>
+      <div class="ntile frag"><div class="nb">30 ms</div><div class="ns">hands up</div></div>
+      <div class="ntile frag"><div class="nb">3 ms</div><div class="ns">hands up</div></div>
+      <div class="ntile frag"><div class="nb">30 µs</div><div class="ns">hands up</div></div>
+    </div>
+    <p class="frag big" style="margin-top:24px;max-width:46ch">Write your guess down. You will measure the real answer yourself in the lab.</p>
+  </div>
+  <div class="cue">Do not reveal. Count hands for each option and write the counts on the board; return to them at the end of the lab.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="One multiply-add, step by step" data-act="inside the processor">
+  <div>
+    <div class="kicker">try it live · one term of sum = sum + w × x</div>
+    <h2>Fetch, decode, execute, one instruction per tick.</h2>
+    <div class="panel stepper">
+      <div class="split" style="grid-template-columns:.9fr 1.1fr;gap:26px;align-items:start">
+        <div><div class="instrs"></div><div class="sbtns"><button data-s="step">step</button><button data-s="reset">reset</button></div></div>
+        <svg viewBox="0 0 640 330" width="100%" class="cpu"></svg>
+      </div>
+      <div class="stepinfo"></div>
+    </div>
+  </div>
+  <div class="cue">A simplified, made-up instruction set, one instruction per tick. Real cores pipeline instructions and some fuse multiply and add, but the lesson holds: of six instructions, two only move data in from memory, and two are loop bookkeeping. Only two do the maths.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="The clock" data-act="inside the processor">
+  <div>
+    <h2>The clock sets the ticks. 240 MHz is 240 million ticks a second.</h2>
+    <div class="ngrid" style="grid-template-columns:repeat(3,1fr);margin-top:10px">
+      <div class="cellx frag"><div class="big-n" style="font-size:52px">4.2 ns</div><div class="nlab">one tick at 240 MHz</div></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:52px">1.25 m</div><div class="nlab">how far light travels in one tick</div></div>
+      <div class="cellx frag"><div class="big-n green" style="font-size:52px">≤ 240 M</div><div class="nlab">simple instructions a second, per core, at best</div></div>
+    </div>
+    <p class="frag" style="margin-top:24px;max-width:74ch">If a multiply-add took six instructions, one core would manage about <strong>40 million</strong> a second. Two ways to beat that: do more per instruction (SIMD, slide 10), or spend fewer ticks waiting for memory (slide 7).</p>
+  </div>
+  <div class="cue">1 ÷ 240 × 10⁶ ≈ 4.17 ns; 3 × 10⁸ m/s × 4.17 ns ≈ 1.25 m. 240 ÷ 6 = 40. The S3 has two cores; most inference code uses one.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Harvard and von Neumann" data-act="inside the processor">
+  <div>
+    <h2>Fetching the next instruction and the next number: one road or two?</h2>
+    <svg viewBox="0 0 1432 200" width="1432" height="200"><defs><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><text x="0" y="30" font-size="16" fill="#23408f" font-weight="700">VON NEUMANN · one path</text><rect x="0" y="60" width="180" height="80" rx="10" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="90.0" y="106.0" font-size="16" fill="#15171b" text-anchor="middle" font-weight="700">CPU</text><rect x="380" y="60" width="240" height="80" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="500.0" y="106.0" font-size="16" fill="#15171b" text-anchor="middle" font-weight="700">memory: code + data</text><line x1="184" y1="100" x2="376" y2="100" stroke="#a8231f" stroke-width="5"/><text x="280" y="88" font-size="13" fill="#a8231f" text-anchor="middle">one bus: take turns</text><g class="frag"><text x="720" y="30" font-size="16" fill="#146b5c" font-weight="700">HARVARD · two paths</text><rect x="720" y="60" width="180" height="80" rx="10" fill="#e6f1ee" stroke="#146b5c" stroke-width="1.6"/><text x="810.0" y="106.0" font-size="16" fill="#15171b" text-anchor="middle" font-weight="700">CPU</text><rect x="1100" y="10" width="240" height="70" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="1220.0" y="51.0" font-size="16" fill="#15171b" text-anchor="middle" font-weight="700">instruction memory</text><rect x="1100" y="110" width="240" height="70" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="1220.0" y="151.0" font-size="16" fill="#15171b" text-anchor="middle" font-weight="700">data memory</text><line x1="904" y1="85" x2="1096" y2="45" stroke="#146b5c" stroke-width="4"/><line x1="904" y1="115" x2="1096" y2="145" stroke="#146b5c" stroke-width="4"/><text x="1000" y="100" font-size="13" fill="#146b5c" text-anchor="middle">at the same time</text></g></svg>
+    <p class="frag" style="margin-top:14px;max-width:74ch">DSPs were built Harvard-style so a multiply-add never waits for its own instruction. Most modern microcontrollers mix the two: separate paths and caches near the core, one shared memory further out.</p>
+  </div>
+  <div class="cue">Name it, do not dwell. The useful idea is that the path to memory is a shared, limited resource, which sets up the next slide.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Moving data costs more than maths" data-act="memory">
+  <div>
+    <h2>The most important chart in this unit: moving a number costs more than using it.</h2>
+    <svg viewBox="0 0 1432 440" width="1432" height="440"><line x1="400" y1="20" x2="400" y2="400" stroke="#e2e0d9"/><text x="400" y="424" font-size="13" fill="#8b9096" text-anchor="middle">0.01</text><line x1="592" y1="20" x2="592" y2="400" stroke="#e2e0d9"/><text x="592" y="424" font-size="13" fill="#8b9096" text-anchor="middle">0.1</text><line x1="784" y1="20" x2="784" y2="400" stroke="#e2e0d9"/><text x="784" y="424" font-size="13" fill="#8b9096" text-anchor="middle">1</text><line x1="976" y1="20" x2="976" y2="400" stroke="#e2e0d9"/><text x="976" y="424" font-size="13" fill="#8b9096" text-anchor="middle">10</text><line x1="1168" y1="20" x2="1168" y2="400" stroke="#e2e0d9"/><text x="1168" y="424" font-size="13" fill="#8b9096" text-anchor="middle">100</text><line x1="1360" y1="20" x2="1360" y2="400" stroke="#e2e0d9"/><text x="1360" y="424" font-size="13" fill="#8b9096" text-anchor="middle">1,000 pJ</text><g class="frag"><text x="388" y="58" font-size="16" fill="#15171b" text-anchor="end">8-bit integer add</text><rect x="400" y="30" width="92" height="40" rx="5" fill="#146b5c" opacity=".88"/><text x="502" y="57" font-size="15" fill="#146b5c" font-weight="700">0.03 pJ</text></g><g class="frag"><text x="388" y="120" font-size="16" fill="#15171b" text-anchor="end">32-bit integer add</text><rect x="400" y="92" width="192" height="40" rx="5" fill="#146b5c" opacity=".88"/><text x="602" y="119" font-size="15" fill="#146b5c" font-weight="700">0.1 pJ</text></g><g class="frag"><text x="388" y="182" font-size="16" fill="#15171b" text-anchor="end">8-bit integer multiply</text><rect x="400" y="154" width="250" height="40" rx="5" fill="#146b5c" opacity=".88"/><text x="660" y="181" font-size="15" fill="#146b5c" font-weight="700">0.2 pJ</text></g><g class="frag"><text x="388" y="244" font-size="16" fill="#15171b" text-anchor="end">32-bit float multiply</text><rect x="400" y="216" width="493" height="40" rx="5" fill="#23408f" opacity=".88"/><text x="903" y="243" font-size="15" fill="#23408f" font-weight="700">3.7 pJ</text></g><g class="frag"><text x="388" y="306" font-size="16" fill="#15171b" text-anchor="end">32-bit read from a small SRAM</text><rect x="400" y="278" width="518" height="40" rx="5" fill="#b06a12" opacity=".88"/><text x="928" y="305" font-size="15" fill="#b06a12" font-weight="700">5 pJ</text></g><g class="frag"><text x="388" y="368" font-size="16" fill="#15171b" text-anchor="end">32-bit read from off-chip DRAM</text><rect x="400" y="340" width="923" height="40" rx="5" fill="#a8231f" opacity=".88"/><text x="1333" y="367" font-size="15" fill="#a8231f" font-weight="700">640 pJ</text></g></svg>
+    <p class="small">Energy per operation, log scale. Figures from Mark Horowitz's widely cited ISSCC 2014 keynote, for a 45 nm process. Newer chips are lower across the board; the ratios are what to remember.</p>
+  </div>
+  <div class="cue">Reveal top to bottom. Two ratios to say aloud: an 8-bit add is over 100× cheaper than one SRAM read; a DRAM read costs over 20,000× an 8-bit add. This chart explains int8, caches and accelerators in one picture. Source: M. Horowitz, "Computing's energy problem (and what we can do about it)", ISSCC 2014.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="The memory hierarchy" data-act="memory">
+  <div>
+    <h2>Small and fast at the top, big and slow at the bottom.</h2>
+    <svg viewBox="0 0 1432 410" width="1432" height="410"><g class="frag"><rect x="586" y="20" width="260" height="64" rx="8" fill="#146b5c" opacity="0.18" stroke="#146b5c" stroke-width="1.6"/><text x="716" y="48" font-size="18" fill="#15171b" text-anchor="middle" font-weight="700">registers</text><text x="716" y="70" font-size="14" fill="#4b5057" text-anchor="middle">a few dozen numbers</text><text x="860" y="58" font-size="14" fill="#146b5c" font-weight="700">instant</text></g><g class="frag"><rect x="476" y="96" width="480" height="64" rx="8" fill="#146b5c" opacity="0.24" stroke="#146b5c" stroke-width="1.6"/><text x="716" y="124" font-size="18" fill="#15171b" text-anchor="middle" font-weight="700">cache</text><text x="716" y="146" font-size="14" fill="#4b5057" text-anchor="middle">tens of KB, near the core</text><text x="970" y="134" font-size="14" fill="#146b5c" font-weight="700">very fast</text></g><g class="frag"><rect x="366" y="172" width="700" height="64" rx="8" fill="#23408f" opacity="0.30" stroke="#23408f" stroke-width="1.6"/><text x="716" y="200" font-size="18" fill="#15171b" text-anchor="middle" font-weight="700">internal SRAM</text><text x="716" y="222" font-size="14" fill="#4b5057" text-anchor="middle">512 KB on the S3</text><text x="1080" y="210" font-size="14" fill="#23408f" font-weight="700">fast</text></g><g class="frag"><rect x="256" y="248" width="920" height="64" rx="8" fill="#b06a12" opacity="0.36" stroke="#b06a12" stroke-width="1.6"/><text x="716" y="276" font-size="18" fill="#15171b" text-anchor="middle" font-weight="700">PSRAM</text><text x="716" y="298" font-size="14" fill="#4b5057" text-anchor="middle">8 MB, outside the chip, through a cache</text><text x="1190" y="286" font-size="14" fill="#b06a12" font-weight="700">slower</text></g><g class="frag"><rect x="146" y="324" width="1140" height="64" rx="8" fill="#a8231f" opacity="0.42" stroke="#a8231f" stroke-width="1.6"/><text x="716" y="352" font-size="18" fill="#15171b" text-anchor="middle" font-weight="700">flash</text><text x="716" y="374" font-size="14" fill="#4b5057" text-anchor="middle">16 MB: code and model weights</text><text x="1300" y="362" font-size="14" fill="#a8231f" font-weight="700">slowest</text></g></svg>
+  </div>
+  <div class="cue">On the S3, PSRAM and flash are reached through a cache, so small hot data from them can still be quick; large data streamed through them is not. The lab measures exactly that. Speeds are qualitative; exact cycle counts depend on the access pattern.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Three consequences" data-act="memory">
+  <div>
+    <h2>Three things this explains.</h2>
+    <div class="ngrid" style="grid-template-columns:1fr 1fr 1fr;gap:30px;text-align:left;margin-top:10px">
+      <div class="cellx frag"><div class="big-n" style="font-size:42px">int8 is faster</div><div class="nlab" style="margin-bottom:12px">not just smaller</div><p style="font-size:20px">Four times fewer bytes to move per weight, and cheaper arithmetic. Class 7's quantisation teaser, explained.</p></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:42px">where data lives</div><div class="nlab" style="margin-bottom:12px">changes the speed</div><p style="font-size:20px">The same loop over the same numbers runs slower when they sit in PSRAM. You will measure it.</p></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:42px">accelerators</div><div class="nlab" style="margin-bottom:12px">put memory next to maths</div><p style="font-size:20px">The real trick of an NPU is not more multipliers; it is fewer trips to memory. Class 16.</p></div>
+    </div>
+  </div>
+  <div class="cue">Ask students to predict the lab's two results before they run it: how much faster is int8, and how much slower is PSRAM?</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="MAC units and SIMD" data-act="MCUs and DSPs">
+  <div>
+    <h2>Do more per instruction: one instruction, many pairs.</h2>
+    <svg viewBox="0 0 1432 170" width="1432" height="170"><rect x="0" y="70" width="46" height="34" rx="4" fill="#23408f" opacity=".85"/><rect x="0" y="112" width="46" height="34" rx="4" fill="#23408f" opacity=".55"/><text x="0" y="50" font-size="17" fill="#15171b" font-weight="700">scalar: one pair per instruction</text><g class="frag"><rect x="700" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="700" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="735" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="735" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="770" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="770" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="806" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="806" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="841" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="841" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="876" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="876" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="912" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="912" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="947" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="947" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="982" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="982" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="1017" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="1017" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="1052" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="1052" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="1088" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="1088" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="1123" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="1123" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="1158" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="1158" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="1194" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="1194" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><rect x="1229" y="70" width="31" height="34" rx="4" fill="#146b5c" opacity=".85"/><rect x="1229" y="112" width="31" height="34" rx="4" fill="#146b5c" opacity=".55"/><text x="700" y="50" font-size="17" fill="#15171b" font-weight="700">SIMD: 16 int8 pairs in one 128-bit instruction</text></g></svg>
+    <div class="split frag" style="margin-top:12px;gap:24px">
+      <div class="rem"><div class="h">MAC unit</div><ul><li>Hardware that does multiply-and-accumulate as one step, instead of a multiply then an add.</li></ul></div>
+      <div class="rem green"><div class="h">SIMD · single instruction, multiple data</div><ul><li>Wide registers holding many small numbers, all multiplied at once. This is what Class 4 called "vector instructions".</li></ul></div>
+    </div>
+    <p class="frag small" style="margin-top:12px">The narrower the number, the more fit in one register: another reason int8 wins.</p>
+  </div>
+  <div class="cue">The ESP32-S3's vector extension works on 128-bit registers, i.e. 16 int8 values at a time; check the S3 technical reference manual for the exact instruction set. Espressif's ESP-NN and ESP-DSP libraries use it so you do not have to write it by hand.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Families of microcontroller" data-act="MCUs and DSPs">
+  <div>
+    <h2>Four kinds of small processor, from tiny to TinyML-ready.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:26%">kind</th><th style="width:30%">examples</th><th style="width:22%">strength</th><th>for ML</th></tr>
+      <tr class="frag"><td>basic MCU</td><td>Arm Cortex-M0+, small 8-bit parts</td><td>lowest power and cost</td><td>only the tiniest models</td></tr>
+      <tr class="frag"><td>MCU + DSP/SIMD</td><td>Cortex-M4, M7, M55; ESP32-S3</td><td>many MACs per instruction</td><td>the TinyML sweet spot</td></tr>
+      <tr class="frag"><td>MCU + micro-NPU</td><td>Cortex-M55 with an Ethos-U55 class NPU</td><td>a dedicated ML block</td><td>bigger vision and audio models</td></tr>
+      <tr class="frag"><td>dedicated DSP</td><td>TI C6000 family; audio DSPs in earbuds</td><td>very fast fixed signal maths</td><td>audio front-ends, FFTs, filters</td></tr>
+    </table>
+  </div>
+  <div class="cue">Ask which row the BrickML from Class 1 likely sits in, and which row a smartwatch's always-on wake-gesture chip might use.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="What makes a DSP a DSP" data-act="MCUs and DSPs">
+  <div>
+    <h2>A DSP is built for one loop: filters and FFTs, forever.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:28px">single-cycle MAC</div><div class="ns">a multiply-add every tick</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:28px">circular buffers</div><div class="ns">Class 6's ring buffer, in hardware: the address wraps for free</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:28px">zero-overhead loops</div><div class="ns">no "increment, compare, branch" instructions</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:28px">fixed-point maths</div><div class="ns">integers standing in for fractions: cheap, and close to int8 quantisation</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:74ch">Look back at slide 4: a DSP removes the bookkeeping instructions and overlaps the loads. Six instructions become, in effect, one.</p>
+  </div>
+  <div class="cue">Your earbuds almost certainly contain an audio DSP running noise cancellation. The keyword front-end from Class 8 (FFT, mel bands) is classic DSP work.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="The doorbell's processor" data-act="closing theory">
+  <div>
+    <div class="kicker">our running example</div>
+    <h2>Can the S3 run both of the doorbell's models?</h2>
+    <div class="split" style="align-items:stretch;gap:24px">
+      <div class="panel"><span class="lab" style="color:var(--ok)">keyword model · yes</span><p>Small, int8, run on the S3's vector instructions through ESP-NN. Comfortably real-time.</p></div>
+      <div class="panel frag"><span class="lab" style="color:var(--amber)">person detector · it depends</span><p>Tens of millions of multiply-adds per frame. Is the S3 fast enough at the frame rate we want? That is your lab's measured number, and Class 16's question.</p></div>
+    </div>
+  </div>
+  <div class="cue">End of theory. Boards out; the lab needs only the board and a USB cable.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Lab: time the maths" data-act="lab">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">lab · teams of four · board only</div><h2 style="margin-bottom:6px">Measure your board's multiply-adds per second.</h2></div>
+      <div class="panel timer" data-secs="1500"><span class="tdisp">25:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="un">A</div><div class="ut">float32 vs int8</div><div class="ud">The same dot product, two number types. Which is faster, and by how much?</div></div>
+      <div class="ucard"><div class="un">B</div><div class="ut">SRAM vs PSRAM</div><div class="ud">The same int8 loop, arrays in two different memories. Does where the data lives matter?</div></div>
+      <div class="ucard"><div class="un">C</div><div class="ut">answer the hook</div><div class="ud">Put your measured rate into the calculator: how long does Class 7's network take?</div></div>
+    </div>
+    <p class="small" style="margin-top:16px">Board settings: ESP32S3 Dev Module, <strong>PSRAM: OPI PSRAM</strong> (needed for Part B).</p>
+  </div>
+  <div class="cue">Optional extension for fast teams: replace the int8 loop with an ESP-DSP or ESP-NN optimised kernel and compare. Only if you have set the library up and tested it beforehand.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Lab A: float32 vs int8" data-act="lab">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre><span class="c">// Part A · one dot product, two number types</span>
+<span class="k">const int</span> N = <span class="s">1000</span>, REPS = <span class="s">1000</span>;      <span class="c">// one million MACs</span>
+<span class="k">float</span>  af[N], bf[N];
+<span class="k">int8_t</span> a8[N], b8[N];
+
+<span class="k">void</span> <span class="f">setup</span>() {
+  Serial.begin(<span class="s">115200</span>);  delay(<span class="s">1000</span>);
+  <span class="k">for</span> (<span class="k">int</span> i = <span class="s">0</span>; i &lt; N; i++) {
+    af[i] = random(-<span class="s">100</span>, <span class="s">100</span>) / <span class="s">100.0</span>;  bf[i] = random(-<span class="s">100</span>, <span class="s">100</span>) / <span class="s">100.0</span>;
+    a8[i] = random(-<span class="s">100</span>, <span class="s">100</span>);          b8[i] = random(-<span class="s">100</span>, <span class="s">100</span>);
+  }
+  <span class="k">uint32_t</span> t = micros();  <span class="k">volatile float</span> sf = <span class="s">0</span>;
+  <span class="k">for</span> (<span class="k">int</span> r = <span class="s">0</span>; r &lt; REPS; r++) { <span class="k">float</span> s = <span class="s">0</span>;
+    <span class="k">for</span> (<span class="k">int</span> i = <span class="s">0</span>; i &lt; N; i++) s += af[i] * bf[i];  sf += s; }
+  <span class="k">uint32_t</span> tf = micros() - t;
+
+  t = micros();  <span class="k">volatile int32_t</span> si = <span class="s">0</span>;
+  <span class="k">for</span> (<span class="k">int</span> r = <span class="s">0</span>; r &lt; REPS; r++) { <span class="k">int32_t</span> s = <span class="s">0</span>;
+    <span class="k">for</span> (<span class="k">int</span> i = <span class="s">0</span>; i &lt; N; i++) s += a8[i] * b8[i];  si += s; }
+  <span class="k">uint32_t</span> ti = micros() - t;
+
+  <span class="k">double</span> macs = (<span class="k">double</span>)N * REPS;
+  Serial.printf(<span class="s">"float32: %.1f M MAC/s\n"</span>, macs / tf);
+  Serial.printf(<span class="s">"int8   : %.1f M MAC/s\n"</span>, macs / ti);
+}
+<span class="k">void</span> <span class="f">loop</span>() {}</pre>
+    <div class="stack">
+      <div class="kicker">lab · part A</div>
+      <h2>Run it. Press reset and run it again.</h2>
+      <p class="small">MACs ÷ microseconds = millions of MACs per second. Write both numbers down.</p>
+      <p class="small">Is int8 faster here? By how much? Is that less than the 4× you might expect? Why might it be?</p>
+    </div>
+  </div>
+  <div class="cue">Plain C loops; the compiler does not automatically use the S3's vector instructions here, so the int8 gain is smaller than a hand-optimised kernel would give. That gap is the reason ESP-NN exists, and a good discussion point. The volatile accumulators stop the compiler deleting the loops.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Lab B: SRAM vs PSRAM" data-act="lab">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre><span class="c">// Part B · the same int8 loop, arrays in two different memories</span>
+<span class="k">#include</span> <span class="s">"esp_heap_caps.h"</span>
+<span class="k">const int</span> N = <span class="s">100000</span>, REPS = <span class="s">20</span>;    <span class="c">// 100 KB per array</span>
+
+<span class="k">uint32_t</span> <span class="f">timeIt</span>(<span class="k">int8_t</span>* a, <span class="k">int8_t</span>* b) {
+  <span class="k">uint32_t</span> t = micros();  <span class="k">volatile int32_t</span> acc = <span class="s">0</span>;
+  <span class="k">for</span> (<span class="k">int</span> r = <span class="s">0</span>; r &lt; REPS; r++) { <span class="k">int32_t</span> s = <span class="s">0</span>;
+    <span class="k">for</span> (<span class="k">int</span> i = <span class="s">0</span>; i &lt; N; i++) s += a[i] * b[i];  acc += s; }
+  <span class="k">return</span> micros() - t;
+}
+
+<span class="k">void</span> <span class="f">setup</span>() {
+  Serial.begin(<span class="s">115200</span>);  delay(<span class="s">1000</span>);
+  <span class="k">int8_t</span> *aS = (<span class="k">int8_t</span>*)heap_caps_malloc(N, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  <span class="k">int8_t</span> *bS = (<span class="k">int8_t</span>*)heap_caps_malloc(N, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  <span class="k">int8_t</span> *aP = (<span class="k">int8_t</span>*)heap_caps_malloc(N, MALLOC_CAP_SPIRAM);
+  <span class="k">int8_t</span> *bP = (<span class="k">int8_t</span>*)heap_caps_malloc(N, MALLOC_CAP_SPIRAM);
+  <span class="k">if</span> (!aS || !bS || !aP || !bP) { Serial.println(<span class="s">"alloc failed: PSRAM on?"</span>); <span class="k">return</span>; }
+  <span class="k">for</span> (<span class="k">int</span> i = <span class="s">0</span>; i &lt; N; i++) { aS[i] = aP[i] = random(-<span class="s">100</span>, <span class="s">100</span>);
+                            bS[i] = bP[i] = random(-<span class="s">100</span>, <span class="s">100</span>); }
+  <span class="k">double</span> macs = (<span class="k">double</span>)N * REPS;
+  Serial.printf(<span class="s">"SRAM : %.1f M MAC/s\n"</span>, macs / timeIt(aS, bS));
+  Serial.printf(<span class="s">"PSRAM: %.1f M MAC/s\n"</span>, macs / timeIt(aP, bP));
+}
+<span class="k">void</span> <span class="f">loop</span>() {}</pre>
+    <div class="stack">
+      <div class="kicker">lab · part B</div>
+      <h2>Same numbers, same loop, different address.</h2>
+      <p class="small">The arrays are 100 KB each: bigger than the cache in front of PSRAM, so every pass goes out to the external chip.</p>
+      <p class="small">Try N = 1,000 as well. Does the gap shrink? Why?</p>
+    </div>
+  </div>
+  <div class="cue">heap_caps_malloc with MALLOC_CAP_INTERNAL forces internal SRAM; MALLOC_CAP_SPIRAM forces PSRAM. Plain malloc in the Arduino core may place large blocks in PSRAM automatically, which is why the code is explicit. With N = 1,000 the arrays fit in the cache and the gap mostly disappears: slide 8 made measurable.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Lab C: answer the hook" data-act="lab">
+  <div>
+    <div class="kicker">lab · part C and worksheet</div>
+    <h2>Type in your measured rate.</h2>
+    <div class="panel mcalc">
+      <div class="crow" style="grid-template-columns:260px 1fr"><span class="cl">your int8 rate, M MAC/s</span><span><input class="mrate" type="number" value="20" min="0.1" step="0.1"></span></div>
+      <table class="dt txt mtab" style="width:100%;margin-top:8px"><tr><th style="width:44%">workload</th><th style="width:22%">multiply-adds</th><th>time at your rate</th></tr></table>
+    </div>
+    <div class="wrow" style="grid-template-columns:repeat(5,1fr);margin-top:14px"><div class="wbox" style="min-height:150px"><div class="wk">A · float32</div><div class="wq">M MAC/s</div></div><div class="wbox" style="min-height:150px"><div class="wk">A · int8</div><div class="wq">M MAC/s; speed-up over float32</div></div><div class="wbox" style="min-height:150px"><div class="wk">B · SRAM vs PSRAM</div><div class="wq">M MAC/s each; how much slower?</div></div><div class="wbox" style="min-height:150px"><div class="wk">B · with N = 1,000</div><div class="wq">does the gap shrink? why?</div></div><div class="wbox" style="min-height:150px"><div class="wk">C · the hook</div><div class="wq">your measured time for 3,328 MACs; whose guess was closest?</div></div></div>
+  </div>
+  <div class="cue">The default 20 is a placeholder; students type their own. The keyword CNN and person-detector counts are illustrative orders of magnitude, not a specific model's published figures. Compare the gesture-network time with the hands-up guesses from slide 3.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">Explain in two sentences why converting a model from float32 to int8 can make it faster, not just smaller. Use one number you measured today.</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>when the CPU is not enough</strong>. System-on-chip, NPUs, and how to read a TOPS number honestly.</p>
+  </div>
+  <div class="cue">Good answers mention both effects: fewer bytes to move (slide 7) and more values per instruction (slide 10), plus their own measured speed-up.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.stepper')||e.target.closest('.mcalc')||e.target.closest('.timer')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  var INS=[{t:'LOAD r1, w[i]',k:'memory',d:'Bring the weight in from memory into a register.'},{t:'LOAD r2, x[i]',k:'memory',d:'Bring the input in from memory. Two of six steps are just fetching numbers.'},{t:'MUL r3, r1, r2',k:'maths',d:'Multiply: finally some real work.'},{t:'ADD r4, r4, r3',k:'maths',d:'Accumulate into the running sum.'},{t:'ADD i, i, 1',k:'bookkeeping',d:'Move to the next element.'},{t:'BRANCH if i < n',k:'bookkeeping',d:'Jump back for the next term. Six ticks for one multiply-add.'}];
+  function stepDraw(p){
+    var k=+(p.dataset.k||0), h='';
+    INS.forEach(function(q,j){ h+='<div class="'+(j===k-1?'cur':(j<k-1?'done':''))+'">'+q.t+'<span>'+q.k+'</span></div>'; });
+    p.querySelector('.instrs').innerHTML=h;
+    var q=k>0?INS[k-1]:null, hot=q?q.k:'';
+    var mem=hot==='memory', alu=hot==='maths', ctl=hot==='bookkeeping';
+    var o='<defs><marker id="sa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a8231f"/></marker></defs>';
+    o+='<rect x="20" y="20" width="380" height="290" rx="12" fill="#eaeef7" stroke="#23408f"/><text x="36" y="48" font-size="15" fill="#23408f" font-weight="700">CPU CORE</text>';
+    o+='<rect x="40" y="70" width="160" height="110" rx="8" fill="#ffffff" stroke="'+(mem?'#a8231f':'#c6c3ba')+'" stroke-width="'+(mem?3:1.5)+'"/><text x="120" y="98" font-size="14" fill="#15171b" text-anchor="middle" font-weight="700">registers</text><text x="120" y="126" font-size="13" fill="#4b5057" text-anchor="middle">r1 r2 r3 r4 i</text>';
+    o+='<rect x="220" y="70" width="160" height="110" rx="8" fill="'+(alu?'#e6f1ee':'#ffffff')+'" stroke="'+(alu?'#146b5c':'#c6c3ba')+'" stroke-width="'+(alu?3:1.5)+'"/><text x="300" y="120" font-size="15" fill="#15171b" text-anchor="middle" font-weight="700">ALU · × +</text>';
+    o+='<rect x="40" y="200" width="340" height="90" rx="8" fill="'+(ctl?'#fbf0dc':'#ffffff')+'" stroke="'+(ctl?'#b06a12':'#c6c3ba')+'" stroke-width="'+(ctl?3:1.5)+'"/><text x="210" y="240" font-size="15" fill="#15171b" text-anchor="middle" font-weight="700">control · fetch, decode, next</text><text x="210" y="266" font-size="13" fill="#4b5057" text-anchor="middle">tick '+k+' of 6</text>';
+    o+='<rect x="470" y="70" width="150" height="220" rx="12" fill="#ffffff" stroke="'+(mem?'#a8231f':'#c6c3ba')+'" stroke-width="'+(mem?3:1.5)+'"/><text x="545" y="110" font-size="15" fill="#15171b" text-anchor="middle" font-weight="700">memory</text><text x="545" y="140" font-size="13" fill="#4b5057" text-anchor="middle">w[0..n]</text><text x="545" y="162" font-size="13" fill="#4b5057" text-anchor="middle">x[0..n]</text>';
+    if(mem) o+='<line x1="466" y1="125" x2="206" y2="125" stroke="#a8231f" stroke-width="4" marker-end="url(#sa)"/>';
+    p.querySelector('.cpu').innerHTML=o;
+    p.querySelector('.stepinfo').textContent= q ? q.d : 'Press step to run one term of a dot product.';
+  }
+  deck.querySelectorAll('.stepper').forEach(stepDraw);
+  var WL=[['Class 7 gesture network',3328],['a small keyword CNN (illustrative)',500000],['a small person-detector CNN (illustrative)',20000000]];
+  function mDraw(p){
+    var r=parseFloat(p.querySelector('.mrate').value)||1, h='<tr><th style="width:44%">workload</th><th style="width:22%">multiply-adds</th><th>time at your rate</th></tr>';
+    WL.forEach(function(w){ var us=w[1]/r; var t= us<1000? us.toFixed(us<10?1:0)+' µs' : (us<1e6? (us/1000).toFixed(us<1e4?1:0)+' ms' : (us/1e6).toFixed(2)+' s'); h+='<tr><td>'+w[0]+'</td><td>'+w[1].toLocaleString('en-IN')+'</td><td style="font-weight:700;color:var(--accent)">'+t+'</td></tr>'; });
+    p.querySelector('.mtab').innerHTML=h;
+  }
+  deck.querySelectorAll('.mcalc').forEach(function(p){ mDraw(p); p.querySelector('.mrate').addEventListener('input',function(){ mDraw(p); }); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.sbtns button'); if(!b) return; b.blur();
+    var p=b.closest('.stepper'), k=+(p.dataset.k||0);
+    p.dataset.k = b.dataset.s==='reset' ? 0 : (k>=6?1:k+1); stepDraw(p);
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

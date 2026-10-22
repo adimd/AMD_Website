@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 16 · System-on-Chip and Accelerators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 16 */
+.num{font-family:var(--mono);font-size:22px}
+input.num{width:160px;padding:6px 10px;border:1px solid var(--rule2);border-radius:8px}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.socp,.fbp{padding:16px 22px}
+.socbtns{margin-bottom:8px}
+.socbtns button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.socinfo,.fbinfo{font-size:21px;min-height:32px;margin-top:6px}
+.syst{padding:18px 24px}
+.sbtns{display:flex;gap:10px}
+.sbtns button{height:44px;padding:0 22px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:16px;color:var(--ink);cursor:pointer}
+.sbtns button[data-y="step"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.ystats{margin-top:18px;font-size:20px}
+.ystats .yr{display:grid;grid-template-columns:1fr 110px;padding:9px 0;border-bottom:1px solid var(--rule)}
+.ystats .yr b{font-family:var(--mono);text-align:right;color:var(--accent)}
+.ystats .yr.bad b{color:var(--fail)}
+.dcards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px}
+.dcard{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:14px 18px}
+.dn{font-family:var(--serif);font-size:24px;font-weight:700}
+.dk{font-size:15px;color:var(--soft);margin-bottom:8px}
+.dr{font-size:17px;display:grid;grid-template-columns:62px 1fr;padding:2px 0}
+.dr span{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);padding-top:4px}
+.ds{font-family:var(--mono);font-size:12px;color:var(--soft);margin-top:8px}
+.mapbtns button{text-align:left;font-size:17px;height:46px}
+.mapbtns button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 16</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 16 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 16 · unit II · system-on-chip and deep learning accelerators</div>
+    <h1>When the CPU<br>is not enough.</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Last class you measured how many multiply-adds one core can do. Today: the chips that do thousands at once, and how to read their headline numbers without being fooled.</p>
+  </div>
+  <div class="cue">Theory runs to slide 13; the market-map exercise is one block at the end (slides 14 to 16). Print or share the six device cards from slide 14 before class, after checking each figure against the vendor's current page.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>Why can int8 be faster, not just smaller?</h2>
+    <div class="split" style="gap:24px;margin-top:8px">
+      <div class="rem frag"><div class="h">fewer bytes to move</div><ul><li>One byte per weight instead of four. Moving data costs more energy than multiplying it.</li></ul></div>
+      <div class="rem green frag"><div class="h">more per instruction</div><ul><li>Sixteen int8 values fit in a 128-bit register where only four floats would.</li></ul></div>
+    </div>
+    <p class="frag" style="margin-top:20px;max-width:72ch">Ask two or three teams for their measured int8 rate and write them on the board. You will need that number in the next slide.</p>
+  </div>
+  <div class="cue">Typical answers mention one effect; the full answer has both. Collect the class's measured rates; use a middle value in the hook calculator.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Can the S3 keep up?" data-act="the hook">
+  <div>
+    <div class="kicker">try it live · the doorbell's person detector</div>
+    <h2>A person detector at 10 frames a second: can the S3 keep up?</h2>
+    <div class="panel calc hook16">
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">your S3 rate · M MAC/s</span><span><input class="hrate num" type="number" value="20" min="1" step="1"></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">model</span><span class="cb" data-g="m"><button data-v="10" class="sel">tiny detector · ~10 M (illustrative)</button><button data-v="300">MobileNetV2 · 300 M</button><button data-v="569">MobileNetV1 · 569 M</button></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">frames per second</span><span class="cb" data-g="f"><button data-v="1">1</button><button data-v="5">5</button><button data-v="10" class="sel">10</button><button data-v="30">30</button></span></div>
+      <div class="cformula"></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">MobileNet figures are the published multiply-add counts for the 224×224 full-width versions (MobileNetV1 paper: 569 M; MobileNetV2 paper: 300 M). The tiny detector is an order-of-magnitude stand-in for a 96×96 person-detection model. Start with your class's measured rate; the gap with the MobileNets is the motivation for the whole class.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Inside a phone chip" data-act="inside an SoC">
+  <div>
+    <div class="kicker">try it live · click a job</div>
+    <h2>A system-on-chip: a dozen specialists on one piece of silicon.</h2>
+    <div class="panel socp">
+      <div class="cb socbtns"><button data-j="cam">camera preview</button><button data-j="wake">"Hey…" wake word</button><button data-j="face">face unlock</button><button data-j="ui">scrolling a feed</button><button data-j="sync">background email</button><button data-j="rec">recording 4K video</button></div>
+      <svg viewBox="0 0 1380 380" width="100%" class="socsvg"></svg>
+      <div class="socinfo"></div>
+    </div>
+  </div>
+  <div class="cue">The point: each job goes to the block built for it, because the same job on the big CPU costs far more energy. Every block shares one road to DRAM, the Class 15 bottleneck again. The layout is a generic phone chip, not any specific product.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Three systems-on-chip" data-act="inside an SoC">
+  <div>
+    <h2>Your board is a system-on-chip too, just a small one.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:18%"></th><th style="width:27%">ESP32-S3</th><th style="width:27%">Raspberry Pi 5 · BCM2712</th><th>phone chip</th></tr>
+      <tr class="frag"><td>CPU</td><td>2 × Xtensa LX7, 240 MHz</td><td>4 × Cortex-A76, 2.4 GHz</td><td>big and little cores, up to ~8</td></tr>
+      <tr class="frag"><td>graphics</td><td>none</td><td>VideoCore VII GPU</td><td>GPU</td></tr>
+      <tr class="frag"><td>ML help</td><td>vector instructions</td><td>none on chip; add-on Hailo module</td><td>NPU, often tens of TOPS</td></tr>
+      <tr class="frag"><td>memory</td><td>512 KB SRAM + 8 MB PSRAM</td><td>4–16 GB LPDDR4X</td><td>8–16 GB LPDDR5</td></tr>
+      <tr class="frag"><td>power</td><td>well under a watt</td><td>a few watts to ~12 W</td><td>a few watts, in bursts</td></tr>
+    </table>
+  </div>
+  <div class="cue">Raspberry Pi's AI Kit and AI HAT+ add a Hailo accelerator over PCIe, which is exactly the "add an NPU beside the SoC" pattern. Power figures are rough ranges; check the board documentation if a student asks for exact values.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Why an accelerator wins" data-act="why accelerators win">
+  <div>
+    <h2>Four tricks, all aimed at Class 15's two lessons.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:30px">MACs in a grid</div><div class="ns">hundreds or thousands of multiply-add units working in lockstep</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:30px">data reuse</div><div class="ns">load each number once, use it many times inside the grid</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:30px">low precision</div><div class="ns">int8 or lower: smaller multipliers, fewer bytes</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:30px">fixed function</div><div class="ns">no fetch, decode or loop bookkeeping for common layers</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:74ch">Compare slide 4 of Class 15: six instructions for one multiply-add. An accelerator spends almost all its ticks on the maths.</p>
+  </div>
+  <div class="cue">The next two slides show the first two tricks working; the fourth has a price, on slide 9.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="A grid of multiply-adds" data-act="why accelerators win">
+  <div>
+    <div class="kicker">try it live · a 4 × 4 systolic array</div>
+    <h2>Weights sit still; inputs ripple through, one hop per tick.</h2>
+    <div class="panel syst">
+      <div class="split" style="grid-template-columns:1.15fr .85fr;gap:26px;align-items:center">
+        <svg viewBox="0 0 660 400" width="100%" class="sysvg"></svg>
+        <div>
+          <div class="sbtns"><button data-y="step">tick</button><button data-y="run">run</button><button data-y="reset">reset</button></div>
+          <div class="ystats"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Each cell holds one weight. Each input enters on the left and is passed to the right every tick, so one value loaded from memory is used by four cells. Partial sums flow downward. The diagonal wave is the "systolic" heartbeat. Counts assume 4 input vectors through the array; the CPU column assumes two loads per multiply-add with no reuse, as in Class 15.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Bigger grid, more reuse" data-act="why accelerators win">
+  <div>
+    <div class="kicker">try it live · drag the grid size</div>
+    <h2>The bigger the grid, the less each multiply-add pays for memory.</h2>
+    <div class="panel calc reuse">
+      <div class="crow" style="grid-template-columns:230px 1fr 140px;gap:20px"><span class="cl">grid size N × N</span><input class="rsl" type="range" min="0" max="7" step="1" value="2"><span class="rlab num"></span></div>
+      <div class="cformula"></div>
+      <div class="cbar" style="grid-template-columns:260px 1fr 150px"><span class="cbl">CPU · 2 SRAM reads per MAC</span><div class="ctrack"><div class="cfill over rcpu"></div></div><span class="cpct rcpuv"></span></div>
+      <div class="cbar" style="grid-template-columns:260px 1fr 150px"><span class="cbl">N × N grid</span><div class="ctrack"><div class="cfill rarr"></div></div><span class="cpct rarrv"></span></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Model: an N × N array multiplying N × N matrices loads 2N² numbers and does N³ multiply-adds. Energy uses Class 15's Horowitz figures (5 pJ per SRAM read, 0.23 pJ for an int8 multiply plus add). Real chips also pay for writing results and for DRAM, so treat this as the shape of the curve, not exact numbers.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="The price: unsupported layers" data-act="why accelerators win">
+  <div>
+    <div class="kicker">try it live</div>
+    <h2>One layer the NPU cannot run, and the whole model slows down.</h2>
+    <div class="panel fbp">
+      <div class="cb"><button data-fb="0" class="sel">every layer supported</button><button data-fb="1">one unsupported layer</button></div>
+      <svg viewBox="0 0 1380 270" width="100%" class="fbsvg"></svg>
+      <div class="fbinfo"></div>
+    </div>
+  </div>
+  <div class="cue">Illustrative timings. The unsupported layer runs on the CPU, and its data has to be copied out of the NPU's memory and back in again. Ask before revealing: which costs more, the slow layer itself or the two copies? This is why vendors publish lists of supported operators, and why Unit IV will choose layers with the hardware in mind.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Where TOPS comes from" data-act="reading TOPS">
+  <div>
+    <h2>TOPS: trillions of operations per second. It is just multiplication.</h2>
+    <div class="cformula" style="font-size:30px;text-align:center;margin:18px 0 26px">MAC units × 2 operations × clock = peak operations per second</div>
+    <div class="ngrid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="cellx frag"><div class="big-n" style="font-size:44px">256</div><div class="nlab">MAC units in an Ethos-U55 micro-NPU (largest size)</div></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:44px">× 2 × 400 MHz</div><div class="nlab">each MAC counts as a multiply and an add</div></div>
+      <div class="cellx frag"><div class="big-n green" style="font-size:44px">≈ 0.2 TOPS</div><div class="nlab">about 205 billion operations a second</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:74ch">Your S3 at 20 M MAC/s is 0.00004 TOPS. Note the "× 2": one multiply-add is quoted as two operations, so halve TOPS to get MACs.</p>
+  </div>
+  <div class="cue">256 × 2 × 400 × 10⁶ = 204.8 × 10⁹. Alif quotes "up to 204 GOPS" for its 256-MAC Ethos-U55 at 400 MHz. 20 × 10⁶ × 2 = 4 × 10⁷ ops/s = 0.00004 TOPS: a factor of about 5,000.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="From headline to reality" data-act="reading TOPS">
+  <div>
+    <div class="kicker">try it live · what does a headline TOPS actually buy?</div>
+    <h2>Peel the headline number back to frames per second.</h2>
+    <div class="panel calc honest">
+      <div class="crow" style="grid-template-columns:260px 1fr"><span class="cl">headline TOPS</span><span class="cb" data-g="h"><button data-v="4">4 · Coral</button><button data-v="26">26 · Hailo-8</button><button data-v="67" class="sel">67 · Orin Nano Super</button></span></div>
+      <div class="crow" style="grid-template-columns:260px 1fr"><span class="cl">quoted with sparsity?</span><span class="cb" data-g="s"><button data-v="1">no</button><button data-v="2" class="sel">yes · halve it</button></span></div>
+      <div class="crow" style="grid-template-columns:260px 1fr 120px;gap:20px"><span class="cl">utilisation on your model</span><input class="usl" type="range" min="5" max="90" step="5" value="30"><span class="ulab num"></span></div>
+      <div class="cformula"></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Sparsity: some vendors (NVIDIA's 67 TOPS is one) quote a figure that assumes half the weights are zero and skipped; most models are not trained that way, so the dense figure (33) is the honest one. The Coral and Hailo figures are dense, so leave "no" for those. Utilisation varies hugely by model and compiler; 30% is a plausible illustration, not a measurement. Model: MobileNetV2 at 0.6 billion operations per frame.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Four questions to ask" data-act="reading TOPS">
+  <div>
+    <h2>Before you believe a TOPS number, ask four questions.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ucard frag"><div class="un">1</div><div class="ut">at what precision?</div><div class="ud">int8? int4? sparse? The same chip can claim very different numbers.</div></div>
+      <div class="ucard frag"><div class="un">2</div><div class="ut">what utilisation?</div><div class="ud">Peak assumes every unit is busy every tick. Real models rarely get close.</div></div>
+      <div class="ucard frag"><div class="un">3</div><div class="ut">at what power?</div><div class="ud">On a battery, TOPS per watt matters more than TOPS.</div></div>
+      <div class="ucard frag"><div class="un">4</div><div class="ut">does it run my layers?</div><div class="ud">An unsupported layer falls back to the CPU (slide 9).</div></div>
+    </div>
+    <div class="cformula frag" style="font-size:26px;text-align:center;margin-top:24px">TOPS ÷ watts = TOPS/W · e.g. 4 TOPS ÷ 2 W = <b>2 TOPS/W</b></div>
+  </div>
+  <div class="cue">Better still than TOPS: a measured benchmark on a model like yours, in frames per second and joules per inference. MLPerf Tiny and MLPerf Inference Edge publish such results.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="The doorbell's options" data-act="closing theory">
+  <div>
+    <div class="kicker">our running example</div>
+    <h2>The person detector is too heavy for the S3. Three ways out.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">A</div><div class="ut">shrink the model</div><div class="ud">Smaller input, fewer channels, int8. Costs some accuracy. Unit IV.</div></div>
+      <div class="ucard frag"><div class="un">B</div><div class="ut">run it less often</div><div class="ud">Only when the PIR fires (Class 14). Costs nothing if people are rare; costs latency.</div></div>
+      <div class="ucard frag"><div class="un">C</div><div class="ut">add an NPU</div><div class="ud">A board or module with an accelerator. Costs money, power and a new toolchain.</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:72ch">Real products often combine A and B. Next: where would C come from? You decide, from the published numbers.</p>
+  </div>
+  <div class="cue">End of theory. Hand out the six device cards, one set per team.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Exercise: map the market" data-act="exercise">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">exercise · teams of four · cards and a log–log grid</div><h2 style="margin-bottom:6px">Place six accelerators on performance against power.</h2></div>
+      <div class="panel timer" data-secs="660"><span class="tdisp">11:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="dcards"><div class="dcard"><div class="dn" style="color:#8b9096">ESP32-S3</div><div class="dk">CPU only</div><div class="dr"><span>perf</span>your Class 15 rate × 2 ops</div><div class="dr"><span>power</span>~0.3 W active (estimate: measure it)</div><div class="ds">source: your lab</div></div><div class="dcard"><div class="dn" style="color:#146b5c">Cortex-M55 + Ethos-U55</div><div class="dk">micro-NPU, e.g. Alif Ensemble</div><div class="dr"><span>perf</span>up to ~0.2 TOPS</div><div class="dr"><span>power</span>tens to hundreds of mW (check datasheet)</div><div class="ds">source: Alif; CNX Software, Dec 2022</div></div><div class="dcard"><div class="dn" style="color:#23408f">Google Coral Edge TPU</div><div class="dk">USB or M.2 module</div><div class="dr"><span>perf</span>4 TOPS int8</div><div class="dr"><span>power</span>~2 W (2 TOPS/W)</div><div class="ds">source: Coral datasheet</div></div><div class="dcard"><div class="dn" style="color:#23408f">Hailo-8</div><div class="dk">M.2 module</div><div class="dr"><span>perf</span>26 TOPS</div><div class="dr"><span>power</span>~2.5 W typical (vendor)</div><div class="ds">source: Hailo product page</div></div><div class="dcard"><div class="dn" style="color:#b06a12">Jetson Orin Nano 8 GB</div><div class="dk">Super mode</div><div class="dr"><span>perf</span>67 TOPS sparse · 33 dense</div><div class="dr"><span>power</span>15 W or 25 W modes</div><div class="ds">source: NVIDIA, JetPack 6.2 blog</div></div><div class="dcard"><div class="dn" style="color:#a8231f">Phone NPU</div><div class="dk">e.g. Apple A17 Pro</div><div class="dr"><span>perf</span>35 TOPS (Apple)</div><div class="dr"><span>power</span>not published</div><div class="ds">source: Apple, Sept 2023</div></div></div>
+    <p class="small" style="margin-top:12px">Both axes go up in factors of ten. Draw a diagonal for 1 TOPS/W. Which cards are missing a number you need?</p>
+  </div>
+  <div class="cue">Figures change between product generations: check each against the vendor's current page before printing, and keep the source line. The phone NPU has no published power figure, and that gap is part of the exercise. The ESP32-S3 power is a rough active-board estimate.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="The map" data-act="exercise">
+  <div>
+    <div class="kicker">reveal after teams have placed their cards · click to add each device</div>
+    <div class="split mapp" style="grid-template-columns:1.35fr .65fr;gap:24px;align-items:center">
+      <svg viewBox="0 0 900 600" width="100%" class="mapsvg"></svg>
+      <div><div class="cb mapbtns" style="flex-direction:column;align-items:stretch"></div><p class="small mapnote" style="margin-top:12px">Diagonals are equal efficiency. Up and to the left is better. Hollow markers are estimates.</p></div>
+    </div>
+  </div>
+  <div class="cue">The S3 point uses the rate typed into slide 3. Expect five orders of magnitude between the S3 and the Jetson. Ask: which device sits on the best diagonal? Which would you choose for a battery doorbell, and which for a shop with four cameras on mains power?</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Worksheet" data-act="exercise">
+  <div>
+    <div class="kicker">exercise · worksheet</div>
+    <h2>Five answers per team.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(5,1fr)"><div class="wbox" style="min-height:200px"><div class="wk">1 · efficiency</div><div class="wq">which device has the best TOPS/W?</div></div><div class="wbox" style="min-height:200px"><div class="wk">2 · battery doorbell</div><div class="wq">which would you pick, and why?</div></div><div class="wbox" style="min-height:200px"><div class="wk">3 · four cameras, mains power</div><div class="wq">which now, and why?</div></div><div class="wbox" style="min-height:200px"><div class="wk">4 · missing numbers</div><div class="wq">what was not on the cards that you needed?</div></div><div class="wbox" style="min-height:200px"><div class="wk">5 · the S3</div><div class="wq">does it belong on this chart at all? what can it still do?</div></div></div>
+  </div>
+  <div class="cue">Question 5 is the bridge back to the S3: it is the cheapest, lowest-power device on the chart, and it still runs keyword spotting and gesture models comfortably. "Cheapest thing first" from Unit I.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">Accelerator A has twice the TOPS of accelerator B but uses four times the power. For a battery-powered camera, which would you investigate first, and what else would you want to know?</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>FPGAs, ASICs and edge servers</strong>. What if you design the chip yourself?</p>
+  </div>
+  <div class="cue">B has twice the TOPS/W, so investigate it first; then ask the four questions (precision, utilisation, supported layers, real benchmark) and whether B is fast enough at all for the frame rate.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.calc')||e.target.closest('.socp')||e.target.closest('.syst')||e.target.closest('.fbp')||e.target.closest('.mapp')||e.target.closest('.timer'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  function fmtN(v){ return v>=1e9? (v/1e9).toFixed(v>=1e10?0:1)+' billion' : (v>=1e6? (v/1e6).toFixed(v>=1e7?0:1)+' million' : Math.round(v).toLocaleString('en-IN')); }
+  window.__s3rate=20;
+  function selv(p,g){ var b=p.querySelector('[data-g="'+g+'"] button.sel'); return b?+b.dataset.v:0; }
+  /* hook */
+  function hookDraw(p){
+    var r=parseFloat(p.querySelector('.hrate').value)||1; window.__s3rate=r;
+    var m=selv(p,'m'), fps=selv(p,'f'), need=m*fps;
+    p.querySelector('.cformula').innerHTML=m+' M MACs × '+fps+' frames/s = <b>'+need.toLocaleString('en-IN')+' M MAC/s</b> needed &nbsp;·&nbsp; you have <b>'+r+'</b>';
+    var v=p.querySelector('.cverdict'), mx=r/m;
+    if(r>=need){ v.style.color='var(--ok)'; v.textContent='It keeps up, with '+(r/need).toFixed(1)+'× to spare. Top speed about '+mx.toFixed(mx<10?1:0)+' frames a second.'; }
+    else { v.style.color='var(--fail)'; v.textContent=Math.round(need/r).toLocaleString('en-IN')+'× too slow. Best you could do is '+(mx<1? 'one frame every '+(1/mx).toFixed(1)+' s' : mx.toFixed(1)+' frames a second')+'.'; }
+  }
+  deck.querySelectorAll('.hook16').forEach(function(p){ hookDraw(p); p.querySelector('.hrate').addEventListener('input',function(){hookDraw(p);}); });
+  /* SoC */
+  var BL={big:[30,40,250,110,'big CPU cores'],little:[300,40,200,110,'little CPU cores'],gpu:[550,40,240,110,'GPU'],npu:[840,40,240,110,'NPU'],dsp:[1130,40,220,110,'DSP'],isp:[30,180,250,100,'image signal processor'],codec:[300,180,200,100,'video codec'],modem:[550,180,240,100,'modem and radios'],io:[840,180,240,100,'I/O: USB, display, sensors'],mem:[1130,180,220,100,'memory controller']};
+  var JOBS={cam:[['isp','gpu'],'Sensor frames go through the image signal processor (demosaic, noise, colour), then the GPU draws the preview.'],
+    wake:[['dsp'],'An always-on audio DSP listens for the wake word at a few milliwatts; the big cores stay asleep.'],
+    face:[['isp','npu','little'],'The ISP cleans the frame, the NPU runs the face network, a little core makes the decision.'],
+    ui:[['big','gpu'],'Bursty and latency-sensitive: the big cores lay out the page, the GPU draws it.'],
+    sync:[['little','modem'],'Slow, background work: a little core and the modem, at a fraction of the big cores\' power.'],
+    rec:[['isp','codec'],'The ISP processes frames and a fixed-function codec compresses them, far more efficiently than any CPU could.']};
+  function socDraw(p,j){
+    var hot=j?JOBS[j][0]:[], o='<rect x="10" y="20" width="1360" height="280" rx="14" fill="none" stroke="#c6c3ba" stroke-dasharray="6 6"/><text x="22" y="14" font-size="14" fill="#8b9096">one die</text>';
+    for(var k in BL){ var b=BL[k], h=hot.indexOf(k)>=0;
+      o+='<rect x="'+b[0]+'" y="'+b[1]+'" width="'+b[2]+'" height="'+b[3]+'" rx="10" fill="'+(h?'#23408f':'#ffffff')+'" stroke="'+(h?'#23408f':'#c6c3ba')+'" stroke-width="1.6"/><text x="'+(b[0]+b[2]/2)+'" y="'+(b[1]+b[3]/2+6)+'" font-size="17" text-anchor="middle" font-weight="700" fill="'+(h?'#ffffff':'#15171b')+'">'+b[4]+'</text>'; }
+    o+='<line x1="1240" y1="280" x2="1240" y2="320" stroke="#a8231f" stroke-width="4"/><rect x="980" y="320" width="380" height="50" rx="10" fill="#fbeceb" stroke="#a8231f"/><text x="1170" y="351" font-size="16" text-anchor="middle" fill="#a8231f" font-weight="700">DRAM · off-chip, shared by every block</text>';
+    p.querySelector('.socsvg').innerHTML=o;
+    p.querySelector('.socinfo').textContent=j?JOBS[j][1]:'Click a job to see which blocks do it.';
+    p.querySelectorAll('.socbtns button').forEach(function(b){ b.classList.toggle('sel',b.dataset.j===j); });
+  }
+  deck.querySelectorAll('.socp').forEach(function(p){ socDraw(p,null); });
+  /* systolic */
+  var YMAX=10;
+  function sysDraw(p){
+    var t=+(p.dataset.t||0), o='', macs=0, loads=0;
+    for(var r=0;r<4;r++) for(var c=0;c<4;c++){
+      var done=Math.max(0,Math.min(4,t-(r+c))); macs+=done;
+      var act= t-1>=r+c && t-1<r+c+4;
+      var x=150+c*110, y=40+r*82;
+      o+='<rect x="'+x+'" y="'+y+'" width="90" height="66" rx="8" fill="'+(act?'#146b5c':'#ffffff')+'" stroke="'+(act?'#146b5c':'#c6c3ba')+'" stroke-width="1.6"/><text x="'+(x+45)+'" y="'+(y+28)+'" font-size="14" text-anchor="middle" fill="'+(act?'#fff':'#4b5057')+'">w'+r+c+'</text><text x="'+(x+45)+'" y="'+(y+50)+'" font-size="13" text-anchor="middle" fill="'+(act?'#fff':'#8b9096')+'">'+done+' MAC'+(done==1?'':'s')+'</text>';
+    }
+    for(var r2=0;r2<4;r2++){ var ent=Math.max(0,Math.min(4,t-r2)); loads+=ent;
+      o+='<text x="20" y="'+(80+r2*82)+'" font-size="14" fill="#23408f" font-weight="700">x row '+r2+'</text><line x1="100" y1="'+(73+r2*82)+'" x2="146" y2="'+(73+r2*82)+'" stroke="#23408f" stroke-width="3"/>'; }
+    o+='<text x="150" y="385" font-size="14" fill="#8b9096">inputs enter from the left · partial sums flow down</text>';
+    p.querySelector('.sysvg').innerHTML=o;
+    var cpu=macs*2, tot=16+loads;
+    p.querySelector('.ystats').innerHTML='<div class="yr"><span>tick</span><b>'+t+' / '+YMAX+'</b></div><div class="yr"><span>multiply-adds done</span><b>'+macs+'</b></div><div class="yr"><span>numbers loaded (16 weights + inputs)</span><b>'+(t?tot:16)+'</b></div><div class="yr bad"><span>a CPU would have loaded</span><b>'+cpu+'</b></div>';
+  }
+  deck.querySelectorAll('.syst').forEach(sysDraw);
+  var sysTimer=null;
+  /* reuse */
+  var RN=[1,2,4,8,16,32,64,128];
+  function reuseDraw(p){
+    var n=RN[+p.querySelector('.rsl').value], cpu=2*5+0.23, arr=10/n+0.23;
+    p.querySelector('.rlab').textContent=n+' × '+n;
+    p.querySelector('.cformula').innerHTML='loads per MAC = 2N² ÷ N³ = <b>'+(2/n).toFixed(n>16?3:2)+'</b> &nbsp;·&nbsp; '+(n*n).toLocaleString('en-IN')+' multiply-add units';
+    p.querySelector('.rcpu').style.width='100%'; p.querySelector('.rcpuv').textContent=cpu.toFixed(1)+' pJ/MAC';
+    p.querySelector('.rarr').style.width=(arr/cpu*100)+'%'; p.querySelector('.rarrv').textContent=arr.toFixed(2)+' pJ/MAC';
+    p.querySelector('.cverdict').textContent=(cpu/arr).toFixed(1)+'× less energy per multiply-add than the CPU loop.';
+  }
+  deck.querySelectorAll('.reuse').forEach(function(p){ reuseDraw(p); p.querySelector('.rsl').addEventListener('input',function(){reuseDraw(p);}); });
+  /* fallback */
+  function fbDraw(p,f){
+    var L=['conv','conv','conv','pool','conv',f?'custom op':'conv','conv','dense'], o='', x=40, tot=0, sc=46;
+    L.forEach(function(n,k){ var bad=f&&k===5;
+      o+='<rect x="'+(40+k*165)+'" y="20" width="140" height="56" rx="8" fill="'+(bad?'#fbeceb':'#e6f1ee')+'" stroke="'+(bad?'#a8231f':'#146b5c')+'" stroke-width="1.6"/><text x="'+(110+k*165)+'" y="54" font-size="17" text-anchor="middle" font-weight="700" fill="'+(bad?'#a8231f':'#146b5c')+'">'+n+'</text>'; });
+    o+='<text x="40" y="125" font-size="14" fill="#8b9096">TIMELINE · ms</text>';
+    var segs=[]; L.forEach(function(n,k){ if(f&&k===5){ segs.push(['copy out',1,'#b06a12']); segs.push(['CPU · '+n,6,'#a8231f']); segs.push(['copy in',1,'#b06a12']); } else segs.push([n,0.5,'#146b5c']); });
+    segs.forEach(function(s){ var w=s[1]*sc; o+='<rect x="'+x+'" y="140" width="'+(w-2)+'" height="50" rx="4" fill="'+s[2]+'" opacity=".85"/>'; if(w>60) o+='<text x="'+(x+w/2)+'" y="171" font-size="14" text-anchor="middle" fill="#fff" font-weight="700">'+s[0]+'</text>'; x+=w; tot+=s[1]; });
+    o+='<text x="'+(x+12)+'" y="171" font-size="18" fill="#15171b" font-weight="700">'+tot+' ms</text>';
+    p.querySelector('.fbsvg').innerHTML=o;
+    p.querySelector('.fbinfo').innerHTML= f? 'One layer out of eight is now <strong>'+(tot/4).toFixed(1)+'×</strong> slower overall: the CPU layer and the two copies cost more than the other seven layers together.' : 'All eight layers on the NPU: '+tot+' ms per inference (illustrative).';
+    p.querySelectorAll('[data-fb]').forEach(function(b){ b.classList.toggle('sel',+b.dataset.fb===f); });
+  }
+  deck.querySelectorAll('.fbp').forEach(function(p){ fbDraw(p,0); });
+  /* honesty */
+  function honDraw(p){
+    var h=selv(p,'h'), sp=selv(p,'s'), u=+p.querySelector('.usl').value; p.querySelector('.ulab').textContent=u+'%';
+    var dense=h/sp, eff=dense*u/100, fps=eff*1e12/0.6e9;
+    p.querySelector('.cformula').innerHTML=h+' TOPS ÷ '+sp+' = '+dense.toFixed(1)+' dense × '+u+'% = <b>'+eff.toFixed(eff<10?2:1)+' real TOPS</b>';
+    p.querySelector('.cverdict').innerHTML='About <span style="color:var(--accent)">'+Math.round(fps).toLocaleString('en-IN')+'</span> MobileNetV2 frames a second, if nothing else is the bottleneck. The headline promised '+Math.round(h*1e12/0.6e9).toLocaleString('en-IN')+'.';
+  }
+  deck.querySelectorAll('.honest').forEach(function(p){ honDraw(p); p.querySelector('.usl').addEventListener('input',function(){honDraw(p);}); });
+  /* market map */
+  var DEV=[['ESP32-S3 (your rate)',null,0.3,'#8b9096',1],['Cortex-M55 + Ethos-U55',0.2e12,0.1,'#146b5c',1],['Coral Edge TPU',4e12,2,'#23408f',0],['Hailo-8',26e12,2.5,'#23408f',0],['Jetson Orin Nano (dense)',33e12,25,'#b06a12',0],['Phone NPU',35e12,null,'#a8231f',1]];
+  function mx(w){ return 90+(Math.log10(w)+2)/4*780; } function my(o){ return 540-(Math.log10(o)-7)/8*500; }
+  function mapDraw(p){
+    var on=(p.dataset.on||'').split(',').filter(Boolean).map(Number), o='';
+    [0.01,0.1,1,10,100].forEach(function(w){ o+='<line x1="'+mx(w)+'" y1="40" x2="'+mx(w)+'" y2="540" stroke="#e2e0d9"/><text x="'+mx(w)+'" y="564" font-size="14" text-anchor="middle" fill="#8b9096">'+w+' W</text>'; });
+    [[1e7,'10 M'],[1e8,'100 M'],[1e9,'1 G'],[1e10,'10 G'],[1e11,'100 G'],[1e12,'1 T'],[1e13,'10 T'],[1e14,'100 T'],[1e15,'1,000 T']].forEach(function(a){ o+='<line x1="90" y1="'+my(a[0])+'" x2="870" y2="'+my(a[0])+'" stroke="#e2e0d9"/><text x="80" y="'+(my(a[0])+5)+'" font-size="14" text-anchor="end" fill="#8b9096">'+a[1]+'</text>'; });
+    o+='<text x="480" y="592" font-size="14" text-anchor="middle" fill="#4b5057">power, log scale</text><text x="18" y="290" font-size="14" text-anchor="middle" fill="#4b5057" transform="rotate(-90 18 290)">operations per second</text>';
+    o+='<clipPath id="mclip"><rect x="90" y="40" width="780" height="500"/></clipPath><g clip-path="url(#mclip)">';
+    [[1e9,'1 GOPS/W'],[1e11,'0.1 TOPS/W'],[1e12,'1 TOPS/W'],[1e13,'10 TOPS/W']].forEach(function(e){ var w1=0.01,w2=100; o+='<line x1="'+mx(w1)+'" y1="'+my(e[0]*w1)+'" x2="'+mx(w2)+'" y2="'+my(e[0]*w2)+'" stroke="#c6c3ba" stroke-dasharray="5 6"/>'; });
+    o+='</g>';
+    [[1e9,'1 GOPS/W'],[1e11,'0.1 TOPS/W'],[1e12,'1 TOPS/W'],[1e13,'10 TOPS/W']].forEach(function(e){ var X=mx(0.013), Y=my(e[0]*0.013)-7; o+='<text x="'+X+'" y="'+Y+'" font-size="13" fill="#8b9096" transform="rotate(-17.8 '+X+' '+Y+')">'+e[1]+'</text>'; });
+    on.forEach(function(k){ var d=DEV[k], ops=d[1]===null? window.__s3rate*2e6 : d[1];
+      if(d[2]===null){ o+='<line x1="'+mx(3)+'" y1="'+my(ops)+'" x2="'+mx(12)+'" y2="'+my(ops)+'" stroke="'+d[3]+'" stroke-width="6" stroke-dasharray="8 6" opacity=".7"/><text x="'+mx(3)+'" y="'+(my(ops)-16)+'" font-size="15" fill="'+d[3]+'" font-weight="700">'+d[0]+' · power not published</text>'; return; }
+      var X=mx(d[2]), Y=my(ops);
+      var LP={3:[-16,5,'end'],4:[0,32,'middle']}[k]||[16,5,'start'];
+      o+='<circle cx="'+X+'" cy="'+Y+'" r="11" fill="'+(d[4]?'#ffffff':d[3])+'" stroke="'+d[3]+'" stroke-width="3"/><text x="'+(X+LP[0])+'" y="'+(Y+LP[1])+'" font-size="15" fill="'+d[3]+'" font-weight="700" text-anchor="'+LP[2]+'">'+d[0]+'</text>'; });
+    p.querySelector('.mapsvg').innerHTML=o;
+    p.querySelectorAll('.mapbtns button').forEach(function(b){ b.classList.toggle('on',on.indexOf(+b.dataset.d)>=0); });
+  }
+  deck.querySelectorAll('.mapp').forEach(function(p){ p.querySelector('.mapbtns').innerHTML=DEV.map(function(d,k){return '<button data-d="'+k+'">'+d[0]+'</button>';}).join('')+'<button data-d="all">show all</button>'; mapDraw(p); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.hook16 .cb button, .honest .cb button');
+    if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); var p=b.closest('.calc'); if(p.classList.contains('hook16')) hookDraw(p); else honDraw(p); return; }
+    b=e.target.closest('.socbtns button'); if(b){ b.blur(); socDraw(b.closest('.socp'),b.dataset.j); return; }
+    b=e.target.closest('[data-fb]'); if(b){ b.blur(); fbDraw(b.closest('.fbp'),+b.dataset.fb); return; }
+    b=e.target.closest('.mapbtns button'); if(b){ b.blur(); var p=b.closest('.mapp'), on=(p.dataset.on||'').split(',').filter(Boolean);
+      if(b.dataset.d==='all') on=DEV.map(function(d,k){return String(k);}); else { var ix=on.indexOf(b.dataset.d); if(ix>=0) on.splice(ix,1); else on.push(b.dataset.d); }
+      p.dataset.on=on.join(','); mapDraw(p); return; }
+    b=e.target.closest('.syst .sbtns button'); if(b){ b.blur(); var p=b.closest('.syst');
+      if(sysTimer){ clearInterval(sysTimer); sysTimer=null; }
+      if(b.dataset.y==='reset'){ p.dataset.t=0; sysDraw(p); }
+      else if(b.dataset.y==='step'){ p.dataset.t=Math.min(YMAX,+(p.dataset.t||0)+1); sysDraw(p); }
+      else { p.dataset.t=0; sysDraw(p); sysTimer=setInterval(function(){ var t=+p.dataset.t+1; p.dataset.t=t; sysDraw(p); if(t>=YMAX){clearInterval(sysTimer);sysTimer=null;} },700); }
+      return; }
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
