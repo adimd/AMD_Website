@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 13 · Motion, Position, Force and Touch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 13 */
+pre{font-size:14.5px;line-height:1.42}
+.tilt,.cfil{padding:16px 26px}
+.cfil .cb button{font-size:16px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 13</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 13 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 13 · unit II · motion, position, force and tactile sensors</div>
+    <h1>Which way is down,<br>where am I, who touched me?</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">The IMU is the workhorse of TinyML. Position sensors span millimetres to the whole planet. And touch is often free on the chip you already have.</p>
+  </div>
+  <div class="cue">Theory runs to slide 11; the lab is one block at the end (slides 12 to 15). Students keep the MPU6050 wired from Class 11; add two strips of foil for the touch pads.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>15 frames a second of VGA RGB565.</h2>
+    <div class="eq" style="font-size:26px">640 × 480 × 2 B × 15 = <span class="v">9,216,000 B/s ≈ 8.8 MB/s</span></div>
+    <p class="frag" style="margin-top:20px;max-width:70ch">And each 600 KB frame is bigger than all of SRAM. Better: greyscale, smaller frames, fewer frames, or count only when something moves.</p>
+    <p class="frag" style="max-width:70ch">Today's sensors are the opposite: a few numbers a hundred times a second. Cheap to move, cheap to store, and full of information.</p>
+  </div>
+  <div class="cue">Take one answer that proposed waking the camera only on motion: that is today's IMU, or Class 14's PIR.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Your phone already does this" data-act="the hook">
+  <div>
+    <h2>Turn your phone sideways. How did it know?</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb">rotate</div><div class="nk">the screen</div><div class="ns">gravity pulls differently on the accelerometer</div></div>
+      <div class="ntile frag"><div class="nb">count</div><div class="nk">your steps</div><div class="ns">a repeating pattern in acceleration, about twice a second</div></div>
+      <div class="ntile frag"><div class="nb">point</div><div class="nk">the map arrow</div><div class="ns">magnetometer plus gyroscope</div></div>
+      <div class="ntile frag"><div class="nb">raise</div><div class="nk">to wake</div><div class="ns">a tiny model on the motion sensors, always on</div></div>
+    </div>
+    <p class="frag big" style="margin-top:26px;max-width:46ch">The last one is TinyML in your pocket: a gesture classifier running on a motion sensor, all day, on almost no power.</p>
+  </div>
+  <div class="cue">Many phones run raise-to-wake on a low-power sensor hub rather than the main processor; that is Class 18's multi-device idea inside one phone.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Three sensors in an IMU" data-act="the IMU">
+  <div class="split" style="grid-template-columns:.8fr 1.2fr;align-items:center">
+    <svg viewBox="0 0 440 400" width="440" height="400"><defs><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><g transform="translate(160,230)"><rect x="-110" y="-70" width="220" height="140" rx="10" fill="#1d2a30"/><rect x="-36" y="-26" width="52" height="52" rx="4" fill="#c9ccd1"/><text x="-10" y="5" font-size="11" fill="#4b5057" text-anchor="middle">MPU6050</text><line x1="0" y1="0" x2="150" y2="0" stroke="#a8231f" stroke-width="4" marker-end="url(#m1)"/><text x="160" y="6" font-size="18" fill="#a8231f" font-weight="700">x</text><line x1="0" y1="0" x2="0" y2="-150" stroke="#146b5c" stroke-width="4" marker-end="url(#m1)"/><text x="10" y="-150" font-size="18" fill="#146b5c" font-weight="700">y</text><line x1="0" y1="0" x2="-95" y2="95" stroke="#23408f" stroke-width="4" marker-end="url(#m1)"/><text x="-112" y="118" font-size="18" fill="#23408f" font-weight="700">z (out of the board)</text></g></svg>
+    <div class="stack">
+      <h2>An IMU is up to three sensors, each with three axes.</h2>
+      <table class="dt txt" style="width:100%"><tr><th style="width:22%">sensor</th><th style="width:26%">measures</th><th style="width:22%">when still</th><th>weakness</th></tr>
+        <tr class="frag"><td>accelerometer</td><td>linear acceleration, gravity included</td><td>about 1 g, pointing down</td><td>noisy; cannot tell tilt from motion</td></tr>
+        <tr class="frag"><td>gyroscope</td><td>rotation rate, degrees per second</td><td>about zero</td><td>small offsets add up: drift</td></tr>
+        <tr class="frag"><td>magnetometer</td><td>magnetic field: a compass</td><td>Earth's field</td><td>fooled by nearby metal and motors</td></tr></table>
+      <p class="frag small">The MPU6050 is <strong>6-axis</strong>: accelerometer and gyroscope, no magnetometer. Parts with all three are called 9-axis.</p>
+    </div>
+  </div>
+  <div class="cue">The axis directions follow the MPU6050 datasheet's orientation diagram; check the dot on your module, since breakout boards mount the chip differently.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Tilt explorer" data-act="the IMU">
+  <div>
+    <div class="kicker">try it live</div>
+    <h2>A still accelerometer is a tilt sensor, because gravity never switches off.</h2>
+    <div class="panel tilt">
+      <div class="crow"><span class="cl">tilt</span><span class="cb" data-g="a"><button data-v="0">0°</button><button data-v="15">15°</button><button data-v="30" class="sel">30°</button><button data-v="45">45°</button><button data-v="60">60°</button><button data-v="90">90°</button></span></div>
+      <div class="crow"><span class="cl">motion</span><span class="cb" data-g="s"><button data-v="0" class="sel">held still</button><button data-v="0.5">pushed sideways, 0.5 g</button></span></div>
+      <div class="split" style="grid-template-columns:1fr 1fr;align-items:center;gap:20px">
+        <svg viewBox="0 0 600 340" width="100%" class="tsvg">
+          <defs><marker id="tg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#15171b"/></marker>
+          <marker id="tr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a8231f"/></marker>
+          <marker id="tb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#23408f"/></marker>
+          <marker id="to" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#b06a12"/></marker></defs>
+          <g class="tboard"></g>
+        </svg>
+        <div class="stack">
+          <div class="eq tformula" style="font-size:20px"></div>
+          <div class="tverdict" style="font-size:22px;font-weight:600;color:var(--ink);margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Black arrow: gravity, 1 g straight down. Red and blue: what the board's x and z axes feel. Tilt = atan2(ax, az). Then switch on "pushed sideways": the accelerometer cannot tell a push from a tilt, so the estimate is wrong while it moves. That is why we add a gyroscope.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Gyro drift and sensor fusion" data-act="the IMU">
+  <div>
+    <div class="kicker">try it live · sensor fusion</div>
+    <h2>The accelerometer is noisy. The gyroscope drifts. Blend them.</h2>
+    <div class="panel cfil">
+      <div class="crow"><span class="cl">blend</span><span class="cb"><button data-a="0">accelerometer only</button><button data-a="0.9">α = 0.90</button><button data-a="0.98" class="sel">α = 0.98</button><button data-a="1">gyroscope only</button></span></div>
+      <svg viewBox="0 0 1300 290" width="100%"><g class="cgrid"></g><polyline class="ctrue" fill="none" stroke="#15171b" stroke-width="2" stroke-dasharray="7 5"/><polyline class="cout" fill="none" stroke="#23408f" stroke-width="3"/></svg>
+      <div class="split" style="grid-template-columns:1.2fr .8fr;gap:20px;align-items:center">
+        <div class="eq" style="font-size:18px">angle = <span class="v">α</span> × (angle + gyro × dt) + (1 − <span class="v">α</span>) × accel_angle</div>
+        <div class="cverdict2" style="font-size:20px;font-weight:600;color:var(--ink)"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Simulated 10 seconds at 100 Hz: the board tilts to 40°, then back to 10°. The gyroscope has a small constant bias, so integrating it drifts; the accelerometer is noisy, with a burst of shaking near the middle. The complementary filter trusts the gyro for quick changes and the accelerometer for the long-term level. Dashed: the true angle. Name sensor fusion here; Unit III returns to combining sensors.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Position, near to far" data-act="position">
+  <div>
+    <div class="kicker">position</div>
+    <h2>Where is it? The answer depends on how far you need to see.</h2>
+    <svg viewBox="0 0 1432 390" width="1432" height="390"><line x1="260" y1="30" x2="260" y2="360" stroke="#e2e0d9"/><text x="260" y="382" font-size="13" fill="#8b9096" text-anchor="middle">1 cm</text><line x1="420" y1="30" x2="420" y2="360" stroke="#e2e0d9"/><text x="420" y="382" font-size="13" fill="#8b9096" text-anchor="middle">10 cm</text><line x1="580" y1="30" x2="580" y2="360" stroke="#e2e0d9"/><text x="580" y="382" font-size="13" fill="#8b9096" text-anchor="middle">1 m</text><line x1="740" y1="30" x2="740" y2="360" stroke="#e2e0d9"/><text x="740" y="382" font-size="13" fill="#8b9096" text-anchor="middle">10 m</text><line x1="900" y1="30" x2="900" y2="360" stroke="#e2e0d9"/><text x="900" y="382" font-size="13" fill="#8b9096" text-anchor="middle">100 m</text><line x1="1060" y1="30" x2="1060" y2="360" stroke="#e2e0d9"/><text x="1060" y="382" font-size="13" fill="#8b9096" text-anchor="middle">1 km</text><line x1="1380" y1="30" x2="1380" y2="360" stroke="#e2e0d9"/><text x="1380" y="382" font-size="13" fill="#8b9096" text-anchor="middle">100 km</text><g class="frag"><text x="248" y="62" font-size="16" fill="#15171b" text-anchor="end" font-weight="700">ultrasonic</text><text x="248" y="82" font-size="12" fill="#8b9096" text-anchor="end">2 cm to about 4 m</text><rect x="308" y="40" width="368" height="40" rx="6" fill="#b06a12" opacity=".85"/><text x="686" y="66" font-size="14" fill="#b06a12" font-weight="700">accuracy: ±1 cm-ish</text></g><g class="frag"><text x="248" y="126" font-size="16" fill="#15171b" text-anchor="end" font-weight="700">time-of-flight light</text><text x="248" y="146" font-size="12" fill="#8b9096" text-anchor="end">a few cm to a few m</text><rect x="356" y="104" width="320" height="40" rx="6" fill="#146b5c" opacity=".85"/><text x="686" y="130" font-size="14" fill="#146b5c" font-weight="700">accuracy: mm to cm</text></g><g class="frag"><text x="248" y="190" font-size="16" fill="#15171b" text-anchor="end" font-weight="700">mmWave radar</text><text x="248" y="210" font-size="12" fill="#8b9096" text-anchor="end">10s of cm to 10s of m</text><rect x="468" y="168" width="368" height="40" rx="6" fill="#23408f" opacity=".85"/><text x="846" y="194" font-size="14" fill="#23408f" font-weight="700">accuracy: cm, and it sees motion</text></g><g class="frag"><text x="248" y="254" font-size="16" fill="#15171b" text-anchor="end" font-weight="700">UWB beacons</text><text x="248" y="274" font-size="12" fill="#8b9096" text-anchor="end">indoors, 10s of m</text><rect x="532" y="232" width="320" height="40" rx="6" fill="#8b4fa8" opacity=".85"/><text x="862" y="258" font-size="14" fill="#8b4fa8" font-weight="700">accuracy: 10s of cm</text></g><g class="frag"><text x="248" y="318" font-size="16" fill="#15171b" text-anchor="end" font-weight="700">GNSS: GPS, NavIC</text><text x="248" y="338" font-size="12" fill="#8b9096" text-anchor="end">anywhere outdoors</text><rect x="852" y="296" width="528" height="40" rx="6" fill="#a8231f" opacity=".85"/><text x="864" y="322" font-size="14" fill="#faf9f6" font-weight="700">accuracy: a few metres</text></g></svg>
+    <p class="small">Distance measured, log scale. Ranges and accuracies are rough orders of magnitude for common low-cost parts. NavIC is India's regional satellite navigation system.</p>
+  </div>
+  <div class="cue">Rotary encoders measure the position of a shaft, not a distance, so they are not on the chart: name them for robot wheels and motors. mmWave radar returns properly in Class 14.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Force: the load cell" data-act="force and touch">
+  <div>
+    <div class="kicker">force</div>
+    <h2>A load cell is a metal bar that bends a tiny amount.</h2>
+    <svg viewBox="0 0 1432 300" width="1432" height="300"><defs><marker id="m2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="20" y="60" width="60" height="200" fill="#8b9096"/><text x="50" y="290" font-size="13" fill="#8b9096" text-anchor="middle">fixed</text><rect x="80" y="130" width="360" height="50" rx="4" fill="#c9ccd1" stroke="#8b9096"/><rect x="180" y="118" width="90" height="12" fill="#a8231f"/><text x="225" y="108" font-size="13" fill="#a8231f" text-anchor="middle">stretched → R up</text><rect x="180" y="180" width="90" height="12" fill="#23408f"/><text x="225" y="212" font-size="13" fill="#23408f" text-anchor="middle">squeezed → R down</text><line x1="420" y1="40" x2="420" y2="124" stroke="#15171b" stroke-width="4" marker-end="url(#m2)"/><text x="432" y="60" font-size="15" fill="#15171b">weight</text><g class="frag"><rect x="520" y="120" width="200" height="74" rx="10" fill="#ffffff" stroke="#c6c3ba"/><text x="534" y="152" font-size="16" fill="#15171b" font-weight="700">strain gauges</text><text x="534" y="176" font-size="12" fill="#4b5057">resistance shifts slightly</text><line x1="722" y1="157" x2="746" y2="157" stroke="#8b9096" stroke-width="2.4" marker-end="url(#m2)"/></g><g class="frag"><rect x="750" y="120" width="200" height="74" rx="10" fill="#ffffff" stroke="#c6c3ba"/><text x="764" y="152" font-size="16" fill="#15171b" font-weight="700">bridge circuit</text><text x="764" y="176" font-size="12" fill="#4b5057">→ a few millivolts</text><line x1="952" y1="157" x2="976" y2="157" stroke="#8b9096" stroke-width="2.4" marker-end="url(#m2)"/></g><g class="frag"><rect x="980" y="120" width="200" height="74" rx="10" fill="#ffffff" stroke="#c6c3ba"/><text x="994" y="152" font-size="16" fill="#15171b" font-weight="700">HX711 board</text><text x="994" y="176" font-size="12" fill="#4b5057">24-bit ADC made for this</text><line x1="1182" y1="157" x2="1206" y2="157" stroke="#8b9096" stroke-width="2.4" marker-end="url(#m2)"/></g><g class="frag"><rect x="1210" y="120" width="200" height="74" rx="10" fill="#ffffff" stroke="#c6c3ba"/><text x="1224" y="152" font-size="16" fill="#15171b" font-weight="700">ESP32-S3</text><text x="1224" y="176" font-size="12" fill="#4b5057">grams</text></g></svg>
+    <div class="split frag" style="margin-top:6px;gap:24px">
+      <div class="rem"><div class="h">load cell</div><ul><li>Accurate weight. Smart shelves, beehive scales, a bed that knows someone got up.</li></ul></div>
+      <div class="rem green"><div class="h">force-sensitive resistor (FSR)</div><ul><li>Cheap and imprecise: "pressed or not". Chair cushions, posture, grip.</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">Class 10's chain again: the bar is the transducer, the bridge is conditioning, the HX711 is the ADC. HX711 boards are common and cheap; they are not in our kit.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Capacitive touch, free on the chip" data-act="force and touch">
+  <div class="split" style="grid-template-columns:1fr 1fr;align-items:center">
+    <svg viewBox="0 0 600 420" width="600" height="420">
+      <rect x="160" y="150" width="280" height="22" rx="4" fill="#d6b45a"/><text x="300" y="196" font-size="13" fill="#8b9096" text-anchor="middle">a pad or a strip of foil, wired to a touch pin</text>
+      <path d="M300 40 q -30 0 -30 30 v 50 q 0 14 30 14 q 30 0 30 -14 v -50 q 0 -30 -30 -30 z" fill="#e8c9b0" stroke="#b08a70"/>
+      <g stroke="#23408f" stroke-width="1.6" fill="none" opacity=".7"><path d="M200 150 Q 260 110 285 134"/><path d="M400 150 Q 340 110 315 134"/><path d="M240 150 Q 275 125 292 136"/><path d="M360 150 Q 325 125 308 136"/></g>
+      <g class="frag"><text x="20" y="232" font-size="13" fill="#8b9096">RAW TOUCH READING</text>
+      <line x1="20" y1="400" x2="580" y2="400" stroke="#c6c3ba"/>
+      <polyline fill="none" stroke="#146b5c" stroke-width="2.5" points="20.0,157.8 21.9,155.9 23.7,157.7 25.6,156.3 27.5,161.6 29.4,160.2 31.2,164.4 33.1,153.4 35.0,163.5 36.9,157.3 38.7,159.5 40.6,159.6 42.5,163.5 44.3,160.1 46.2,159.7 48.1,158.7 50.0,161.0 51.8,159.2 53.7,162.8 55.6,156.4 57.5,161.9 59.3,149.2 61.2,160.9 63.1,161.9 64.9,159.4 66.8,160.3 68.7,156.7 70.6,156.3 72.4,161.8 74.3,161.9 76.2,162.1 78.1,158.5 79.9,156.9 81.8,157.9 83.7,160.3 85.6,159.7 87.4,157.9 89.3,156.1 91.2,159.9 93.0,156.3 94.9,160.8 96.8,159.2 98.7,156.4 100.5,162.4 102.4,165.0 104.3,163.1 106.2,160.3 108.0,162.9 109.9,160.2 111.8,155.8 113.6,160.9 115.5,155.9 117.4,157.3 119.3,163.0 121.1,157.0 123.0,157.3 124.9,156.9 126.8,159.2 128.6,159.0 130.5,161.5 132.4,162.5 134.2,160.0 136.1,157.7 138.0,161.6 139.9,155.0 141.7,161.1 143.6,158.8 145.5,163.8 147.4,155.1 149.2,157.6 151.1,155.9 153.0,163.3 154.8,155.4 156.7,158.3 158.6,161.5 160.5,160.9 162.3,164.1 164.2,160.2 166.1,157.0 168.0,162.2 169.8,158.5 171.7,163.2 173.6,167.6 175.5,160.2 177.3,155.3 179.2,156.1 181.1,161.7 182.9,155.9 184.8,156.6 186.7,158.6 188.6,80.8 190.4,76.8 192.3,80.0 194.2,80.9 196.1,76.6 197.9,81.9 199.8,77.8 201.7,75.4 203.5,81.9 205.4,79.3 207.3,78.2 209.2,85.1 211.0,81.3 212.9,81.5 214.8,81.5 216.7,82.5 218.5,76.1 220.4,82.6 222.3,80.2 224.1,78.1 226.0,75.3 227.9,84.7 229.8,83.9 231.6,83.1 233.5,80.9 235.4,77.2 237.3,80.4 239.1,79.5 241.0,75.4 242.9,80.9 244.7,79.4 246.6,74.0 248.5,77.6 250.4,81.8 252.2,81.9 254.1,76.6 256.0,83.3 257.9,82.6 259.7,77.5 261.6,75.9 263.5,74.9 265.4,82.8 267.2,78.4 269.1,89.9 271.0,82.4 272.8,71.1 274.7,75.2 276.6,77.7 278.5,82.6 280.3,83.6 282.2,76.5 284.1,80.3 286.0,82.3 287.8,77.6 289.7,77.8 291.6,81.9 293.4,81.1 295.3,73.2 297.2,82.7 299.1,76.8 300.9,81.9 302.8,82.4 304.7,82.9 306.6,80.2 308.4,79.9 310.3,77.6 312.2,82.0 314.0,78.6 315.9,81.5 317.8,82.0 319.7,77.9 321.5,78.4 323.4,84.4 325.3,79.4 327.2,85.3 329.0,163.0 330.9,155.0 332.8,155.9 334.6,160.4 336.5,158.1 338.4,156.1 340.3,154.7 342.1,154.7 344.0,162.2 345.9,160.1 347.8,159.6 349.6,167.2 351.5,162.2 353.4,158.8 355.3,160.6 357.1,161.8 359.0,163.5 360.9,161.7 362.7,160.1 364.6,160.9 366.5,156.6 368.4,157.6 370.2,163.9 372.1,157.2 374.0,159.9 375.9,157.7 377.7,162.0 379.6,157.3 381.5,162.1 383.3,156.9 385.2,160.1 387.1,160.8 389.0,164.0 390.8,164.8 392.7,157.4 394.6,163.4 396.5,163.5 398.3,158.8 400.2,159.9 402.1,158.3 403.9,163.9 405.8,166.4 407.7,162.7 409.6,157.0 411.4,160.1 413.3,114.7 415.2,114.4 417.1,115.5 418.9,115.5 420.8,116.6 422.7,115.4 424.5,115.0 426.4,118.0 428.3,114.2 430.2,116.0 432.0,116.3 433.9,116.5 435.8,113.4 437.7,116.4 439.5,112.4 441.4,119.0 443.3,114.3 445.2,120.6 447.0,115.8 448.9,117.5 450.8,117.4 452.6,119.1 454.5,116.1 456.4,114.4 458.3,121.5 460.1,116.4 462.0,115.5 463.9,114.2 465.8,114.9 467.6,119.2 469.5,113.0 471.4,118.6 473.2,114.5 475.1,115.4 477.0,117.8 478.9,118.7 480.7,160.7 482.6,155.7 484.5,158.1 486.4,161.7 488.2,157.8 490.1,155.0 492.0,153.6 493.8,165.1 495.7,157.8 497.6,157.5 499.5,162.4 501.3,165.6 503.2,156.2 505.1,161.4 507.0,164.8 508.8,163.2 510.7,157.8 512.6,153.5 514.4,157.2 516.3,162.6 518.2,156.2 520.1,165.6 521.9,157.0 523.8,157.2 525.7,154.6 527.6,157.1 529.4,156.6 531.3,159.6 533.2,161.0 535.1,159.9 536.9,154.2 538.8,161.7 540.7,160.1 542.5,161.3 544.4,157.9 546.3,158.5 548.2,153.8 550.0,153.4 551.9,156.5 553.8,157.2 555.7,160.3 557.5,164.4 559.4,159.4 561.3,159.8 563.1,163.3 565.0,159.3 566.9,157.0 568.8,162.6 570.6,157.3 572.5,158.7 574.4,161.5 576.3,159.6 578.1,157.6 580.0,160.4" transform="translate(0,200)"/>
+      <line x1="20" y1="325" x2="580" y2="325" stroke="#a8231f" stroke-dasharray="7 5"/><text x="24" y="318" font-size="13" fill="#a8231f">your threshold</text>
+      <text x="244" y="268" font-size="13" fill="#146b5c" text-anchor="middle">finger</text><text x="446" y="296" font-size="13" fill="#b06a12" text-anchor="middle">light brush?</text></g>
+    </svg>
+    <div class="stack">
+      <div class="kicker">touch</div>
+      <h2>A finger adds capacitance. The chip can measure it directly.</h2>
+      <p class="frag">The ESP32-S3 has built-in capacitive touch channels on several of its pins. A strip of foil and a wire make a button with no extra part, no moving part, and a sealed case.</p>
+      <p class="frag">Deciding "touched or not" is a tiny classifier with one feature. A threshold usually works; a model helps when you want swipes, or to ignore water drops.</p>
+      <p class="frag small">On the S3 the reading <strong>rises</strong> when touched. On the original ESP32 it falls. Always look at your own numbers first.</p>
+    </div>
+  </div>
+  <div class="cue">The trace is illustrative. The light brush is the interesting case: is it a touch? This is where Class 8's "cheapest thing first" meets a real decision. The S3's touch-capable pins are GPIO 1 to 14; confirm on your board's pin map.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Tactile arrays are images" data-act="force and touch">
+  <div class="split" style="grid-template-columns:.9fr 1.1fr;align-items:center">
+    <div style="display:flex;gap:30px;justify-content:center">
+      <div style="text-align:center"><img src="data:image/png;base64,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" alt="pressure map of a foot standing, heel and forefoot both loaded" style="width:180px;image-rendering:pixelated"><div class="nlab">standing</div></div>
+      <div class="frag" style="text-align:center"><img src="data:image/png;base64,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" alt="pressure map of a foot leaning forward, weight on toes and forefoot" style="width:180px;image-rendering:pixelated"><div class="nlab">leaning forward</div></div>
+    </div>
+    <div class="stack">
+      <h2>A grid of pressure sensors makes a picture of touch.</h2>
+      <p>A smart insole with a few hundred pressure points produces a small image, many times a second.</p>
+      <p class="frag">And small images are what Class 7's CNNs are good at: gait analysis, fall risk, posture, a robot gripper that knows it is slipping.</p>
+      <p class="frag small">The same idea as the spectrogram in Class 8: turn a signal into an image, then use image tools.</p>
+    </div>
+  </div>
+  <div class="cue">Simulated pressure maps on a 20 × 44 grid. Ask what label you would train on: standing, walking, leaning, about to fall.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="The doorbell, touched and moved" data-act="closing theory">
+  <div>
+    <div class="kicker">our running example</div>
+    <h2>Two of today's sensors make the doorbell better for almost nothing.</h2>
+    <div class="split" style="align-items:stretch;gap:24px">
+      <div class="panel"><span class="lab" style="color:var(--ok)">a capacitive pad as the button</span><p>No moving parts, no gap for rain to get in, and the chip already has the sensor. A long press and a short press can mean different things.</p></div>
+      <div class="panel frag"><span class="lab" style="color:var(--accent)">an accelerometer for tamper alerts</span><p>Someone prying the doorbell off the wall is a sudden tilt and shock. A threshold, or a tiny model, sends an alert before the camera is lost.</p></div>
+    </div>
+    <p class="frag" style="margin-top:20px;max-width:72ch">Neither needs a big model. Both are always on, nearly free, and make the product harder to break.</p>
+  </div>
+  <div class="cue">End of theory. Students should already have the MPU6050 wired from Class 11; hand out foil strips and move to the lab block.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Lab: tilt, touch, drift" data-act="lab">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">lab · teams of four</div><h2 style="margin-bottom:6px">Three parts: tilt the LED, build a touch button, watch the gyro drift.</h2></div>
+      <div class="panel timer" data-secs="1800"><span class="tdisp">30:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="split" style="gap:24px;align-items:start;margin-top:10px">
+      <table class="dt txt" style="width:100%"><tr><th style="width:44%">part</th><th>ESP32-S3</th></tr>
+        <tr><td>MPU6050 SDA / SCL</td><td>GPIO 8 / GPIO 9, as in Class 11</td></tr>
+        <tr><td>MPU6050 VCC / GND</td><td>3V3 / GND</td></tr>
+        <tr><td>foil pad A</td><td>GPIO 4 (touch-capable)</td></tr>
+        <tr><td>foil pad B</td><td>GPIO 5 (touch-capable)</td></tr>
+        <tr><td>RGB LED</td><td>on the board, no wiring</td></tr></table>
+      <div class="ucards" style="grid-template-columns:1fr;margin-top:0">
+        <div class="ucard"><div class="ut">A · tilt → colour</div><div class="ud">accelerometer only, about 10 minutes</div></div>
+        <div class="ucard"><div class="ut">B · foil touch button</div><div class="ud">pick a threshold from your own numbers, about 10 minutes</div></div>
+        <div class="ucard"><div class="ut">C · gyro drift, 60 seconds</div><div class="ud">leave the board perfectly still and integrate, about 5 minutes</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Tape the foil strips to the desk and push a jumper wire against each. The onboard RGB LED is driven by the core's RGB_BUILTIN definition; its GPIO differs between DevKitC-1 revisions, which is why the code does not hard-code it.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Lab A and C: tilt and drift" data-act="lab">
+  <div class="split" style="grid-template-columns:1.25fr .75fr;align-items:center">
+    <pre><span class="c">// Part A · tilt from the accelerometer → LED colour</span>
+<span class="c">// Part C · integrate the still gyroscope and watch it drift</span>
+<span class="k">#include</span> <span class="s">&lt;Adafruit_MPU6050.h&gt;</span>
+Adafruit_MPU6050 mpu;
+<span class="k">float</span> gyroAngle = <span class="s">0</span>;  <span class="k">unsigned long</span> last;
+
+<span class="k">void</span> <span class="f">setup</span>() {
+  Serial.begin(<span class="s">115200</span>);
+  Wire.begin(<span class="s">8</span>, <span class="s">9</span>);  mpu.begin();
+  last = micros();
+}
+
+<span class="k">void</span> <span class="f">loop</span>() {
+  sensors_event_t a, g, t;
+  mpu.getEvent(&amp;a, &amp;g, &amp;t);
+  <span class="k">float</span> tilt = atan2(a.acceleration.x, a.acceleration.z) * <span class="s">180</span> / PI;
+
+  <span class="k">float</span> dt = (micros() - last) / <span class="s">1e6</span>;  last = micros();
+  gyroAngle += g.gyro.y * dt * <span class="s">180</span> / PI;      <span class="c">// rad/s → degrees</span>
+
+  Serial.printf(<span class="s">"tilt %6.1f   gyro %7.2f\n"</span>, tilt, gyroAngle);
+  <span class="k">int</span> r = constrain(abs(tilt) * <span class="s">255</span> / <span class="s">90</span>, <span class="s">0</span>, <span class="s">255</span>);
+  rgbLedWrite(RGB_BUILTIN, r / <span class="s">4</span>, (<span class="s">255</span> - r) / <span class="s">4</span>, <span class="s">0</span>);  <span class="c">// dimmed</span>
+  delay(<span class="s">20</span>);
+}</pre>
+    <div class="stack">
+      <div class="kicker">lab · parts A and C</div>
+      <h2>Tilt the board. Then leave it alone.</h2>
+      <p><strong>A.</strong> Tilt slowly: does the angle match? Now shake it while level: what does "tilt" say?</p>
+      <p><strong>C.</strong> Press reset, put the board flat, do not touch it for 60 s. The <code>gyro</code> column should stay at 0. Does it?</p>
+      <p class="small">Green when level, red when tilted. If your axes are swapped, use <code>a.acceleration.y</code> and <code>g.gyro.x</code>.</p>
+    </div>
+  </div>
+  <div class="cue">rgbLedWrite and RGB_BUILTIN are in Arduino-ESP32 core 3.x; on core 2.x the same call is neopixelWrite. The gyro axis that matches the tilt depends on how the module sits on the breadboard. Drift of a few degrees per minute or more is normal for an uncalibrated MPU6050; that is the point of Part C.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Lab B: a foil touch button" data-act="lab">
+  <div class="split" style="grid-template-columns:1.2fr .8fr;align-items:center">
+    <pre><span class="c">// Part B · two foil pads on the S3's touch pins</span>
+<span class="k">const int</span> PAD_A = <span class="s">4</span>, PAD_B = <span class="s">5</span>;
+<span class="k">float</span> baseA, baseB;
+
+<span class="k">void</span> <span class="f">setup</span>() {
+  Serial.begin(<span class="s">115200</span>);
+  delay(<span class="s">500</span>);                        <span class="c">// hands off while it starts</span>
+  baseA = touchRead(PAD_A);
+  baseB = touchRead(PAD_B);
+}
+
+<span class="k">void</span> <span class="f">loop</span>() {
+  <span class="k">float</span> a = touchRead(PAD_A), b = touchRead(PAD_B);
+  <span class="k">float</span> riseA = <span class="s">100</span> * (a - baseA) / baseA;   <span class="c">// % above baseline</span>
+  <span class="k">float</span> riseB = <span class="s">100</span> * (b - baseB) / baseB;
+  Serial.printf(<span class="s">"A %+6.1f%%  B %+6.1f%%\n"</span>, riseA, riseB);
+  <span class="c">// your turn: choose THRESHOLD from the numbers you see</span>
+  <span class="c">// if (riseA &gt; THRESHOLD) ...</span>
+  delay(<span class="s">50</span>);
+}</pre>
+    <div class="stack">
+      <div class="kicker">lab · part B</div>
+      <h2>Find your own threshold.</h2>
+      <p>Watch the percentages with no hand, a hovering hand, a light touch and a firm press.</p>
+      <p class="small">Pick a threshold, add the <code>if</code>, and light the LED on a touch. Then try through a sheet of paper, and with a damp finger.</p>
+      <p class="small">Two pads? Touch A then B quickly: you have built a swipe.</p>
+    </div>
+  </div>
+  <div class="cue">Readings rise on touch on the S3. Teams will pick different thresholds; ask why (different foil sizes, wire lengths, people). That variation is exactly why calibration at start-up matters.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Lab worksheet" data-act="lab">
+  <div>
+    <div class="kicker">lab · fill these six boxes as a team</div>
+    <h2>Your board, your numbers.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)"><div class="wbox"><div class="wk">A · tilt at rest</div><div class="wq">flat, and on its side, in degrees</div></div><div class="wbox"><div class="wk">A · shake while level</div><div class="wq">what did tilt read? why?</div></div><div class="wbox"><div class="wk">B · touch readings</div><div class="wq">% rise: hover, light, firm</div></div><div class="wbox"><div class="wk">B · your threshold</div><div class="wq">and does it work through paper?</div></div><div class="wbox"><div class="wk">C · gyro after 60 s</div><div class="wq">degrees of drift with no motion</div></div><div class="wbox"><div class="wk">verdict</div><div class="wq">which sensor would you trust for a 10-minute tilt reading, and why?</div></div></div>
+  </div>
+  <div class="cue">The verdict box should arrive at the complementary filter on its own: the accelerometer for the long-term level, the gyroscope for quick changes.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">A fitness band must tell walking from cycling, worn on the wrist. Which IMU sensors and axes would you use, and what does each tell you?</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>light, radar, gas, heartbeats</strong>. The remaining sensor families, and how to read a datasheet you have never seen.</p>
+  </div>
+  <div class="cue">Good answers: the accelerometer's rhythm (steps near 2 per second show strongly on the wrist; cycling does not swing the arm), the gyroscope's rotation pattern, and the overall energy. Cycling on a rough road is the hard case; ask what extra data would help.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.tilt')||e.target.closest('.cfil')||e.target.closest('.timer')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  function tiltDraw(p){
+    var th=+p.querySelector('[data-g="a"] .sel').dataset.v, push=+p.querySelector('[data-g="s"] .sel').dataset.v, r=th*Math.PI/180;
+    var ax=Math.sin(r)+push*Math.cos(r), az=Math.cos(r)-push*Math.sin(r), est=Math.atan2(ax,az)*180/Math.PI;
+    var cx=300, cy=150, L=130, o='';
+    o+='<g transform="rotate('+(-th)+' '+cx+' '+cy+')"><rect x="'+(cx-130)+'" y="'+(cy-18)+'" width="260" height="36" rx="6" fill="#1d2a30"/>';
+    o+='<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+ax*L)+'" y2="'+cy+'" stroke="#a8231f" stroke-width="4" marker-end="url(#tr)"/>';
+    o+='<line x1="'+cx+'" y1="'+cy+'" x2="'+cx+'" y2="'+(cy+az*L)+'" stroke="#23408f" stroke-width="4" marker-end="url(#tb)"/>';
+    o+='<text x="'+(cx+ax*L+8)+'" y="'+(cy-8)+'" font-size="15" fill="#a8231f" font-weight="700">x</text><text x="'+(cx+8)+'" y="'+(cy+az*L+4)+'" font-size="15" fill="#23408f" font-weight="700">z</text></g>';
+    o+='<line x1="'+cx+'" y1="'+cy+'" x2="'+cx+'" y2="'+(cy+L)+'" stroke="#15171b" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#tg)"/><text x="'+(cx-12)+'" y="'+(cy+L+20)+'" font-size="14" fill="#15171b" text-anchor="end">gravity 1 g</text>';
+    if(push) o+='<line x1="'+(cx-150)+'" y1="'+(cy-110)+'" x2="'+(cx-70)+'" y2="'+(cy-110)+'" stroke="#b06a12" stroke-width="5" marker-end="url(#to)"/><text x="'+(cx-150)+'" y="'+(cy-122)+'" font-size="14" fill="#b06a12">push</text>';
+    p.querySelector('.tboard').innerHTML=o;
+    p.querySelector('.tformula').innerHTML='ax = '+ax.toFixed(2)+' g &nbsp;·&nbsp; az = '+az.toFixed(2)+' g<br>tilt = atan2(ax, az) = <span class="v">'+est.toFixed(1)+'°</span>';
+    var err=Math.abs(est-th);
+    p.querySelector('.tverdict').innerHTML= err<0.5 ? '<span style="color:var(--ok)">True tilt '+th+'°: estimate correct.</span>' : '<span style="color:var(--fail)">True tilt '+th+'°, estimate '+est.toFixed(0)+'°: wrong by '+err.toFixed(0)+'°. The push looks like extra tilt.</span>';
+  }
+  deck.querySelectorAll('.tilt').forEach(tiltDraw);
+  var cs=11; function crnd(){ cs=(cs*16807)%2147483647; return cs/2147483647; } function cg(){ var u=crnd()||1e-9,v=crnd(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+  var CN=1000, CDT=0.01, CT=[], CG=[], CA=[];
+  for(var q=0;q<CN;q++){ var tt=q*CDT, ang= tt<3?0:(tt<4?(tt-3)*40:(tt<7?40:(tt<7.6?40-(tt-7)/0.6*30:10))); CT.push(ang); }
+  for(var q=0;q<CN;q++){ var rate=q>0?(CT[q]-CT[q-1])/CDT:0; CG.push(rate+1.5+0.6*cg()); var tt=q*CDT; var shake=(tt>4.8&&tt<5.8)?18*Math.sin(tt*40):0; CA.push(CT[q]+5*cg()+shake); }
+  function cfilDraw(p){
+    var al=+p.querySelector('.cb .sel').dataset.a, out=[], ang=CA[0];
+    for(var q=0;q<CN;q++){ if(al===0) ang=CA[q]; else if(al===1) ang= q===0?0:ang+CG[q]*CDT; else ang=al*(ang+CG[q]*CDT)+(1-al)*CA[q]; out.push(ang); }
+    var X=function(q){return 60+q/(CN-1)*1220;}, Y=function(v){return 250-v*4;};
+    var gl=''; [0,10,20,30,40,50].forEach(function(v){ gl+='<line x1="60" x2="1280" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#e2e0d9"/><text x="50" y="'+(Y(v)+5)+'" font-size="12" fill="#8b9096" text-anchor="end">'+v+'°</text>'; });
+    p.querySelector('.cgrid').innerHTML=gl;
+    p.querySelector('.ctrue').setAttribute('points',CT.map(function(v,q){return X(q).toFixed(1)+','+Y(v).toFixed(1);}).join(' '));
+    p.querySelector('.cout').setAttribute('points',out.map(function(v,q){return X(q).toFixed(1)+','+Math.max(5,Math.min(285,Y(v))).toFixed(1);}).join(' '));
+    var endErr=Math.abs(out[CN-1]-CT[CN-1]);
+    var msg= al===0?'Accelerometer alone: right on average, but jittery, and fooled by the shaking.': al===1?'Gyroscope alone: smooth, but it drifts '+endErr.toFixed(0)+'° off in 10 seconds and never recovers.': (al<0.95?'α = 0.90: drift fixed, but still fairly noisy.':'α = 0.98: smooth and no drift. Off by '+endErr.toFixed(1)+'° at the end.');
+    p.querySelector('.cverdict2').textContent=msg;
+  }
+  deck.querySelectorAll('.cfil').forEach(cfilDraw);
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.tilt button,.cfil button'); if(!b) return; b.blur();
+    b.parentNode.querySelectorAll('button').forEach(function(x){x.classList.remove('sel');}); b.classList.add('sel');
+    var p=b.closest('.tilt,.cfil'); if(p.classList.contains('tilt')) tiltDraw(p); else cfilDraw(p);
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
