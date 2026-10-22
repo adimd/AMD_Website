@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 17 · FPGAs, ASICs and Edge Servers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 17 */
+.num{font-family:var(--mono);font-size:18px}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.specp,.fgp,.lutp,.jitp{padding:16px 22px}
+.specinfo,.fginfo,.jitinfo{font-size:21px;min-height:60px;margin-top:6px}
+.fgbtns{margin-bottom:8px}
+.fgbtns button.sel,.lutf button.sel,.lutin button.on,.revbtns button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.lutout{font-family:var(--mono);font-size:30px;margin-top:18px}
+.dcards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px}
+.dcard{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 20px;min-height:120px}
+.dn{font-family:var(--serif);font-size:26px;font-weight:700;color:var(--accent)}
+.dd{font-size:19px;margin-top:6px}
+.revbtns button{text-align:left;height:50px;font-size:19px}
+.revinfo .ra{font-family:var(--serif);font-size:44px;font-weight:700;color:var(--ok);margin:4px 0 10px}
+.revinfo p{font-size:22px}
+.big-n.red{color:var(--fail)}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 17</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 17 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 17 · unit II · FPGAs, ASICs and edge servers</div>
+    <h1>Rewire the chip,<br>design the chip,<br>or share a bigger one.</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Last class you bought an accelerator off the shelf. Today: hardware you can rewire after it is made, hardware made for exactly one job, and one powerful box shared by a whole building.</p>
+  </div>
+  <div class="cue">No board lab today. Theory runs to slide 15; the exercise block is slides 16 to 18. Print the six scenario cards from slide 16, one set per team.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>A has twice the TOPS, at four times the power. Battery camera: which first?</h2>
+    <div class="split" style="gap:24px;margin-top:8px">
+      <div class="rem green frag"><div class="h">investigate B first</div><ul><li>Half the TOPS for a quarter of the power: twice the TOPS per watt.</li></ul></div>
+      <div class="rem frag"><div class="h">then ask</div><ul><li>Is B fast enough for the frame rate at all? At what precision, with what utilisation, on which layers? Is there a measured benchmark?</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">Two minutes. The best answers noticed that "most efficient" is useless if it is too slow for the job.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="A wake-word chip on microwatts" data-act="the hook">
+  <div>
+    <div class="kicker">try it live · always listening for "Hey…" on two AA cells</div>
+    <h2>Why would anyone build a chip just to hear one word?</h2>
+    <div class="panel calc batt">
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">always listening on</span><span class="cb" data-g="p"><button data-v="0.3" class="sel">ESP32-S3 awake · ~300 mW</button><button data-v="0.0002">wake-word chip · ~200 µW</button></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">battery</span><span class="cb" data-g="b"><button data-v="0.675">coin cell · ~0.7 Wh</button><button data-v="7.5" class="sel">two AA cells · ~7.5 Wh</button></span></div>
+      <div class="cformula"></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">The 200 µW figure is Syntiant's announced active power for its NDP100 neural decision processor in always-on use (2018). The S3 figure is a rough estimate for a board with its CPU awake. Battery energies are typical nominal values; real batteries also self-discharge over years, so very long lifetimes are an upper bound. The point: a chip designed for one job wins by three orders of magnitude.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="The spectrum" data-act="the spectrum">
+  <div>
+    <div class="kicker">try it live · click a point on the line</div>
+    <h2>Every processor sits somewhere between flexible and efficient.</h2>
+    <div class="panel specp">
+      <svg viewBox="0 0 1380 230" width="100%" class="specsvg"></svg>
+      <div class="specinfo"></div>
+    </div>
+  </div>
+  <div class="cue">Most NPUs from Class 16 are ASIC blocks inside an SoC: fixed hardware for neural-network layers, sitting next to flexible CPU cores. The ESP32-S3 is a CPU with a little help from vector instructions.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="What is an FPGA?" data-act="FPGAs">
+  <div>
+    <div class="kicker">try it live · load a different bitstream</div>
+    <h2>An FPGA is a grid of blank logic. A file decides what it becomes.</h2>
+    <div class="panel fgp">
+      <div class="cb fgbtns"><button data-fg="0" class="sel">blank chip</button><button data-fg="1">bitstream A · audio filter</button><button data-fg="2">bitstream B · camera interface + detector</button></div>
+      <svg viewBox="0 0 1380 330" width="100%" class="fgsvg"></svg>
+      <div class="fginfo"></div>
+    </div>
+  </div>
+  <div class="cue">FPGA: field-programmable gate array. "Field-programmable" means you can change it after it leaves the factory, even after it is installed. The bitstream is loaded from flash at power-up. Logic blocks, memory blocks and DSP slices (hardware multipliers) are the three ingredients. Layouts here are schematic.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Logic from a lookup table" data-act="FPGAs">
+  <div>
+    <div class="kicker">try it live · four bits make a logic gate</div>
+    <h2>Inside each block: a tiny memory that is the truth table.</h2>
+    <div class="panel lutp">
+      <div class="split" style="grid-template-columns:1fr 1fr;gap:30px;align-items:center">
+        <div>
+          <div class="crow" style="grid-template-columns:150px 1fr"><span class="cl">configure as</span><span class="cb lutf"><button data-f="AND" class="sel">AND</button><button data-f="OR">OR</button><button data-f="XOR">XOR</button><button data-f="NAND">NAND</button></span></div>
+          <div class="crow" style="grid-template-columns:150px 1fr"><span class="cl">inputs</span><span class="cb lutin"><button data-in="a">a = 0</button><button data-in="b">b = 0</button></span></div>
+          <div class="lutout"></div>
+        </div>
+        <svg viewBox="0 0 560 300" width="100%" class="lutsvg"></svg>
+      </div>
+    </div>
+  </div>
+  <div class="cue">A 2-input lookup table (LUT) stores four bits, one per input combination; the inputs simply select which bit comes out. Change the four bits and the same hardware becomes a different gate. Real FPGAs use 4- to 6-input LUTs, thousands to millions of them. This is the whole trick behind "rewiring".</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Where FPGAs win" data-act="FPGAs">
+  <div>
+    <h2>Where FPGAs earn their place at the edge.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:28px">fixed latency</div><div class="ns">every sample takes exactly the same time, no interrupts</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:28px">odd interfaces</div><div class="ns">talk to any sensor at its own speed, even ones no MCU supports</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:28px">change after shipping</div><div class="ns">new model or new sensor: send a new bitstream</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:28px">small runs</div><div class="ns">custom hardware without making a custom chip</div></div>
+    </div>
+    <div class="split frag" style="margin-top:20px;gap:24px">
+      <div class="rem"><div class="h">the costs</div><ul><li>Harder to program: hardware description languages, or high-level synthesis tools.</li><li>Usually less efficient, and dearer per unit, than an ASIC doing the same job.</li></ul></div>
+      <div class="rem green"><div class="h">examples, by name only</div><ul><li>Small, low-power FPGAs (Lattice iCE40 class) for always-on presence detection at a few milliwatts.</li><li>Larger AMD (Xilinx) and Intel (Altera) parts in industrial cameras and radar.</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">No hardware description language in this course; the aim is to know when to reach for one. Lattice markets its sensAI stack for always-on AI at "a few milliwatts"; check current reference designs for exact numbers.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Same answer, every time" data-act="FPGAs">
+  <div>
+    <div class="kicker">try it live</div>
+    <h2>A CPU is fast on average. An FPGA is fast every single time.</h2>
+    <div class="panel jitp">
+      <div class="cb"><button data-jt="0" class="sel">quiet CPU</button><button data-jt="1">CPU with Wi-Fi interrupts</button></div>
+      <svg viewBox="0 0 1380 330" width="100%" class="jitsvg"></svg>
+      <div class="jitinfo"></div>
+    </div>
+  </div>
+  <div class="cue">Simulated, illustrative latencies for 60 samples against a 1 ms deadline. Ask: if a bottle is rejected by an air jet as it passes, which matters more, the average or the worst case? Hard deadlines are where FPGAs (and careful real-time MCU code) earn their keep.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="ASICs at both ends" data-act="ASICs">
+  <div>
+    <h2>An ASIC is a chip designed for one job. They exist at every scale.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">data centre</div><div class="ut">Google TPU</div><div class="ud">Racks of chips built only to train and run neural networks.</div></div>
+      <div class="ucard frag"><div class="un">your pocket</div><div class="ut">Apple Neural Engine</div><div class="ud">An NPU block inside the phone's SoC: Face ID, photos, dictation.</div></div>
+      <div class="ucard frag"><div class="un">your ear</div><div class="ut">always-on audio chips</div><div class="ud">Keyword spotting in microwatts: the hook's chip.</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:74ch">ASIC: application-specific integrated circuit. Nothing wasted on flexibility, so the most work per watt and the lowest cost per chip. Once you have paid to design it.</p>
+  </div>
+  <div class="cue">Ask: why does Google bother designing its own chip when it could buy GPUs? (Scale: at millions of chips, efficiency and unit cost dominate.)</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="The price of a custom chip" data-act="ASICs">
+  <div>
+    <h2>The catch: you pay a fortune before the first chip exists.</h2>
+    <div class="ngrid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="cellx frag"><div class="big-n" style="font-size:44px">NRE</div><div class="nlab">non-recurring engineering: paid once</div><p style="font-size:19px;margin-top:10px">Design team, verification, software tools and licences, and the photomasks used to print the chip.</p></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:44px">1–2 years</div><div class="nlab">from idea to working silicon</div><p style="font-size:19px;margin-top:10px">Your model may be out of date before the chip ships.</p></div>
+      <div class="cellx frag"><div class="big-n red" style="font-size:44px">frozen</div><div class="nlab">no changes after manufacture</div><p style="font-size:19px;margin-top:10px">A bug in the hardware means a new set of masks: a "respin".</p></div>
+    </div>
+  </div>
+  <div class="cue">Mask costs rise steeply with newer, smaller process nodes; at the leading edge, total design cost runs into many millions of dollars. Older nodes are far cheaper, which is why small always-on chips are often made on them.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Buy or design?" data-act="ASICs">
+  <div>
+    <div class="kicker">try it live · illustrative rupee figures, invented for the arithmetic</div>
+    <h2>Buy a microcontroller, or design an ASIC? It depends how many you sell.</h2>
+    <div class="split be" style="grid-template-columns:.8fr 1.2fr;gap:26px;align-items:center">
+      <div class="panel calc">
+        <div class="crow" style="grid-template-columns:150px 1fr 90px;gap:12px"><span class="cl">MCU / unit</span><input type="range" class="bm" min="100" max="800" step="50" value="400"><span class="num bmv"></span></div>
+        <div class="crow" style="grid-template-columns:150px 1fr 90px;gap:12px"><span class="cl">ASIC / unit</span><input type="range" class="ba" min="10" max="200" step="10" value="50"><span class="num bav"></span></div>
+        <div class="crow" style="grid-template-columns:150px 1fr 90px;gap:12px"><span class="cl">ASIC NRE</span><input type="range" class="bn" min="5" max="100" step="5" value="30"><span class="num bnv"></span></div>
+        <div class="cformula" style="font-size:19px"></div>
+        <div class="cverdict" style="font-size:21px"></div>
+      </div>
+      <svg viewBox="0 0 760 430" width="100%" class="besvg"></svg>
+    </div>
+  </div>
+  <div class="cue">Worked example: ₹30 crore ÷ (₹400 − ₹50) ≈ 8.6 lakh units (₹30 crore is 30 × 10⁷ = 3 × 10⁸). Below that, buy; above, design. The rupee figures are invented to make the arithmetic clear; real ASIC costs depend heavily on the process node and are often far higher. Drag the NRE to ₹100 crore and watch the crossover move off the chart.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="What the sum hides" data-act="ASICs">
+  <div>
+    <h2>The break-even is necessary, not sufficient.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:28%">question</th><th>why it can overturn the sum</th></tr>
+      <tr class="frag"><td>will you really sell that many?</td><td>The NRE is spent whether the product sells or not.</td></tr>
+      <tr class="frag"><td>can you wait two years?</td><td>A competitor using an off-the-shelf part ships first.</td></tr>
+      <tr class="frag"><td>will the model change?</td><td>A frozen ASIC cannot run next year's better network unless it was designed with room to spare.</td></tr>
+      <tr class="frag"><td>does efficiency sell the product?</td><td>For a hearing aid or earbud, battery life is the product. For a mains-powered box, maybe not.</td></tr>
+    </table>
+  </div>
+  <div class="cue">This is the bridge to the scenario exercise: teams will need both the sum and these questions.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Edge servers" data-act="edge servers">
+  <div>
+    <h2>An edge server: data-centre muscle, in the building.</h2>
+    <svg viewBox="0 0 1380 400" width="100%" height="400"><defs><marker id="es" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="20" y="30" width="150" height="44" rx="8" fill="#ffffff" stroke="#c6c3ba"/><text x="95" y="58" font-size="15" text-anchor="middle" fill="#15171b">camera 1</text><line x1="174" y1="52" x2="436" y2="200" stroke="#8b9096" stroke-width="1.6" marker-end="url(#es)"/><rect x="20" y="88" width="150" height="44" rx="8" fill="#ffffff" stroke="#c6c3ba"/><text x="95" y="116" font-size="15" text-anchor="middle" fill="#15171b">camera 2</text><line x1="174" y1="110" x2="436" y2="200" stroke="#8b9096" stroke-width="1.6" marker-end="url(#es)"/><rect x="20" y="146" width="150" height="44" rx="8" fill="#ffffff" stroke="#c6c3ba"/><text x="95" y="174" font-size="15" text-anchor="middle" fill="#15171b">camera 3</text><line x1="174" y1="168" x2="436" y2="200" stroke="#8b9096" stroke-width="1.6" marker-end="url(#es)"/><rect x="20" y="204" width="150" height="44" rx="8" fill="#ffffff" stroke="#c6c3ba"/><text x="95" y="232" font-size="15" text-anchor="middle" fill="#15171b">camera 4</text><line x1="174" y1="226" x2="436" y2="200" stroke="#8b9096" stroke-width="1.6" marker-end="url(#es)"/><rect x="20" y="262" width="150" height="44" rx="8" fill="#ffffff" stroke="#c6c3ba"/><text x="95" y="290" font-size="15" text-anchor="middle" fill="#15171b">camera 5</text><line x1="174" y1="284" x2="436" y2="200" stroke="#8b9096" stroke-width="1.6" marker-end="url(#es)"/><rect x="20" y="320" width="150" height="44" rx="8" fill="#ffffff" stroke="#c6c3ba"/><text x="95" y="348" font-size="15" text-anchor="middle" fill="#15171b">camera 6</text><line x1="174" y1="342" x2="436" y2="200" stroke="#8b9096" stroke-width="1.6" marker-end="url(#es)"/><text x="95" y="388" font-size="14" text-anchor="middle" fill="#8b9096">… 40 cameras</text><g class="frag"><rect x="440" y="120" width="360" height="160" rx="14" fill="#eaeef7" stroke="#23408f" stroke-width="2"/><text x="620" y="160" font-size="20" text-anchor="middle" font-weight="700" fill="#23408f">edge server</text><text x="620" y="192" font-size="15" text-anchor="middle" fill="#4b5057">GPUs or accelerators</text><text x="620" y="216" font-size="15" text-anchor="middle" fill="#4b5057">many streams, bigger models</text><text x="620" y="252" font-size="14" text-anchor="middle" fill="#146b5c" font-weight="700">inside the building</text><rect x="426" y="96" width="388" height="200" rx="18" fill="none" stroke="#146b5c" stroke-dasharray="7 6"/><text x="434" y="88" font-size="14" fill="#146b5c">the premises: factory, hospital, mall</text></g><g class="frag"><line x1="804" y1="200" x2="1070" y2="200" stroke="#8b9096" stroke-width="2" marker-end="url(#es)"/><text x="937" y="186" font-size="15" text-anchor="middle" fill="#4b5057">events and summaries only</text><rect x="1074" y="150" width="270" height="100" rx="40" fill="#ffffff" stroke="#c6c3ba" stroke-width="1.6"/><text x="1209" y="207" font-size="20" text-anchor="middle" fill="#15171b" font-weight="700">cloud</text></g></svg>
+    <p class="frag small">Also at the telecom base station: <strong>multi-access edge computing (MEC)</strong>, where the operator runs your workload one hop from the phone. This is Class 5's gateway, grown up.</p>
+  </div>
+  <div class="cue">What it adds over devices: models too big for any camera, one place to update them, and a view across all cameras (tracking a person from camera 3 to camera 7). Over the cloud: low latency, and video never leaves the building (the P in BLERP).</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Why not just send it all to the cloud?" data-act="edge servers">
+  <div>
+    <div class="kicker">try it live · a mall's internet connection</div>
+    <h2>Forty cameras streaming to the cloud: will the uplink cope?</h2>
+    <div class="panel calc upl">
+      <div class="crow" style="grid-template-columns:230px 1fr 110px;gap:16px"><span class="cl">cameras</span><input type="range" class="uc" min="1" max="100" step="1" value="40"><span class="num ucv"></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">stream quality</span><span class="cb" data-g="q"><button data-v="1">720p · ~1 Mbps</button><button data-v="4" class="sel">1080p · ~4 Mbps</button><button data-v="15">4K · ~15 Mbps</button></span></div>
+      <div class="cformula"></div>
+      <div class="cbar" style="grid-template-columns:260px 1fr 170px"><span class="cbl">all video to the cloud</span><div class="ctrack"><div class="cfill ub1"></div></div><span class="cpct ub1v"></span></div>
+      <div class="cbar" style="grid-template-columns:260px 1fr 170px"><span class="cbl">edge server, events only</span><div class="ctrack"><div class="cfill ub2"></div></div><span class="cpct ub2v"></span></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Bitrates are typical H.264 values; the 100 Mbps uplink is an illustrative business connection, so ask what the college's actual uplink is. The events-only line assumes about 20 kbps per camera for alerts and snapshots, also illustrative.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="The doorbell, at three scales" data-act="closing theory">
+  <div>
+    <div class="kicker">our running example</div>
+    <h2>One doorbell, a hundred doorbells, ten million doorbells.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">1</div><div class="ut">your prototype</div><div class="ud">An off-the-shelf board like the S3. Never an ASIC.</div></div>
+      <div class="ucard frag"><div class="un">100</div><div class="ut">a housing society</div><div class="ud">One shared edge server in the society office instead of a hundred cloud subscriptions. Someone must power, cool and look after it.</div></div>
+      <div class="ucard frag"><div class="un">10,000,000</div><div class="ut">a manufacturer</div><div class="ud">Now a custom chip may pay for itself, and many mass-market smart devices do use one.</div></div>
+    </div>
+  </div>
+  <div class="cue">End of theory. Hand out the scenario cards.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Exercise: pick the hardware" data-act="exercise">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">exercise · teams of four · six scenario cards</div><h2 style="margin-bottom:6px">MCU, GPU, FPGA, ASIC or edge server? One reason each.</h2></div>
+      <div class="panel timer" data-secs="720"><span class="tdisp">12:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="dcards"><div class="dcard"><div class="dn">hearing aid</div><div class="dd">always listening for its owner's voice commands; tiny battery; millions sold</div></div><div class="dcard"><div class="dn">bottle line</div><div class="dd">camera rejects faulty bottles at 1,000 a minute; a decision within 1 ms, every time</div></div><div class="dcard"><div class="dn">soil sensor pilot</div><div class="dd">200 units in farm trials; the model will change after the first season</div></div><div class="dcard"><div class="dn">hospital ward</div><div class="dd">30 cameras watching for falls; video must not leave the building</div></div><div class="dcard"><div class="dn">satellite</div><div class="dd">radar images processed in orbit; the algorithm will be updated after launch</div></div><div class="dcard"><div class="dn">classroom counter</div><div class="dd">one prototype that counts students at the door; built this semester</div></div></div>
+    <p class="small" style="margin-top:12px">Use the spectrum, the break-even and the four hidden questions. More than one answer can be defended; the reason is what earns the marks.</p>
+  </div>
+  <div class="cue">Circulate. Push teams who pick ASIC for the soil sensor pilot back to the break-even; push teams who pick an MCU for the bottle line to the 1 ms deadline.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="One defensible answer each" data-act="exercise">
+  <div>
+    <div class="kicker">click a scenario after teams have reported</div>
+    <div class="revp split" style="grid-template-columns:.7fr 1.3fr;gap:26px;align-items:start">
+      <div class="cb revbtns" style="flex-direction:column;align-items:stretch"></div>
+      <div class="panel revinfo" style="min-height:360px"></div>
+    </div>
+  </div>
+  <div class="cue">These are defensible answers, not the only ones. Give credit for a different choice backed by a good reason, for example an MCU with careful real-time code for the bottle line if the model is tiny.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Worksheet" data-act="exercise">
+  <div>
+    <div class="kicker">exercise · worksheet</div>
+    <h2>Four answers per team.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(4,1fr)"><div class="wbox" style="min-height:220px"><div class="wk">1 · break-even</div><div class="wq">MCU ₹250/unit; ASIC ₹30/unit after ₹50 crore NRE. How many units?</div></div><div class="wbox" style="min-height:220px"><div class="wk">2 · time</div><div class="wq">Selling 1 lakh units a month, how many months to break even?</div></div><div class="wbox" style="min-height:220px"><div class="wk">3 · hidden questions</div><div class="wq">Which of the four would worry you most here, and why?</div></div><div class="wbox" style="min-height:220px"><div class="wk">4 · FPGA</div><div class="wq">Name one scenario from the cards where an FPGA beats both an MCU and an ASIC.</div></div></div>
+  </div>
+  <div class="cue">Answers: ₹50 crore ÷ (250 − 30) = 50,00,00,000 ÷ 220 ≈ 22,72,727 units, about 22.7 lakh; at 1 lakh a month, about 23 months of sales (plus the 1–2 years of design before any sales). Figures are invented for the arithmetic.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:42px;max-width:34ch;margin:0 auto">For each, pick CPU/MCU, FPGA, ASIC or edge server, and give one reason: (a) 10 million fitness bands; (b) a research radar whose processing changes monthly; (c) 40 CCTV cameras in a mall.</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>multi-device architectures, devices and workloads</strong>. Putting the whole unit together.</p>
+  </div>
+  <div class="cue">Expected: (a) ASIC, volume and battery life; (b) FPGA, reconfigurable after deployment; (c) edge server, many streams, bandwidth and privacy.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.calc')||e.target.closest('.specp')||e.target.closest('.fgp')||e.target.closest('.lutp')||e.target.closest('.jitp')||e.target.closest('.be')||e.target.closest('.revp')||e.target.closest('.timer'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  function selv(p,g){ var b=p.querySelector('[data-g="'+g+'"] button.sel'); return b?+b.dataset.v:0; }
+  function lifeStr(h){ if(h<48) return Math.round(h)+' hours'; var d=h/24; if(d<60) return Math.round(d)+' days'; var y=d/365; return y<1? Math.round(d/30)+' months' : y.toFixed(1)+' years'; }
+  function battDraw(p){ var w=selv(p,'p'), e=selv(p,'b'), h=e/w;
+    p.querySelector('.cformula').innerHTML=e+' Wh ÷ '+(w>=0.01? (w*1000)+' mW' : (w*1e6)+' µW')+' = <b>'+Math.round(h).toLocaleString('en-IN')+' hours</b>';
+    var v=p.querySelector('.cverdict'); v.style.color= h>24*365? 'var(--ok)':'var(--fail)'; v.textContent='About '+lifeStr(h)+' of listening'+(h>24*365*5?', longer than the battery’s own shelf life.':'.'); }
+  deck.querySelectorAll('.batt').forEach(battDraw);
+  /* spectrum */
+  var SP=[['CPU',150,'#8b9096','Runs anything you can write. The slowest work per watt for neural networks. Examples: the S3’s cores, a laptop.'],
+          ['GPU',500,'#b06a12','Thousands of simple cores for parallel maths. Brilliant at neural networks, but power-hungry. Examples: Jetson, gaming and data-centre GPUs.'],
+          ['FPGA',850,'#23408f','Hardware you can rewire after manufacture. Custom pipelines with fixed latency; harder to program. Examples: Lattice iCE40, AMD and Intel FPGAs.'],
+          ['ASIC',1200,'#146b5c','Hardware fixed at manufacture for one job. The most efficient, and the cheapest per unit at volume. Examples: TPUs, phone NPUs, wake-word chips.']];
+  function specDraw(p,k){
+    var o='<defs><marker id="sp1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#4b5057"/></marker><marker id="sp2" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10 0L0 5L10 10z" fill="#4b5057"/></marker></defs>';
+    o+='<line x1="60" y1="110" x2="1320" y2="110" stroke="#4b5057" stroke-width="3" marker-start="url(#sp2)" marker-end="url(#sp1)"/><text x="60" y="190" font-size="17" fill="#4b5057" font-weight="700">most flexible</text><text x="1320" y="190" font-size="17" fill="#4b5057" font-weight="700" text-anchor="end">most efficient</text>';
+    o+='<text x="60" y="214" font-size="14" fill="#8b9096">change it with a software update</text><text x="1320" y="214" font-size="14" fill="#8b9096" text-anchor="end">most work per watt, cheapest at volume</text>';
+    SP.forEach(function(s,q){ var on=q===k; o+='<g data-sp="'+q+'" style="cursor:pointer"><circle cx="'+s[1]+'" cy="110" r="'+(on?34:26)+'" fill="'+(on?s[2]:'#ffffff')+'" stroke="'+s[2]+'" stroke-width="3"/><text x="'+s[1]+'" y="'+(on?117:116)+'" font-size="'+(on?19:17)+'" text-anchor="middle" font-weight="700" fill="'+(on?'#ffffff':s[2])+'">'+s[0]+'</text></g>'; });
+    o+='<text x="1025" y="52" font-size="14" fill="#146b5c" text-anchor="middle">most NPUs are ASIC blocks inside an SoC</text>';
+    p.querySelector('.specsvg').innerHTML=o;
+    p.querySelector('.specinfo').textContent= k>=0? SP[k][3] : 'Click a point.';
+  }
+  deck.querySelectorAll('.specp').forEach(function(p){ specDraw(p,-1); });
+  /* FPGA grid */
+  var FGS=[null,{c:'#146b5c',cells:[[1,1],[1,2],[1,3],[2,3],[2,4],[2,5],[1,5],[1,6]],dsp:[1,3],t:'Bitstream A wires a microphone input through a chain of multiply-adds into a filter. Unused blocks stay idle.'},
+           {c:'#23408f',cells:[[0,0],[0,1],[1,1],[2,1],[2,2],[3,2],[3,3],[3,4],[2,6],[2,7],[3,7],[3,8],[2,8]],dsp:[3,5],t:'Bitstream B: same chip, now a custom camera interface feeding a small detector. Nothing was soldered; a file was loaded.'}];
+  function fgDraw(p,m){
+    var o='', C=11, R=4, F=FGS[m];
+    for(var r=0;r<R;r++) for(var c=0;c<C;c++){
+      var x=40+c*118, y=20+r*72, kind = c===4||c===9 ? 'mem' : (c===2||c===7 ? 'dsp':'lut');
+      var hot=F && F.cells.some(function(q){return q[0]===r&&q[1]===c;});
+      var fill= hot? F.c : (kind==='mem'?'#f2f1ec':(kind==='dsp'?'#fbf0dc':'#ffffff'));
+      o+='<rect x="'+x+'" y="'+y+'" width="96" height="54" rx="6" fill="'+fill+'" stroke="'+(hot?F.c:'#c6c3ba')+'" stroke-width="1.4"/><text x="'+(x+48)+'" y="'+(y+32)+'" font-size="13" text-anchor="middle" fill="'+(hot?'#ffffff':'#8b9096')+'">'+(kind==='lut'?'logic':kind==='mem'?'memory':'DSP')+'</text>';
+    }
+    if(F){ for(var q=1;q<F.cells.length;q++){ var a=F.cells[q-1], b=F.cells[q]; o+='<line x1="'+(88+a[1]*118)+'" y1="'+(47+a[0]*72)+'" x2="'+(88+b[1]*118)+'" y2="'+(47+b[0]*72)+'" stroke="'+F.c+'" stroke-width="4" opacity=".55"/>'; } }
+    p.querySelector('.fgsvg').innerHTML=o;
+    p.querySelector('.fginfo').textContent= F? F.t : 'Logic blocks, memory blocks and DSP multipliers, with programmable wiring between them. Out of the box it does nothing at all.';
+    p.querySelectorAll('[data-fg]').forEach(function(b){ b.classList.toggle('sel',+b.dataset.fg===m); });
+  }
+  deck.querySelectorAll('.fgp').forEach(function(p){ fgDraw(p,0); });
+  /* LUT */
+  var LUTF={AND:[0,0,0,1],OR:[0,1,1,1],XOR:[0,1,1,0],NAND:[1,1,1,0]};
+  function lutDraw(p){
+    var f=p.dataset.f||'AND', a=+(p.dataset.a||0), b=+(p.dataset.b||0), bits=LUTF[f], sel=a*2+b, o='';
+    o+='<text x="20" y="30" font-size="15" fill="#8b9096">LOOKUP TABLE · 4 stored bits</text>';
+    for(var q=0;q<4;q++){ var y=48+q*58, on=q===sel; o+='<rect x="20" y="'+y+'" width="250" height="48" rx="6" fill="'+(on?'#e6f1ee':'#ffffff')+'" stroke="'+(on?'#146b5c':'#c6c3ba')+'" stroke-width="'+(on?3:1.4)+'"/><text x="40" y="'+(y+31)+'" font-size="17" fill="#4b5057">a='+(q>>1)+' b='+(q&1)+'</text><text x="240" y="'+(y+33)+'" font-size="24" font-weight="700" text-anchor="end" fill="'+(on?'#146b5c':'#15171b')+'">'+bits[q]+'</text>'; }
+    o+='<line x1="274" y1="'+(72+sel*58)+'" x2="420" y2="160" stroke="#146b5c" stroke-width="4"/><circle cx="470" cy="160" r="44" fill="'+(bits[sel]?'#146b5c':'#ffffff')+'" stroke="#146b5c" stroke-width="3"/><text x="470" y="170" font-size="30" font-weight="700" text-anchor="middle" fill="'+(bits[sel]?'#ffffff':'#146b5c')+'">'+bits[sel]+'</text><text x="470" y="236" font-size="15" text-anchor="middle" fill="#4b5057">output</text>';
+    p.querySelector('.lutsvg').innerHTML=o;
+    p.querySelector('.lutout').innerHTML=a+' '+f+' '+b+' = <b style="color:var(--ok)">'+bits[sel]+'</b>';
+    p.querySelectorAll('.lutf button').forEach(function(x){ x.classList.toggle('sel',x.dataset.f===f); });
+    p.querySelectorAll('.lutin button').forEach(function(x){ var v=x.dataset.in==='a'?a:b; x.textContent=x.dataset.in+' = '+v; x.classList.toggle('on',!!v); });
+  }
+  deck.querySelectorAll('.lutp').forEach(lutDraw);
+  /* jitter */
+  var JQ=[0.225, 0.201, 0.271, 0.19, 0.255, 0.231, 0.188, 0.251, 0.185, 0.241, 0.19, 0.193, 0.239, 0.296, 0.197, 0.211, 0.268, 0.313, 0.261, 0.236, 0.317, 0.187, 0.3, 0.221, 0.2, 0.196, 0.223, 0.294, 0.205, 0.261, 0.269, 0.232, 0.257, 0.189, 0.188, 0.209, 0.275, 0.24, 0.224, 0.262, 0.243, 0.222, 0.291, 0.278, 0.214, 0.26, 0.254, 0.303, 0.282, 0.22, 0.317, 0.197, 0.239, 0.286, 0.201, 0.248, 0.185, 0.274, 0.287, 0.26], JI=[1.625, 0.201, 0.271, 0.19, 0.255, 0.231, 0.188, 0.251, 0.185, 1.141, 0.19, 0.193, 0.239, 0.296, 0.197, 0.711, 0.268, 0.313, 0.261, 0.236, 0.317, 0.687, 0.3, 0.221, 1.6, 0.196, 0.223, 0.294, 0.205, 0.261, 0.269, 0.232, 0.257, 1.589, 0.188, 0.209, 0.275, 0.24, 0.224, 0.262, 0.243, 0.222, 0.291, 0.278, 0.214, 1.16, 0.254, 0.303, 1.182, 0.22, 0.317, 0.197, 0.239, 0.286, 0.201, 0.248, 0.185, 1.174, 0.287, 0.26];
+  function jitDraw(p,m){
+    var cpu=m?JI:JQ, o='', sx=19, sy=180;
+    function Y(ms){ return 290-ms*sy; }
+    o+='<line x1="70" y1="'+Y(1)+'" x2="1360" y2="'+Y(1)+'" stroke="#a8231f" stroke-dasharray="6 5"/><text x="1360" y="'+(Y(1)-8)+'" font-size="14" fill="#a8231f" text-anchor="end">deadline · 1 ms</text>';
+    [0,0.5,1].forEach(function(v){ o+='<text x="60" y="'+(Y(v)+5)+'" font-size="13" fill="#8b9096" text-anchor="end">'+v+' ms</text>'; });
+    var miss=0, mx=0;
+    cpu.forEach(function(v,k){ var x=80+k*sx, vv=Math.min(v,1.3); if(v>1) miss++; mx=Math.max(mx,v); o+='<rect x="'+x+'" y="'+Y(vv)+'" width="8" height="'+(vv*sy)+'" fill="'+(v>1?'#a8231f':'#b06a12')+'" opacity=".85"/>'; o+='<rect x="'+(x+9)+'" y="'+Y(0.4)+'" width="8" height="'+(0.4*sy)+'" fill="#23408f" opacity=".85"/>'; });
+    o+='<rect x="80" y="12" width="14" height="14" fill="#b06a12"/><text x="100" y="24" font-size="14" fill="#4b5057">CPU, per sample</text><rect x="260" y="12" width="14" height="14" fill="#23408f"/><text x="280" y="24" font-size="14" fill="#4b5057">FPGA pipeline, per sample · always 0.40 ms</text>';
+    p.querySelector('.jitsvg').innerHTML=o;
+    var avg=cpu.reduce(function(a,b){return a+b;},0)/cpu.length;
+    p.querySelector('.jitinfo').innerHTML='CPU average '+avg.toFixed(2)+' ms, worst '+mx.toFixed(2)+' ms, <strong style="color:'+(miss?'var(--fail)':'var(--ok)')+'">'+miss+' deadlines missed</strong>. The CPU’s average is faster than the FPGA, yet it can still be the wrong choice.';
+    p.querySelectorAll('[data-jt]').forEach(function(b){ b.classList.toggle('sel',+b.dataset.jt===m); });
+  }
+  deck.querySelectorAll('.jitp').forEach(function(p){ jitDraw(p,0); });
+  /* break-even */
+  function inr(v){ return v>=1e7? '₹'+(v/1e7).toFixed(v>=1e8?0:1)+' cr' : '₹'+(v/1e5).toFixed(0)+' L'; }
+  function beDraw(p){
+    var m=+p.querySelector('.bm').value, a=+p.querySelector('.ba').value, n=+p.querySelector('.bn').value*1e7;
+    p.querySelector('.bmv').textContent='₹'+m; p.querySelector('.bav').textContent='₹'+a; p.querySelector('.bnv').textContent='₹'+(n/1e7)+' cr';
+    var be=n/(m-a);
+    p.querySelector('.cformula').innerHTML=(n/1e7)+' cr ÷ ('+m+' − '+a+') = <b>'+(be/1e5).toFixed(1)+' lakh units</b>';
+    p.querySelector('.cverdict').textContent='Sell fewer than '+(be/1e5).toFixed(1)+' lakh: buy. More: design.';
+    var V=3e6, CM=Math.max(m*V, n+a*V)*1.05, o='';
+    function X(v){ return 90+v/V*640; } function Y(c){ return 380-c/CM*350; }
+    for(var k=0;k<=6;k++){ var v=k*5e5; o+='<line x1="'+X(v)+'" y1="30" x2="'+X(v)+'" y2="380" stroke="#e2e0d9"/><text x="'+X(v)+'" y="402" font-size="13" text-anchor="middle" fill="#8b9096">'+(v/1e5)+' L</text>'; }
+    for(var k2=0;k2<=4;k2++){ var c=CM*k2/4; o+='<text x="82" y="'+(Y(c)+5)+'" font-size="13" text-anchor="end" fill="#8b9096">'+inr(c)+'</text>'; }
+    o+='<text x="410" y="426" font-size="14" text-anchor="middle" fill="#4b5057">units sold</text>';
+    o+='<line x1="'+X(0)+'" y1="'+Y(0)+'" x2="'+X(V)+'" y2="'+Y(m*V)+'" stroke="#b06a12" stroke-width="4"/><line x1="'+X(0)+'" y1="'+Y(n)+'" x2="'+X(V)+'" y2="'+Y(n+a*V)+'" stroke="#146b5c" stroke-width="4"/>';
+    o+='<text x="'+(X(V)-6)+'" y="'+(Y(m*V)-10)+'" font-size="15" text-anchor="end" fill="#b06a12" font-weight="700">buy MCUs</text><text x="'+(X(V)-6)+'" y="'+(Y(n+a*V)+24)+'" font-size="15" text-anchor="end" fill="#146b5c" font-weight="700">design an ASIC</text>';
+    if(be<V){ o+='<line x1="'+X(be)+'" y1="'+Y(m*be)+'" x2="'+X(be)+'" y2="380" stroke="#a8231f" stroke-dasharray="5 5"/><circle cx="'+X(be)+'" cy="'+Y(m*be)+'" r="8" fill="#a8231f"/><text x="'+(X(be)+12)+'" y="'+(Y(m*be)-12)+'" font-size="15" fill="#a8231f" font-weight="700">break-even</text>'; }
+    else o+='<text x="420" y="60" font-size="15" fill="#a8231f" text-anchor="middle" font-weight="700">break-even is beyond 30 lakh units</text>';
+    p.querySelector('.besvg').innerHTML=o;
+  }
+  deck.querySelectorAll('.be').forEach(function(p){ beDraw(p); p.querySelectorAll('input').forEach(function(i2){ i2.addEventListener('input',function(){beDraw(p);}); }); });
+  /* uplink */
+  function uplDraw(p){
+    var c=+p.querySelector('.uc').value, q=selv(p,'q'), all=c*q, ev=c*0.02, cap=100;
+    p.querySelector('.ucv').textContent=c;
+    p.querySelector('.cformula').innerHTML=c+' cameras × '+q+' Mbps = <b>'+all+' Mbps</b> upstream, against a 100 Mbps uplink';
+    var f1=p.querySelector('.ub1'); f1.style.width=Math.min(100,all/cap*100)+'%'; f1.classList.toggle('over',all>cap); p.querySelector('.ub1v').textContent=all+' Mbps';
+    p.querySelector('.ub2').style.width=Math.max(0.5,ev/cap*100)+'%'; p.querySelector('.ub2v').textContent=ev.toFixed(1)+' Mbps';
+    var v=p.querySelector('.cverdict'); if(all>cap){ v.style.color='var(--fail)'; v.textContent='The uplink is '+(all/cap).toFixed(1)+'× oversubscribed. An edge server analyses video in the building and sends only events.'; } else { v.style.color='var(--ok)'; v.textContent='It fits, using '+Math.round(all/cap*100)+'% of the uplink, all day, every day.'; }
+  }
+  deck.querySelectorAll('.upl').forEach(function(p){ uplDraw(p); p.querySelector('.uc').addEventListener('input',function(){uplDraw(p);}); });
+  /* reveal */
+  var RV=[['hearing aid','ASIC','Millions of units and a battery measured in milliwatt-hours: efficiency is the product, and the volume pays the NRE. Often an ASIC with a small DSP alongside.'],
+          ['bottle line','FPGA','A hard 1 ms deadline every time, at a custom camera interface, on a few production lines: fixed latency without making a chip.'],
+          ['soil sensor pilot','MCU','200 units and a model that will change: nothing justifies custom hardware. Cheapest thing first.'],
+          ['hospital ward','edge server','30 streams, bigger models, and video that must stay inside the building.'],
+          ['satellite','FPGA','The algorithm changes after launch and nobody can visit to swap a chip; radiation-tolerant FPGAs are common in space.'],
+          ['classroom counter','MCU','One prototype this semester: an S3 and a sensor. An ASIC would take longer than the course.']];
+  function revDraw(p,k){
+    p.querySelector('.revinfo').innerHTML= k<0? '<p style="color:var(--soft)">Ask each team for its answer first, then click.</p>' : '<div class="kicker">'+RV[k][0]+'</div><div class="ra">'+RV[k][1]+'</div><p>'+RV[k][2]+'</p>';
+    p.querySelectorAll('.revbtns button').forEach(function(b){ b.classList.toggle('on',+b.dataset.r===k); });
+  }
+  deck.querySelectorAll('.revp').forEach(function(p){ p.querySelector('.revbtns').innerHTML=RV.map(function(r,k){return '<button data-r="'+k+'">'+r[0]+'</button>';}).join(''); revDraw(p,-1); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.batt .cb button, .upl .cb button');
+    if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); var p=b.closest('.calc'); if(p.classList.contains('batt')) battDraw(p); else uplDraw(p); return; }
+    var g=e.target.closest('[data-sp]'); if(g){ specDraw(g.closest('.specp'),+g.dataset.sp); return; }
+    b=e.target.closest('[data-fg]'); if(b){ b.blur(); fgDraw(b.closest('.fgp'),+b.dataset.fg); return; }
+    b=e.target.closest('.lutf button'); if(b){ b.blur(); var p=b.closest('.lutp'); p.dataset.f=b.dataset.f; lutDraw(p); return; }
+    b=e.target.closest('.lutin button'); if(b){ b.blur(); var p=b.closest('.lutp'), key=b.dataset.in; p.dataset[key]=1-(+(p.dataset[key]||0)); lutDraw(p); return; }
+    b=e.target.closest('[data-jt]'); if(b){ b.blur(); jitDraw(b.closest('.jitp'),+b.dataset.jt); return; }
+    b=e.target.closest('.revbtns button'); if(b){ b.blur(); revDraw(b.closest('.revp'),+b.dataset.r); return; }
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
