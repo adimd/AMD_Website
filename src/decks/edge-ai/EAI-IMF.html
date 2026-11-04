@@ -112,6 +112,50 @@ table.data th{color:var(--soft);font-weight:400;background:var(--panel2)}
 .verdict{font-family:var(--display);font-size:44px;letter-spacing:.06em;text-transform:uppercase;margin-top:6px}
 .verdict.win{color:var(--green)} .verdict.lose{color:var(--red)}
 
+/* ===== motion layer ===== */
+#lasers{position:fixed;inset:0;z-index:-1;pointer-events:none}
+main{position:relative;z-index:1}
+.enter{animation:enter .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes enter{from{opacity:0;transform:translateY(18px) scale(.985);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+.card.scan::before{content:'';position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);box-shadow:0 0 18px var(--red);animation:scan 1.1s ease-out forwards;pointer-events:none;border-radius:10px}
+@keyframes scan{from{top:0;opacity:1}to{top:100%;opacity:0}}
+.story p,.question,.diagram{animation:enter .5s both}
+.story p:nth-child(2){animation-delay:.12s}.diagram{animation-delay:.18s}.question{animation-delay:.26s}
+.progress i.here{animation:here 1.2s ease-in-out infinite}
+@keyframes here{50%{opacity:.45}}
+.glitch{animation:glitch .4s steps(2) 2}
+@keyframes glitch{0%{text-shadow:2px 0 var(--red),-2px 0 #00e5ff;transform:translateX(1px)}50%{text-shadow:-2px 0 var(--red),2px 0 #00e5ff;transform:translateX(-1px)}100%{text-shadow:none;transform:none}}
+
+/* architecture diagram */
+.diagram{margin-top:16px;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:10px;overflow-x:auto}
+.diagram svg{display:block;width:100%;min-width:520px;height:auto}
+.diagram .node rect{fill:var(--panel2);stroke:var(--line2);stroke-width:1.5}
+.diagram .node.hot rect{stroke:var(--red);fill:#1e1214;animation:hot 1.6s ease-in-out infinite}
+@keyframes hot{50%{fill:#2b1214}}
+.diagram .node text{fill:var(--ink);font-family:var(--mono);font-size:12px}
+.diagram .edge{stroke:var(--soft);stroke-width:1.5;fill:none;stroke-dasharray:5 7;animation:flow 1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-24}}
+.diagram .pulse{fill:var(--red);filter:drop-shadow(0 0 4px var(--red))}
+
+/* access granted stamp */
+#stamp{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;pointer-events:none}
+#stamp span{text-transform:uppercase;font-family:var(--display);font-weight:700;font-size:clamp(34px,7vw,64px);letter-spacing:.18em;color:var(--green);border:4px solid var(--green);padding:6px 26px;transform:rotate(-6deg);background:rgba(11,13,16,.85);box-shadow:0 0 40px rgba(60,207,142,.35);animation:stamp 1s cubic-bezier(.2,1.4,.4,1) forwards}
+@keyframes stamp{0%{opacity:0;transform:rotate(-6deg) scale(2.4)}25%{opacity:1;transform:rotate(-6deg) scale(1)}75%{opacity:1}100%{opacity:0;transform:rotate(-6deg) scale(1)}}
+body.denied::after{content:'';position:fixed;inset:0;z-index:59;pointer-events:none;box-shadow:inset 0 0 120px rgba(224,53,43,.65);animation:deny .5s forwards}
+@keyframes deny{to{opacity:0}}
+
+/* vault door for mission complete */
+#vault{position:fixed;inset:0;z-index:55;background:rgba(5,6,8,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;cursor:pointer}
+#vault svg{width:min(260px,60vw);height:auto}
+#vault .r1{transform-origin:100px 100px;animation:spin 1.8s cubic-bezier(.6,0,.2,1) forwards}
+#vault .r2{transform-origin:100px 100px;animation:spinb 1.8s cubic-bezier(.6,0,.2,1) forwards}
+#vault .core{transform-origin:100px 100px;animation:core 2.2s forwards}
+@keyframes spin{to{transform:rotate(270deg)}} @keyframes spinb{to{transform:rotate(-180deg)}}
+@keyframes core{0%,70%{fill:var(--panel2)}100%{fill:var(--green)}}
+#vault .vt{font-family:var(--display);font-size:clamp(26px,5vw,40px);letter-spacing:.14em;color:var(--ink);text-transform:uppercase;text-align:center}
+#vault .vs{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--soft);text-transform:uppercase}
+@media (prefers-reduced-motion:reduce){.enter,.story p,.question,.diagram,.card.scan::before,#vault *,#stamp span,.diagram .edge,.diagram .node.hot rect{animation:none!important}}
+
 footer{text-align:center;font-family:var(--mono);font-size:11px;color:#3f4852;letter-spacing:.1em;padding:20px}
 @media (max-width:560px){header{flex-wrap:wrap}.agent{order:5;width:100%}.track{grid-template-columns:1fr}.card{padding:18px}.row.input{flex-wrap:wrap}.row.input .btn{width:100%}}
 @media (prefers-reduced-motion:reduce){.shake,.burn,#clock.crit{animation:none}}
@@ -140,7 +184,7 @@ footer{text-align:center;font-family:var(--mono);font-size:11px;color:#3f4852;le
         <li>You play alone. <b>30 minutes</b> on the clock from the moment you begin, for all three missions.</li>
         <li>Each mission opens with a password. Your instructor will give you the first one.</li>
         <li>Each mission starts with a briefing that burns after 30 seconds. Read it once.</li>
-        <li>Six clues each in Missions A and B, five in Mission C. Numbers can be typed with or without units.</li>
+        <li>Six clues each in Missions A and B, two in Mission C. Numbers can be typed with or without units.</li>
         <li><b>Intel</b> gives you a hint. <b>Skip</b> moves on, but two skips in one mission gets you disavowed.</li>
         <li>Stay on this page. Time spent away is logged.</li>
       </ul>
@@ -176,6 +220,7 @@ footer{text-align:center;font-family:var(--mono);font-size:11px;color:#3f4852;le
     <div class="card" id="clueCard">
       <div class="cluehead"><h2 id="clueTitle"></h2><span class="cls" id="clueCls"></span></div>
       <div class="story" id="clueStory"></div>
+      <div class="diagram hidden" id="clueDiagram"></div>
       <div class="question" id="clueQ"></div>
       <div class="hintbox hidden" id="hintBox"></div>
       <label for="answer">Your answer</label>
@@ -212,6 +257,25 @@ footer{text-align:center;font-family:var(--mono);font-size:11px;color:#3f4852;le
     <div class="smoke"></div>
   </div>
 </div>
+
+<!-- ACCESS GRANTED STAMP -->
+<div id="stamp" class="hidden"><span>Access granted</span></div>
+
+<!-- VAULT DOOR · mission complete -->
+<div id="vault" class="hidden">
+  <svg viewBox="0 0 200 200" aria-hidden="true">
+    <circle cx="100" cy="100" r="94" fill="none" stroke="#36404b" stroke-width="3"/>
+    <g class="r1"><circle cx="100" cy="100" r="80" fill="none" stroke="#e0352b" stroke-width="6" stroke-dasharray="40 14"/></g>
+    <g class="r2"><circle cx="100" cy="100" r="62" fill="none" stroke="#77818c" stroke-width="4" stroke-dasharray="6 10"/>
+      <rect x="96" y="30" width="8" height="22" rx="2" fill="#e9edf1"/><rect x="96" y="148" width="8" height="22" rx="2" fill="#e9edf1"/>
+      <rect x="30" y="96" width="22" height="8" rx="2" fill="#e9edf1"/><rect x="148" y="96" width="22" height="8" rx="2" fill="#e9edf1"/></g>
+    <circle class="core" cx="100" cy="100" r="30" stroke="#36404b" stroke-width="2"/>
+  </svg>
+  <div class="vs" id="vaultSub">Lock disengaged</div>
+  <div class="vt" id="vaultTitle">Mission complete</div>
+</div>
+
+<canvas id="lasers"></canvas>
 
 <footer>Edge AI · AI255TBD · this game is an original classroom exercise</footer>
 
@@ -250,16 +314,23 @@ var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwj5-Bn5p1VeTyRMbsTIyI
   /* ---------- views ---------- */
   function show(id){ ['s-login','s-locked','s-clue','s-done'].forEach(function(s){ $(s).classList.toggle('hidden', s!==id); }); }
 
+  var prevPhase = null;
   function render(v, res){
+    var finishedMission = prevPhase === 'clue' && (v.phase === 'locked' || (v.phase === 'done' && v.summary && v.summary.status === 'Complete'));
+    prevPhase = v.phase;
+    if(finishedMission){
+      var doneKey = v.phase === 'done' ? 'C' : v.missions.filter(function(m){ return m.state==='done'; }).slice(-1)[0].key;
+      vaultOpen(v.phase === 'done' ? 'Operation complete' : 'Mission ' + doneKey + ' complete');
+    }
     $('agent').textContent = 'Agent ' + v.name + ' · ' + v.usn;
     $('abortBtn').classList.toggle('hidden', v.phase==='done');
     setClock(v.remainingMs, v.phase==='done');
     if(v.phase==='locked'){
       show('s-locked'); flashTarget = 'codeMsg';
-      $('lockedTitle').textContent = 'Mission ' + v.nextMission.key + ' · ' + v.nextMission.name;
+      scramble($('lockedTitle'), 'Mission ' + v.nextMission.key + ' · ' + v.nextMission.name);
       drawTrack(v.missions);
       $('lastMsg').classList.toggle('hidden', !v.lastMsg);
-      $('lastMsg').textContent = v.lastMsg ? 'TRANSMISSION · ' + v.lastMsg : '';
+      if(v.lastMsg) typeOut($('lastMsg'), 'TRANSMISSION · ' + v.lastMsg, finishedMission ? 2300 : 0); else $('lastMsg').textContent = '';
       setTimeout(function(){ $('code').focus(); }, 50);
     } else if(v.phase==='clue'){
       show('s-clue'); flashTarget = 'answerMsg';
@@ -289,8 +360,14 @@ var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwj5-Bn5p1VeTyRMbsTIyI
     $('missionLabel').textContent = 'Mission ' + v.mission.key + ' · ' + v.mission.name + ' · clue ' + v.clueNo + ' of ' + v.clueTotal;
     var p = $('progress'); p.innerHTML = '';
     for(var i=1;i<=v.clueTotal;i++){ var b=document.createElement('i'); b.className = i<v.clueNo?'done':(i===v.clueNo?'here':''); p.appendChild(b); }
-    $('clueTitle').textContent = c.id + ' · ' + c.title;
+    var fresh = c.id !== lastClueId;
+    if(fresh){
+      var card = $('clueCard'); card.classList.remove('enter','scan'); void card.offsetWidth; card.classList.add('enter','scan');
+      scramble($('clueTitle'), c.id + ' · ' + c.title);
+    }
     $('clueCls').textContent = c.cls;
+    if(fresh){
+    drawDiagram(c.diagram);
     var st = $('clueStory'); st.innerHTML = '';
     c.story.forEach(function(t){ var el=document.createElement('p'); el.textContent=t; st.appendChild(el); });
     if(c.table){
@@ -302,11 +379,13 @@ var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwj5-Bn5p1VeTyRMbsTIyI
       st.appendChild(tb);
     }
     $('clueQ').textContent = c.question;
+    var q=$('clueQ'); q.style.animation='none'; void q.offsetWidth; q.style.animation='';
+    }
     $('hintBox').classList.toggle('hidden', !c.hint);
     $('hintBox').textContent = c.hint || '';
     $('hintBtn').disabled = !!c.hint;
     $('skipBtn').textContent = v.skipsThisMission >= 1 ? 'Skip clue (disavowal)' : 'Skip clue';
-    if(c.id !== lastClueId){ $('answer').value = ''; lastClueId = c.id; }
+    if(fresh){ $('answer').value = ''; lastClueId = c.id; }
     setTimeout(function(){ $('answer').focus(); }, 50);
   }
 
@@ -341,6 +420,90 @@ var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwj5-Bn5p1VeTyRMbsTIyI
     c.className = s <= 60 ? 'crit' : (s <= 300 ? 'warn' : '');
     Score.tension(s <= 300);
   }
+
+
+  /* ---------- motion helpers ---------- */
+  var GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&@$';
+  function scramble(el, text){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches){ el.textContent = text; return; }
+    clearInterval(el._sc); var f = 0, total = 18;
+    el._sc = setInterval(function(){
+      f++; var keep = Math.floor(text.length * f / total), out = '';
+      for(var i=0;i<text.length;i++){ var ch=text[i]; out += (i < keep || ch===' ' || ch==='·') ? ch : GLYPHS[Math.floor(Math.random()*GLYPHS.length)]; }
+      el.textContent = out; if(f >= total){ clearInterval(el._sc); el.textContent = text; }
+    }, 35);
+  }
+  function typeOut(el, text, delay){
+    clearInterval(el._ty); clearTimeout(el._td); el.textContent = '';
+    el._td = setTimeout(function(){ var i = 0; el._ty = setInterval(function(){ i += 2; el.textContent = text.slice(0,i); if(i >= text.length) clearInterval(el._ty); }, 18); }, delay||0);
+  }
+  function grantedStamp(){
+    var s = $('stamp'); s.classList.remove('hidden');
+    var sp = s.firstElementChild; sp.style.animation='none'; void sp.offsetWidth; sp.style.animation='';
+    clearTimeout(s._t); s._t = setTimeout(function(){ s.classList.add('hidden'); }, 1000);
+  }
+  function denied(){ document.body.classList.remove('denied'); void document.body.offsetWidth; document.body.classList.add('denied'); scrambleOnce($('clueTitle')); }
+  function scrambleOnce(el){ el.classList.remove('glitch'); void el.offsetWidth; el.classList.add('glitch'); }
+  function vaultOpen(title){
+    var o = $('vault'); o.classList.remove('hidden');
+    o.querySelectorAll('.r1,.r2,.core').forEach(function(g){ g.style.animation='none'; void g.getBoundingClientRect(); g.style.animation=''; });
+    $('vaultTitle').textContent = ''; scramble($('vaultTitle'), title);
+    Score.sfx('vault');
+    var close = function(){ o.classList.add('hidden'); clearTimeout(o._t); };
+    o.onclick = close; clearTimeout(o._t); o._t = setTimeout(close, 2400);
+  }
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function drawDiagram(d){
+    var box = $('clueDiagram'); box.innerHTML = '';
+    if(!d){ box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    var svg = document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox','0 0 640 ' + (d.h || 224));
+    var defs = document.createElementNS(SVGNS,'defs');
+    defs.innerHTML = '<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#77818c"/></marker>';
+    svg.appendChild(defs);
+    var pos = {};
+    d.nodes.forEach(function(n){ pos[n[0]] = { x:n[2], y:n[3], w:n[4], h:n[5] }; });
+    d.edges.forEach(function(e, i){
+      var a = pos[e[0]], b = pos[e[1]];
+      var x1 = a.x + a.w, y1 = a.y + a.h/2, x2 = b.x - 4, y2 = b.y + b.h/2;
+      var path = document.createElementNS(SVGNS,'path');
+      var mx = (x1 + x2) / 2, dstr = 'M'+x1+' '+y1+' C'+mx+' '+y1+' '+mx+' '+y2+' '+x2+' '+y2;
+      path.setAttribute('d', dstr); path.setAttribute('class','edge'); path.setAttribute('marker-end','url(#arr)');
+      svg.appendChild(path);
+      var dot = document.createElementNS(SVGNS,'circle'); dot.setAttribute('r','3.5'); dot.setAttribute('class','pulse');
+      var mo = document.createElementNS(SVGNS,'animateMotion');
+      mo.setAttribute('dur', (1.4 + (i % 3) * 0.25) + 's'); mo.setAttribute('repeatCount','indefinite'); mo.setAttribute('path', dstr); mo.setAttribute('begin', (i * 0.17) + 's');
+      dot.appendChild(mo); svg.appendChild(dot);
+    });
+    d.nodes.forEach(function(n){
+      var g = document.createElementNS(SVGNS,'g'); g.setAttribute('class','node' + (n[6] ? ' ' + n[6] : ''));
+      var r = document.createElementNS(SVGNS,'rect'); r.setAttribute('x',n[2]); r.setAttribute('y',n[3]); r.setAttribute('width',n[4]); r.setAttribute('height',n[5]); r.setAttribute('rx',6);
+      var t = document.createElementNS(SVGNS,'text'); t.setAttribute('x', n[2] + n[4]/2); t.setAttribute('y', n[3] + n[5]/2 + 4); t.setAttribute('text-anchor','middle'); t.textContent = n[1];
+      g.appendChild(r); g.appendChild(t); svg.appendChild(g);
+    });
+    box.appendChild(svg);
+  }
+
+  /* ---------- laser grid backdrop ---------- */
+  (function lasers(){
+    var cv = $('lasers'), cx = cv.getContext('2d'), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var beams = [0,1,2,3,4].map(function(i){ return { a: Math.random()*Math.PI, s: (0.0006 + Math.random()*0.0009) * (i%2?1:-1), o: Math.random() }; });
+    function size(){ cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; }
+    size(); addEventListener('resize', size);
+    function frame(t){
+      var w = cv.width, h = cv.height; cx.clearRect(0,0,w,h);
+      beams.forEach(function(b, i){
+        var ang = b.a + (still ? 0 : t * b.s), px = (i % 2 ? w : 0), py = h * (0.15 + 0.17 * i);
+        var x2 = px + Math.cos(ang) * w * 1.6 * (i % 2 ? -1 : 1), y2 = py + Math.sin(ang) * h;
+        var flick = 0.05 + 0.03 * Math.sin(t / 300 + b.o * 9);
+        cx.strokeStyle = 'rgba(224,53,43,' + flick + ')'; cx.lineWidth = 1.2 * devicePixelRatio;
+        cx.shadowColor = 'rgba(224,53,43,.8)'; cx.shadowBlur = 8 * devicePixelRatio;
+        cx.beginPath(); cx.moveTo(px, py); cx.lineTo(x2, y2); cx.stroke();
+      });
+      if(!still) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
 
   /* ---------- briefing that burns ---------- */
   var briefTimer = null;
@@ -412,11 +575,12 @@ var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwj5-Bn5p1VeTyRMbsTIyI
         if(!res.ok){ flash(res.error, 'err'); return; }
         if(res.timeUp) return;
         if(res.correct){
+          grantedStamp();
           Score.sfx('right');
           flash(res.message ? '' : 'Confirmed. Next clue incoming.', 'ok');
         } else {
           Score.sfx('wrong');
-          flash('Negative. Check your working and transmit again.', 'err');
+          flash('Negative. Check your working and transmit again.', 'err'); denied();
           $('clueCard').classList.add('shake'); setTimeout(function(){ $('clueCard').classList.remove('shake'); }, 400);
         }
       });
@@ -542,6 +706,7 @@ var Score = (function(){
       else if(kind==='wrong'){ tone(110, t, 0.25, 'sawtooth', 0.12); }
       else if(kind==='tape'){ tone(1200, t, 0.05, 'sine', 0.05); tone(1200, t+0.12, 0.05, 'sine', 0.05); }
       else if(kind==='burn'){ var s=ctx.createBufferSource(), f=ctx.createBiquadFilter(), g=ctx.createGain(); s.buffer=noiseBuf; s.loop=true; f.type='bandpass'; f.frequency.setValueAtTime(400,t); f.frequency.exponentialRampToValueAtTime(4000,t+1.2); env(g,t,0.05,0.25,1.2); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t+1.4); }
+      else if(kind==='vault'){ [0,0.18,0.36].forEach(function(d){ tone(70, t+d, 0.12, 'square', 0.12); }); tone(mtof(81), t+1.6, 0.4, 'sine', 0.08); }
       else if(kind==='win'){ [57,60,64,69].forEach(function(m,i){ tone(mtof(m), t+i*0.12, 0.5, 'square', 0.06); }); }
       else if(kind==='lose'){ [57,56,55,52].forEach(function(m,i){ tone(mtof(m), t+i*0.2, 0.4, 'sawtooth', 0.07); }); }
     }
