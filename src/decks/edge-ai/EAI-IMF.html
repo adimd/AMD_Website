@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operation Halden · Edge AI Unit I</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=JetBrains+Mono:wght@400;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0d10; --panel:#12161b; --panel2:#181d23; --line:#262d36; --line2:#36404b;
+  --ink:#e9edf1; --body:#b4bcc5; --soft:#77818c;
+  --red:#e0352b; --red-dim:#5a1714; --amber:#f0a73a; --green:#3ccf8e;
+  --display:'Oswald',Impact,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Source Sans 3',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--body);font-family:var(--sans);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(ellipse at 50% -20%,#1a1f27 0%,transparent 60%),repeating-linear-gradient(0deg,rgba(255,255,255,.012) 0 1px,transparent 1px 3px)}
+button,input{font:inherit;color:inherit}
+.hidden{display:none!important}
+
+/* top bar */
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;padding:12px 20px;background:rgba(11,13,16,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.brand{font-family:var(--display);font-weight:700;letter-spacing:.18em;font-size:15px;color:var(--ink);text-transform:uppercase}
+.brand b{color:var(--red);font-weight:700}
+.agent{font-family:var(--mono);font-size:12px;color:var(--soft);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spacer{flex:1}
+#clock{font-family:var(--mono);font-weight:700;font-size:22px;color:var(--ink);letter-spacing:.06em;padding:4px 12px;border:1px solid var(--line2);border-radius:6px;min-width:96px;text-align:center}
+#clock.warn{color:var(--amber);border-color:var(--amber)}
+#clock.crit{color:#fff;background:var(--red);border-color:var(--red);animation:pulse 1s steps(2) infinite}
+@keyframes pulse{50%{background:var(--red-dim)}}
+.iconbtn{height:36px;padding:0 12px;border:1px solid var(--line2);background:transparent;border-radius:6px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:var(--body)}
+.iconbtn:hover{border-color:var(--soft);color:var(--ink)}
+.iconbtn.on{border-color:var(--red);color:var(--ink)}
+
+main{max-width:780px;margin:0 auto;padding:28px 20px 80px}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:10px}
+.kicker b{color:var(--red);font-weight:400}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(40px,8vw,68px);line-height:.98;letter-spacing:.02em;color:var(--ink);text-transform:uppercase}
+h2{font-family:var(--display);font-weight:500;font-size:30px;line-height:1.1;letter-spacing:.02em;color:var(--ink);text-transform:uppercase}
+p+p{margin-top:12px}
+.lead{font-size:19px;color:var(--body);margin-top:16px;max-width:60ch}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:24px;margin-top:22px;position:relative}
+.card.stamp::after{content:'TOP SECRET';position:absolute;top:18px;right:-6px;transform:rotate(8deg);font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.22em;color:var(--red);border:2px solid var(--red);padding:3px 10px;opacity:.75}
+label{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin:14px 0 6px}
+input[type=text]{width:100%;height:50px;padding:0 14px;background:var(--bg);border:1px solid var(--line2);border-radius:6px;font-family:var(--mono);font-size:18px;color:var(--ink);outline:none}
+input[type=text]:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(224,53,43,.18)}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:50px;padding:0 22px;border:0;border-radius:6px;background:var(--red);color:#fff;font-family:var(--display);font-weight:500;font-size:17px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--body)}
+.btn.ghost:hover{border-color:var(--soft);color:var(--ink)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.row.input{flex-wrap:nowrap}
+.row.input input{flex:1}
+.rules{list-style:none;margin-top:6px}
+.rules li{padding:7px 0 7px 22px;position:relative;border-bottom:1px solid var(--line)}
+.rules li:last-child{border-bottom:0}
+.rules li::before{content:'▸';position:absolute;left:0;color:var(--red)}
+.msg{min-height:24px;margin-top:12px;font-family:var(--mono);font-size:14px}
+.msg.err{color:var(--red)} .msg.ok{color:var(--green)} .msg.warn{color:var(--amber)}
+
+/* mission track */
+.track{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+.mtile{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--panel)}
+.mtile .k{font-family:var(--display);font-size:26px;color:var(--soft);line-height:1}
+.mtile .n{font-family:var(--display);font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--body);margin-top:4px}
+.mtile .s{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.mtile.done{border-color:#1f5b40}.mtile.done .k{color:var(--green)}
+.mtile.active,.mtile.locked-next{border-color:var(--red)}.mtile.active .k,.mtile.locked-next .k{color:var(--red)}
+
+.transmission{border-left:3px solid var(--green);padding:12px 16px;background:rgba(60,207,142,.06);border-radius:0 6px 6px 0;color:var(--ink);font-family:var(--mono);font-size:15px;margin-top:18px}
+
+/* clue */
+.progress{display:flex;gap:4px;margin-top:14px}
+.progress i{flex:1;height:4px;border-radius:2px;background:var(--line2)}
+.progress i.done{background:var(--green)} .progress i.here{background:var(--red)}
+.cluehead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.cls{font-family:var(--mono);font-size:12px;color:var(--soft);letter-spacing:.12em;text-transform:uppercase}
+.story{margin-top:14px;color:var(--body);font-size:18px}
+.question{margin-top:18px;padding:14px 16px;border:1px solid var(--line2);border-radius:8px;background:var(--panel2);color:var(--ink);font-size:19px;font-weight:600}
+.question::before{content:'QUESTION';display:block;font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--red);font-weight:400;margin-bottom:6px}
+table.data{border-collapse:collapse;margin-top:14px;font-family:var(--mono);font-size:15px;width:100%;overflow-x:auto;display:block}
+table.data th,table.data td{border:1px solid var(--line2);padding:8px 10px;text-align:center;color:var(--ink);white-space:nowrap}
+table.data th{color:var(--soft);font-weight:400;background:var(--panel2)}
+.hintbox{margin-top:14px;padding:12px 16px;border:1px dashed var(--amber);border-radius:8px;color:var(--amber);font-size:16px}
+.hintbox::before{content:'INTEL · ';font-family:var(--mono);font-size:12px;letter-spacing:.14em}
+.tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.shake{animation:shake .35s}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+
+/* briefing overlay */
+#brief{position:fixed;inset:0;z-index:50;background:rgba(5,6,8,.94);display:flex;align-items:center;justify-content:center;padding:20px}
+.tape{max-width:640px;width:100%;border:1px solid var(--line2);border-radius:10px;padding:28px;background:var(--panel);position:relative;overflow:hidden}
+.tape .bar{position:absolute;left:0;top:0;height:3px;background:var(--red);transition:width 1s linear}
+.tape .txt{font-family:var(--mono);font-size:17px;color:var(--ink);line-height:1.65;min-height:120px;margin-top:14px;white-space:pre-wrap}
+.tape .count{font-family:var(--mono);font-size:13px;color:var(--red);letter-spacing:.14em;text-transform:uppercase;margin-top:16px}
+.burn{animation:burn 1.4s forwards}
+@keyframes burn{0%{filter:none;opacity:1}30%{filter:sepia(1) saturate(4) hue-rotate(-20deg) brightness(1.4)}100%{filter:blur(10px) brightness(3);opacity:0;transform:scale(1.04)}}
+.smoke{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 120%,rgba(224,53,43,.5),transparent 60%);opacity:0}
+.burn .smoke{animation:smoke 1.4s forwards}
+@keyframes smoke{to{opacity:1}}
+
+/* debrief */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:18px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--panel2)}
+.stat b{display:block;font-family:var(--display);font-size:34px;color:var(--ink);line-height:1}
+.stat span{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.verdict{font-family:var(--display);font-size:44px;letter-spacing:.06em;text-transform:uppercase;margin-top:6px}
+.verdict.win{color:var(--green)} .verdict.lose{color:var(--red)}
+
+footer{text-align:center;font-family:var(--mono);font-size:11px;color:#3f4852;letter-spacing:.1em;padding:20px}
+@media (max-width:560px){header{flex-wrap:wrap}.agent{order:5;width:100%}.track{grid-template-columns:1fr}.card{padding:18px}.row.input{flex-wrap:wrap}.row.input .btn{width:100%}}
+@media (prefers-reduced-motion:reduce){.shake,.burn,#clock.crit{animation:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><b>IMF</b> · Operation Halden</div>
+  <div class="agent" id="agent"></div>
+  <div class="spacer"></div>
+  <div id="clock" class="hidden">30:00</div>
+  <button class="iconbtn" id="soundBtn" title="Original score, generated in your browser">♪ Score: off</button>
+  <button class="iconbtn hidden" id="abortBtn">Abort</button>
+</header>
+
+<main>
+  <!-- LOGIN -->
+  <section id="s-login">
+    <div class="kicker">Edge AI · Unit I · <b>eyes only</b></div>
+    <h1>Operation<br>Halden</h1>
+    <p class="lead">Agent, you have just joined Ethan Hunt's team. A stolen drive sits inside the Halden Vault, where every camera, lock and sensor decides for itself on the spot. Cutting the network won't help. Understanding the devices will.</p>
+    <div class="card stamp">
+      <h2>Your orders</h2>
+      <ul class="rules">
+        <li>You play alone. <b>30 minutes</b> on the clock from the moment you begin, for all three missions.</li>
+        <li>Each mission opens with a password. Your instructor will give you the first one.</li>
+        <li>Each mission starts with a briefing that burns after 30 seconds. Read it once.</li>
+        <li>Six clues per mission. Numbers can be typed with or without units.</li>
+        <li><b>Intel</b> gives you a hint. <b>Skip</b> moves on, but two skips in one mission gets you disavowed.</li>
+        <li>Stay on this page. Time spent away is logged.</li>
+      </ul>
+      <label for="name">Name</label>
+      <input type="text" id="name" autocomplete="name" maxlength="60">
+      <label for="usn">USN</label>
+      <input type="text" id="usn" autocomplete="off" maxlength="20" style="text-transform:uppercase">
+      <div class="row"><button class="btn" id="startBtn">Begin operation</button></div>
+      <div class="msg" id="loginMsg"></div>
+    </div>
+  </section>
+
+  <!-- LOCKED: enter mission password -->
+  <section id="s-locked" class="hidden">
+    <div class="kicker">Mission control</div>
+    <h1 id="lockedTitle">Mission A</h1>
+    <div class="track" id="track1"></div>
+    <div class="transmission hidden" id="lastMsg"></div>
+    <div class="card">
+      <label for="code">Mission password</label>
+      <div class="row input">
+        <input type="text" id="code" autocomplete="off" maxlength="20" style="text-transform:uppercase">
+        <button class="btn" id="codeBtn">Unlock</button>
+      </div>
+      <div class="msg" id="codeMsg"></div>
+    </div>
+  </section>
+
+  <!-- CLUE -->
+  <section id="s-clue" class="hidden">
+    <div class="kicker" id="missionLabel">Mission A · Dark Line</div>
+    <div class="progress" id="progress"></div>
+    <div class="card" id="clueCard">
+      <div class="cluehead"><h2 id="clueTitle"></h2><span class="cls" id="clueCls"></span></div>
+      <div class="story" id="clueStory"></div>
+      <div class="question" id="clueQ"></div>
+      <div class="hintbox hidden" id="hintBox"></div>
+      <label for="answer">Your answer</label>
+      <div class="row input">
+        <input type="text" id="answer" autocomplete="off" maxlength="40">
+        <button class="btn" id="answerBtn">Transmit</button>
+      </div>
+      <div class="msg" id="answerMsg"></div>
+      <div class="tools">
+        <button class="btn ghost" id="hintBtn">Request intel</button>
+        <button class="btn ghost" id="skipBtn">Skip clue</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEBRIEF -->
+  <section id="s-done" class="hidden">
+    <div class="kicker">Debrief</div>
+    <div class="verdict" id="verdict"></div>
+    <p class="lead" id="doneLead"></p>
+    <div class="stats" id="stats"></div>
+    <p class="lead" style="font-size:15px;color:var(--soft)">Your result has been sent to your instructor. You can close this page.</p>
+  </section>
+</main>
+
+<!-- BRIEFING OVERLAY -->
+<div id="brief" class="hidden">
+  <div class="tape" id="tape">
+    <div class="bar" id="briefBar" style="width:100%"></div>
+    <div class="kicker" id="briefKicker">Incoming briefing</div>
+    <div class="txt" id="briefText"></div>
+    <div class="count" id="briefCount"></div>
+    <div class="row"><button class="btn" id="acceptBtn">Accept mission</button></div>
+    <div class="smoke"></div>
+  </div>
+</div>
+
+<footer>Edge AI · AI255TBD · this game is an original classroom exercise</footer>
+
+<script>
+/* ===== CONFIG: paste your Apps Script web app URL here ===== */
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwj5-Bn5p1VeTyRMbsTIyI-1VvTLZ37J3AwFfJM8czW1kKq3n-yb-SceTDUsDyIN7_q/exec';
+
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var token = null, endAt = 0, clockTimer = null, busy = false, timeUpSent = false;
+  var away = { ms:0, count:0, since:0 };
+
+  function store(k, v){ try{ if(v===null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){} }
+  function recall(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+
+  /* ---------- server ---------- */
+  function api(action, data){
+    var body = Object.assign({ action:action, token:token, away:{ ms:away.ms + (away.since ? Date.now()-away.since : 0), count:away.count } }, data||{});
+    return fetch(SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:JSON.stringify(body) })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(!res.ok && res.lost){ store('imf_token', null); }
+        if(res.view) render(res.view, res);
+        return res;
+      });
+  }
+  function guard(btn, p){
+    if(busy) return; busy = true; if(btn) btn.disabled = true;
+    return p().catch(function(){ flash('Connection lost. Try again.', 'err'); })
+      .then(function(){ busy = false; if(btn) btn.disabled = false; });
+  }
+  var flashTarget = 'answerMsg';
+  function flash(text, cls){ var el = $(flashTarget); el.textContent = text; el.className = 'msg ' + (cls||''); }
+
+  /* ---------- views ---------- */
+  function show(id){ ['s-login','s-locked','s-clue','s-done'].forEach(function(s){ $(s).classList.toggle('hidden', s!==id); }); }
+
+  function render(v, res){
+    $('agent').textContent = 'Agent ' + v.name + ' · ' + v.usn;
+    $('abortBtn').classList.toggle('hidden', v.phase==='done');
+    setClock(v.remainingMs, v.phase==='done');
+    if(v.phase==='locked'){
+      show('s-locked'); flashTarget = 'codeMsg';
+      $('lockedTitle').textContent = 'Mission ' + v.nextMission.key + ' · ' + v.nextMission.name;
+      drawTrack(v.missions);
+      $('lastMsg').classList.toggle('hidden', !v.lastMsg);
+      $('lastMsg').textContent = v.lastMsg ? 'TRANSMISSION · ' + v.lastMsg : '';
+      setTimeout(function(){ $('code').focus(); }, 50);
+    } else if(v.phase==='clue'){
+      show('s-clue'); flashTarget = 'answerMsg';
+      drawClue(v);
+    } else if(v.phase==='done'){
+      show('s-done'); drawDone(v, res);
+      store('imf_token', null);
+      Score.stop(true);
+    }
+  }
+
+  function drawTrack(ms){
+    var t = $('track1'); t.innerHTML = '';
+    ms.forEach(function(m){
+      var d = document.createElement('div'); d.className = 'mtile ' + m.state;
+      var k = document.createElement('div'); k.className='k'; k.textContent = m.key;
+      var n = document.createElement('div'); n.className='n'; n.textContent = m.name;
+      var s = document.createElement('div'); s.className='s';
+      s.textContent = m.state==='done' ? 'complete' : (m.state==='locked' ? 'locked · ' + m.classes : 'awaiting password · ' + m.classes);
+      d.appendChild(k); d.appendChild(n); d.appendChild(s); t.appendChild(d);
+    });
+  }
+
+  var lastClueId = null;
+  function drawClue(v){
+    var c = v.clue;
+    $('missionLabel').textContent = 'Mission ' + v.mission.key + ' · ' + v.mission.name + ' · clue ' + v.clueNo + ' of ' + v.clueTotal;
+    var p = $('progress'); p.innerHTML = '';
+    for(var i=1;i<=v.clueTotal;i++){ var b=document.createElement('i'); b.className = i<v.clueNo?'done':(i===v.clueNo?'here':''); p.appendChild(b); }
+    $('clueTitle').textContent = c.id + ' · ' + c.title;
+    $('clueCls').textContent = c.cls;
+    var st = $('clueStory'); st.innerHTML = '';
+    c.story.forEach(function(t){ var el=document.createElement('p'); el.textContent=t; st.appendChild(el); });
+    if(c.table){
+      var tb = document.createElement('table'); tb.className='data';
+      var tr = document.createElement('tr');
+      c.table.head.forEach(function(h){ var th=document.createElement('th'); th.textContent=h; tr.appendChild(th); });
+      tb.appendChild(tr);
+      c.table.rows.forEach(function(r){ var row=document.createElement('tr'); r.forEach(function(x,j){ var td=document.createElement(j===0?'th':'td'); td.textContent=x; row.appendChild(td); }); tb.appendChild(row); });
+      st.appendChild(tb);
+    }
+    $('clueQ').textContent = c.question;
+    $('hintBox').classList.toggle('hidden', !c.hint);
+    $('hintBox').textContent = c.hint || '';
+    $('hintBtn').disabled = !!c.hint;
+    $('skipBtn').textContent = v.skipsThisMission >= 1 ? 'Skip clue (disavowal)' : 'Skip clue';
+    if(c.id !== lastClueId){ $('answer').value = ''; lastClueId = c.id; }
+    setTimeout(function(){ $('answer').focus(); }, 50);
+  }
+
+  function drawDone(v){
+    var s = v.summary;
+    var win = s.status === 'Complete';
+    $('verdict').textContent = win ? 'Mission accomplished' : (s.status === 'Time up' ? 'Time is up' : 'Operation aborted');
+    $('verdict').className = 'verdict ' + (win ? 'win' : 'lose');
+    $('doneLead').textContent = win
+      ? 'The drive is recovered. ' + (s.disavowed.length ? 'The Secretary noted you were disavowed in Mission ' + s.disavowed.join(' and ') + '.' : 'You were never disavowed.')
+      : 'The vault held this time. Here is how far you got.';
+    var items = [[s.solved + '/' + s.total,'clues solved'],[s.minutes,'minutes'],[s.hints,'intel used'],[s.skips,'skips'],[s.wrong,'wrong attempts']];
+    var box = $('stats'); box.innerHTML='';
+    items.forEach(function(it){ var d=document.createElement('div'); d.className='stat'; var b=document.createElement('b'); b.textContent=it[0]; var sp=document.createElement('span'); sp.textContent=it[1]; d.appendChild(b); d.appendChild(sp); box.appendChild(d); });
+    if(win) Score.sfx('win'); else Score.sfx('lose');
+  }
+
+  /* ---------- clock (the server is the real referee) ---------- */
+  function setClock(ms, stop){
+    $('clock').classList.remove('hidden');
+    if(stop){ clearInterval(clockTimer); clockTimer=null; paintClock(ms); return; }
+    endAt = Date.now() + ms;
+    if(!clockTimer) clockTimer = setInterval(tick, 250);
+    tick();
+  }
+  function tick(){ paintClock(endAt - Date.now()); if(Date.now() >= endAt && !timeUpSent){ timeUpSent = true; api('resume'); } }
+  function paintClock(ms){
+    ms = Math.max(0, ms);
+    var s = Math.ceil(ms/1000), m = Math.floor(s/60), r = s%60;
+    var c = $('clock');
+    c.textContent = String(m).padStart(2,'0') + ':' + String(r).padStart(2,'0');
+    c.className = s <= 60 ? 'crit' : (s <= 300 ? 'warn' : '');
+    Score.tension(s <= 300);
+  }
+
+  /* ---------- briefing that burns ---------- */
+  var briefTimer = null;
+  function briefing(missionLabel, text, after){
+    var o = $('brief'), tape = $('tape');
+    tape.classList.remove('burn'); o.classList.remove('hidden');
+    $('briefKicker').textContent = 'Incoming briefing · ' + missionLabel;
+    $('briefText').textContent = '';
+    var i = 0, left = 30;
+    var typer = setInterval(function(){ i += 2; $('briefText').textContent = text.slice(0, i); if(i >= text.length) clearInterval(typer); }, 22);
+    $('briefCount').textContent = 'This briefing burns in ' + left + ' s';
+    $('briefBar').style.width = '100%';
+    Score.sfx('tape');
+    function burn(){
+      clearInterval(briefTimer); clearInterval(typer);
+      Score.sfx('burn');
+      tape.classList.add('burn');
+      setTimeout(function(){ o.classList.add('hidden'); after(); }, 1400);
+    }
+    briefTimer = setInterval(function(){
+      left--; $('briefCount').textContent = 'This briefing burns in ' + left + ' s';
+      $('briefBar').style.width = (left/30*100) + '%';
+      if(left <= 0) burn();
+    }, 1000);
+    $('acceptBtn').onclick = burn;
+  }
+
+  /* ---------- actions ---------- */
+  $('startBtn').onclick = function(){
+    var name = $('name').value.trim(), usn = $('usn').value.trim();
+    flashTarget = 'loginMsg';
+    if(!name || !usn){ flash('Enter your name and USN.', 'err'); return; }
+    if(SCRIPT_URL.indexOf('http') !== 0){ flash('The game is not connected yet: paste the web app URL into SCRIPT_URL.', 'err'); return; }
+    Score.start();
+    guard($('startBtn'), function(){
+      return api('start', { name:name, usn:usn }).then(function(res){
+        if(!res.ok){ flash(res.error, 'err'); return; }
+        token = res.token; store('imf_token', token);
+      });
+    });
+  };
+
+  function unlock(){
+    var code = $('code').value.trim(); if(!code) return;
+    guard($('codeBtn'), function(){
+      // hold the render until the briefing has burned
+      return fetchRaw('unlock', { code:code }).then(function(res){
+        if(!res.ok){ flash(res.error, 'err'); return; }
+        if(!res.correct){ render(res.view); flash('Password rejected.', 'err'); Score.sfx('wrong'); $('code').classList.add('shake'); setTimeout(function(){ $('code').classList.remove('shake'); }, 400); return; }
+        $('code').value = '';
+        setClock(res.view.remainingMs);
+        briefing('Mission ' + res.view.mission.key + ' · ' + res.view.mission.name, res.briefing, function(){ render(res.view); });
+      });
+    });
+  }
+  function fetchRaw(action, data){
+    var body = Object.assign({ action:action, token:token, away:{ ms:away.ms, count:away.count } }, data||{});
+    return fetch(SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:JSON.stringify(body) })
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if(res.timeUp && res.view){ render(res.view); return { ok:true, correct:false, view:res.view, timeUp:true }; } return res; });
+  }
+  $('codeBtn').onclick = unlock;
+  $('code').addEventListener('keydown', function(e){ if(e.key==='Enter') unlock(); });
+
+  function submit(){
+    var a = $('answer').value.trim(); if(!a) return;
+    guard($('answerBtn'), function(){
+      return api('answer', { answer:a }).then(function(res){
+        if(!res.ok){ flash(res.error, 'err'); return; }
+        if(res.timeUp) return;
+        if(res.correct){
+          Score.sfx('right');
+          flash(res.message ? '' : 'Confirmed. Next clue incoming.', 'ok');
+        } else {
+          Score.sfx('wrong');
+          flash('Negative. Check your working and transmit again.', 'err');
+          $('clueCard').classList.add('shake'); setTimeout(function(){ $('clueCard').classList.remove('shake'); }, 400);
+        }
+      });
+    });
+  }
+  $('answerBtn').onclick = submit;
+  $('answer').addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); });
+
+  $('hintBtn').onclick = function(){ guard($('hintBtn'), function(){ return api('hint'); }); };
+  $('skipBtn').onclick = function(){
+    var warn = $('skipBtn').textContent.indexOf('disavowal') > 0 ? ' This will get you disavowed in this mission.' : '';
+    if(!confirm('Skip this clue? It counts as unsolved.' + warn)) return;
+    guard($('skipBtn'), function(){ return api('skip').then(function(res){ if(res.ok && !res.timeUp) flash('Clue skipped.', 'warn'); }); });
+  };
+  $('abortBtn').onclick = function(){
+    if(!confirm('Abort the operation? Your result is sent as it stands and you cannot continue.')) return;
+    guard($('abortBtn'), function(){ return api('end'); });
+  };
+
+  /* ---------- away tracking ---------- */
+  document.addEventListener('visibilitychange', function(){
+    if(!token) return;
+    if(document.hidden){ away.since = Date.now(); away.count++; }
+    else if(away.since){ away.ms += Date.now() - away.since; away.since = 0; }
+  });
+
+  /* ---------- resume after a reload ---------- */
+  var saved = recall('imf_token');
+  if(saved && SCRIPT_URL.indexOf('http') === 0){
+    token = saved;
+    api('resume').then(function(res){ if(!res.ok){ token=null; show('s-login'); } }).catch(function(){ token=null; });
+  }
+
+  /* ---------- sound toggle ---------- */
+  $('soundBtn').onclick = function(){
+    if(Score.on){ Score.stop(); } else { Score.start(); }
+  };
+})();
+
+/* =====================================================================
+   ORIGINAL SCORE · synthesised live with the Web Audio API.
+   An original spy-thriller loop (A minor, 4/4, 112 bpm). No audio files.
+   ===================================================================== */
+var Score = (function(){
+  var ctx = null, master = null, timer = null, step = 0, nextT = 0, on = false, tense = false, noiseBuf = null;
+  var BPM = 112, SPB = 60 / BPM / 4; // seconds per 16th
+  // two-bar bass riff (32 sixteenths). Note names → MIDI.
+  var BASS = { 0:45, 3:45, 6:45, 10:48, 12:45, 14:46,  16:45, 19:45, 22:45, 26:43, 28:40, 30:41 };
+  var STAB = { 8:[69,72,76], 24:[68,71,76] };
+  function mtof(m){ return 440 * Math.pow(2, (m-69)/12); }
+  function init(){
+    if(ctx) return;
+    var AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
+    ctx = new AC();
+    master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+    var d = noiseBuf.getChannelData(0); for(var i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+  }
+  function env(g, t, a, peak, rel){ g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t+a); g.gain.exponentialRampToValueAtTime(0.0001, t+a+rel); }
+  function bass(m, t){
+    var o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = 'sawtooth'; o.frequency.value = mtof(m);
+    f.type = 'lowpass'; f.frequency.setValueAtTime(tense ? 1400 : 900, t); f.frequency.exponentialRampToValueAtTime(180, t+0.18); f.Q.value = 6;
+    env(g, t, 0.005, 0.32, 0.2);
+    o.connect(f); f.connect(g); g.connect(master); o.start(t); o.stop(t+0.3);
+  }
+  function hat(t, acc){
+    var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = 7000;
+    env(g, t, 0.001, acc ? 0.09 : 0.04, 0.04);
+    s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t+0.08);
+  }
+  function kick(t){
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(40, t+0.12);
+    env(g, t, 0.002, 0.5, 0.18); o.connect(g); g.connect(master); o.start(t); o.stop(t+0.25);
+  }
+  function stab(notes, t){
+    notes.forEach(function(m){
+      var o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'square'; o.frequency.value = mtof(m);
+      env(g, t, 0.004, 0.035, 0.25); o.connect(g); g.connect(master); o.start(t); o.stop(t+0.35);
+    });
+  }
+  function ping(t){
+    var o = ctx.createOscillator(), g = ctx.createGain(); o.type='sine'; o.frequency.value = mtof(93);
+    env(g, t, 0.002, 0.05, 0.5); o.connect(g); g.connect(master); o.start(t); o.stop(t+0.6);
+  }
+  function schedule(){
+    while(nextT < ctx.currentTime + 0.12){
+      var s = step % 32;
+      if(BASS[s] !== undefined) bass(BASS[s], nextT);
+      if(s % 2 === 0) hat(nextT, s % 4 === 2);
+      if(tense && s % 2 === 1) hat(nextT, false);
+      if(s % 8 === 0) kick(nextT);
+      if(STAB[s] && step % 64 >= 32) stab(STAB[s], nextT);
+      if(s === 0 && step % 128 === 0) ping(nextT);
+      nextT += tense ? SPB * 0.85 : SPB; step++;
+    }
+  }
+  return {
+    get on(){ return on; },
+    start: function(){
+      init(); if(!ctx || on) return;
+      ctx.resume(); on = true; step = 0; nextT = ctx.currentTime + 0.05;
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.setTargetAtTime(0.6, ctx.currentTime, 0.4);
+      timer = setInterval(schedule, 25);
+      var b = document.getElementById('soundBtn'); b.textContent = '♪ Score: on'; b.classList.add('on');
+    },
+    stop: function(keepSfx){
+      if(!ctx || !on) return;
+      on = false; clearInterval(timer);
+      master.gain.setTargetAtTime(keepSfx ? 0.6 : 0, ctx.currentTime, keepSfx ? 0.01 : 0.2);
+      var b = document.getElementById('soundBtn'); b.textContent = '♪ Score: off'; b.classList.remove('on');
+    },
+    tension: function(v){ tense = !!v; },
+    sfx: function(kind){
+      if(!ctx) return;
+      var t = ctx.currentTime;
+      if(master.gain.value < 0.05 && !on) master.gain.setValueAtTime(0.6, t);
+      function tone(f, at, dur, type, vol){ var o=ctx.createOscillator(), g=ctx.createGain(); o.type=type||'square'; o.frequency.value=f; env(g, at, 0.005, vol||0.08, dur); o.connect(g); g.connect(master); o.start(at); o.stop(at+dur+0.05); }
+      if(kind==='right'){ tone(880, t, 0.08); tone(1320, t+0.09, 0.12); }
+      else if(kind==='wrong'){ tone(110, t, 0.25, 'sawtooth', 0.12); }
+      else if(kind==='tape'){ tone(1200, t, 0.05, 'sine', 0.05); tone(1200, t+0.12, 0.05, 'sine', 0.05); }
+      else if(kind==='burn'){ var s=ctx.createBufferSource(), f=ctx.createBiquadFilter(), g=ctx.createGain(); s.buffer=noiseBuf; s.loop=true; f.type='bandpass'; f.frequency.setValueAtTime(400,t); f.frequency.exponentialRampToValueAtTime(4000,t+1.2); env(g,t,0.05,0.25,1.2); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t+1.4); }
+      else if(kind==='win'){ [57,60,64,69].forEach(function(m,i){ tone(mtof(m), t+i*0.12, 0.5, 'square', 0.06); }); }
+      else if(kind==='lose'){ [57,56,55,52].forEach(function(m,i){ tone(mtof(m), t+i*0.2, 0.4, 'sawtooth', 0.07); }); }
+    }
+  };
+})();
+</script>
+</body>
+</html>
