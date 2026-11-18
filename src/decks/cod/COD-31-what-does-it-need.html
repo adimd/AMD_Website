@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 31 · What does it need?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --hi:#e8952b; --lo:#b9bfc6; --violet:#6b3fa0;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:46px 68px 78px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .32s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.eyebrow{position:absolute;top:19px;left:68px;font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:19px;right:68px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:68px;right:68px;bottom:21px;display:flex;gap:1.5px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:68px;bottom:42px;font-family:var(--mono);font-size:12px;color:var(--soft);z-index:5}
+#help{position:absolute;left:68px;bottom:42px;font-family:var(--mono);font-size:11px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+h1{font-family:var(--display);font-weight:600;font-size:60px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:29px;line-height:1.12;letter-spacing:-.015em;color:var(--ink);margin-bottom:6px}
+p{font-size:20px;line-height:1.46;max-width:37ch}
+p+p{margin-top:10px}
+.big{font-size:23.5px;line-height:1.34;color:var(--ink);font-weight:300;max-width:31ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center}
+.stack>*+*{margin-top:9px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 12px}
+.row{display:flex;gap:20px;align-items:flex-start;justify-content:center}
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:9px 14px;margin-top:9px}
+.rem .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.rem.win{border-left-color:var(--ok)} .rem.win .h{color:var(--ok)}
+.rem.bad{border-left-color:var(--fail)} .rem.bad .h{color:var(--fail)}
+.rem ul{list-style:none}
+.rem li{font-size:15.5px;line-height:1.36;color:var(--ink);padding:3.5px 0 3.5px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+.btn{font-family:var(--mono);font-size:12.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:6px 12px;cursor:pointer;min-width:34px}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+.btnrow .lab{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--soft);margin-right:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:4px 11px;border-radius:20px;background:var(--accent-soft);color:var(--accent);margin-bottom:8px}
+.tag.win{background:var(--ok-soft);color:var(--ok)}
+.tag.bad{background:var(--fail-soft);color:var(--fail)}
+.tag.new{background:#efe9f7;color:var(--violet)}
+.spec{display:flex;align-items:stretch;background:var(--card);border:1px solid var(--rule2);border-radius:11px;overflow:hidden;margin-top:8px}
+.spec .c{flex:1;padding:12px 15px;border-right:1px solid var(--rule)}
+.spec .c:last-child{border-right:none}
+.spec .c .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--soft)}
+.spec .c .v{font-family:var(--display);font-size:28px;font-weight:600;color:var(--ink);line-height:1.1;margin-top:3px}
+.spec .c .s{font-size:12.5px;color:var(--soft);margin-top:2px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .32s ease}
+.frag.shown{opacity:1}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+.cue{position:absolute;left:68px;right:68px;bottom:64px;display:none;padding:9px 13px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:14.5px;line-height:1.34;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:38px 68px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:10px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:50px}
+#jump li{padding:3.5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:15px;color:var(--body);display:flex;gap:11px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:30px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 31</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 31 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+
+
+<template id="slides">
+
+<section class="slide" data-t="Title" data-act="the question">
+  <div>
+    <div class="kicker">class 31 · hour thirty one of fifty</div>
+    <h1>What does<br>it need?</h1>
+    <p class="big" style="margin-top:22px;max-width:50ch">Every other hour in this course has given you something. This one takes something away, by setting you a task that the machine you just finished cannot do, and then being precise about why.</p>
+  </div>
+  <div class="cue">Say at the top that nothing gets built today. This hour exists to create a problem, and the problem runs for the next eleven classes.</div>
+</section>
+
+<section class="slide" data-t="Where we are" data-act="the question">
+  <div>
+    <h2>The arc ends with a machine that works and is useless.</h2>
+    <div style="text-align:center;margin-top:2px"><svg viewBox="0 0 1140 250" width="1050" height="213"><g id="figArcTop"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the hour in one sentence</div>
+      <ul>
+        <li>You will be given one small task, you will fail it with correct hardware, and the shape of the failure is the specification for the next arc.</li>
+        <li><strong>Do not let anybody tell you the answer.</strong> The failure is only useful if the room hits it themselves.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Resist explaining. Set the task on the next slide and then be quiet for five minutes.</div>
+</section>
+
+<!-- ================= ACT 1 ================= -->
+
+<section class="slide" data-t="The task" data-act="1 · the failure">
+  <div>
+    <div class="tag">NO NEW HARDWARE</div>
+    <h2 style="margin-bottom:0">Compute the sum of the numbers one to ten.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1058" height="301"><g id="figTask"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the rules</div>
+      <ul>
+        <li>You have the ALU from last session. Two operand inputs, one opcode input, one result output, four flags. Nothing else exists.</li>
+        <li>Nine additions. The arithmetic is trivial and that is deliberate, because the arithmetic is not what is going to stop you.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Hand it to the room now. Do not hint. The first two minutes will look like it is going fine.</div>
+</section>
+
+<section class="slide" data-t="It works, once" data-act="1 · the failure">
+  <div>
+    <h2>Watch it work, and then watch it not.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 360" width="1046" height="325"><g id="figAttempt"></g></svg></div>
+    <div class="btnrow"><span class="lab">ATTEMPT</span>
+      <button class="btn" id="atStep">next step</button>
+      <button class="btn" id="atRun">run ▶</button>
+      <button class="btn" id="atReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">Step it slowly. The important frame is the second one, where the answer on the wires is replaced before anybody has used it.</div>
+</section>
+
+<section class="slide" data-t="You are the register" data-act="1 · the failure">
+  <div class="center">
+    <h2 style="font-size:36px;margin-bottom:18px">The only thing in that loop<br>that remembered anything<br>was a person.</h2>
+    <p class="big" style="max-width:54ch;color:var(--soft)">You read the three off the screen, held it in your head, and typed it back into an input. That is a storage operation, and it was performed by a human being standing in front of a circuit that could not do it.</p>
+    <p class="big frag" style="margin-top:20px;max-width:54ch">Take the person out of the loop and the machine cannot compute the sum of one to ten.</p>
+  </div>
+  <div class="cue">This is the sentence that makes the hour land. Nobody notices they are doing the remembering until it is named.</div>
+</section>
+
+<section class="slide" data-t="Why it vanished" data-act="1 · the failure">
+  <div>
+    <h2>The result is not a value. It is a voltage, and it lasts exactly as long as the inputs do.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1058" height="292"><g id="figVoltage"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">everything you have built is this shape</div>
+      <ul>
+        <li>Every circuit in this course is combinational. Its output is a function of its inputs right now, and it has no other state.</li>
+        <li>Change an input and the output starts changing within one gate delay. There is no instant at which the old answer is still available.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Combinational is the word. They have been building nothing else for eighteen classes without the word being necessary.</div>
+</section>
+
+<section class="slide" data-t="The obvious fix" data-act="1 · the failure">
+  <div>
+    <div class="tag bad">CLASS 18, RETURNING</div>
+    <h2 style="margin-bottom:0">So wire the output back round to the input.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 340" width="1046" height="306"><g id="figFeedback"></g></svg></div>
+    <div class="btnrow"><span class="lab">LET IT RUN</span>
+      <button class="btn" id="fbRun">run ▶</button>
+      <button class="btn" id="fbStep">step</button>
+      <button class="btn" id="fbReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">This is the feedback wire from Class 18, back with a purpose. It did not hold a value then and it does not now.</div>
+</section>
+
+<section class="slide" data-t="The second failure" data-act="2 · what is missing">
+  <div>
+    <div class="tag bad">SUBTLER, AND WORSE</div>
+    <h2 style="margin-bottom:0">Even with somewhere to put the result, who is setting the opcode?</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1058" height="292"><g id="figOpcode"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">the thing nobody counted</div>
+      <ul>
+        <li>Add, add, add, add, add, add, add, add, add. That sequence is information, and it is not inside the machine. It is inside you.</li>
+        <li>Last session established that the opcode is a number. A number that nothing in this machine can hold, supplied nine times by hand.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The first failure is about data. This one is about control, and they are the same failure wearing two coats.</div>
+</section>
+
+<section class="slide" data-t="Count it" data-act="2 · what is missing">
+  <div>
+    <h2>Count everything you had to supply. Then count how much of it was the same.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 384" width="1030" height="341"><g id="figCount"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the send off, started here and finished at home</div>
+      <ul>
+        <li>One line per step. What value did you set, what opcode did you select, and what did you have to carry in your head from the step before.</li>
+        <li>Then two totals. How many pieces of information did you supply, and how many of them were identical.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Do not give them the totals. The counting is the assignment and the second total is the one that matters.</div>
+</section>
+
+<section class="slide" data-t="Three things it lacks" data-act="2 · what is missing">
+  <div>
+    <h2>It lacks three things, and all three are the same kind of object.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1058" height="301"><g id="figThree"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">name them now, build them later</div>
+      <ul>
+        <li>Somewhere to keep operands, so a result can become an input to the next operation. <strong>Data registers.</strong></li>
+        <li>Somewhere to keep the opcode and the register selections, so the machine can be told what to do rather than shown. <strong>The instruction register.</strong></li>
+        <li>Somewhere to keep track of which instruction is next. Nobody needs that until Class 38, but it is worth a name today so you recognise it when it arrives.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">All three are registers. That is the point of listing them together, and it is why the next arc is one arc and not three.</div>
+</section>
+
+<!-- ================= ACT 3 ================= -->
+
+<section class="slide" data-t="Specify it first" data-act="3 · the specification">
+  <div>
+    <div class="tag win">THE DISCIPLINE FROM THE LOGIC ARC</div>
+    <h2 style="margin-bottom:0">Write down what a register must do, before asking what it is made of.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 340" width="1046" height="306"><g id="figSpec"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">four properties, and the second one is the hard one</div>
+      <ul>
+        <li>It must accept a new value <em>only when told to</em>, because the ALU's output is garbage while its gates are still settling, and capturing that garbage would be worse than having no memory at all.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Property two is where the clock comes from, four classes early and derived rather than announced.</div>
+</section>
+
+<section class="slide" data-t="That is the next arc" data-act="3 · the specification">
+  <div>
+    <h2>Every line of that specification is a class.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1058" height="301"><g id="figMap"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">five sessions, written backwards from a specification you just wrote</div>
+      <ul>
+        <li>You did not get handed a syllabus for the storage arc. You derived it, by failing at one addition and being precise about what was missing.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Say that out loud. They specified the next five hours of their own course in about four minutes.</div>
+</section>
+
+<!-- ================= ACT 4 ================= -->
+
+<section class="slide" data-t="The data path" data-act="4 · the reveal">
+  <div>
+    <h2>Here is the loop. Nothing in it exists yet except the triangle.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 350" width="1046" height="316"><g id="figPath"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">four boxes and one of them is built</div>
+      <ul>
+        <li>Two data registers feed the operand inputs. The result comes back to a data register. The instruction register feeds the opcode and the register addresses.</li>
+        <li>Leave this drawing on the board for the rest of the course. Everything from here to Class 47 is filling it in.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Draw it yourself, slowly, while they watch. Then stop and look at it, because the next slide is a question about this drawing.</div>
+</section>
+
+<section class="slide" data-t="Look at the opcode" data-act="4 · the reveal">
+  <div>
+    <h2>Where is the opcode coming from in that drawing?</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1058" height="301"><g id="figStored"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">three things you already know, put next to each other</div>
+      <ul>
+        <li>The opcode comes out of a register. A register holds a binary number. And Class 27 established that nothing whatsoever distinguishes a control number from a data number.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Ask the question and wait. Somebody in the room will get there, and it is much better if they do.</div>
+</section>
+
+<section class="slide" data-t="The stored program" data-act="4 · the reveal">
+  <div class="center">
+    <h2 style="font-size:36px;margin-bottom:18px">The thing that tells this machine<br>what to do is a number,<br>in the same hardware as the<br>numbers it operates on.</h2>
+    <p class="big frag" style="max-width:56ch;color:var(--soft)">That is the stored program idea. You did not arrive at it as a historical fact about a report written in 1945. You arrived at it as a consequence of having built a multiplexer.</p>
+  </div>
+  <div class="cue">Name von Neumann only after the idea has landed, and name him as somebody who wrote this down rather than somebody who revealed it.</div>
+</section>
+
+<!-- ================= CLOSE ================= -->
+
+<section class="slide" data-t="Hinge three" data-act="closing">
+  <div>
+    <div class="tag bad">HINGE 3</div>
+    <h2 style="margin-bottom:0">Three questions, and they stay on the board.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1058" height="301"><g id="figHinge"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">where each one is answered</div>
+      <ul>
+        <li>The first two are answered in Class 35, when you build an addressable register file. The third is answered in Class 37, when an instruction turns out to be a number that selects a circuit.</li>
+        <li>Four classes and six classes away. Leave the questions up until they are crossed off.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Write all three on a corner of the board that does not get erased. Crossing them off later is worth the wall space.</div>
+</section>
+
+<section class="slide" data-t="The honest state" data-act="closing">
+  <div>
+    <h2>Thirty one classes. Nothing built in any of them can hold a value.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1058" height="301"><g id="figState"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">two debts, one of them eighteen classes old</div>
+      <ul>
+        <li>Every circuit from Class 13 to Class 30 is combinational. Inputs in, outputs out, nothing kept.</li>
+        <li><strong>And the light switch from Class 18 is still not built.</strong> You were told then that some behaviour cannot be tabulated, because the output depends on what happened before. That was the same problem, and you have now met it from the other side.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The Class 18 callback is thirteen classes old. Make the connection explicitly, because it closes the longest open loop in the course so far.</div>
+</section>
+
+<section class="slide" data-t="The arc is finished" data-act="closing">
+  <div>
+    <h2>Five sessions. One unit, and one problem.</h2>
+    <div style="text-align:center;margin:4px 0"><svg viewBox="0 0 1140 250" width="1050" height="213"><g id="figArcEnd"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">what the ALU arc produced</div>
+      <ul>
+        <li>A multiplexer, a shifter, a comparator, two floating point operations, and one assembled unit with eight operations and four flags.</li>
+        <li>And a specification for a register, written by the room, from a failure the room walked into on purpose.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">The arc delivered a working unit and an unsolved problem, and the problem is the more valuable of the two.</div>
+</section>
+
+<section class="slide" data-t="Close" data-act="closing">
+  <div class="center">
+    <h2 style="font-size:35px;margin-bottom:16px">You have built a machine<br>that can compute anything,<br>and remember nothing.</h2>
+    <p class="big" style="max-width:56ch;color:var(--soft)">Six thousand gates, eight operations, every comparison a program can make, and it cannot add up the numbers from one to ten without a person standing next to it.</p>
+    <p class="big frag" style="margin-top:18px;max-width:56ch">Next session: what does it mean to remember?</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: write out, step by step, everything you would have to specify to make this ALU compute the sum of one to ten. One line per step. Then count how many distinct pieces of information you had to supply in total, and how many of them were the same instruction repeated.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  var onSlide=null;
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    if(onSlide) onSlide(i);
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallow=false;
+  document.addEventListener('click',function(e){
+    swallow = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||
+                 e.target.closest('svg')||e.target.closest('.spec'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallow){ swallow=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= helpers ================= */
+  var NS='http://www.w3.org/2000/svg';
+  var GREY='#c6c3ba', HI='#e8952b', INK='#15171b', DEAD='#dedbd3',
+      BLUE='#23408f', RED='#a8231f', GRN='#146b5c', VIO='#6b3fa0', AMB='#b06a12';
+  var D=20;
+  function el(tag,a,p){ var e=document.createElementNS(NS,tag);
+    for(var k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e; }
+  function txt(p,x,y,s,o){ var t=el('text',Object.assign({x:x,y:y,'font-size':13,fill:'#8b9096'},o||{}),p);
+    t.textContent=s; return t; }
+  function rct(p,x,y,w,h,o){ return el('rect',Object.assign({x:x,y:y,width:w,height:h,rx:7,
+    fill:'#fff',stroke:GREY,'stroke-width':2},o||{}),p); }
+  function wire(p,x1,y1,x2,y2,v){ return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,
+    stroke:v?HI:DEAD,'stroke-width':v?3.6:2.4,'stroke-linecap':'round'},p); }
+  function pth(p,d,o){ return el('path',Object.assign({d:d,fill:'none',stroke:GREY,'stroke-width':2.4},o||{}),p); }
+  function jn(p,x,y){ return el('circle',{cx:x,cy:y,r:4,fill:INK},p); }
+  function arw(p,x1,y1,x2,y2,col,w){
+    var c=col||GREY, sw=w||2.4;
+    el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:c,'stroke-width':sw,'stroke-linecap':'round'},p);
+    var dx=x2-x1, dy=y2-y1, L=Math.sqrt(dx*dx+dy*dy)||1, ux=dx/L, uy=dy/L, h=7;
+    el('path',{d:'M'+(x2-ux*h-uy*h*0.62)+' '+(y2-uy*h+ux*h*0.62)+' L'+x2+' '+y2+
+      ' L'+(x2-ux*h+uy*h*0.62)+' '+(y2-uy*h-ux*h*0.62),fill:'none',stroke:c,
+      'stroke-width':sw,'stroke-linecap':'round','stroke-linejoin':'round'},p);
+  }
+  /* one bit cell */
+  function cel(p,x,y,w,h,ch,o){
+    o=o||{};
+    el('rect',{x:x,y:y,width:w,height:h,rx:3,fill:o.fill||'#fff',
+      stroke:o.stroke||GREY,'stroke-width':o.sw||1.6},p);
+    if(ch!==null&&ch!==undefined)
+      txt(p,x+w/2,y+h/2+5,String(ch),{'font-size':o.fs||13.5,fill:o.col||INK,
+        'text-anchor':'middle','font-weight':o.fw||700});
+  }
+  function ticker(runId,stepId,resetId,max,render){
+    var t=0,timer=null;
+    function set(v){ t=Math.max(0,Math.min(max,v)); render(t); }
+    function stop(){ if(timer){clearInterval(timer);timer=null;}
+      var b=document.getElementById(runId); if(b){b.classList.remove('hot');b.textContent='run ▶';} }
+    document.getElementById(runId).onclick=function(){
+      if(timer){ stop(); return; }
+      if(t>=max) set(0);
+      this.classList.add('hot'); this.textContent='■ stop';
+      timer=setInterval(function(){ if(t>=max){ stop(); return; } set(t+1); },420);
+    };
+    document.getElementById(stepId).onclick=function(){ stop(); set(t>=max?0:t+1); };
+    document.getElementById(resetId).onclick=function(){ stop(); set(0); };
+    set(0);
+    return {stop:stop};
+  }
+  function arcStrip(gid,litIndex,caption){
+    var g=document.getElementById(gid); if(!g) return;
+    var items=[[27,'how it chooses'],[28,'sideways'],[29,'adding floats'],[30,'the ALU'],[31,'what it needs']];
+    var W=186, X0=78;
+    items.forEach(function(it,k){
+      var x=X0+k*(W+8), done=k<litIndex, lit=(k===litIndex);
+      el('rect',{x:x,y:52,width:W,height:104,rx:12,
+        fill:lit?'#eaeef7':(done?'#f2f0ea':'#fbfaf7'),
+        stroke:lit?BLUE:(done?'#c6c3ba':'#e2e0d9'),'stroke-width':lit?2.6:1.5},g);
+      txt(g,x+W/2,80,'CLASS '+it[0],{'font-size':9.5,fill:lit?BLUE:'#c6c3ba','text-anchor':'middle','letter-spacing':1.3});
+      txt(g,x+W/2,112,it[1],{'font-size':12,fill:lit?INK:(done?'#8b9096':'#a9a69d'),'text-anchor':'middle','font-weight':700});
+      if(done) txt(g,x+W/2,136,'done',{'font-size':11,fill:GRN,'text-anchor':'middle'});
+      if(lit) txt(g,x+W/2,136,'today',{'font-size':11,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      if(k<items.length-1) pth(g,'M'+(x+W)+' 104 L'+(x+W+8)+' 104',{stroke:'#dedbd3','stroke-width':2});
+    });
+    txt(g,34,198,caption,{'font-size':15.5,fill:INK,'font-weight':700});
+  }
+  arcStrip('figArcTop',4,'one small task, correct hardware, and a failure that specifies the next eleven classes.');
+  arcStrip('figArcEnd',4,'a working unit, and one unsolved problem that is worth more than the unit.');
+
+  function b4(v){ var s=''; for(var k=3;k>=0;k--) s+=((v>>k)&1); return s; }
+  function aluShape(p,x,y,w,h,col,soft,dash){
+    el('path',{d:'M'+x+' '+y+' L'+(x+w)+' '+(y+h*0.26)+' L'+(x+w)+' '+(y+h*0.74)+' L'+x+' '+(y+h)+
+      ' L'+x+' '+(y+h*0.62)+' L'+(x+w*0.13)+' '+(y+h/2)+' L'+x+' '+(y+h*0.38)+' z',
+      fill:soft,stroke:col,'stroke-width':2.4,'stroke-dasharray':dash?'7 5':'none'},p);
+  }
+
+  /* ================= the task ================= */
+  (function(){
+    var g=document.getElementById('figTask'); if(!g) return;
+    txt(g,24,20,'THE ONLY HARDWARE IN THE ROOM',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    aluShape(g,120,56,250,150,BLUE,'#eaeef7',false);
+    txt(g,258,128,'ALU',{'font-size':26,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    txt(g,258,152,'Class 30',{'font-size':12,fill:'#1b3270','text-anchor':'middle'});
+    arw(g,52,86,120,86,INK,2.2); txt(g,44,90,'a',{'font-size':13,fill:INK,'text-anchor':'end','font-weight':700});
+    arw(g,52,176,120,176,INK,2.2); txt(g,44,180,'b',{'font-size':13,fill:INK,'text-anchor':'end','font-weight':700});
+    arw(g,245,250,245,210,AMB,2.2); txt(g,245,268,'opcode',{'font-size':12,fill:AMB,'text-anchor':'middle','font-weight':700});
+    arw(g,370,131,440,131,INK,2.2); txt(g,448,135,'result',{'font-size':13,fill:INK,'font-weight':700});
+
+    /* the nine additions */
+    var steps=[[1,2,3],[3,3,6],[6,4,10],[10,5,15],[15,6,21],[21,7,28],[28,8,36],[36,9,45],[45,10,55]];
+    var CX=620, CY=52, RH=26;
+    txt(g,CX,CY-14,'NINE ADDITIONS',{'font-size':10.5,fill:'#8b9096','letter-spacing':1.4});
+    steps.forEach(function(s,k){
+      var x=CX+(k<5?0:258), y=CY+(k%5)*RH;
+      txt(g,x,y+16,(k+1)+'.',{'font-size':12,fill:'#b2b6bb'});
+      txt(g,x+30,y+16,s[0]+' + '+s[1],{'font-size':13.5,fill:'#4b5057'});
+      txt(g,x+140,y+16,'= '+s[2],{'font-size':13.5,fill:k===8?GRN:INK,'font-weight':700});
+    });
+    el('rect',{x:CX+244,y:CY+4*RH+6,width:270,height:34,rx:8,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+    txt(g,CX+258,CY+4*RH+27,'the answer is 55',{'font-size':14,fill:'#0f5a4c','font-weight':700});
+
+    el('rect',{x:24,y:286,width:1112,height:34,rx:9,fill:'#fdf3e3',stroke:AMB,'stroke-width':1.8},g);
+    txt(g,46,308,'the arithmetic is trivial, and that is deliberate. the arithmetic is not what is going to stop you.',
+      {'font-size':13.5,fill:'#7a4a0c','font-weight':700});
+  })();
+
+  /* ================= the attempt ================= */
+  (function(){
+    var g=document.getElementById('figAttempt'); if(!g) return;
+    var S=[
+      {a:1,b:2,ok:true,  lab:'set a to 1, b to 2, select add. the answer is on the output wires.'},
+      {a:1,b:3,ok:false, lab:'now add the 3. you change an input, and the old answer is gone before you used it.'},
+      {a:3,b:3,ok:true,  lab:'so you read the 3 off the screen and type it back into a. correct, this time.'},
+      {a:3,b:3,ok:true,  lab:'and there is the storage element. it is a person.'}
+    ];
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var s=S[t], r=(s.a+s.b)&15;
+      txt(g,24,20,'ATTEMPT, STEP '+(t+1)+' OF 4',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+
+      var OX=150, CW=34, AY=58, BY=112;
+      function nib(y,v,lab,col,soft,flash){
+        txt(g,OX-14,y+22,lab,{'font-size':14,fill:col,'text-anchor':'end','font-weight':700});
+        b4(v).split('').forEach(function(c,k){
+          cel(g,OX+k*CW,y,CW-4,32,c,{fill:flash?'#fdf3e3':soft,stroke:flash?AMB:col,fs:14});
+        });
+        txt(g,OX+4*CW+14,y+22,'= '+v,{'font-size':14,fill:col,'font-weight':700});
+      }
+      nib(AY,s.a,'a',GRN,'#e6f1ee',t===2);
+      nib(BY,s.b,'b',GRN,'#e6f1ee',t===1);
+
+      aluShape(g,380,48,150,110,BLUE,'#eaeef7',false);
+      txt(g,462,108,'ALU',{'font-size':18,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      wire(g,OX+4*CW+54,AY+16,380,AY+16,true);
+      wire(g,OX+4*CW+54,BY+16,380,BY+16,true);
+      arw(g,530,103,590,103,BLUE,2.4);
+
+      /* the result */
+      var RX=600, col=s.ok?GRN:RED, soft=s.ok?'#e6f1ee':'#fbeeed';
+      txt(g,RX,66,'ON THE WIRES NOW',{'font-size':10,fill:'#8b9096','letter-spacing':1.3});
+      b4(r).split('').forEach(function(c,k){
+        cel(g,RX+k*38,76,35,42,c,{fill:soft,stroke:col,fs:17});
+      });
+      txt(g,RX+4*38+16,106,'= '+r,{'font-size':18,fill:col,'font-weight':700});
+
+      /* the ghost of the previous answer */
+      if(t===1){
+        txt(g,RX,150,'the 3 that was here',{'font-size':12,fill:RED});
+        b4(3).split('').forEach(function(c,k){
+          cel(g,RX+k*26,158,24,26,c,{fill:'#fff',stroke:'#e2e0d9',col:'#d9d5cc',fs:12,sw:1.3});
+        });
+        el('line',{x1:RX-4,y1:186,x2:RX+4*26,y2:154,stroke:RED,'stroke-width':2.6},g);
+        txt(g,RX+4*26+16,176,'gone',{'font-size':14,fill:RED,'font-weight':700});
+        txt(g,RX,210,'and this answer is not the one you wanted',{'font-size':12.5,fill:RED,'font-weight':700});
+      }
+      /* the human in the loop */
+      if(t>=2){
+        var PX=RX+40, PY=170;
+        el('rect',{x:PX-20,y:PY,width:330,height:52,rx:10,fill:'#efe9f7',stroke:VIO,
+          'stroke-width':2.2,'stroke-dasharray':t===3?'7 5':'none'},g);
+        txt(g,PX+145,PY+22,'you, reading and retyping',
+          {'font-size':13,fill:'#4a2b70','text-anchor':'middle','font-weight':700});
+        txt(g,PX+145,PY+40,t===3?'the only memory in this circuit':'a storage operation, done by a human',
+          {'font-size':11.5,fill:'#4a2b70','text-anchor':'middle'});
+        pth(g,'M'+(PX-20)+' '+(PY+26)+' L'+(OX+60)+' '+(PY+26)+' L'+(OX+60)+' '+(AY+40),
+          {stroke:VIO,'stroke-width':2.4,'stroke-dasharray':'6 4'});
+        arw(g,OX+60,AY+46,OX+60,AY+34,VIO,2.4);
+      }
+
+      el('rect',{x:24,y:262,width:1112,height:40,rx:9,
+        fill:s.ok?'#e6f1ee':'#fbeeed',stroke:s.ok?GRN:RED,'stroke-width':1.8},g);
+      txt(g,46,287,s.lab,{'font-size':14,fill:s.ok?'#0f5a4c':'#8a2420','font-weight':700});
+      txt(g,24,330,'step '+(t+1)+' of 4',{'font-size':12,fill:'#8b9096'});
+    }
+    ticker('atRun','atStep','atReset',3,render);
+  })();
+
+  /* ================= why it vanished ================= */
+  (function(){
+    var g=document.getElementById('figVoltage'); if(!g) return;
+    txt(g,24,20,'THE OUTPUT, AS A VOLTAGE OVER TIME',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=150, W=940, Y1=60, Y2=150, H=36;
+    var T1=X0+330, T2=T1+60;
+    function lane(y,lab){
+      txt(g,X0-14,y+24,lab,{'font-size':13,fill:INK,'text-anchor':'end','font-weight':700});
+      el('line',{x1:X0,y1:y+H+6,x2:X0+W,y2:y+H+6,stroke:'#e2e0d9','stroke-width':1.4},g);
+    }
+    lane(Y1,'inputs');
+    el('rect',{x:X0,y:Y1,width:T1-X0,height:H,rx:5,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+    txt(g,(X0+T1)/2,Y1+23,'a = 1, b = 2  held',{'font-size':12.5,fill:'#0f5a4c','text-anchor':'middle','font-weight':700});
+    el('rect',{x:T1,y:Y1,width:X0+W-T1,height:H,rx:5,fill:'#fdf3e3',stroke:AMB,'stroke-width':1.8},g);
+    txt(g,(T1+X0+W)/2,Y1+23,'a = 1, b = 3  held',{'font-size':12.5,fill:'#7a4a0c','text-anchor':'middle','font-weight':700});
+
+    lane(Y2,'output');
+    el('rect',{x:X0,y:Y2,width:T1-X0,height:H,rx:5,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+    txt(g,(X0+T1)/2,Y2+23,'3',{'font-size':17,fill:'#0f5a4c','text-anchor':'middle','font-weight':700});
+    el('rect',{x:T1,y:Y2,width:T2-T1,height:H,rx:5,fill:'#fbeeed',stroke:RED,'stroke-width':1.8},g);
+    txt(g,(T1+T2)/2,Y2+23,'??',{'font-size':15,fill:RED,'text-anchor':'middle','font-weight':700});
+    el('rect',{x:T2,y:Y2,width:X0+W-T2,height:H,rx:5,fill:'#fdf3e3',stroke:AMB,'stroke-width':1.8},g);
+    txt(g,(T2+X0+W)/2,Y2+23,'4',{'font-size':17,fill:'#7a4a0c','text-anchor':'middle','font-weight':700});
+
+    el('line',{x1:T1,y1:Y1-14,x2:T1,y2:Y2+H+14,stroke:RED,'stroke-width':2.4,'stroke-dasharray':'5 4'},g);
+    txt(g,T1,Y1-22,'you change an input here',{'font-size':12,fill:RED,'text-anchor':'middle','font-weight':700});
+    arw(g,T1,Y2+H+30,T2,Y2+H+30,RED,2);
+    txt(g,T2+12,Y2+H+34,'settling, 31 gate delays',{'font-size':12,fill:RED,'font-weight':700});
+
+    el('rect',{x:24,y:258,width:1112,height:44,rx:9,fill:'#fbeeed',stroke:RED,'stroke-width':1.8},g);
+    txt(g,46,280,'there is no instant on this diagram at which the 3 is still available.',
+      {'font-size':14,fill:'#8a2420','font-weight':700});
+    txt(g,46,298,'the output is a function of the inputs right now. that is what combinational means, and everything you have built is combinational.',
+      {'font-size':12.5,fill:'#8a2420'});
+  })();
+
+  /* ================= the feedback wire ================= */
+  (function(){
+    var g=document.getElementById('figFeedback'); if(!g) return;
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,24,20,'THE OUTPUT, WIRED BACK TO THE INPUT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+      var val=(3+t)&15;
+      aluShape(g,420,56,170,120,BLUE,'#eaeef7',false);
+      txt(g,512,122,'ALU',{'font-size':20,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      txt(g,512,146,'add',{'font-size':12,fill:'#1b3270','text-anchor':'middle'});
+      /* b = 1 */
+      txt(g,348,162,'b = 1',{'font-size':13,fill:INK,'text-anchor':'end','font-weight':700});
+      arw(g,358,158,420,158,INK,2.2);
+      /* the value on the wire */
+      var CX=640, CY=96;
+      b4(val).split('').forEach(function(c,k){
+        cel(g,CX+k*34,CY,31,36,c,{fill:'#fdf3e3',stroke:AMB,fs:15});
+      });
+      txt(g,CX+4*34+16,CY+24,'= '+val,{'font-size':16,fill:AMB,'font-weight':700});
+      arw(g,590,116,CX-10,116,AMB,2.6);
+      /* the loop back */
+      pth(g,'M'+(CX+70)+' '+(CY+46)+' L'+(CX+70)+' '+(CY+92)+' L270 '+(CY+92)+' L270 74',
+        {stroke:AMB,'stroke-width':2.6});
+      arw(g,270,80,270,96,AMB,2.6);
+      arw(g,270,96,420,96,AMB,2.6);
+      txt(g,330,CY+112,'and straight back in again',{'font-size':12.5,fill:AMB,'font-weight':700});
+      txt(g,286,92,'a',{'font-size':13,fill:INK,'text-anchor':'end','font-weight':700});
+
+      /* the ledger */
+      var LY=234;
+      el('rect',{x:24,y:LY,width:540,height:84,rx:10,fill:'#fbeeed',stroke:RED,'stroke-width':1.8},g);
+      txt(g,46,LY+24,'trips round the loop so far',{'font-size':12.5,fill:'#8a2420'});
+      txt(g,46,LY+54,String(t),{'font-size':26,fill:RED,'font-weight':700});
+      txt(g,120,LY+54,'at 31 gate delays each, that is '+(t*620)+' ps',{'font-size':13,fill:'#8a2420','font-weight':700});
+      txt(g,46,LY+74,'and the value on the wire has been different every single time',{'font-size':12,fill:'#8a2420'});
+      el('rect',{x:596,y:LY,width:540,height:84,rx:10,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.8},g);
+      txt(g,618,LY+24,'one trip  =  31 gate delays  =  620 ps',{'font-size':13.5,fill:'#1b3270','font-weight':700});
+      txt(g,618,LY+48,'1613 trips in a microsecond',{'font-size':16,fill:BLUE,'font-weight':700});
+      txt(g,618,LY+70,'it does not hold a 3. it passes through 3 and keeps going.',{'font-size':12.5,fill:'#1b3270'});
+    }
+    ticker('fbRun','fbStep','fbReset',8,render);
+  })();
+
+  /* ================= the second failure ================= */
+  (function(){
+    var g=document.getElementById('figOpcode'); if(!g) return;
+    txt(g,24,20,'WHERE THE SEQUENCE LIVES',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    /* the machine boundary */
+    el('rect',{x:300,y:150,width:560,height:120,rx:14,fill:'#eaeef7',stroke:BLUE,'stroke-width':2.2},g);
+    txt(g,580,186,'everything the machine contains',
+      {'font-size':12,fill:'#1b3270','text-anchor':'middle','letter-spacing':1});
+    aluShape(g,470,196,180,60,BLUE,'#fff',false);
+    txt(g,566,232,'ALU',{'font-size':16,fill:BLUE,'text-anchor':'middle','font-weight':700});
+
+    /* the nine opcodes, outside it */
+    var X0=72, BW=100, GP=12, Y=58;
+    for(var k=0;k<9;k++){
+      var x=X0+k*(BW+GP);
+      el('rect',{x:x,y:Y,width:BW,height:40,rx:8,fill:'#fdf3e3',stroke:AMB,'stroke-width':1.8},g);
+      txt(g,x+BW/2,Y+26,'add',{'font-size':14,fill:'#7a4a0c','text-anchor':'middle','font-weight':700});
+      txt(g,x+BW/2,Y-10,'step '+(k+1),{'font-size':10.5,fill:'#b2b6bb','text-anchor':'middle'});
+    }
+    el('rect',{x:X0-14,y:Y-26,width:9*(BW+GP)-GP+28,height:74,rx:12,fill:'none',stroke:RED,
+      'stroke-width':2.2,'stroke-dasharray':'7 5'},g);
+    txt(g,X0-14,Y+68,'this sequence is information, and none of it is inside the box below',
+      {'font-size':13.5,fill:RED,'font-weight':700});
+    arw(g,800,120,800,150,RED,2.4);
+    txt(g,816,142,'supplied by hand, nine times',{'font-size':12.5,fill:RED,'font-weight':700});
+
+    el('rect',{x:24,y:282,width:1112,height:32,rx:9,fill:'#fbeeed',stroke:RED,'stroke-width':1.8},g);
+    txt(g,46,303,'last session the opcode turned out to be a number. this session there is nowhere to keep one.',
+      {'font-size':13.5,fill:'#8a2420','font-weight':700});
+  })();
+
+  /* ================= count it ================= */
+  (function(){
+    var g=document.getElementById('figCount'); if(!g) return;
+    txt(g,24,20,'THE LEDGER, FOR THE SEND OFF',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=40, W=1096, HY=46, RH=24;
+    var cols=[[0,'step',60],[70,'value you set',230],[320,'opcode you selected',250],[590,'carried in your head',260],[880,'',216]];
+    el('rect',{x:X0,y:HY,width:W,height:26,rx:6,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.6},g);
+    cols.forEach(function(c){ if(c[1]) txt(g,X0+14+c[0],HY+18,c[1],{'font-size':11.5,fill:BLUE,'letter-spacing':1,'font-weight':700}); });
+    var rows=[['1','a = 1, b = 2','add','nothing yet'],['2','b = 3','add','the 3'],['3','','','']];
+    rows.forEach(function(r,k){
+      var y=HY+30+k*RH;
+      el('rect',{x:X0,y:y,width:W,height:RH-4,rx:5,fill:'#fff',stroke:'#e2e0d9','stroke-width':1.4},g);
+      r.forEach(function(v,j){
+        if(v) txt(g,X0+14+cols[j][0],y+17,v,{'font-size':13,fill:j===0?'#b2b6bb':'#4b5057'});
+      });
+    });
+    for(var k=3;k<8;k++){
+      var y=HY+30+k*RH;
+      el('rect',{x:X0,y:y,width:W,height:RH-4,rx:5,fill:'#fff',stroke:'#e2e0d9','stroke-width':1.4,
+        'stroke-dasharray':'5 4'},g);
+      txt(g,X0+14,y+17,String(k+1),{'font-size':13,fill:'#d9d5cc'});
+    }
+    var TY=HY+30+8*RH+14;
+    function tot(x,w,lab){
+      el('rect',{x:x,y:TY,width:w,height:60,rx:10,fill:'#fdf3e3',stroke:AMB,'stroke-width':1.8},g);
+      txt(g,x+20,TY+24,lab,{'font-size':13,fill:'#7a4a0c','font-weight':700});
+      el('rect',{x:x+w-96,y:TY+14,width:76,height:32,rx:6,fill:'#fff',stroke:AMB,'stroke-width':1.8,
+        'stroke-dasharray':'5 4'},g);
+      txt(g,x+20,TY+46,'you fill this in',{'font-size':11.5,fill:'#a08050'});
+    }
+    tot(40,540,'pieces of information you supplied');
+    tot(596,540,'how many of them were identical');
+  })();
+
+  /* ================= three things it lacks ================= */
+  (function(){
+    var g=document.getElementById('figThree'); if(!g) return;
+    txt(g,24,20,'THREE MISSING OBJECTS, ALL OF THEM THE SAME KIND',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var items=[
+      ['data registers','so a result can become','an input to the next operation','two operands, one destination'],
+      ['instruction register','so the machine can be told','what to do, not shown','the opcode and the register numbers'],
+      ['program counter','so it knows which instruction','comes after this one','nobody needs it until Class 38']
+    ];
+    var X0=28, BW=360, GAP=12, Y=52;
+    items.forEach(function(it,k){
+      var x=X0+k*(BW+GAP);
+      el('rect',{x:x,y:Y,width:BW,height:180,rx:12,fill:'#fff',stroke:VIO,'stroke-width':2.2,
+        'stroke-dasharray':'8 5'},g);
+      txt(g,x+BW/2,Y+34,it[0],{'font-size':17,fill:VIO,'text-anchor':'middle','font-weight':700});
+      /* an empty register, drawn as cells */
+      var CW=34, n=8, cx=x+(BW-n*CW)/2;
+      for(var j=0;j<n;j++)
+        cel(g,cx+j*CW,Y+52,CW-4,32,'?',{fill:'#faf9f6',stroke:'#dedbd3',col:'#c6c3ba',fs:13,sw:1.4});
+      txt(g,x+BW/2,Y+112,it[1],{'font-size':13,fill:'#4b5057','text-anchor':'middle'});
+      txt(g,x+BW/2,Y+130,it[2],{'font-size':13,fill:'#4b5057','text-anchor':'middle'});
+      txt(g,x+BW/2,Y+158,it[3],{'font-size':11.5,fill:'#8b9096','text-anchor':'middle'});
+    });
+    el('rect',{x:24,y:258,width:1112,height:44,rx:9,fill:'#efe9f7',stroke:VIO,'stroke-width':1.8},g);
+    txt(g,46,280,'all three are registers. that is why the next arc is one arc and not three.',
+      {'font-size':14,fill:'#4a2b70','font-weight':700});
+    txt(g,46,298,'name them today. none of them gets built for another four classes.',{'font-size':12.5,fill:'#4a2b70'});
+  })();
+
+  /* ================= specify it first ================= */
+  (function(){
+    var g=document.getElementById('figSpec'); if(!g) return;
+    txt(g,24,20,'WHAT A REGISTER MUST DO, BEFORE ASKING WHAT IT IS MADE OF',
+      {'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var props=[
+      ['1','hold an n bit value indefinitely','without the value decaying, and without the inputs needing to stay put'],
+      ['2','accept a new value only when told to','the ALU output is garbage while its gates settle. capturing that would be worse than no memory'],
+      ['3','present its held value continuously','so the ALU can read it at the same time as something else is writing elsewhere'],
+      ['4','several of them, individually addressable','two operands and one destination is three at the absolute minimum']
+    ];
+    var Y=50, RH=66;
+    props.forEach(function(p,k){
+      var y=Y+k*RH;
+      el('rect',{x:24,y:y,width:1112,height:RH-10,rx:10,fill:k===1?'#fdf3e3':'#fff',
+        stroke:k===1?AMB:'#e2e0d9','stroke-width':k===1?2:1.6},g);
+      el('circle',{cx:56,cy:y+28,r:17,fill:k===1?AMB:'#eaeef7'},g);
+      txt(g,56,y+33,p[0],{'font-size':16,fill:k===1?'#fff':BLUE,'text-anchor':'middle','font-weight':700});
+      txt(g,90,y+24,p[1],{'font-size':15,fill:INK,'font-weight':700});
+      txt(g,90,y+44,p[2],{'font-size':12.5,fill:'#4b5057'});
+    });
+    txt(g,24,Y+4*RH+20,'property two is where the clock comes from, four classes early, and derived rather than announced.',
+      {'font-size':13.5,fill:AMB,'font-weight':700});
+  })();
+
+  /* ================= the specification is the arc ================= */
+  (function(){
+    var g=document.getElementById('figMap'); if(!g) return;
+    txt(g,24,20,'THE SPECIFICATION, AND THE FIVE CLASSES THAT DELIVER IT',
+      {'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var rows=[
+      ['hold a value indefinitely',32,'What does it mean to remember?'],
+      ['accept a new value only when told',33,'How do you control what it remembers?'],
+      ['do it safely and exactly once',34,'How do you make it safe and precise?'],
+      ['several of them, addressable',35,'How do you build a register file?'],
+      ['and then, the sequence itself',36,'Can a circuit generate its own next state?']
+    ];
+    var Y=52, RH=46;
+    rows.forEach(function(r,k){
+      var y=Y+k*RH;
+      el('rect',{x:24,y:y,width:430,height:RH-10,rx:8,fill:'#fdf3e3',stroke:AMB,'stroke-width':1.6},g);
+      txt(g,44,y+24,r[0],{'font-size':13.5,fill:'#7a4a0c','font-weight':700});
+      arw(g,460,y+18,506,y+18,'#c6c3ba',2);
+      el('rect',{x:514,y:y,width:622,height:RH-10,rx:8,fill:'#fff',stroke:'#e2e0d9','stroke-width':1.6},g);
+      txt(g,534,y+24,'CLASS '+r[1],{'font-size':11,fill:BLUE,'letter-spacing':1.2,'font-weight':700});
+      txt(g,614,y+24,r[2],{'font-size':13.5,fill:INK});
+    });
+    el('rect',{x:24,y:Y+5*RH+8,width:1112,height:40,rx:9,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+    txt(g,46,Y+5*RH+33,'you were not handed the next five hours. you specified them, by failing at one addition and being precise about why.',
+      {'font-size':13.5,fill:'#0f5a4c','font-weight':700});
+  })();
+
+  /* ================= the data path ================= */
+  (function(){
+    var g=document.getElementById('figPath'); if(!g) return;
+    txt(g,24,20,'THE LOOP, DRAWN AND NOT BUILT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    function reg(x,y,w,h,lab,sub){
+      el('rect',{x:x,y:y,width:w,height:h,rx:10,fill:'#fff',stroke:VIO,'stroke-width':2.2,'stroke-dasharray':'8 5'},g);
+      txt(g,x+w/2,y+h/2-2,lab,{'font-size':14.5,fill:VIO,'text-anchor':'middle','font-weight':700});
+      txt(g,x+w/2,y+h/2+18,sub,{'font-size':11.5,fill:'#9a84bb','text-anchor':'middle'});
+    }
+    reg(60,60,210,70,'data register A','not built');
+    reg(60,160,210,70,'data register B','not built');
+    aluShape(g,420,62,190,166,BLUE,'#eaeef7',false);
+    txt(g,520,140,'ALU',{'font-size':22,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    txt(g,520,164,'built, Class 30',{'font-size':11.5,fill:'#1b3270','text-anchor':'middle'});
+    arw(g,270,95,420,95,INK,2.4);
+    arw(g,270,195,420,195,INK,2.4);
+    arw(g,610,145,720,145,INK,2.4);
+    txt(g,724,120,'result',{'font-size':12.5,fill:INK,'font-weight':700});
+    /* the return path, routed clear of both registers */
+    pth(g,'M720 145 L790 145 L790 258 L40 258 L40 95',{stroke:GRN,'stroke-width':2.6});
+    arw(g,40,95,56,95,GRN,2.6);
+    txt(g,330,278,'the result comes back and becomes an operand',
+      {'font-size':13,fill:GRN,'text-anchor':'middle','font-weight':700});
+    /* the instruction register */
+    reg(830,60,300,70,'instruction register','not built');
+    arw(g,900,130,900,286,AMB,2.4);
+    pth(g,'M900 286 L560 286',{stroke:AMB,'stroke-width':2.4});
+    arw(g,560,286,560,232,AMB,2.4);
+    txt(g,920,206,'the opcode,',{'font-size':12.5,fill:AMB,'font-weight':700});
+    txt(g,920,224,'and which registers to use',{'font-size':12.5,fill:AMB});
+    el('rect',{x:24,y:302,width:1112,height:34,rx:9,fill:'#efe9f7',stroke:VIO,'stroke-width':1.8},g);
+    txt(g,46,324,'four boxes, and exactly one of them exists. everything from here to Class 47 is filling this drawing in.',
+      {'font-size':13.5,fill:'#4a2b70','font-weight':700});
+  })();
+
+  /* ================= the stored program ================= */
+  (function(){
+    var g=document.getElementById('figStored'); if(!g) return;
+    txt(g,24,20,'TWO REGISTERS, THE SAME HARDWARE, THE SAME BITS',
+      {'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    function box(x,title,bitsStr,goes,col,soft){
+      el('rect',{x:x,y:48,width:500,height:170,rx:12,fill:soft,stroke:col,'stroke-width':2.2},g);
+      txt(g,x+250,78,title,{'font-size':15,fill:col,'text-anchor':'middle','font-weight':700});
+      var CW=52, cx=x+(500-bitsStr.length*CW)/2;
+      bitsStr.split('').forEach(function(c,k){
+        cel(g,cx+k*CW,96,CW-6,44,c,{fill:'#fff',stroke:col,fs:18});
+      });
+      txt(g,x+250,166,goes,{'font-size':13,fill:'#4b5057','text-anchor':'middle'});
+      txt(g,x+250,196,'eight flip flops, when they exist',{'font-size':11.5,fill:'#8b9096','text-anchor':'middle'});
+    }
+    box(40,'a number you are adding','00000101','goes to the operand input',GRN,'#e6f1ee');
+    box(620,'a number that says what to add','00000101','goes to the opcode input',AMB,'#fdf3e3');
+    el('rect',{x:24,y:238,width:1112,height:76,rx:10,fill:'#eaeef7',stroke:BLUE,'stroke-width':2},g);
+    txt(g,46,264,'identical bits, identical hardware, and nothing anywhere says which is which.',
+      {'font-size':15,fill:'#1b3270','font-weight':700});
+    txt(g,46,288,'the difference is only which wire it is attached to, which is a decision made by the person who drew the diagram,',
+      {'font-size':12.5,fill:'#1b3270'});
+    txt(g,46,306,'and that is Class 27 again: nothing distinguishes a control number from a data number.',
+      {'font-size':12.5,fill:'#1b3270'});
+  })();
+
+  /* ================= the hinge ================= */
+  (function(){
+    var g=document.getElementById('figHinge'); if(!g) return;
+    txt(g,24,20,'THREE QUESTIONS, LEFT ON THE BOARD',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var qs=[
+      ['1','Where do the operands come from?','answered in Class 35','the register file'],
+      ['2','Where does the result go?','answered in Class 35','the same register file'],
+      ['3','Where does the opcode come from?','answered in Class 37','an instruction is a number']
+    ];
+    var Y=54, RH=78;
+    qs.forEach(function(q,k){
+      var y=Y+k*RH;
+      el('rect',{x:24,y:y,width:1112,height:RH-12,rx:11,fill:'#fff',stroke:RED,'stroke-width':2},g);
+      el('circle',{cx:64,cy:y+33,r:20,fill:'#fbeeed'},g);
+      txt(g,64,y+39,q[0],{'font-size':18,fill:RED,'text-anchor':'middle','font-weight':700});
+      txt(g,104,y+40,q[1],{'font-size':20,fill:INK,'font-weight':700});
+      txt(g,1112,y+28,q[2],{'font-size':12.5,fill:GRN,'text-anchor':'end','font-weight':700});
+      txt(g,1112,y+48,q[3],{'font-size':12,fill:'#8b9096','text-anchor':'end'});
+    });
+    txt(g,24,Y+3*RH+14,'four classes and six classes away. leave them up until they can be crossed off.',
+      {'font-size':13.5,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= the honest state ================= */
+  (function(){
+    var g=document.getElementById('figState'); if(!g) return;
+    txt(g,24,20,'EVERY CIRCUIT IN THIS COURSE, SO FAR',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var names=['gate','adder','subtractor','multiplier','shifter','comparator','float add','mux','ALU'];
+    var X0=28, BW=116, GP=8, Y=56;
+    names.forEach(function(n,k){
+      var x=X0+k*(BW+GP);
+      el('rect',{x:x,y:Y,width:BW,height:56,rx:9,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.8},g);
+      txt(g,x+BW/2,Y+26,n,{'font-size':12.5,fill:'#1b3270','text-anchor':'middle','font-weight':700});
+      txt(g,x+BW/2,Y+44,'in, out',{'font-size':10.5,fill:'#8b9096','text-anchor':'middle'});
+    });
+    txt(g,X0,Y+80,'all combinational. the output is a function of the inputs right now, and of nothing else.',
+      {'font-size':14,fill:INK,'font-weight':700});
+
+    var SY=172;
+    el('rect',{x:24,y:SY,width:1112,height:78,rx:10,fill:'#fff',stroke:RED,'stroke-width':2,
+      'stroke-dasharray':'8 5'},g);
+    txt(g,46,SY+26,'and the light switch from Class 18 is still not built',{'font-size':15,fill:RED,'font-weight':700});
+    txt(g,46,SY+46,'you were told then that a switch cannot be tabulated, because its output depends on what happened before.',
+      {'font-size':12.5,fill:'#8a2420'});
+    txt(g,46,SY+65,'that was this problem, met from the other side.',{'font-size':12.5,fill:'#8a2420'});
+
+    el('rect',{x:24,y:SY+90,width:1112,height:34,rx:9,fill:'#fbeeed',stroke:RED,'stroke-width':1.8},g);
+    txt(g,46,SY+112,'thirty one classes, and nothing built in any of them can hold a value from one moment to the next.',
+      {'font-size':13.5,fill:'#8a2420','font-weight':700});
+  })();
+
+  onSlide=function(idx){};
+  paint();
+})();
+</script>
+</body>
+</html>
