@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 29 · How does a machine add two floats?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --hi:#e8952b; --lo:#b9bfc6; --violet:#6b3fa0;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:46px 68px 78px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .32s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.eyebrow{position:absolute;top:19px;left:68px;font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:19px;right:68px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:68px;right:68px;bottom:21px;display:flex;gap:1.5px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:68px;bottom:42px;font-family:var(--mono);font-size:12px;color:var(--soft);z-index:5}
+#help{position:absolute;left:68px;bottom:42px;font-family:var(--mono);font-size:11px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+.kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+h1{font-family:var(--display);font-weight:600;font-size:60px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:29px;line-height:1.12;letter-spacing:-.015em;color:var(--ink);margin-bottom:6px}
+p{font-size:20px;line-height:1.46;max-width:37ch}
+p+p{margin-top:10px}
+.big{font-size:23.5px;line-height:1.34;color:var(--ink);font-weight:300;max-width:31ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center}
+.stack>*+*{margin-top:9px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:10px 12px}
+.row{display:flex;gap:20px;align-items:flex-start;justify-content:center}
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:9px 14px;margin-top:9px}
+.rem .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.rem.win{border-left-color:var(--ok)} .rem.win .h{color:var(--ok)}
+.rem.bad{border-left-color:var(--fail)} .rem.bad .h{color:var(--fail)}
+.rem ul{list-style:none}
+.rem li{font-size:15.5px;line-height:1.36;color:var(--ink);padding:3.5px 0 3.5px 15px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--rule2)}
+.btn{font-family:var(--mono);font-size:12.5px;background:var(--stage);color:var(--body);
+  border:1px solid var(--rule2);border-radius:7px;padding:6px 12px;cursor:pointer;min-width:34px}
+.btn:hover{background:#f0eee8;color:var(--ink)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+.btnrow .lab{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--soft);margin-right:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  padding:4px 11px;border-radius:20px;background:var(--accent-soft);color:var(--accent);margin-bottom:8px}
+.tag.win{background:var(--ok-soft);color:var(--ok)}
+.tag.bad{background:var(--fail-soft);color:var(--fail)}
+.tag.new{background:#efe9f7;color:var(--violet)}
+.spec{display:flex;align-items:stretch;background:var(--card);border:1px solid var(--rule2);border-radius:11px;overflow:hidden;margin-top:8px}
+.spec .c{flex:1;padding:12px 15px;border-right:1px solid var(--rule)}
+.spec .c:last-child{border-right:none}
+.spec .c .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--soft)}
+.spec .c .v{font-family:var(--display);font-size:28px;font-weight:600;color:var(--ink);line-height:1.1;margin-top:3px}
+.spec .c .s{font-size:12.5px;color:var(--soft);margin-top:2px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .32s ease}
+.frag.shown{opacity:1}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+.cue{position:absolute;left:68px;right:68px;bottom:64px;display:none;padding:9px 13px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:14.5px;line-height:1.34;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:38px 68px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:10px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:50px}
+#jump li{padding:3.5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:15px;color:var(--body);display:flex;gap:11px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:30px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="eyebrow">Computer Organisation &amp; Design &nbsp;·&nbsp; <b>Class 29</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 29 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+
+<section class="slide" data-t="Title" data-act="the question">
+  <div>
+    <div class="kicker">class 29 · hour twenty nine of fifty</div>
+    <h1>How does a machine<br>add two floats?</h1>
+    <p class="big" style="margin-top:22px;max-width:50ch">You spent an hour in Class 11 encoding floating point numbers and you have never once operated on one. Today every unit on the table gets used, and the operation everyone expects to be easy turns out to be the hard one.</p>
+  </div>
+  <div class="cue">This hour collects more debts than any other in the course. Say that at the top, and mean it.</div>
+</section>
+
+<section class="slide" data-t="Where we are" data-act="the question">
+  <div>
+    <h2>Nothing new gets built today. Everything already on the table gets used.</h2>
+    <div style="text-align:center;margin-top:2px"><svg viewBox="0 0 1140 250" width="1050" height="213"><g id="figArcTop"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the hour in three questions</div>
+      <ul>
+        <li><strong>Which is harder, multiply or add?</strong> Everyone in this room will say multiply. Everyone in this room will be wrong, and the reason is countable.</li>
+        <li><strong>What does it cost to round correctly?</strong> Class 12 gave you a rule and no justification. Today the rule becomes three bits of hardware.</li>
+        <li><strong>And what happens when the number is strange?</strong> The slow path you measured on your own laptop in Class 11, explained.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Flag the inversion now. The whole first act exists to overturn an assumption they do not know they are holding.</div>
+</section>
+
+<section class="slide" data-t="The number you encoded" data-act="the question">
+  <div>
+    <div class="tag">CLASS 11, NEVER OPERATED ON</div>
+    <h2 style="margin-bottom:0">Thirty two bits, three fields, and one of them is not stored.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 300" width="1082" height="280"><g id="figField"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the three fields, and why the third one matters today</div>
+      <ul>
+        <li>The exponent is stored with a bias of one hundred and twenty seven, which Class 8 made you fill in a table about and would not say why.</li>
+        <li>The significand carries an implicit leading one that is never written down. Twenty three stored bits, twenty four bits of precision, free.</li>
+        <li><strong>Twenty four bits is the whole budget.</strong> Everything that goes wrong today goes wrong because something had to leave that budget.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Put 9.75 on the board in all three fields before moving on. They will need it in four slides.</div>
+</section>
+
+<!-- ================= ACT 1 ================= -->
+
+<section class="slide" data-t="Which one is harder" data-act="1 · the inversion">
+  <div>
+    <h2>Before any hardware. Which of these two needs more of it?</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1082" height="308"><g id="figAsk"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">take the vote, then write it on the board</div>
+      <ul>
+        <li>Every integer instinct in the room says multiply. In integer hardware that instinct is correct, and you proved it in Classes 24 and 25.</li>
+        <li>In floating point it is exactly backwards, and the reason is not subtle once you see it. One of these operations never has to line anything up.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Do take the vote. The inversion only lands if they have committed to an answer out loud first.</div>
+</section>
+
+<section class="slide" data-t="Multiply, the easy one" data-act="1 · the inversion">
+  <div>
+    <h2>Multiplication, because the fields never have to meet.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 360" width="1070" height="332"><g id="figMul"></g></svg></div>
+    <div class="btnrow"><span class="lab">STAGE</span>
+      <button class="btn" id="mulRun">run ▶</button>
+      <button class="btn" id="mulStep">step</button>
+      <button class="btn" id="mulReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">Walk the four stages out loud. Sign, exponent, significand, round. Nothing waits for anything else except the final round.</div>
+</section>
+
+<section class="slide" data-t="The bias counted twice" data-act="1 · the inversion">
+  <div>
+    <h2>Why the bias comes off once, and only once.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 300" width="1070" height="276"><g id="figBias"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">one subtraction, and it is an eight bit one</div>
+      <ul>
+        <li>Each stored exponent already carries a bias of one hundred and twenty seven. Add two of them and you have added the bias twice, so one copy has to come back off.</li>
+        <li>That is the entire exponent path of a floating point multiplier. Two eight bit adds, and the result is ready long before the significands are.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is the first place the excess K scheme from Class 8 costs something rather than paying out. One extra subtract, and it is cheap.</div>
+</section>
+
+<section class="slide" data-t="Addition, the obstacle" data-act="2 · four stages">
+  <div>
+    <div class="tag bad">THE HARD ONE</div>
+    <h2 style="margin-bottom:0">You cannot touch the significands until the binary points line up.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 350" width="1058" height="319"><g id="figPoints"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">the obstacle, stated exactly</div>
+      <ul>
+        <li>Column addition only works when the columns mean the same thing. Here the top bit of one significand is worth eight and the top bit of the other is worth one half.</li>
+        <li>And the binary points are in different places <em>by definition</em>. That is what a floating point number is.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Hold on this slide. Everything in the next four slides is machinery for one problem, and this is the picture of that problem.</div>
+</section>
+
+<section class="slide" data-t="Stage 1, align" data-act="2 · four stages">
+  <div>
+    <h2>Stage one. Shift the smaller one right until the points agree.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 350" width="1070" height="322"><g id="figAlign"></g></svg></div>
+    <div class="btnrow"><span class="lab">SHIFT</span>
+      <button class="btn" id="alRun">run ▶</button>
+      <button class="btn" id="alStep">step</button>
+      <button class="btn" id="alReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">Both units here are last session's. The comparator chooses the direction, the barrel shifter does the move, in one pass.</div>
+</section>
+
+<section class="slide" data-t="What alignment costs" data-act="2 · four stages">
+  <div>
+    <div class="tag bad">BEFORE ANY ARITHMETIC HAS HAPPENED</div>
+    <h2 style="margin-bottom:0">Nothing fell off the end that time. Now make the exponents differ by twenty four.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1082" height="308"><g id="figLoss"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">verified, in float</div>
+      <ul>
+        <li>Two to the twenty four plus one is two to the twenty four. The one is shifted twenty four places right during alignment and leaves the register before the adder is reached.</li>
+        <li>Two to the twenty four plus two does change the answer, which tells you the precision did not vanish. It ran out.</li>
+        <li><strong>The loss happens in stage one.</strong> No addition has taken place yet.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">This is the alignment loss activity. Have them predict the answer before you show it, and then run it in C.</div>
+</section>
+
+<section class="slide" data-t="Stage 2, operate" data-act="2 · four stages">
+  <div>
+    <div class="tag win">YOU BUILT THIS IN CLASS 22</div>
+    <h2 style="margin-bottom:0">Stage two is the only stage that does arithmetic, and it is already on the desk.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 300" width="1082" height="280"><g id="figOperate"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">no new hardware</div>
+      <ul>
+        <li>Once the points agree, the significands are two ordinary binary integers and the lookahead adder from Class 22 adds them in twelve gate delays.</li>
+        <li>Subtraction is the same box with the complement trick from Class 23. Signs differ, invert and add one, read the flags.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Say the ratio out loud: one stage of six does the arithmetic. The other five are moving things into position and out again.</div>
+</section>
+
+<section class="slide" data-t="Stage 3, normalise" data-act="2 · four stages">
+  <div>
+    <h2>Stage three. The result is almost never in the right shape.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 340" width="1070" height="312"><g id="figNorm"></g></svg></div>
+    <div class="btnrow"><span class="lab">CASE</span>
+      <button class="btn" id="nmA">carried past the top</button>
+      <button class="btn" id="nmB">cancelled to nothing</button>
+    </div>
+  </div>
+  <div class="cue">The second case is catastrophic cancellation from Class 12, and now they can see the zeros being shifted in from the bottom.</div>
+</section>
+
+<section class="slide" data-t="Count the units" data-act="2 · four stages">
+  <div>
+    <h2>Now count what each operation used.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 390" width="1046" height="352"><g id="figLedger"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">reading the ledger</div>
+      <ul>
+        <li>Addition uses the barrel shifter twice and the multiplier never uses it at all. That one line is the whole answer to the opening question.</li>
+        <li>Multiply runs its exponent path in parallel with its significand path. Addition cannot: nothing can start until the comparison finishes.</li>
+        <li><strong>Neither fits in a three gigahertz cycle.</strong> Both are pipelined in a real processor, which is a Fundamentals of Computer Architecture problem, not today's.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Gate counts assume the units this course built: twelve delays for a lookahead add, ten for a barrel shift, twenty six for Booth and Wallace.</div>
+</section>
+
+<section class="slide" data-t="The inversion, landed" data-act="2 · four stages">
+  <div class="center">
+    <h2 style="font-size:38px;margin-bottom:18px">Addition is the harder<br>floating point operation.</h2>
+    <p class="big" style="max-width:54ch;color:var(--soft)">Not because adding is hard. Because floating point addition is two shifts, a comparison, a leading zero count and a rounding decision wrapped around one add.</p>
+    <p class="big frag" style="margin-top:20px;max-width:54ch">Multiplication never has to make two numbers agree about where the point is. That is the entire difference.</p>
+  </div>
+  <div class="cue">Give this slide air. They voted the other way eight slides ago and this is where it is cashed.</div>
+</section>
+
+<!-- ================= ACT 3 ================= -->
+
+<section class="slide" data-t="Stage 4, round" data-act="3 · what correctness costs">
+  <div>
+    <div class="tag">CLASS 12 GAVE YOU THE RULE AND NO REASON</div>
+    <h2 style="margin-bottom:0">To round correctly you must keep more than you keep.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1082" height="298"><g id="figGRS"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">three bits, and the third one is a lie that works</div>
+      <ul>
+        <li><strong>Guard</strong> is the first bit past the end. <strong>Round</strong> is the second. <strong>Sticky</strong> is the OR of absolutely everything beyond.</li>
+        <li>Sticky is one bit standing in for an unbounded number of them. Once a one appears out there it can never be lost, which is why it is called sticky.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Three bits. Ask the room how many bits it would take to be exactly right, and let them work out that the answer is unbounded.</div>
+</section>
+
+<section class="slide" data-t="The sticky bit earns it" data-act="3 · what correctness costs">
+  <div>
+    <h2>Two numbers identical for forty bits. They round to different answers.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1082" height="298"><g id="figSticky"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">why sticky cannot be dropped</div>
+      <ul>
+        <li>Guard and round are the same in both rows. Only the OR of everything below differs, and that is the bit that decides.</li>
+        <li>Drop sticky and the second case rounds down, which is wrong by half an ulp, forever, in a predictable direction.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Verified in float: one plus two to the minus twenty four is a tie and gives one. Add two to the minus forty and it rounds up.</div>
+</section>
+
+<section class="slide" data-t="The four cases" data-act="3 · what correctness costs">
+  <div>
+    <h2>The whole rounding decision, on one interval.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1082" height="308"><g id="figCases"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">four cases, one small circuit</div>
+      <ul>
+        <li>Guard zero: below half, round down. Guard one with round or sticky set: above half, round up. Guard one and both others zero: exactly half, and that is the tie.</li>
+        <li>The tie goes to whichever neighbour leaves the last kept bit even. One AND, one OR and a conditional increment.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Note the increment is a full twenty four bit add, and it is on the critical path. Correct rounding is not free.</div>
+</section>
+
+<section class="slide" data-t="Why ties to even" data-act="3 · what correctness costs">
+  <div>
+    <h2>Because ties away from zero is a bias, and biases accumulate.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 340" width="1070" height="312"><g id="figTies"></g></svg></div>
+    <div class="btnrow"><span class="lab">ADD TIES</span>
+      <button class="btn" id="tiRun">run ▶</button>
+      <button class="btn" id="tiStep">step</button>
+      <button class="btn" id="tiReset">reset</button>
+    </div>
+  </div>
+  <div class="cue">Ten thousand ties. Away from zero drifts by exactly five thousand ulp because every single one goes the same way. Even ends at twenty eight.</div>
+</section>
+
+<section class="slide" data-t="The Patriot, in floating point" data-act="3 · what correctness costs">
+  <div class="center">
+    <h2 style="font-size:33px;margin-bottom:16px">Class 12 told you a rule.<br>This is what the rule was defending against.</h2>
+    <p class="big" style="max-width:58ch;color:var(--soft)">The Patriot battery at Dhahran was a fixed point accumulation with a bias in every tick, running for a hundred hours. The bias was tiny and it never cancelled, because nothing in that scheme made it cancel.</p>
+    <p class="big frag" style="margin-top:18px;max-width:58ch">Ties to even is the floating point answer to exactly that failure mode. It is one gate of logic choosing which way a coin lands, so that the coin lands both ways.</p>
+  </div>
+  <div class="cue">Do not overclaim. Ties to even does not make long summations safe. It removes one systematic source of drift out of several.</div>
+</section>
+
+<!-- ================= ACT 4 ================= -->
+
+<section class="slide" data-t="Denormals" data-act="4 · the slow path">
+  <div>
+    <div class="tag new">YOU MEASURED THIS IN CLASS 11</div>
+    <h2 style="margin-bottom:0">One kind of number has no implicit leading one, and the whole path breaks.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 330" width="1082" height="308"><g id="figDenorm"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">the mechanism behind the number you measured</div>
+      <ul>
+        <li>Normalise assumes it knows where the leading one is. For a subnormal there is no leading one, so the stage cannot do its job and the exponent handling is different too.</li>
+        <li>Rather than build a second full data path, most implementations detect the case and trap into microcode, which is the processor executing a sequence of ordinary operations on itself.</li>
+        <li><strong>Correctness preserved. Speed abandoned.</strong></li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Several of them measured the slowdown on their own laptops three arcs ago and did not know what caused it. This is the answer.</div>
+</section>
+
+<section class="slide" data-t="Why the flags exist" data-act="4 · the slow path">
+  <div>
+    <h2>A correctness feature that costs two orders of magnitude in the wrong loop.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 310" width="1082" height="290"><g id="figFlags"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">two control bits, and who turns them on</div>
+      <ul>
+        <li><strong>Flush to zero</strong> replaces a subnormal result with zero. <strong>Denormals are zero</strong> does the same to the inputs. Both skip the trap entirely.</li>
+        <li>Audio and graphics code turns them on deliberately, because a number that small is inaudible and invisible, and the stall is neither.</li>
+        <li>This is also what the fast maths compiler flag quietly does to your numerics.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Name the trade honestly. They are buying speed with a documented loss of correctness near zero, and for audio that is the right trade.</div>
+</section>
+
+<section class="slide" data-t="Fused multiply add" data-act="4 · the slow path">
+  <div>
+    <div class="tag win">CLASS 25 ALREADY PAID FOR THIS</div>
+    <h2 style="margin-bottom:0">The addend is one more row in the compressor tree.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 334" width="1070" height="308"><g id="figFMA"></g></svg></div>
+    <div class="rem win frag" style="max-width:none">
+      <div class="h">faster and more accurate, from one structural observation</div>
+      <ul>
+        <li>Faster, because it is one pass through the hardware instead of two, and one rounding instead of two.</li>
+        <li>More accurate, because the full width product is kept all the way to the addition instead of being squeezed into twenty four bits first.</li>
+        <li>This is why machine learning accelerators are built around multiply accumulate rather than around multiply. The accumulate was already free.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Point back at the Wallace tree from Class 25. The row is already wired to be absorbed, which is why this costs nothing.</div>
+</section>
+
+<section class="slide" data-t="A different answer" data-act="4 · the slow path">
+  <div>
+    <div class="tag bad">NOT A WORSE ANSWER. A DIFFERENT ONE.</div>
+    <h2 style="margin-bottom:0">Fusing changes what your program prints.</h2>
+    <div style="text-align:center"><svg viewBox="0 0 1160 320" width="1082" height="298"><g id="figFMAbits"></g></svg></div>
+    <div class="rem bad frag" style="max-width:none">
+      <div class="h">verified in float, one bit apart</div>
+      <ul>
+        <li>Same three inputs, same hardware family, two answers that differ in the last bit of the significand. The fused one is the one closer to the truth.</li>
+        <li>So a compiler that fuses a multiply and an add has changed your numerical output without being asked. That is why fusion is controlled by a flag, and why some numerical code has to forbid it.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">If the hour has run long, this is the pair of slides to push into the survey at the start of Class 30. Do not cut the rounding material instead.</div>
+</section>
+
+<!-- ================= CLOSE ================= -->
+
+<section class="slide" data-t="Where we are now" data-act="closing">
+  <div>
+    <h2>Three down, two to go.</h2>
+    <div style="text-align:center;margin:4px 0"><svg viewBox="0 0 1140 250" width="1050" height="213"><g id="figArcEnd"></g></svg></div>
+    <div class="rem frag" style="max-width:none">
+      <div class="h">what you are carrying into next session</div>
+      <ul>
+        <li>Float multiply, which is a sign, two exponent adds and a Wallace tree, and never needs a shifter.</li>
+        <li>Float add, which is align, operate, normalise and round, and needs the shifter twice.</li>
+        <li>Three bits of rounding hardware, a slow path with two control bits, and one fused operation that is faster, more accurate and not interchangeable with the thing it replaces.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cue">Every one of today's units was built in an earlier class. Nothing new was invented. Say it, because it is the arc's whole argument.</div>
+</section>
+
+<section class="slide" data-t="Close" data-act="closing">
+  <div class="center">
+    <h2 style="font-size:35px;margin-bottom:16px">Every operation the machine<br>will ever need now exists.</h2>
+    <p class="big" style="max-width:56ch;color:var(--soft)">Add, subtract, multiply, divide, shift, compare, and both floating point operations. As a heap of separate circuits, on a table, wired to nothing.</p>
+    <p class="big frag" style="margin-top:18px;max-width:56ch">Next session: you have seven circuits and one pair of input wires. How does the machine choose which answer to keep?</p>
+  </div>
+  <div class="cue"><strong>Stop here.</strong> Send off: construct two float additions by hand, one decided by the guard bit alone and one where sticky changes the answer, and check both against a C program that prints the exact bits. Then find an a, b and c where fused and unfused forms of a times b plus c genuinely differ, and report both in hexadecimal.</div>
+</section>
+
+</template>
+
+<script>
+(function(){
+  'use strict';
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  var onSlide=null;
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    if(onSlide) onSlide(i);
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if((t==='INPUT'||t==='TEXTAREA')&&(k==='ArrowLeft'||k==='ArrowRight')) return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();} else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallow=false;
+  document.addEventListener('click',function(e){
+    swallow = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||
+                 e.target.closest('svg')||e.target.closest('.spec'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallow){ swallow=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ================= helpers ================= */
+  var NS='http://www.w3.org/2000/svg';
+  var GREY='#c6c3ba', HI='#e8952b', INK='#15171b', DEAD='#dedbd3',
+      BLUE='#23408f', RED='#a8231f', GRN='#146b5c', VIO='#6b3fa0', AMB='#b06a12';
+  var D=20;
+  function el(tag,a,p){ var e=document.createElementNS(NS,tag);
+    for(var k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e; }
+  function txt(p,x,y,s,o){ var t=el('text',Object.assign({x:x,y:y,'font-size':13,fill:'#8b9096'},o||{}),p);
+    t.textContent=s; return t; }
+  function rct(p,x,y,w,h,o){ return el('rect',Object.assign({x:x,y:y,width:w,height:h,rx:7,
+    fill:'#fff',stroke:GREY,'stroke-width':2},o||{}),p); }
+  function wire(p,x1,y1,x2,y2,v){ return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,
+    stroke:v?HI:DEAD,'stroke-width':v?3.6:2.4,'stroke-linecap':'round'},p); }
+  function pth(p,d,o){ return el('path',Object.assign({d:d,fill:'none',stroke:GREY,'stroke-width':2.4},o||{}),p); }
+  function jn(p,x,y){ return el('circle',{cx:x,cy:y,r:4,fill:INK},p); }
+  function arw(p,x1,y1,x2,y2,col,w){
+    var c=col||GREY, sw=w||2.4;
+    el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:c,'stroke-width':sw,'stroke-linecap':'round'},p);
+    var dx=x2-x1, dy=y2-y1, L=Math.sqrt(dx*dx+dy*dy)||1, ux=dx/L, uy=dy/L, h=7;
+    el('path',{d:'M'+(x2-ux*h-uy*h*0.62)+' '+(y2-uy*h+ux*h*0.62)+' L'+x2+' '+y2+
+      ' L'+(x2-ux*h+uy*h*0.62)+' '+(y2-uy*h-ux*h*0.62),fill:'none',stroke:c,
+      'stroke-width':sw,'stroke-linecap':'round','stroke-linejoin':'round'},p);
+  }
+  /* one bit cell */
+  function cel(p,x,y,w,h,ch,o){
+    o=o||{};
+    el('rect',{x:x,y:y,width:w,height:h,rx:3,fill:o.fill||'#fff',
+      stroke:o.stroke||GREY,'stroke-width':o.sw||1.6},p);
+    if(ch!==null&&ch!==undefined)
+      txt(p,x+w/2,y+h/2+5,String(ch),{'font-size':o.fs||13.5,fill:o.col||INK,
+        'text-anchor':'middle','font-weight':o.fw||700});
+  }
+  function ticker(runId,stepId,resetId,max,render){
+    var t=0,timer=null;
+    function set(v){ t=Math.max(0,Math.min(max,v)); render(t); }
+    function stop(){ if(timer){clearInterval(timer);timer=null;}
+      var b=document.getElementById(runId); if(b){b.classList.remove('hot');b.textContent='run ▶';} }
+    document.getElementById(runId).onclick=function(){
+      if(timer){ stop(); return; }
+      if(t>=max) set(0);
+      this.classList.add('hot'); this.textContent='■ stop';
+      timer=setInterval(function(){ if(t>=max){ stop(); return; } set(t+1); },420);
+    };
+    document.getElementById(stepId).onclick=function(){ stop(); set(t>=max?0:t+1); };
+    document.getElementById(resetId).onclick=function(){ stop(); set(0); };
+    set(0);
+    return {stop:stop};
+  }
+  function arcStrip(gid,litIndex,caption){
+    var g=document.getElementById(gid); if(!g) return;
+    var items=[[27,'how it chooses'],[28,'sideways'],[29,'adding floats'],[30,'the ALU'],[31,'what it needs']];
+    var W=186, X0=78;
+    items.forEach(function(it,k){
+      var x=X0+k*(W+8), done=k<litIndex, lit=(k===litIndex);
+      el('rect',{x:x,y:52,width:W,height:104,rx:12,
+        fill:lit?'#eaeef7':(done?'#f2f0ea':'#fbfaf7'),
+        stroke:lit?BLUE:(done?'#c6c3ba':'#e2e0d9'),'stroke-width':lit?2.6:1.5},g);
+      txt(g,x+W/2,80,'CLASS '+it[0],{'font-size':9.5,fill:lit?BLUE:'#c6c3ba','text-anchor':'middle','letter-spacing':1.3});
+      txt(g,x+W/2,112,it[1],{'font-size':12,fill:lit?INK:(done?'#8b9096':'#a9a69d'),'text-anchor':'middle','font-weight':700});
+      if(done) txt(g,x+W/2,136,'done',{'font-size':11,fill:GRN,'text-anchor':'middle'});
+      if(lit) txt(g,x+W/2,136,'today',{'font-size':11,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      if(k<items.length-1) pth(g,'M'+(x+W)+' 104 L'+(x+W+8)+' 104',{stroke:'#dedbd3','stroke-width':2});
+    });
+    txt(g,34,198,caption,{'font-size':15.5,fill:INK,'font-weight':700});
+  }
+  arcStrip('figArcTop',2,'every unit on the table gets used today, and not one of them gets built today.');
+  arcStrip('figArcEnd',2,'two operations, six stages, three rounding bits and one slow path with a switch on it.');
+
+  /* ================= the float, decoded ================= */
+  (function(){
+    var g=document.getElementById('figField'); if(!g) return;
+    txt(g,30,22,'9.75 AS A THIRTY TWO BIT FLOAT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var bits='0'+'10000010'+'00111000000000000000000';
+    var X0=34, CW=33.4, Y=44, H=38;
+    for(var k=0;k<32;k++){
+      var zone = k===0?0:(k<9?1:2);
+      var fill = zone===0?'#fbeeed':(zone===1?'#eaeef7':'#e6f1ee');
+      var col  = zone===0?RED:(zone===1?BLUE:GRN);
+      cel(g,X0+k*CW,Y,CW-2.6,H,bits[k],{fill:fill,stroke:col,col:INK,fs:12.5});
+    }
+    function brace(x1,x2,lab,col,sub){
+      var y=Y+H+9;
+      pth(g,'M'+x1+' '+y+' L'+x1+' '+(y+7)+' L'+x2+' '+(y+7)+' L'+x2+' '+y,{stroke:col,'stroke-width':1.8});
+      txt(g,(x1+x2)/2,y+26,lab,{'font-size':11.5,fill:col,'text-anchor':'middle','font-weight':700,'letter-spacing':1});
+      txt(g,(x1+x2)/2,y+43,sub,{'font-size':11.5,fill:'#8b9096','text-anchor':'middle'});
+    }
+    brace(X0,X0+CW-2.6,'SIGN',RED,'1 bit');
+    brace(X0+CW,X0+9*CW-2.6,'EXPONENT',BLUE,'8 bits, biased by 127');
+    brace(X0+9*CW,X0+32*CW-2.6,'SIGNIFICAND',GRN,'23 stored bits');
+
+    var Y2=Y+H+118;
+    el('rect',{x:34,y:Y2,width:1092,height:62,rx:10,fill:'#fff',stroke:GREY,'stroke-width':1.6},g);
+    txt(g,58,Y2+26,'stored exponent 130, minus the bias 127, gives a true exponent of 3',
+      {'font-size':14,fill:'#4b5057'});
+    txt(g,58,Y2+48,'value  =  + 1.0011100₂  ×  2³  =  9.75',
+      {'font-size':15,fill:INK,'font-weight':700});
+    txt(g,660,Y2+26,'the leading 1 is not in the register',{'font-size':13,fill:VIO,'font-weight':700});
+    txt(g,660,Y2+48,'23 stored bits carry 24 bits of precision',{'font-size':13,fill:VIO});
+    txt(g,34,Y2+86,'twenty four bits is the entire budget. everything that goes wrong today is something leaving it.',
+      {'font-size':14.5,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= which is harder ================= */
+  (function(){
+    var g=document.getElementById('figAsk'); if(!g) return;
+    function col(x,title,sub,stages,tone){
+      el('rect',{x:x,y:40,width:500,height:244,rx:14,fill:'#fff',stroke:tone,'stroke-width':2.2},g);
+      txt(g,x+26,74,title,{'font-size':22,fill:INK,'font-weight':700});
+      txt(g,x+26,97,sub,{'font-size':13,fill:'#8b9096'});
+      var BY=114, BH=30;
+      stages.forEach(function(s,k){
+        el('rect',{x:x+26,y:BY+k*(BH+8),width:448,height:BH,rx:7,fill:'#faf9f6',
+          stroke:'#e2e0d9','stroke-width':1.6,'stroke-dasharray':'5 4'},g);
+        txt(g,x+42,BY+k*(BH+8)+20,s,{'font-size':13,fill:'#b2b6bb'});
+        txt(g,x+452,BY+k*(BH+8)+20,'?',{'font-size':16,fill:tone,'text-anchor':'end','font-weight':700});
+      });
+    }
+    col(34,'a × b','floating point multiply',
+      ['what has to happen first','and then','and then','and at the end'],VIO);
+    col(594,'a + b','floating point add',
+      ['what has to happen first','and then','and then','and at the end'],AMB);
+    txt(g,580,310,'which of these two needs more hardware, and more time?',
+      {'font-size':15.5,fill:INK,'text-anchor':'middle','font-weight':700});
+  })();
+
+  /* ================= float multiply ================= */
+  (function(){
+    var g=document.getElementById('figMul'); if(!g) return;
+    var stages=[
+      {y:58, lab:'SIGNS',   box:'XOR',                  out:'sign of the product',  col:RED},
+      {y:130,lab:'EXPONENTS',box:'8 bit add, minus bias',out:'exponent of the product',col:BLUE},
+      {y:202,lab:'SIGNIFICANDS',box:'24 × 24 Wallace tree, Class 25',out:'48 bit product',col:GRN}
+    ];
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,30,22,'FLOATING POINT MULTIPLY, FOUR STAGES',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+      var BX=250, BW=360, BH=46;
+      stages.forEach(function(s,k){
+        var live = t>=1;
+        txt(g,236,s.y+28,s.lab,{'font-size':12,fill:s.col,'text-anchor':'end','font-weight':700});
+        el('rect',{x:BX,y:s.y,width:BW,height:BH,rx:9,fill:live?'#fff':'#faf9f6',
+          stroke:live?s.col:'#dedbd3','stroke-width':live?2.4:1.6},g);
+        txt(g,BX+BW/2,s.y+28,s.box,{'font-size':13.5,fill:live?INK:'#b2b6bb','text-anchor':'middle','font-weight':700});
+        arw(g,BX+BW,s.y+BH/2,BX+BW+54,s.y+BH/2,live?s.col:DEAD,live?2.8:2);
+        txt(g,BX+BW+64,s.y+BH/2+5,s.out,{'font-size':12.5,fill:live?'#4b5057':'#c6c3ba'});
+      });
+      txt(g,BX+BW/2,268,'all three run at the same time. nothing here waits for anything else.',
+        {'font-size':12.5,fill:t>=1?AMB:'#c6c3ba','text-anchor':'middle','font-weight':700});
+
+      var NY=282, nlive=t>=2, rlive=t>=3;
+      el('rect',{x:250,y:NY,width:170,height:44,rx:9,fill:nlive?'#fff':'#faf9f6',
+        stroke:nlive?AMB:'#dedbd3','stroke-width':nlive?2.4:1.6},g);
+      txt(g,335,NY+27,'normalise',{'font-size':13.5,fill:nlive?INK:'#b2b6bb','text-anchor':'middle','font-weight':700});
+      arw(g,420,NY+22,470,NY+22,nlive?AMB:DEAD,nlive?2.8:2);
+      el('rect',{x:470,y:NY,width:140,height:44,rx:9,fill:rlive?'#fff':'#faf9f6',
+        stroke:rlive?AMB:'#dedbd3','stroke-width':rlive?2.4:1.6},g);
+      txt(g,540,NY+27,'round',{'font-size':13.5,fill:rlive?INK:'#b2b6bb','text-anchor':'middle','font-weight':700});
+      txt(g,628,NY+19,nlive?'a product of two numbers in 1.x form is under 4,':'',
+        {'font-size':12,fill:'#8b9096'});
+      txt(g,628,NY+37,nlive?'so this shifts by one place or by none at all':'',
+        {'font-size':12,fill:'#8b9096'});
+      txt(g,30,352,t>=3?'no alignment anywhere. the exponents were handled without ever touching the significands.':
+        'step through the stages.',
+        {'font-size':14.5,fill:t>=3?GRN:'#8b9096','font-weight':700});
+    }
+    ticker('mulRun','mulStep','mulReset',3,render);
+  })();
+
+  /* ================= the bias, counted twice ================= */
+  (function(){
+    var g=document.getElementById('figBias'); if(!g) return;
+    txt(g,30,22,'WHAT HAPPENS TO THE BIAS WHEN YOU ADD TWO STORED EXPONENTS',
+      {'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=120, U=2.9;   /* pixels per unit of exponent */
+    function bar(y,bias,val,lab,note){
+      var wb=127*U, wv=Math.max(val*U,22);
+      el('rect',{x:X0,y:y,width:wb,height:34,rx:5,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.8},g);
+      txt(g,X0+wb/2,y+22,'bias 127',{'font-size':12.5,fill:BLUE,'text-anchor':'middle','font-weight':700});
+      el('rect',{x:X0+wb,y:y,width:wv,height:34,rx:5,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+      txt(g,X0+wb+wv/2,y-5,val,{'font-size':12.5,fill:GRN,'text-anchor':'middle','font-weight':700});
+      txt(g,X0-14,y+22,lab,{'font-size':13,fill:INK,'text-anchor':'end','font-weight':700});
+      if(note) txt(g,X0+wb+wv+16,y+22,note,{'font-size':12.5,fill:'#8b9096'});
+    }
+    bar(44,127,3,'a','stored 130');
+    bar(90,127,5,'b','stored 132');
+    pth(g,'M'+X0+' 136 L'+(X0+760)+' 136',{stroke:GREY,'stroke-width':1.6});
+    /* the sum: two biases */
+    var y=150, wb=127*U;
+    el('rect',{x:X0,y:y,width:wb,height:34,rx:5,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.8},g);
+    txt(g,X0+wb/2,y+22,'bias 127',{'font-size':12.5,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    el('rect',{x:X0+wb,y:y,width:wb,height:34,rx:5,fill:'#fbeeed',stroke:RED,'stroke-width':2.2,'stroke-dasharray':'6 4'},g);
+    txt(g,X0+wb*1.5,y+22,'bias 127 again',{'font-size':12.5,fill:RED,'text-anchor':'middle','font-weight':700});
+    el('rect',{x:X0+2*wb,y:y,width:Math.max(8*U,22),height:34,rx:5,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+    txt(g,X0+2*wb+Math.max(8*U,22)/2,y-5,'8',{'font-size':12.5,fill:GRN,'text-anchor':'middle','font-weight':700});
+    txt(g,X0-14,y+22,'a + b',{'font-size':13,fill:INK,'text-anchor':'end','font-weight':700});
+    txt(g,X0+2*wb+8*U+16,y+22,'stored 262, biased twice',{'font-size':12.5,fill:RED,'font-weight':700});
+
+    arw(g,X0+wb*1.5,y+50,X0+wb*1.5,y+78,RED,2.6);
+    txt(g,X0+wb*1.5+14,y+72,'subtract 127 once',{'font-size':13,fill:RED,'font-weight':700});
+
+    var y2=y+86;
+    el('rect',{x:X0,y:y2,width:wb,height:34,rx:5,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.8},g);
+    txt(g,X0+wb/2,y2+22,'bias 127',{'font-size':12.5,fill:BLUE,'text-anchor':'middle','font-weight':700});
+    el('rect',{x:X0+wb,y:y2,width:Math.max(8*U,22),height:34,rx:5,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+    txt(g,X0+wb+Math.max(8*U,22)/2,y2-5,'8',{'font-size':12.5,fill:GRN,'text-anchor':'middle','font-weight':700});
+    txt(g,X0-14,y2+22,'result',{'font-size':13,fill:INK,'text-anchor':'end','font-weight':700});
+    txt(g,X0+wb+Math.max(8*U,22)+16,y2+22,'stored 135, exponent 8, correct',{'font-size':12.5,fill:GRN,'font-weight':700});
+  })();
+
+  /* ================= the binary points do not line up ================= */
+  (function(){
+    var g=document.getElementById('figPoints'); if(!g) return;
+    txt(g,30,22,'9.75 AND 0.6875 ON ONE PLACE VALUE AXIS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    function sup(n){ var m={0:'⁰',1:'¹',2:'²',3:'³',4:'⁴',5:'⁵',
+      6:'⁶',7:'⁷',8:'⁸'}; return m[n]||String(n); }
+    var CW=66, H=36;
+
+    /* ---- as stored: both significands start in the same cell ---- */
+    var SX=250, SY=48;
+    txt(g,SX,SY-12,'AS STORED, BOTH START IN THE SAME BIT OF THEIR REGISTER',
+      {'font-size':10.5,fill:'#8b9096','letter-spacing':1.3});
+    function stored(y,lab,s,col,soft){
+      txt(g,SX-18,y+24,lab,{'font-size':13.5,fill:col,'text-anchor':'end','font-weight':700});
+      s.split('').forEach(function(c,k){
+        cel(g,SX+k*CW+4,y,CW-8,H,c,{fill:soft,stroke:col,col:INK,fs:13.5});
+      });
+      el('line',{x1:SX+CW,y1:y-5,x2:SX+CW,y2:y+H+5,stroke:RED,'stroke-width':2.6},g);
+    }
+    stored(SY,'a','100111',GRN,'#e6f1ee');
+    stored(SY+H+8,'b','101100',AMB,'#fdf3e3');
+    txt(g,SX+6*CW+18,SY+24,'1.00111, and the point is here',{'font-size':12,fill:RED});
+    txt(g,SX+6*CW+18,SY+H+32,'1.01100, and the point is here too',{'font-size':12,fill:RED});
+
+    /* ---- what they are worth: the same bits, four columns apart ---- */
+    var cols=[3,2,1,0,-1,-2,-3,-4,-5];
+    var X0=250, Y=SY+2*H+48;
+    cols.forEach(function(e,k){
+      var x=X0+k*CW;
+      txt(g,x+CW/2,Y-12,'2'+(e<0?'⁻':'')+sup(Math.abs(e)),
+        {'font-size':11.5,fill:'#8b9096','text-anchor':'middle'});
+      el('line',{x1:x,y1:Y-4,x2:x,y2:Y+2*H+16,stroke:'#eeece6','stroke-width':1},g);
+    });
+    txt(g,X0-18,Y-12,'WORTH',{'font-size':10.5,fill:'#8b9096','text-anchor':'end','letter-spacing':1.3});
+    function lay(y,startExp,bitsStr,lab,col,soft){
+      txt(g,X0-18,y+24,lab,{'font-size':13.5,fill:col,'text-anchor':'end','font-weight':700});
+      for(var k=0;k<bitsStr.length;k++){
+        var e=startExp-k, idx=cols.indexOf(e); if(idx<0) continue;
+        cel(g,X0+idx*CW+4,y,CW-8,H,bitsStr[k],{fill:soft,stroke:col,col:INK,fs:13.5});
+      }
+    }
+    lay(Y,3,'100111','a = 9.75',GRN,'#e6f1ee');
+    lay(Y+H+10,-1,'1011','b = 0.6875',AMB,'#fdf3e3');
+    /* the offset */
+    var ax=X0+2, bx=X0+4*CW+2;
+    arw(g,ax,Y+2*H+28,bx,Y+2*H+28,RED,2.4);
+    txt(g,(ax+bx)/2,Y+2*H+22,'four columns apart',{'font-size':12,fill:RED,'text-anchor':'middle','font-weight':700});
+
+    var YB=Y+2*H+44;
+    el('rect',{x:30,y:YB,width:1096,height:46,rx:10,fill:'#fbeeed',stroke:RED,'stroke-width':1.8},g);
+    txt(g,52,YB+20,'add the registers cell by cell and you have added a bit worth 8 to a bit worth one half.',
+      {'font-size':13.5,fill:'#8a2420','font-weight':700});
+    txt(g,52,YB+38,'the binary points are in different places by definition. that is what a floating point number is.',
+      {'font-size':12.5,fill:'#8a2420'});
+  })();
+
+  /* ================= stage one, align ================= */
+  (function(){
+    var g=document.getElementById('figAlign'); if(!g) return;
+    var bb='1011';       /* b significand 1.011 */
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,30,22,'ALIGN: SHIFT THE SMALLER SIGNIFICAND RIGHT BY THE EXPONENT DIFFERENCE',
+        {'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+      /* the two units, reused */
+      el('rect',{x:30,y:40,width:250,height:44,rx:9,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+      txt(g,155,67,'comparator, Class 28',{'font-size':12.5,fill:GRN,'text-anchor':'middle','font-weight':700});
+      arw(g,280,62,336,62,GRN,2.4);
+      el('rect',{x:336,y:40,width:250,height:44,rx:9,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+      txt(g,461,67,'barrel shifter, Class 28',{'font-size':12.5,fill:GRN,'text-anchor':'middle','font-weight':700});
+      txt(g,600,67,'difference is 4, so one pass, ten gate delays',{'font-size':12.5,fill:'#8b9096'});
+
+      var X0=150, CW=62, Y=118, H=38, SLOTS=9;
+      /* register frame */
+      el('rect',{x:X0-6,y:Y-10,width:SLOTS*CW+12,height:H+20,rx:8,fill:'none',stroke:GREY,
+        'stroke-width':1.6,'stroke-dasharray':'6 4'},g);
+      txt(g,X0+SLOTS*CW+22,Y+H/2+5,'end of the register',{'font-size':12,fill:'#8b9096'});
+      el('line',{x1:X0+SLOTS*CW+6,y1:Y-16,x2:X0+SLOTS*CW+6,y2:Y+H+22,stroke:RED,'stroke-width':2.4,
+        'stroke-dasharray':'5 4'},g);
+
+      /* a, fixed */
+      txt(g,X0-18,Y+25,'a',{'font-size':14,fill:GRN,'text-anchor':'end','font-weight':700});
+      '100111'.split('').forEach(function(c,k){
+        cel(g,X0+k*CW+4,Y,CW-8,H,c,{fill:'#e6f1ee',stroke:GRN,fs:14});
+      });
+      /* b, shifted by t */
+      var Y2=Y+H+26;
+      txt(g,X0-18,Y2+25,'b',{'font-size':14,fill:AMB,'text-anchor':'end','font-weight':700});
+      for(var k=0;k<bb.length;k++){
+        var slot=k+t;
+        if(slot<SLOTS) cel(g,X0+slot*CW+4,Y2,CW-8,H,bb[k],{fill:'#fdf3e3',stroke:AMB,fs:14});
+        else cel(g,X0+slot*CW+4,Y2,CW-8,H,bb[k],{fill:'#fbeeed',stroke:RED,col:RED,fs:14});
+      }
+      for(var z=0;z<t;z++) cel(g,X0+z*CW+4,Y2,CW-8,H,'0',{fill:'#faf9f6',stroke:'#dedbd3',col:'#b2b6bb',fs:14});
+
+      /* exponent readout */
+      var Y3=Y2+H+30;
+      txt(g,X0,Y3+4,'exponent of b',{'font-size':12.5,fill:'#8b9096'});
+      txt(g,X0+150,Y3+4,String(-1+t),{'font-size':16,fill:t===4?GRN:AMB,'font-weight':700});
+      txt(g,X0+200,Y3+4,t===4?'matches a, the points now agree':'still below a, keep shifting',
+        {'font-size':12.5,fill:t===4?GRN:'#8b9096','font-weight':t===4?700:400});
+      txt(g,X0,Y3+30,'shifted '+t+' of 4',{'font-size':12.5,fill:'#8b9096'});
+
+      if(t===4){
+        el('rect',{x:30,y:Y3+46,width:1096,height:36,rx:9,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.6},g);
+        txt(g,52,Y3+70,'nothing fell past the line, because b only had three significant bits to begin with.',
+          {'font-size':13.5,fill:'#0f5a4c','font-weight':700});
+      }
+    }
+    ticker('alRun','alStep','alReset',4,render);
+  })();
+
+  /* ================= what alignment costs ================= */
+  (function(){
+    var g=document.getElementById('figLoss'); if(!g) return;
+    txt(g,30,22,'2²⁴ + 1, IN FLOAT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=152, CW=38, Y=48, H=34;
+    function strip(y,lab,bitsStr,col,soft,lost){
+      txt(g,X0-16,y+23,lab,{'font-size':13,fill:col,'text-anchor':'end','font-weight':700});
+      for(var k=0;k<bitsStr.length;k++){
+        var over = lost && k>=lost;
+        cel(g,X0+k*CW,y,CW-3,H,bitsStr[k],
+          {fill:over?'#fbeeed':soft,stroke:over?RED:col,col:over?RED:INK,fs:12.5});
+      }
+    }
+    /* a = 2^24 significand 1 followed by zeros, 25 slots shown */
+    strip(Y,'a = 2²⁴','1000000000000000000000000',GRN,'#e6f1ee',null);
+    strip(Y+H+14,'b = 1','0000000000000000000000001',AMB,'#fdf3e3',24);
+    el('line',{x1:X0+24*CW-3,y1:Y-10,x2:X0+24*CW-3,y2:Y+2*H+26,stroke:RED,'stroke-width':2.4,'stroke-dasharray':'5 4'},g);
+    txt(g,X0+24*CW-3,Y+2*H+42,'the register ends here',{'font-size':12,fill:RED,'text-anchor':'end','font-weight':700});
+
+    var Y2=Y+2*H+70;
+    function line(y,l,v,col){
+      txt(g,X0-16,y,l,{'font-size':13,fill:'#8b9096','text-anchor':'end'});
+      txt(g,X0,y,v,{'font-size':14.5,fill:col,'font-weight':700});
+    }
+    line(Y2,'2²⁴   ','16777216',INK);
+    line(Y2+26,'2²⁴ + 1   ','16777216      unchanged, the one never reached the adder',RED);
+    line(Y2+52,'2²⁴ + 2   ','16777218      changed, so the precision ran out rather than vanished',GRN);
+    txt(g,30,Y2+84,'the loss happened in stage one. no arithmetic had taken place yet.',
+      {'font-size':14.5,fill:INK,'font-weight':700});
+  })();
+
+  /* ================= stage two, operate ================= */
+  (function(){
+    var g=document.getElementById('figOperate'); if(!g) return;
+    txt(g,30,22,'OPERATE: THE ALIGNED SIGNIFICANDS ARE NOW ORDINARY INTEGERS',
+      {'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=200, CW=62, Y=52, H=38;
+    function row(y,lab,s,col,soft){
+      txt(g,X0-18,y+25,lab,{'font-size':13.5,fill:col,'text-anchor':'end','font-weight':700});
+      s.split('').forEach(function(c,k){
+        cel(g,X0+k*CW+4,y,CW-8,H,c,{fill:soft,stroke:col,col:INK,fs:14});
+      });
+    }
+    row(Y,'a','100111',GRN,'#e6f1ee');
+    row(Y+H+12,'b aligned','000010',AMB,'#fdf3e3');
+    /* a has 6 shown bits at 2^3..2^-2 ; b aligned 0.0001011 truncated to the same window */
+    txt(g,X0+6*CW+18,Y+25,'1.00111 × 2³',{'font-size':13,fill:'#8b9096'});
+    txt(g,X0+6*CW+18,Y+H+37,'0.00010 11 × 2³',{'font-size':13,fill:'#8b9096'});
+    pth(g,'M'+(X0-10)+' '+(Y+2*H+22)+' L'+(X0+6*CW+10)+' '+(Y+2*H+22),{stroke:GREY,'stroke-width':1.8});
+    row(Y+2*H+30,'sum','101001',BLUE,'#eaeef7');
+    txt(g,X0+6*CW+18,Y+2*H+55,'1.0100111 × 2³  =  10.4375',{'font-size':13.5,fill:BLUE,'font-weight':700});
+
+    var Y2=Y+3*H+46;
+    el('rect',{x:30,y:Y2,width:530,height:52,rx:10,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+    txt(g,52,Y2+22,'the lookahead adder, Class 22',{'font-size':13.5,fill:'#0f5a4c','font-weight':700});
+    txt(g,52,Y2+42,'24 bits wide, twelve gate delays, built nine sessions ago',{'font-size':12.5,fill:'#0f5a4c'});
+    el('rect',{x:596,y:Y2,width:530,height:52,rx:10,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+    txt(g,618,Y2+22,'and subtraction is the same box, Class 23',{'font-size':13.5,fill:'#0f5a4c','font-weight':700});
+    txt(g,618,Y2+42,'signs differ, invert and add one, read the flags that fall out',{'font-size':12.5,fill:'#0f5a4c'});
+  })();
+
+  /* ================= stage three, normalise ================= */
+  (function(){
+    var g=document.getElementById('figNorm'); if(!g) return;
+    var mode='A';
+    function render(){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      var A = mode==='A';
+      txt(g,30,22,A?'NORMALISE, CASE ONE: THE SUM CARRIED PAST THE TOP'
+                   :'NORMALISE, CASE TWO: A SUBTRACTION CANCELLED ALMOST EVERYTHING',
+        {'font-size':10.5,fill:A?BLUE:RED,'letter-spacing':1.6});
+      var X0=190, CW=58, Y=56, H=38;
+      var before = A ? '10100111' : '00000101';
+      var after  = A ? '01010011' : '10100000';
+      function row(y,lab,s,col,soft,markIdx,markCol){
+        txt(g,X0-18,y+25,lab,{'font-size':13,fill:col,'text-anchor':'end','font-weight':700});
+        s.split('').forEach(function(c,k){
+          var m = markIdx!==null && markIdx!==undefined && k<markIdx;
+          cel(g,X0+k*CW+4,y,CW-8,H,c,{fill:m?'#fbeeed':soft,stroke:m?markCol:col,
+            col:m?markCol:INK,fs:14});
+        });
+      }
+      row(Y,'result',before,AMB,'#fdf3e3', A?null:5, RED);
+      if(!A) txt(g,X0+8*CW+18,Y+25,'five leading zeros, counted by a tree',{'font-size':12.5,fill:RED,'font-weight':700});
+      if(A)  txt(g,X0+8*CW+18,Y+25,'two bits before the point, which is not allowed',{'font-size':12.5,fill:RED,'font-weight':700});
+
+      arw(g,X0+4*CW,Y+H+8,X0+4*CW,Y+H+40,A?BLUE:RED,2.6);
+      txt(g,X0+4*CW+16,Y+H+32,A?'shift right 1, exponent + 1':'shift left 5, exponent − 5',
+        {'font-size':13.5,fill:A?BLUE:RED,'font-weight':700});
+
+      var Y2=Y+H+52;
+      row(Y2,'normalised',after,GRN,'#e6f1ee',null);
+      if(!A){
+        for(var z=3;z<8;z++) cel(g,X0+z*CW+4,Y2,CW-8,H,'0',{fill:'#faf9f6',stroke:'#dedbd3',col:'#b2b6bb',fs:14});
+        txt(g,X0+8*CW+18,Y2+25,'and five zeros shifted in from the bottom',{'font-size':12.5,fill:RED,'font-weight':700});
+      }
+
+      var Y3=Y2+H+30;
+      el('rect',{x:30,y:Y3,width:1096,height:A?54:76,rx:10,
+        fill:A?'#eaeef7':'#fbeeed',stroke:A?BLUE:RED,'stroke-width':1.8},g);
+      if(A){
+        txt(g,52,Y3+23,'one place, one direction, known in advance. a single multiplexer would do it.',
+          {'font-size':13.5,fill:'#1b3270','font-weight':700});
+        txt(g,52,Y3+43,'the barrel shifter is here for the other case, and the other case is the expensive one.',
+          {'font-size':12.5,fill:'#1b3270'});
+      } else {
+        txt(g,52,Y3+23,'this is catastrophic cancellation from Class 12, and you are now watching the mechanism.',
+          {'font-size':13.5,fill:'#8a2420','font-weight':700});
+        txt(g,52,Y3+43,'the zeros arriving at the bottom carry no information. the result looks like it has twenty four bits',
+          {'font-size':12.5,fill:'#8a2420'});
+        txt(g,52,Y3+63,'of precision and it has nineteen. the significant digits were destroyed by the subtraction, not by the shift.',
+          {'font-size':12.5,fill:'#8a2420'});
+      }
+    }
+    document.getElementById('nmA').onclick=function(){ mode='A'; mark(); render(); };
+    document.getElementById('nmB').onclick=function(){ mode='B'; mark(); render(); };
+    function mark(){
+      document.getElementById('nmA').classList.toggle('hot',mode==='A');
+      document.getElementById('nmB').classList.toggle('hot',mode==='B');
+    }
+    mark(); render();
+  })();
+
+  /* ================= the ledger ================= */
+  (function(){
+    var g=document.getElementById('figLedger'); if(!g) return;
+    txt(g,30,22,'GATE DELAYS, USING THE UNITS THIS COURSE BUILT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var addS=[['compare exponents',6],['align, barrel shifter',10],['add significands',12],
+              ['count leading zeros',10],['normalise, barrel shifter',10],['round',12]];
+    var mulS=[['exponents, in parallel',12],['24 × 24 Booth and Wallace',26],['normalise, one mux',2],['round',12]];
+    var U=8.5, Y=52, RH=30;
+    function col(x,title,arr,tone,total,note,par){
+      txt(g,x,Y-8,title,{'font-size':15,fill:tone,'font-weight':700});
+      arr.forEach(function(s,k){
+        var y=Y+k*RH;
+        txt(g,x,y+19,s[0],{'font-size':12.5,fill:'#4b5057'});
+        el('rect',{x:x+228,y:y+6,width:s[1]*U,height:17,rx:4,fill:tone==='#6b3fa0'?'#efe9f7':'#fdf3e3',
+          stroke:tone,'stroke-width':1.4},g);
+        txt(g,x+236+s[1]*U,y+19,s[1],{'font-size':12,fill:tone,'font-weight':700});
+      });
+      var yt=Y+arr.length*RH+6;
+      pth(g,'M'+x+' '+yt+' L'+(x+470)+' '+yt,{stroke:GREY,'stroke-width':1.4});
+      txt(g,x,yt+24,'total',{'font-size':13,fill:INK,'font-weight':700});
+      txt(g,x+228,yt+24,total+' gate delays',{'font-size':15,fill:tone,'font-weight':700});
+      txt(g,x+386,yt+24,'= '+(total*20)+' ps',{'font-size':13.5,fill:INK,'font-weight':700});
+      txt(g,x,yt+46,note,{'font-size':12.5,fill:'#8b9096'});
+      txt(g,x,yt+66,par,{'font-size':12.5,fill:'#8b9096'});
+    }
+    col(30,'FLOATING POINT ADD',addS,AMB,60,'every stage waits for the one before it.',
+      'barrel shifter used twice.');
+    col(620,'FLOATING POINT MULTIPLY',mulS,VIO,40,'the exponent path finishes long before the tree does.',
+      'barrel shifter used zero times.');
+    var YB=Y+6*RH+96;
+    el('rect',{x:30,y:YB,width:1096,height:48,rx:10,fill:'#eaeef7',stroke:BLUE,'stroke-width':1.8},g);
+    txt(g,52,YB+21,'1200 picoseconds against 800. at three gigahertz a cycle is 333 ps, so neither fits in one.',
+      {'font-size':13.5,fill:'#1b3270','font-weight':700});
+    txt(g,52,YB+39,'both are pipelined across several cycles in a real processor, which is next year’s problem and not today’s.',
+      {'font-size':12.5,fill:'#1b3270'});
+  })();
+
+  /* ================= guard, round, sticky ================= */
+  (function(){
+    var g=document.getElementById('figGRS'); if(!g) return;
+    txt(g,30,22,'WHAT THE ADDER PRODUCED, AND WHAT FITS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=40, CW=27, Y=62, H=40, KEEP=24;
+    for(var k=0;k<KEEP;k++)
+      cel(g,X0+k*CW,Y,CW-3,H,(k===0?'1':(k%3===0?'0':'1')),{fill:'#e6f1ee',stroke:GRN,fs:11});
+    txt(g,X0+KEEP*CW/2,Y-14,'THE TWENTY FOUR BITS YOU KEEP',
+      {'font-size':10.5,fill:GRN,'text-anchor':'middle','letter-spacing':1.4});
+    var XC=X0+KEEP*CW+6;
+    el('line',{x1:XC-5,y1:Y-28,x2:XC-5,y2:Y+H+30,stroke:RED,'stroke-width':2.6},g);
+    txt(g,XC+4,Y-14,'THE CUT',{'font-size':10.5,fill:RED,'letter-spacing':1.4});
+    var GW=38;
+    var names=[['G',AMB,'#fdf3e3'],['R',AMB,'#fdf3e3'],['S',VIO,'#efe9f7']];
+    names.forEach(function(n,k){
+      cel(g,XC+k*GW+4,Y,GW-4,H,'?',{fill:n[2],stroke:n[1],col:n[1],fs:13.5});
+      txt(g,XC+k*GW+4+(GW-4)/2,Y+H+18,n[0],{'font-size':13,fill:n[1],'text-anchor':'middle','font-weight':700});
+    });
+    var XT=XC+3*GW+18;
+    el('rect',{x:XT,y:Y,width:1120-XT,height:H,rx:6,fill:'#faf9f6',stroke:'#dedbd3',
+      'stroke-width':1.6,'stroke-dasharray':'6 4'},g);
+    txt(g,(XT+1120)/2,Y+25,'everything else, all of it',
+      {'font-size':12.5,fill:'#b2b6bb','text-anchor':'middle'});
+    /* the OR funnel into S */
+    var SX=XC+2*GW+4+(GW-4)/2;
+    pth(g,'M'+((XT+1120)/2)+' '+(Y+H+6)+' L'+((XT+1120)/2)+' '+(Y+H+30)+' L'+SX+' '+(Y+H+30),
+      {stroke:VIO,'stroke-width':2.2});
+    arw(g,SX,Y+H+30,SX,Y+H+44,VIO,2.2);
+    txt(g,(XT+1120)/2,Y+H+48,'OR of all of it, into one bit',
+      {'font-size':12,fill:VIO,'font-weight':700,'text-anchor':'middle'});
+    txt(g,X0,Y+H+44,'G is the guard bit   ·   R is the round bit   ·   S is the sticky bit',
+      {'font-size':12,fill:'#8b9096'});
+
+    var YB=Y+H+66;
+    el('rect',{x:30,y:YB,width:1096,height:72,rx:10,fill:'#efe9f7',stroke:VIO,'stroke-width':1.8},g);
+    txt(g,52,YB+24,'sticky is one bit standing in for an unbounded number of bits, and it is enough.',
+      {'font-size':14,fill:'#4a2b70','font-weight':700});
+    txt(g,52,YB+45,'to decide a rounding you never need to know what is down there. you need to know whether anything is.',
+      {'font-size':12.5,fill:'#4a2b70'});
+    txt(g,52,YB+64,'once a one appears beyond the round bit it can never be cancelled by anything further down, so it sticks.',
+      {'font-size':12.5,fill:'#4a2b70'});
+  })();
+
+  /* ================= sticky decides ================= */
+  (function(){
+    var g=document.getElementById('figSticky'); if(!g) return;
+    txt(g,30,22,'TWO ADDITIONS TO 1.0, VERIFIED IN FLOAT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=270, Y=52, RH=92;
+    function case_(y,blab,bval,G,R,S,res,ok,note){
+      el('rect',{x:30,y:y,width:1096,height:78,rx:10,fill:'#fff',stroke:ok?GRN:RED,'stroke-width':1.8},g);
+      txt(g,52,y+28,blab,{'font-size':14,fill:INK,'font-weight':700});
+      txt(g,52,y+50,bval,{'font-size':12.5,fill:'#8b9096'});
+      var bx=430;
+      [['G',G],['R',R],['S',S]].forEach(function(p,k){
+        var on=p[1]==='1';
+        cel(g,bx+k*62,y+18,46,42,p[1],{fill:on?(k===2?'#efe9f7':'#fdf3e3'):'#faf9f6',
+          stroke:on?(k===2?VIO:AMB):'#dedbd3',col:on?INK:'#b2b6bb',fs:16});
+        txt(g,bx+k*62+23,y+74,p[0],{'font-size':11,fill:on?(k===2?VIO:AMB):'#b2b6bb',
+          'text-anchor':'middle','font-weight':700});
+      });
+      arw(g,bx+190,y+39,bx+226,y+39,ok?GRN:RED,2.4);
+      txt(g,bx+238,y+34,res,{'font-size':15,fill:ok?GRN:RED,'font-weight':700});
+      txt(g,bx+238,y+56,note,{'font-size':12,fill:'#8b9096'});
+    }
+    case_(Y,'1.0  +  2⁻²⁴','exactly half an ulp. the tie case.','1','0','0',
+      '1.0',true,'tie goes to even, and 1.0 has an even last bit');
+    case_(Y+100,'1.0  +  (2⁻²⁴ + 2⁻⁴⁰)','identical for forty bits, then one more one.','1','0','1',
+      '1 + 2⁻²³',false,'sticky is set, so the remainder exceeds half, and it rounds up');
+    var YB=Y+206;
+    el('rect',{x:30,y:YB,width:1096,height:52,rx:10,fill:'#fbeeed',stroke:RED,'stroke-width':1.8},g);
+    txt(g,52,YB+22,'guard and round are identical in both rows. the only difference is forty bits below the point.',
+      {'font-size':13.5,fill:'#8a2420','font-weight':700});
+    txt(g,52,YB+42,'drop the sticky bit and the second row rounds down, wrong by half an ulp, in a direction that never varies.',
+      {'font-size':12.5,fill:'#8a2420'});
+  })();
+
+  /* ================= the four cases ================= */
+  (function(){
+    var g=document.getElementById('figCases'); if(!g) return;
+    txt(g,30,22,'ONE INTERVAL BETWEEN TWO REPRESENTABLE NUMBERS',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=120, W=900, Y=120;
+    el('line',{x1:X0,y1:Y,x2:X0+W,y2:Y,stroke:GREY,'stroke-width':2.4},g);
+    [[0,'N','last bit 0, even'],[1,'N + 1 ulp','last bit 1, odd']].forEach(function(e){
+      var x=X0+e[0]*W;
+      el('circle',{cx:x,cy:Y,r:7,fill:INK},g);
+      txt(g,x,Y-22,e[1],{'font-size':14,fill:INK,'text-anchor':'middle','font-weight':700});
+      txt(g,x,Y-42,e[2],{'font-size':11.5,fill:'#8b9096','text-anchor':'middle'});
+    });
+    /* the half point */
+    var xm=X0+W/2;
+    el('line',{x1:xm,y1:Y-14,x2:xm,y2:Y+14,stroke:RED,'stroke-width':2.4,'stroke-dasharray':'4 3'},g);
+    txt(g,xm,Y+34,'exactly half',{'font-size':12.5,fill:RED,'text-anchor':'middle','font-weight':700});
+
+    function mark(frac,lab,bits,dir,col,ay){
+      var x=X0+frac*W;
+      el('circle',{cx:x,cy:Y,r:5,fill:col},g);
+      txt(g,x,Y+56,lab,{'font-size':12,fill:col,'text-anchor':'middle','font-weight':700});
+      txt(g,x,Y+73,bits,{'font-size':11.5,fill:'#8b9096','text-anchor':'middle'});
+      var tx = dir<0 ? X0 : X0+W;
+      arw(g,x,ay,tx,ay,col,2);
+    }
+    mark(0.22,'below half','guard 0',-1,GRN,Y+88);
+    mark(0.74,'above half','guard 1, round or sticky 1',1,AMB,Y+88);
+    mark(0.5 ,'the tie','guard 1, round 0, sticky 0',-1,RED,Y+104);
+
+    var YB=236;
+    el('rect',{x:30,y:YB,width:540,height:70,rx:10,fill:'#fff',stroke:GREY,'stroke-width':1.6},g);
+    txt(g,52,YB+24,'guard 0                     round down',{'font-size':13,fill:GRN,'font-weight':700});
+    txt(g,52,YB+46,'guard 1, round or sticky 1  round up',{'font-size':13,fill:AMB,'font-weight':700});
+    el('rect',{x:590,y:YB,width:536,height:70,rx:10,fill:'#fbeeed',stroke:RED,'stroke-width':1.8},g);
+    txt(g,612,YB+24,'guard 1, round 0, sticky 0  the tie',{'font-size':13,fill:'#8a2420','font-weight':700});
+    txt(g,612,YB+46,'go to whichever neighbour leaves the last kept bit even',{'font-size':12.5,fill:'#8a2420'});
+  })();
+
+  /* ================= ties to even vs ties away ================= */
+  (function(){
+    var g=document.getElementById('figTies'); if(!g) return;
+    /* verified traces: 10,000 exact ties, error in ulps, sampled every 250 */
+    var even=[0,4,-4,-1,-2,8,7,16,25,22,29,25,22,28,32,30,38,36,33,45,38,35,32,23,29,34,11,8,11,18,9,9,15,20,31,34,41,30,35,28];
+    var MAXN=40;
+    function render(t){
+      while(g.firstChild) g.removeChild(g.firstChild);
+      txt(g,30,22,'TEN THOUSAND ADDITIONS, EVERY ONE OF THEM AN EXACT TIE',
+        {'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+      var X0=110, W=900, Y0=48, H=180, YZ=Y0+H*0.78;
+      var SC=H*0.72/5200;   /* ulps to pixels */
+      /* axes */
+      el('line',{x1:X0,y1:Y0,x2:X0,y2:Y0+H,stroke:GREY,'stroke-width':1.8},g);
+      el('line',{x1:X0,y1:YZ,x2:X0+W,y2:YZ,stroke:GREY,'stroke-width':1.8},g);
+      txt(g,X0-12,YZ+5,'0',{'font-size':12,fill:'#8b9096','text-anchor':'end'});
+      [1000,2000,3000,4000,5000].forEach(function(v){
+        var y=YZ-v*SC;
+        el('line',{x1:X0,y1:y,x2:X0+W,y2:y,stroke:'#f0eee8','stroke-width':1},g);
+        txt(g,X0-12,y+5,String(v),{'font-size':11,fill:'#b2b6bb','text-anchor':'end'});
+      });
+      txt(g,30,Y0-6,'error in ulps',{'font-size':12,fill:'#8b9096'});
+      txt(g,X0+W,YZ+40,'10,000 ties',{'font-size':12,fill:'#8b9096','text-anchor':'end'});
+
+      var n=Math.max(1,Math.round(MAXN*t/8));
+      /* ties away: exactly N/2, a straight line */
+      var dA='', dE='';
+      for(var k=0;k<n;k++){
+        var x=X0+(k+1)/MAXN*W;
+        var ya=YZ-((k+1)*125)*SC;
+        var ye=YZ-even[k]*SC;
+        dA+=(k?' L':'M')+x+' '+ya;
+        dE+=(k?' L':'M')+x+' '+ye;
+      }
+      pth(g,dA,{stroke:RED,'stroke-width':3.2});
+      pth(g,dE,{stroke:GRN,'stroke-width':3.2});
+      if(n>0){
+        var xa=X0+n/MAXN*W;
+        el('circle',{cx:xa,cy:YZ-(n*125)*SC,r:5,fill:RED},g);
+        el('circle',{cx:xa,cy:YZ-even[n-1]*SC,r:5,fill:GRN},g);
+      }
+      txt(g,X0+W-6,YZ-5000*SC-12,'ties away from zero',{'font-size':13,fill:RED,'text-anchor':'end','font-weight':700});
+      txt(g,X0+W-18,YZ-16,'ties to even',{'font-size':13,fill:GRN,'text-anchor':'end','font-weight':700});
+
+      var YB=Y0+H+34;
+      el('rect',{x:30,y:YB,width:540,height:60,rx:10,fill:'#fbeeed',stroke:RED,'stroke-width':1.8},g);
+      txt(g,52,YB+24,'ties away:  +5000 ulp',{'font-size':14,fill:'#8a2420','font-weight':700});
+      txt(g,52,YB+45,'exactly half of ten thousand, because every tie goes the same way',{'font-size':12.5,fill:'#8a2420'});
+      el('rect',{x:590,y:YB,width:536,height:60,rx:10,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+      txt(g,612,YB+24,'ties to even:  +28 ulp',{'font-size':14,fill:'#0f5a4c','font-weight':700});
+      txt(g,612,YB+45,'the ties go both ways, so they cancel. 0.56 per cent of the bias',{'font-size':12.5,fill:'#0f5a4c'});
+    }
+    ticker('tiRun','tiStep','tiReset',8,render);
+  })();
+
+  /* ================= denormals ================= */
+  (function(){
+    var g=document.getElementById('figDenorm'); if(!g) return;
+    txt(g,30,22,'THE FAST PATH, AND THE DOOR OUT OF IT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var Y=70, BH=46, BW=186, X0=40, GAP=22;
+    var names=['align','operate','normalise','round'];
+    names.forEach(function(nm,k){
+      var x=X0+k*(BW+GAP);
+      el('rect',{x:x,y:Y,width:BW,height:BH,rx:9,fill:'#e6f1ee',stroke:GRN,'stroke-width':2},g);
+      txt(g,x+BW/2,Y+28,nm,{'font-size':14,fill:'#0f5a4c','text-anchor':'middle','font-weight':700});
+      if(k<3) arw(g,x+BW,Y+BH/2,x+BW+GAP,Y+BH/2,GRN,2.4);
+    });
+    arw(g,X0+4*(BW+GAP)-GAP,Y+BH/2,X0+4*(BW+GAP)+30,Y+BH/2,GRN,2.4);
+    txt(g,X0+4*(BW+GAP)+40,Y+BH/2+5,'result, a few cycles',{'font-size':12.5,fill:GRN,'font-weight':700});
+
+    /* the detector, above the row */
+    var DX=X0+2*(BW+GAP)+BW/2;
+    el('path',{d:'M'+DX+' '+(Y-52)+' L'+(DX+50)+' '+(Y-30)+' L'+DX+' '+(Y-8)+' L'+(DX-50)+' '+(Y-30)+' z',
+      fill:'#fdf3e3',stroke:AMB,'stroke-width':2},g);
+    txt(g,DX,Y-26,'subnormal?',{'font-size':11.5,fill:AMB,'text-anchor':'middle','font-weight':700});
+    arw(g,DX,Y-8,DX,Y-1,AMB,2);
+
+    var MY=Y+BH+58;
+    arw(g,DX,Y+BH,DX,MY-4,RED,2.6);
+    txt(g,DX+12,MY-18,'yes',{'font-size':12.5,fill:RED,'font-weight':700});
+    el('rect',{x:DX-250,y:MY,width:500,height:52,rx:10,fill:'#fbeeed',stroke:RED,'stroke-width':2},g);
+    txt(g,DX,MY+22,'trap into microcode',{'font-size':14.5,fill:'#8a2420','text-anchor':'middle','font-weight':700});
+    txt(g,DX,MY+41,'the processor runs a sequence of ordinary operations on itself',
+      {'font-size':12,fill:'#8a2420','text-anchor':'middle'});
+    pth(g,'M'+(DX+250)+' '+(MY+26)+' L'+(DX+330)+' '+(MY+26)+' L'+(DX+330)+' '+(Y+BH/2),
+      {stroke:RED,'stroke-width':2.4,'stroke-dasharray':'6 4'});
+    arw(g,DX+330,Y+BH/2+14,DX+330,Y+BH/2,RED,2.4);
+    txt(g,DX+340,MY+30,'tens to hundreds of cycles',{'font-size':12.5,fill:RED,'font-weight':700});
+
+    var YB=MY+76;
+    el('rect',{x:30,y:YB,width:1096,height:50,rx:10,fill:'#fff',stroke:GREY,'stroke-width':1.6},g);
+    txt(g,52,YB+22,'a subnormal has no implicit leading one, so normalise cannot assume where the significand starts.',
+      {'font-size':13.5,fill:INK,'font-weight':700});
+    txt(g,52,YB+41,'building a second full data path for a rare case is not worth the silicon, so the rare case leaves the hardware.',
+      {'font-size':12.5,fill:'#4b5057'});
+  })();
+
+  /* ================= why the flags exist ================= */
+  (function(){
+    var g=document.getElementById('figFlags'); if(!g) return;
+    txt(g,30,22,'THE SAME LOOP, TWICE',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=250, Y=56, BH=48, U=8.1;
+    function bar(y,lab,n,col,soft,note){
+      var w=Math.max(n*U,6);
+      txt(g,X0-18,y+30,lab,{'font-size':13.5,fill:col,'text-anchor':'end','font-weight':700});
+      el('rect',{x:X0,y:y,width:w,height:BH,rx:8,fill:soft,stroke:col,'stroke-width':2},g);
+      txt(g,X0+w+14,y+30,n+'×',{'font-size':16,fill:col,'font-weight':700});
+      if(note) txt(g,X0+w+70,y+30,note,{'font-size':12.5,fill:'#8b9096'});
+    }
+    bar(Y,'normal operands',1,GRN,'#e6f1ee','the fast path, a few cycles each');
+    bar(Y+BH+22,'subnormal operands',100,RED,'#fbeeed','');
+    txt(g,X0+100*U-14,Y+2*BH+40,'every one of them trapping',
+      {'font-size':12.5,fill:'#8a2420','text-anchor':'end','font-weight':700});
+
+    var Y2=Y+2*BH+54;
+    el('rect',{x:30,y:Y2,width:540,height:84,rx:10,fill:'#fff',stroke:GREY,'stroke-width':1.6},g);
+    txt(g,52,Y2+24,'two control bits in the floating point unit',{'font-size':13.5,fill:INK,'font-weight':700});
+    txt(g,52,Y2+46,'flush to zero      a subnormal result becomes zero',{'font-size':12.5,fill:'#4b5057'});
+    txt(g,52,Y2+66,'denormals are zero a subnormal input becomes zero',{'font-size':12.5,fill:'#4b5057'});
+    el('rect',{x:590,y:Y2,width:536,height:84,rx:10,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+    txt(g,612,Y2+24,'who turns them on, and why it is defensible',{'font-size':13.5,fill:'#0f5a4c','font-weight':700});
+    txt(g,612,Y2+46,'audio and graphics, where a number that small is inaudible',{'font-size':12.5,fill:'#0f5a4c'});
+    txt(g,612,Y2+66,'and invisible, while a hundred fold stall is neither.',{'font-size':12.5,fill:'#0f5a4c'});
+  })();
+
+  /* ================= fused multiply add ================= */
+  (function(){
+    var g=document.getElementById('figFMA'); if(!g) return;
+    txt(g,30,22,'THE COMPRESSOR TREE FROM CLASS 25, WITH ONE MORE ROW',
+      {'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=46, Y=48, RW=380, RH=17, GAP=5;
+    for(var k=0;k<5;k++){
+      el('rect',{x:X0+k*12,y:Y+k*(RH+GAP),width:RW,height:RH,rx:4,fill:'#efe9f7',stroke:VIO,'stroke-width':1.5},g);
+    }
+    var YC=Y+5*(RH+GAP)+4;
+    el('rect',{x:X0,y:YC,width:RW+48,height:RH,rx:4,fill:'#fdf3e3',stroke:AMB,'stroke-width':2.2},g);
+    pth(g,'M'+X0+' '+(YC+RH+8)+' L'+(X0+RW+48)+' '+(YC+RH+8),{stroke:GREY,'stroke-width':1.6});
+    el('rect',{x:X0,y:YC+RH+18,width:13,height:13,rx:3,fill:'#efe9f7',stroke:VIO,'stroke-width':1.5},g);
+    txt(g,X0+20,YC+RH+29,'partial products of a × b',{'font-size':12,fill:VIO,'font-weight':700});
+    el('rect',{x:X0,y:YC+RH+38,width:13,height:13,rx:3,fill:'#fdf3e3',stroke:AMB,'stroke-width':1.8},g);
+    txt(g,X0+20,YC+RH+49,'c, the addend, at full width',{'font-size':12,fill:AMB,'font-weight':700});
+
+    /* unfused vs fused paths */
+    var PX=640, PY=52, BW=116, BH=38;
+    function path_(y,lab,boxes,rounds,col,soft){
+      txt(g,PX,y-10,lab,{'font-size':12.5,fill:col,'font-weight':700,'letter-spacing':1});
+      boxes.forEach(function(b,k){
+        var x=PX+k*(BW+34);
+        el('rect',{x:x,y:y,width:BW,height:BH,rx:8,fill:soft,stroke:col,'stroke-width':1.8},g);
+        txt(g,x+BW/2,y+24,b,{'font-size':12.5,fill:INK,'text-anchor':'middle','font-weight':700});
+        if(k<boxes.length-1) arw(g,x+BW,y+BH/2,x+BW+34,y+BH/2,col,2.2);
+      });
+      rounds.forEach(function(r){
+        var x=PX+r*(BW+34)+BW+17;
+        el('circle',{cx:x,cy:y+BH/2,r:10,fill:'#fff',stroke:RED,'stroke-width':2.2},g);
+        txt(g,x,y+BH/2+4,'R',{'font-size':11.5,fill:RED,'text-anchor':'middle','font-weight':700});
+      });
+    }
+    path_(PY,'UNFUSED, TWO ROUNDINGS',['a × b','+ c'],[0,1],RED,'#fbeeed');
+    txt(g,PX,PY+60,'two trips, two roundings, two losses',{'font-size':12,fill:RED});
+    path_(PY+112,'FUSED, ONE ROUNDING',['a × b + c'],[0],GRN,'#e6f1ee');
+    txt(g,PX,PY+172,'one trip, one rounding, one loss',{'font-size':12,fill:GRN,'font-weight':700});
+
+    var YB=248;
+    el('rect',{x:30,y:YB,width:1096,height:72,rx:10,fill:'#e6f1ee',stroke:GRN,'stroke-width':1.8},g);
+    txt(g,52,YB+24,'the tree was already built to absorb rows. c is just another row, so the add costs essentially nothing.',
+      {'font-size':13.5,fill:'#0f5a4c','font-weight':700});
+    txt(g,52,YB+45,'faster, because one pass through the hardware instead of two.',{'font-size':12.5,fill:'#0f5a4c'});
+    txt(g,52,YB+64,'more accurate, because the full width product survives all the way to the addition instead of being squeezed first.',
+      {'font-size':12.5,fill:'#0f5a4c'});
+  })();
+
+  /* ================= fused gives a different answer ================= */
+  (function(){
+    var g=document.getElementById('figFMAbits'); if(!g) return;
+    txt(g,30,22,'a = b = 1 + 2⁻¹²,  c = −1,  IN FLOAT',{'font-size':10.5,fill:BLUE,'letter-spacing':1.6});
+    var X0=190, CW=21, Y=56, H=34;
+    function strip(y,lab,s,col,soft,hot){
+      txt(g,X0-16,y+22,lab,{'font-size':13,fill:col,'text-anchor':'end','font-weight':700});
+      for(var k=0;k<32;k++){
+        var isHot = hot!==null && hot!==undefined && k===hot;
+        cel(g,X0+k*CW,y,CW-2.2,H,s[k],
+          {fill:isHot?'#fbeeed':soft,stroke:isHot?RED:col,col:isHot?RED:(s[k]==='1'?INK:'#b2b6bb'),fs:10});
+      }
+    }
+    strip(Y,'a','0'+'01111111'+'00000000000100000000000',BLUE,'#eaeef7',null);
+    strip(Y+H+10,'a × a, rounded','0'+'01111111'+'00000000001000000000000',VIO,'#efe9f7',null);
+    txt(g,X0+32*CW+14,Y+H+32,'a tie, rounded to the even side',{'font-size':11.5,fill:VIO});
+
+    var Y2=Y+2*H+34;
+    strip(Y2,'unfused  (a×a) + c','0'+'01110100'+'00000000000000000000000',RED,'#fbeeed',null);
+    strip(Y2+H+10,'fused    a×a + c','0'+'01110100'+'00000000000010000000000',GRN,'#e6f1ee',21);
+    el('rect',{x:X0+21*CW-5,y:Y2-6,width:CW+7,height:2*H+22,rx:5,fill:'none',stroke:RED,
+      'stroke-width':2.2,'stroke-dasharray':'5 4'},g);
+    txt(g,X0+32*CW+14,Y2+H+32,'one bit apart, and fused is correct',
+      {'font-size':11.5,fill:GRN,'font-weight':700});
+
+    var YB=Y2+2*H+34;
+    el('rect',{x:30,y:YB,width:1096,height:48,rx:10,fill:'#fbeeed',stroke:RED,'stroke-width':1.8},g);
+    txt(g,52,YB+21,'0x1.0p−11 against 0x1.0008p−11. same three inputs, same hardware family, two answers.',
+      {'font-size':13.5,fill:'#8a2420','font-weight':700});
+    txt(g,52,YB+39,'a compiler that fuses without being asked has changed what your program prints.',
+      {'font-size':12.5,fill:'#8a2420'});
+  })();
+
+  onSlide=function(idx){};
+  paint();
+})();
+</script>
+</body>
+</html>
