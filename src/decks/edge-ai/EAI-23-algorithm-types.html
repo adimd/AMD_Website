@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 23 · Algorithm Types</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 23 */
+pre{font-size:13.5px;line-height:1.36}
+.num{font-family:var(--mono);font-size:18px}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.qsp,.dbp,.cmpp{padding:16px 22px}
+.qsbtns button{text-align:left;height:44px;font-size:17px;margin-bottom:6px}
+.qsbtns button.on,.dbm button.sel,.cmpb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.qsinfo .qt{font-family:var(--serif);font-size:40px;font-weight:700;color:var(--ok);margin:6px 0}
+.qsinfo p{font-size:21px}
+.qsinfo .qo{font-family:var(--mono);font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.dbstats,.anstats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+.anstats{grid-template-columns:repeat(4,1fr)}
+.dbstats div,.anstats div{border-top:1px solid var(--rule);padding-top:6px;font-size:16px;color:var(--soft)}
+.dbstats b,.anstats b{display:block;font-family:var(--mono);font-size:24px;color:var(--ink)}
+.dbm{flex-wrap:wrap}
+.cmpinfo{font-size:20px;margin-top:4px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 23</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 23 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 23 · unit III · AI algorithms: types by functionality and by implementation</div>
+    <h1>What are you asking?<br>Then: how will you answer it?</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Two separate choices hide inside "which algorithm". First, what kind of answer the product needs. Second, what machinery produces it: a rule, a tree, a network, or a mix.</p>
+  </div>
+  <div class="cue">No board today. Theory runs to slide 13; the Colab exercise is one block at the end (slides 14 to 17). Students need a laptop with a Google account, one per pair is enough.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>The fall detector fires when the phone is dropped on the bed. What do you fuse?</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">barometer</div><div class="ut">did the person's height change?</div><div class="ud">A fall drops the wearer about a metre; a phone landing on a bed barely moves.</div></div>
+      <div class="ucard frag"><div class="un">after the impact</div><div class="ut">stillness and orientation</div><div class="ud">A fallen person lies still and flat for seconds; a phone on a bed is picked up again.</div></div>
+      <div class="ucard frag"><div class="un">which level</div><div class="ut">feature or late fusion</div><div class="ud">Add the new numbers as features, or let a second check confirm the first detector's alarm.</div></div>
+    </div>
+  </div>
+  <div class="cue">Two minutes. Note that "confirm with a second check" is already an algorithm choice: a cascade. Today names those choices.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="One sensor, four questions" data-act="the hook">
+  <div>
+    <div class="kicker">the hook · the same accelerometer on a machine</div>
+    <h2>One sensor. Four questions. Four completely different kinds of algorithm.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ucard frag"><div class="un">"is it on or off?"</div><div class="ut">classification</div><div class="ud">answer: a label</div></div>
+      <div class="ucard frag"><div class="un">"how fast is it spinning?"</div><div class="ut">regression</div><div class="ud">answer: a number</div></div>
+      <div class="ucard frag"><div class="un">"is this vibration normal?"</div><div class="ut">anomaly detection</div><div class="ud">answer: a score; no labelled failures needed</div></div>
+      <div class="ucard frag"><div class="un">"when will it need service?"</div><div class="ut">forecasting</div><div class="ud">answer: future values</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:74ch">Choosing the question comes before choosing the model. Get it wrong and the best network in the world answers the wrong thing.</p>
+  </div>
+  <div class="cue">Ask before revealing: which of these four needs examples of failures to train? Only classification, if failure is one of its labels. Anomaly detection learns "normal" and flags anything else, which is why it is so popular in industry: failures are rare and expensive to collect.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Types by functionality" data-act="by functionality">
+  <div>
+    <h2>Nine kinds of answer. Every edge AI product needs one or more.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(3,1fr);gap:12px"><div class="ntile frag"><div class="nb" style="font-size:24px">classification</div><div class="nk">a label</div><div class="ns">door knock or doorbell?</div></div><div class="ntile frag"><div class="nb" style="font-size:24px">regression</div><div class="nk">a number</div><div class="ns">how full is the tank?</div></div><div class="ntile frag"><div class="nb" style="font-size:24px">object detection</div><div class="nk">boxes + labels</div><div class="ns">where are the people?</div></div><div class="ntile frag"><div class="nb" style="font-size:24px">segmentation</div><div class="nk">a label per pixel</div><div class="ns">which pixels are road?</div></div><div class="ntile frag"><div class="nb" style="font-size:24px">anomaly detection</div><div class="nk">a score</div><div class="ns">is this unusual?</div></div><div class="ntile frag"><div class="nb" style="font-size:24px">clustering</div><div class="nk">a group number</div><div class="ns">which machines behave alike?</div></div><div class="ntile frag"><div class="nb" style="font-size:24px">dimensionality reduction</div><div class="nk">fewer numbers</div><div class="ns">40 bands → 8 numbers</div></div><div class="ntile frag"><div class="nb" style="font-size:24px">transformation</div><div class="nk">a new signal</div><div class="ns">remove the fan noise</div></div><div class="ntile frag"><div class="nb" style="font-size:24px">forecasting</div><div class="nk">future values</div><div class="ns">temperature in an hour</div></div></div>
+  </div>
+  <div class="cue">Keyword spotting is classification run on a stream: one label per window, many windows a second (Class 20). Clustering and dimensionality reduction are often used during development (to explore data, to shrink features) rather than shipped as the product's answer.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="What are you asking?" data-act="by functionality">
+  <div>
+    <div class="kicker">try it live · vote first, then click</div>
+    <h2>Name the type of each question.</h2>
+    <div class="panel qsp split" style="grid-template-columns:1fr 1fr;gap:26px;align-items:start">
+      <div class="cb qsbtns" style="flex-direction:column;align-items:stretch"></div>
+      <div class="qsinfo"></div>
+    </div>
+  </div>
+  <div class="cue">Run it as a class vote: read a question, count hands for two or three types, then click. The last one (the wake word) is the course project's first model.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Classify, detect, segment" data-act="by functionality">
+  <div>
+    <h2>The same picture, three questions, three costs.</h2>
+    <svg viewBox="0 0 1340 340" width="100%" height="340"><rect x="0" y="40" width="400" height="230" rx="10" fill="#eef0ea" stroke="#c6c3ba"/><rect x="0" y="200" width="400" height="70" fill="#d9dcd2"/><circle cx="90" cy="120" r="11" fill="#4b5057"/><rect x="78" y="134" width="24" height="44" rx="8" fill="#4b5057"/><circle cx="170" cy="130" r="11" fill="#4b5057"/><rect x="158" y="144" width="24" height="44" rx="8" fill="#4b5057"/><circle cx="300" cy="110" r="11" fill="#4b5057"/><rect x="288" y="124" width="24" height="44" rx="8" fill="#4b5057"/><text x="200" y="300" font-size="17" text-anchor="middle" font-weight="700">classification</text><text x="200" y="324" font-size="15" text-anchor="middle" fill="#4b5057">"people: yes"</text><g class="frag"><rect x="470" y="40" width="400" height="230" rx="10" fill="#eef0ea" stroke="#c6c3ba"/><rect x="470" y="200" width="400" height="70" fill="#d9dcd2"/><circle cx="560" cy="120" r="11" fill="#4b5057"/><rect x="548" y="134" width="24" height="44" rx="8" fill="#4b5057"/><rect x="540" y="102" width="40" height="84" fill="none" stroke="#a8231f" stroke-width="3"/><text x="540" y="96" font-size="13" fill="#a8231f" font-weight="700">person</text><circle cx="640" cy="130" r="11" fill="#4b5057"/><rect x="628" y="144" width="24" height="44" rx="8" fill="#4b5057"/><rect x="620" y="112" width="40" height="84" fill="none" stroke="#a8231f" stroke-width="3"/><text x="620" y="106" font-size="13" fill="#a8231f" font-weight="700">person</text><circle cx="770" cy="110" r="11" fill="#4b5057"/><rect x="758" y="124" width="24" height="44" rx="8" fill="#4b5057"/><rect x="750" y="92" width="40" height="84" fill="none" stroke="#a8231f" stroke-width="3"/><text x="750" y="86" font-size="13" fill="#a8231f" font-weight="700">person</text><text x="670" y="300" font-size="17" text-anchor="middle" font-weight="700">object detection</text><text x="670" y="324" font-size="15" text-anchor="middle" fill="#4b5057">"3 people, here, here and here"</text></g><g class="frag"><rect x="940" y="40" width="400" height="230" rx="10" fill="#eef0ea" stroke="#c6c3ba"/><rect x="940" y="200" width="400" height="70" fill="#d9dcd2"/><rect x="940" y="200" width="400" height="70" fill="#b06a12" opacity=".35"/><circle cx="1030" cy="120" r="11" fill="#146b5c"/><rect x="1018" y="134" width="24" height="44" rx="8" fill="#146b5c"/><circle cx="1110" cy="130" r="11" fill="#146b5c"/><rect x="1098" y="144" width="24" height="44" rx="8" fill="#146b5c"/><circle cx="1240" cy="110" r="11" fill="#146b5c"/><rect x="1228" y="124" width="24" height="44" rx="8" fill="#146b5c"/><text x="1140" y="300" font-size="17" text-anchor="middle" font-weight="700">segmentation</text><text x="1140" y="324" font-size="15" text-anchor="middle" fill="#4b5057">every pixel: person, ground or other</text></g></svg>
+    <p class="frag" style="max-width:76ch">Each step to the right needs more labels per image, bigger models and more compute. On a microcontroller, ask whether "yes or no" is enough before paying for boxes or pixels.</p>
+  </div>
+  <div class="cue">A drawn scene, not a photo. Our kit has no camera, but the same three questions apply to audio: "is there speech?" (classification), "when does each word start and end?" (detection in time), "which part of the spectrogram is the voice?" (segmentation, used in noise removal).</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Anomaly detection" data-act="by functionality">
+  <div>
+    <div class="kicker">try it live · a pump's vibration, one reading a minute</div>
+    <h2>Learn what normal looks like. Flag anything far from it.</h2>
+    <div class="panel calc anp">
+      <div class="crow" style="grid-template-columns:260px 1fr 120px;gap:16px"><span class="cl">alarm when score above</span><input type="range" class="anz" min="10" max="50" step="1" value="25"><span class="num anzv"></span></div>
+      <svg viewBox="0 0 1300 260" width="100%" class="ansvg"></svg>
+      <div class="anstats"></div>
+    </div>
+  </div>
+  <div class="cue">Synthetic data: 400 normal readings and 15 from a developing fault. The score is how many standard deviations a reading is from the normal mean (a z-score), learned from normal data only: two numbers stored on the device. Lower the threshold and you catch every fault but alarm every few minutes; raise it and you miss faults. Choosing that trade is a product decision, not a modelling one.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Types by implementation" data-act="by implementation">
+  <div>
+    <h2>Four families of machinery, from a single "if" to a neural network.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ucard frag"><div class="un">1 · rules</div><div class="ut">conditional logic</div><div class="ud">if loudness &gt; −45 dB… Written by a person from domain knowledge. Class 19's voice detector.</div></div>
+      <div class="ucard frag"><div class="un">2 · classical ML</div><div class="ut">learned from features</div><div class="ud">linear and logistic regression, decision trees and forests, k-nearest neighbours, SVMs, Gaussian scores.</div></div>
+      <div class="ucard frag"><div class="un">3 · deep learning</div><div class="ut">layers of neurons</div><div class="ud">fully connected, CNNs (depthwise separable), RNNs and GRUs, small transformers.</div></div>
+      <div class="ucard frag"><div class="un">4 · combinations</div><div class="ut">several, working together</div><div class="ud">cascades, ensembles, DSP front end + model. Most real products.</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:74ch">The functionality type does not decide the family: a classifier can be a rule, a tree or a CNN. The data, the hardware and the need to explain the answer decide.</p>
+  </div>
+  <div class="cue">Classes 7 and 19 already met families 1 and 3. The next slide puts the first three side by side on the same data.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Decision boundaries" data-act="by implementation">
+  <div>
+    <div class="kicker">try it live · 3 classes, 2 features · each dot is one 2-second window</div>
+    <h2>Same data, four algorithms. Watch how each one carves up the space.</h2>
+    <div class="panel dbp split" style="grid-template-columns:1.2fr .8fr;gap:24px;align-items:center">
+      <svg viewBox="0 0 700 482" width="100%" class="dbsvg"></svg>
+      <div>
+        <div class="cb dbm"><button data-m="rule" class="sel">rules</button><button data-m="tree">decision tree</button><button data-m="knn">k-NN</button><button data-m="nn">tiny network</button></div>
+        <div class="crow" style="grid-template-columns:1fr 70px;gap:12px;margin-top:14px"><span class="cl dbpl"></span><span></span></div>
+        <div class="crow" style="grid-template-columns:1fr 70px;gap:12px"><input type="range" class="dbs" min="1" max="15" step="1" value="3"><span class="num dbsv"></span></div>
+        <div class="dbstats"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Synthetic accelerometer features: still, walking and shaking, with some overlap between brisk walking and shaking. Everything is trained live in the browser. Rules give straight cuts along one feature; a tree gives boxes; k-NN follows the data closely (k = 1 memorises every dot, including the odd ones); the tiny network draws smooth curves. Accuracy shown is on the training dots, so a perfect score can mean memorising, not learning.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Classical ML on a microcontroller" data-act="by implementation">
+  <div>
+    <h2>Classical ML runs beautifully on small chips, if you know what each one stores.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:22%">algorithm</th><th style="width:30%">what the device stores</th><th style="width:22%">work per answer</th><th>watch out for</th></tr>
+      <tr class="frag"><td>logistic regression</td><td>one weight per feature, per class</td><td>a few multiply-adds</td><td>only straight-line boundaries</td></tr>
+      <tr class="frag"><td>decision tree</td><td>a few dozen thresholds: it <em>is</em> if-statements</td><td>a handful of comparisons</td><td>deep trees memorise noise</td></tr>
+      <tr class="frag"><td>random forest</td><td>many small trees</td><td>trees × depth comparisons</td><td>memory grows with the number of trees</td></tr>
+      <tr class="frag"><td>k-nearest neighbours</td><td>the entire training set</td><td>a distance to every stored example</td><td>slow and big as data grows</td></tr>
+      <tr class="frag"><td>SVM</td><td>the "support vectors"</td><td>one kernel per support vector</td><td>can be large with curved boundaries</td></tr>
+      <tr class="frag"><td>Gaussian / z-score</td><td>a mean and spread per feature</td><td>a subtraction and a division</td><td>assumes "normal" is one blob</td></tr>
+    </table>
+  </div>
+  <div class="cue">Tools exist to turn trained scikit-learn models into C (for example the open-source micromlgen and emlearn projects); the lab does it by hand for a tree, which is a few lines of Python. Mention names only; students should check the projects' current documentation before relying on them.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Deep learning, sized for an MCU" data-act="by implementation">
+  <div>
+    <h2>Deep learning families, and the trick that makes CNNs fit.</h2>
+    <div class="split" style="grid-template-columns:1fr 1fr;gap:26px;align-items:start">
+      <table class="dt txt" style="width:100%">
+        <tr><th style="width:36%">family</th><th>good at</th></tr>
+        <tr class="frag"><td>fully connected</td><td>a few features in, a label out (Class 7)</td></tr>
+        <tr class="frag"><td>CNN</td><td>spectrograms, images: patterns that can appear anywhere</td></tr>
+        <tr class="frag"><td>RNN / GRU</td><td>sequences, keeping a memory between windows</td></tr>
+        <tr class="frag"><td>small transformer</td><td>long-range patterns; heavy for an MCU today</td></tr>
+      </table>
+      <div class="panel frag">
+        <span class="lab" style="color:var(--ok)">depthwise separable convolution · 3×3, 64 channels in and out</span>
+        <div class="ngrid" style="grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
+          <div class="cellx"><div class="big-n" style="font-size:38px">36,864</div><div class="nlab">weights, standard 3×3×64×64</div></div>
+          <div class="cellx"><div class="big-n green" style="font-size:38px">4,672</div><div class="nlab">3×3×64 + 64×64</div></div>
+        </div>
+        <p class="small" style="margin-top:10px">About 8× fewer weights and multiply-adds, for a small loss in accuracy. MobileNets (Class 16) are built from it.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Arithmetic: 3 × 3 × 64 × 64 = 36,864; depthwise 3 × 3 × 64 = 576, pointwise 64 × 64 = 4,096, total 4,672; ratio about 7.9. Biases ignored. The same ratio applies to multiply-adds per output position.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Pick by the numbers" data-act="by implementation">
+  <div>
+    <div class="kicker">try it live · pick what matters for your product</div>
+    <h2>Every family wins on something. Choose the measure first.</h2>
+    <div class="panel cmpp">
+      <div class="cb cmpb"><button data-c="mem" class="sel">memory</button><button data-c="ops">work per answer</button><button data-c="data">training data needed</button><button data-c="exp">how easy to explain</button></div>
+      <svg viewBox="0 0 1300 330" width="100%" class="cmpsvg"></svg>
+      <div class="cmpinfo"></div>
+    </div>
+  </div>
+  <div class="cue">Illustrative orders of magnitude for a small three-class problem like the lab's, not measurements; the CNN is a keyword-spotter-sized model. Memory and work use a log scale. The lesson behind "cheapest thing first": climb from rules to trees to small networks only when a number (accuracy, robustness) forces you to.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Combinations, in your project" data-act="closing theory">
+  <div>
+    <div class="kicker">the course project</div>
+    <h2>Your voice-command system is four algorithm types in a cascade.</h2>
+    <svg viewBox="0 0 1380 190" width="100%" height="190">
+      <defs><marker id="cp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs>
+      <rect x="0" y="40" width="290" height="110" rx="10" fill="#fbf0dc" stroke="#b06a12" stroke-width="2"/><text x="145" y="82" font-size="18" text-anchor="middle" font-weight="700">voice detector</text><text x="145" y="108" font-size="14" text-anchor="middle" fill="#4b5057">classification · a rule</text><text x="145" y="130" font-size="13" text-anchor="middle" fill="#8b9096">Class 19</text>
+      <line x1="294" y1="95" x2="356" y2="95" stroke="#8b9096" stroke-width="2" marker-end="url(#cp)"/>
+      <rect x="360" y="40" width="300" height="110" rx="10" fill="#eaeef7" stroke="#23408f" stroke-width="2"/><text x="510" y="82" font-size="18" text-anchor="middle" font-weight="700">wake model</text><text x="510" y="108" font-size="14" text-anchor="middle" fill="#4b5057">streaming classifier · CNN</text><text x="510" y="130" font-size="13" text-anchor="middle" fill="#8b9096">always on</text>
+      <line x1="664" y1="95" x2="726" y2="95" stroke="#8b9096" stroke-width="2" marker-end="url(#cp)"/>
+      <rect x="730" y="40" width="290" height="110" rx="10" fill="#fbf0dc" stroke="#b06a12" stroke-width="2"/><text x="875" y="82" font-size="18" text-anchor="middle" font-weight="700">grammar</text><text x="875" y="108" font-size="14" text-anchor="middle" fill="#4b5057">rules · a state machine</text><text x="875" y="130" font-size="13" text-anchor="middle" fill="#8b9096">which word may come next</text>
+      <line x1="1024" y1="95" x2="1086" y2="95" stroke="#8b9096" stroke-width="2" marker-end="url(#cp)"/>
+      <rect x="1090" y="40" width="290" height="110" rx="10" fill="#eaeef7" stroke="#23408f" stroke-width="2"/><text x="1235" y="82" font-size="18" text-anchor="middle" font-weight="700">slot models</text><text x="1235" y="108" font-size="14" text-anchor="middle" fill="#4b5057">classifiers · int8 CNNs</text><text x="1235" y="130" font-size="13" text-anchor="middle" fill="#8b9096">one per slot</text>
+    </svg>
+    <div class="ucards frag" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="ut">cascade</div><div class="ud">cheap stage first; the expensive stage runs only when needed (this diagram)</div></div>
+      <div class="ucard"><div class="ut">ensemble</div><div class="ud">several models vote; more robust, more memory</div></div>
+      <div class="ucard"><div class="ut">DSP + ML</div><div class="ud">the Chef whistle: Goertzel plus a threshold is event detection with no network at all</div></div>
+    </div>
+  </div>
+  <div class="cue">Amber boxes are rules, blue boxes are learned models. The project mixes both on purpose: rules where the logic is known and must be predictable, models where the patterns are too messy to write down. End of theory.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Exercise: four families, one dataset" data-act="exercise">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">exercise · pairs · Google Colab · no board</div><h2 style="margin-bottom:6px">Train four kinds of classifier. Compare what each costs.</h2></div>
+      <div class="panel timer" data-secs="1500"><span class="tdisp">25:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="un">A</div><div class="ut">rule and tree</div><div class="ud">Run cells 1 to 3. Read the tree as C code. Could you have written it by hand?</div></div>
+      <div class="ucard"><div class="un">B</div><div class="ut">k-NN and a tiny network</div><div class="ud">Run cells 4 and 5. Note accuracy and size for all four.</div></div>
+      <div class="ucard"><div class="un">C</div><div class="ut">break it</div><div class="ud">Make walking and shaking overlap more (shake mean 0.5, freq 3.5). Which family copes best?</div></div>
+    </div>
+  </div>
+  <div class="cue">The code on the next two slides is in five cells; students can type it or you can share a notebook. Colab includes scikit-learn and TensorFlow. Results vary slightly between runs because the network's training is random; the rule and tree are deterministic with the seeds given.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Cells 1 and 2: data and a rule" data-act="exercise">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre><span class="k">import</span> numpy <span class="k">as</span> np
+rng = np.random.default_rng(0)            <span class="c"># synthetic accelerometer features</span>
+
+<span class="k">def</span> make(n, std_mu, freq_mu, label):
+    std  = rng.normal(std_mu, std_mu * 0.35 + 0.02, n).clip(0.005)  <span class="c"># motion, g</span>
+    freq = rng.normal(freq_mu, 0.8, n).clip(0)                      <span class="c"># rhythm, Hz</span>
+    <span class="k">return</span> np.c_[std, freq], np.full(n, label)
+
+parts = [make(200, 0.03, 0.5, 0), make(200, 0.3, 2.0, 1), make(200, 0.8, 5.5, 2)]
+X = np.vstack([p[0] <span class="k">for</span> p <span class="k">in</span> parts]); y = np.concatenate([p[1] <span class="k">for</span> p <span class="k">in</span> parts])
+names = ['still', 'walk', 'shake']
+
+<span class="k">from</span> sklearn.model_selection <span class="k">import</span> train_test_split
+Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.3, random_state=0, stratify=y)
+
+<span class="k">def</span> rule(x):                               <span class="c"># cell 2 · family 1: a person's rule</span>
+    std, freq = x
+    <span class="k">if</span> std &lt; 0.1: <span class="k">return</span> 0
+    <span class="k">return</span> 1 <span class="k">if</span> std &lt; 0.5 <span class="k">else</span> 2
+
+pred = np.array([rule(x) <span class="k">for</span> x <span class="k">in</span> Xte])
+<span class="k">print</span>('rule accuracy:', (pred == yte).mean(), '· stores 2 thresholds = 8 bytes')</pre>
+    <div class="stack">
+      <div class="kicker">exercise · cells 1 and 2</div>
+      <h2>Make the data. Try a person's rule.</h2>
+      <p class="small">600 windows, three classes, two features. The rule only looks at motion.</p>
+      <p class="small">Which class does it get wrong, and why?</p>
+    </div>
+  </div>
+  <div class="cue">Checked locally with scikit-learn: the rule scores about 0.90 on this split, mostly confusing walking with shaking, because it ignores the rhythm feature. Synthetic data, so the numbers are for comparison only.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Cells 3 to 5: tree, k-NN, network" data-act="exercise">
+  <div class="split" style="grid-template-columns:1.6fr .4fr;align-items:center">
+    <pre style="font-size:12.5px"><span class="k">from</span> sklearn.tree <span class="k">import</span> DecisionTreeClassifier, export_text   <span class="c"># cell 3 · a tree</span>
+tree = DecisionTreeClassifier(max_depth=3, random_state=0).fit(Xtr, ytr)
+<span class="k">print</span>('tree accuracy:', tree.score(Xte, yte), '· nodes:', tree.tree_.node_count)
+<span class="k">print</span>(export_text(tree, feature_names=['std', 'freq']))
+
+<span class="k">def</span> to_c(t, node=0, ind='  '):                                <span class="c"># the tree <span class="k">as</span> C code</span>
+    tr = t.tree_
+    <span class="k">if</span> tr.children_left[node] == -1:
+        <span class="k">return</span> f"{ind}<span class="k">return</span> {tr.value[node].argmax()};\n"
+    f = ['std', 'freq'][tr.feature[node]]
+    <span class="k">return</span> (f"{ind}<span class="k">if</span> ({f} &lt;= {tr.threshold[node]:.3f}f) {{\n" + to_c(t, tr.children_left[node], ind + '  ')
+            + f"{ind}}} <span class="k">else</span> {{\n" + to_c(t, tr.children_right[node], ind + '  ') + f"{ind}}}\n")
+<span class="k">print</span>("int classify(float std, float freq) {\n" + to_c(tree) + "}")
+
+<span class="k">from</span> sklearn.neighbors <span class="k">import</span> KNeighborsClassifier            <span class="c"># cell 4 · k-NN</span>
+knn = KNeighborsClassifier(n_neighbors=5).fit(Xtr, ytr)
+<span class="k">print</span>('k-NN accuracy:', knn.score(Xte, yte), '· stores', Xtr.size * 4 + len(ytr), 'bytes')
+
+<span class="k">import</span> tensorflow <span class="k">as</span> tf                                       <span class="c"># cell 5 · a tiny network</span>
+mu, sd = Xtr.mean(0), Xtr.std(0)
+mlp = tf.keras.Sequential([tf.keras.Input((2,)),
+                           tf.keras.layers.Dense(8, activation='relu'),
+                           tf.keras.layers.Dense(3, activation='softmax')])
+mlp.compile('adam', 'sparse_categorical_crossentropy', metrics=['accuracy'])
+mlp.fit((Xtr - mu) / sd, ytr, epochs=60, verbose=0)
+<span class="k">print</span>('MLP accuracy:', mlp.evaluate((Xte - mu) / sd, yte, verbose=0)[1],
+      '· params:', mlp.count_params(), '→ about that many bytes <span class="k">in</span> int8')</pre>
+    <div class="stack">
+      <div class="kicker">exercise · cells 3 to 5</div>
+      <h2>Same data, three learned models.</h2>
+      <p class="small">The tree prints as C: paste it into an Arduino sketch.</p>
+      <p class="small">Which model would you put on the S3, and why?</p>
+    </div>
+  </div>
+  <div class="cue">Locally the depth-3 tree scored about 0.98 with 9 nodes and k-NN about 0.95 while storing about 3.8 KB; the tree's C function is 15 lines. The network was not run locally (TensorFlow is not installed in the build environment); expect accuracy close to the tree with 51 parameters. Point out that the tree learned to use rhythm (freq ≤ 4 Hz), which the hand-written rule ignored.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Worksheet" data-act="exercise">
+  <div>
+    <div class="kicker">exercise · worksheet</div>
+    <h2>Four families, one table, one choice.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)"><div class="wbox" style="min-height:190px"><div class="wk">rule</div><div class="wq">accuracy · bytes</div></div><div class="wbox" style="min-height:190px"><div class="wk">tree</div><div class="wq">accuracy · nodes · bytes</div></div><div class="wbox" style="min-height:190px"><div class="wk">k-NN</div><div class="wq">accuracy · bytes</div></div><div class="wbox" style="min-height:190px"><div class="wk">tiny network</div><div class="wq">accuracy · parameters</div></div><div class="wbox" style="min-height:190px"><div class="wk">part C</div><div class="wq">which family coped best with overlap?</div></div><div class="wbox" style="min-height:190px"><div class="wk">your pick for the S3</div><div class="wq">and the number that decided it</div></div></div>
+  </div>
+  <div class="cue">Good answers pick the tree for this problem: near-best accuracy, tiny, explainable, and already C code. Push back on anyone who picks k-NN without noticing it stores the whole dataset.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:42px;max-width:34ch;margin:0 auto">For each, name the functionality type and one implementation you would try first: (a) is this pump about to fail? (b) how many people are in the room? (c) did someone say 'stop'?</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>optimisation for edge devices and on-device training</strong>. Making the chosen model fit, and keep learning.</p>
+  </div>
+  <div class="cue">Expected: (a) anomaly detection, a z-score or Gaussian model on vibration features (or forecasting if they talk about time to failure); (b) regression or counting by object detection, try a radar or PIR-based regression before a camera; (c) streaming classification (keyword spotting), a small CNN on a spectrogram, with a rule-based voice detector in front.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* question sorter */
+  var QS=[['Is that a knock or the doorbell?','classification','a label','a small classifier on audio features'],
+          ['How full is the water tank?','regression','a number','pressure or ultrasound features into a linear model'],
+          ['Where are the people in this frame?','object detection','boxes + labels','a detection CNN; heavy for an MCU'],
+          ['Which pixels are road?','segmentation','a label per pixel','a segmentation CNN; heavier still'],
+          ['Is this motor’s vibration unusual?','anomaly detection','a score','a z-score or autoencoder trained on normal data only'],
+          ['Which of our 200 motors behave alike?','clustering','a group number','k-means on vibration features, usually offline'],
+          ['Squeeze 40 mel bands into 8 numbers','dimensionality reduction','fewer numbers','PCA or a learned embedding'],
+          ['Remove the fan noise from this voice','transformation','a cleaned signal','filters (Class 21) or a denoising network'],
+          ['What will the room temperature be in an hour?','forecasting','future values','a trend line, or a small sequence model'],
+          ['Did someone just say "Hey Bell"?','streaming classification','a label per window, many per second','a small CNN on a sliding spectrogram (Class 20)']];
+  function qsDraw(p,k){
+    p.querySelectorAll('.qsbtns button').forEach(function(b){ b.classList.toggle('on',+b.dataset.q===k); });
+    p.querySelector('.qsinfo').innerHTML= k<0? '<p style="color:var(--soft)">Pick a question. Vote on its type before clicking.</p>' : '<p style="font-size:24px">'+QS[k][0]+'</p><div class="qt">'+QS[k][1]+'</div><div class="qo">answer: '+QS[k][2]+'</div><p style="margin-top:12px">First thing to try: '+QS[k][3]+'.</p>';
+  }
+  deck.querySelectorAll('.qsp').forEach(function(p){ p.querySelector('.qsbtns').innerHTML=QS.map(function(q,k){ return '<button data-q="'+k+'">'+(k+1)+' · '+q[0]+'</button>'; }).join(''); qsDraw(p,-1); });
+  /* anomaly */
+  var AN=[], seedA=5; function ra(){ seedA=(seedA*16807)%2147483647; return seedA/2147483647; } function ga(){ var u=ra()||1e-9, v=ra(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+  for(var qa=0;qa<400;qa++) AN.push([1+0.15*ga(),0]); for(var qb=0;qb<15;qb++) AN.push([1.55+0.18*ga(),1]);
+  var AMU=0, ASD=0; (function(){ var n=0; AN.forEach(function(a){ if(!a[1]){ AMU+=a[0]; n++; } }); AMU/=n; AN.forEach(function(a){ if(!a[1]) ASD+=(a[0]-AMU)*(a[0]-AMU); }); ASD=Math.sqrt(ASD/n); })();
+  function anDraw(p){
+    var z=+p.querySelector('.anz').value/10; p.querySelector('.anzv').textContent=z.toFixed(1)+' σ';
+    var lo=0.4, hi=2.2, nb=45, bw=(hi-lo)/nb, hN=new Array(nb).fill(0), hA=new Array(nb).fill(0);
+    AN.forEach(function(a){ var b=Math.floor((a[0]-lo)/bw); if(b>=0&&b<nb){ if(a[1]) hA[b]++; else hN[b]++; } });
+    var mx=Math.max.apply(null,hN.map(function(v,k){return v+hA[k];})), o='';
+    function X(v){ return 60+(v-lo)/(hi-lo)*1200; }
+    for(var b=0;b<nb;b++){ var x=X(lo+b*bw), w=1200/nb-3, h1=hN[b]/mx*190, h2=hA[b]/mx*190;
+      o+='<rect x="'+x+'" y="'+(210-h1)+'" width="'+w+'" height="'+h1+'" fill="#23408f" opacity=".75"/>';
+      if(h2) o+='<rect x="'+x+'" y="'+(210-h1-Math.max(h2,4))+'" width="'+w+'" height="'+Math.max(h2,4)+'" fill="#a8231f"/>'; }
+    var thr=AMU+z*ASD;
+    o+='<line x1="'+X(thr)+'" y1="10" x2="'+X(thr)+'" y2="215" stroke="#b06a12" stroke-width="3" stroke-dasharray="7 5"/><text x="'+(X(thr)+8)+'" y="26" font-size="14" fill="#b06a12" font-weight="700">alarm above here</text>';
+    [0.5,1,1.5,2].forEach(function(v){ o+='<text x="'+X(v)+'" y="236" font-size="13" text-anchor="middle" fill="#8b9096">'+v+' g</text>'; });
+    o+='<rect x="60" y="244" width="14" height="12" fill="#23408f"/><text x="80" y="255" font-size="13" fill="#4b5057">normal (400)</text><rect x="200" y="244" width="14" height="12" fill="#a8231f"/><text x="220" y="255" font-size="13" fill="#4b5057">developing fault (15)</text><text x="1260" y="255" font-size="13" fill="#8b9096" text-anchor="end">vibration RMS</text>';
+    p.querySelector('.ansvg').innerHTML=o;
+    var fa=0, miss=0; AN.forEach(function(a){ var al=a[0]>thr; if(al&&!a[1]) fa++; if(!al&&a[1]) miss++; });
+    var perDay=fa/400*1440;
+    p.querySelector('.anstats').innerHTML='<div>faults caught<b style="color:'+(miss?'var(--fail)':'var(--ok)')+'">'+(15-miss)+' / 15</b></div><div>false alarms<b>'+fa+' / 400</b></div><div>false alarms a day<b style="color:'+(perDay>5?'var(--fail)':'var(--ok)')+'">'+(perDay<10?perDay.toFixed(1):Math.round(perDay))+'</b></div><div>stored on device<b>2 numbers</b></div>';
+  }
+  deck.querySelectorAll('.anp').forEach(function(p){ anDraw(p); p.querySelector('.anz').addEventListener('input',function(){anDraw(p);}); });
+  /* decision boundaries */
+  var DB=[], sd=17; function rd(){ sd=(sd*16807)%2147483647; return sd/2147483647; } function gd(){ var u=rd()||1e-9, v=rd(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+  function addC(n,mx,sx,my,sy,c){ for(var k=0;k<n;k++) DB.push([Math.max(0.01,Math.min(1.19,mx+sx*gd())),Math.max(0.05,Math.min(7.9,my+sy*gd())),c]); }
+  addC(30,0.06,0.04,0.6,0.4,0); addC(30,0.35,0.12,2.0,0.5,1); addC(30,0.75,0.2,5.2,1.2,2); addC(6,0.6,0.08,2.6,0.4,1); addC(4,0.5,0.08,3.6,0.5,2);
+  var DCOL=['#8b9096','#146b5c','#b06a12'], DNAME=['still','walk','shake'];
+  function nx(v){ return v/1.2; } function ny(v){ return v/8; }
+  function treeBuild(idx,depth,maxd){
+    var cnt=[0,0,0]; idx.forEach(function(q){ cnt[DB[q][2]]++; });
+    var maj=cnt.indexOf(Math.max.apply(null,cnt));
+    if(depth>=maxd || cnt.filter(function(c){return c>0;}).length<2 || idx.length<4) return {leaf:maj};
+    function gini(c,n){ if(!n) return 0; var g=1; c.forEach(function(v){ g-=(v/n)*(v/n); }); return g; }
+    var best=null;
+    for(var f=0;f<2;f++){
+      var vals=idx.map(function(q){return DB[q][f];}).sort(function(a,b){return a-b;});
+      for(var k=1;k<vals.length;k++){ if(vals[k]===vals[k-1]) continue; var t=(vals[k]+vals[k-1])/2, L=[0,0,0], R=[0,0,0], nl=0, nr=0;
+        idx.forEach(function(q){ if(DB[q][f]<=t){ L[DB[q][2]]++; nl++; } else { R[DB[q][2]]++; nr++; } });
+        var sc=(nl*gini(L,nl)+nr*gini(R,nr))/idx.length; if(!best||sc<best.s) best={s:sc,f:f,t:t}; } }
+    if(!best) return {leaf:maj};
+    var li=idx.filter(function(q){return DB[q][best.f]<=best.t;}), rj=idx.filter(function(q){return DB[q][best.f]>best.t;});
+    return {f:best.f,t:best.t,l:treeBuild(li,depth+1,maxd),r:treeBuild(rj,depth+1,maxd)};
+  }
+  function treePred(n,x){ while(n.leaf===undefined) n= x[n.f]<=n.t? n.l : n.r; return n.leaf; }
+  function treeNodes(n){ return n.leaf!==undefined?1:1+treeNodes(n.l)+treeNodes(n.r); }
+  function nnTrain(H){
+    var s2=3; function r2(){ s2=(s2*16807)%2147483647; return s2/2147483647-0.5; }
+    var W1=[], b1=[], W2=[], b2=[0,0,0];
+    for(var h=0;h<H;h++){ W1.push([r2()*2,r2()*2]); b1.push(0); W2.push([r2(),r2(),r2()]); }
+    var X=DB.map(function(d){ return [nx(d[0])*4-2, ny(d[1])*4-2]; }), lr=0.15;
+    for(var it=0;it<500;it++){
+      var gW1=W1.map(function(){return [0,0];}), gb1=new Array(H).fill(0), gW2=W2.map(function(){return [0,0,0];}), gb2=[0,0,0];
+      X.forEach(function(x,k){
+        var hv=[]; for(var h=0;h<H;h++) hv.push(Math.tanh(W1[h][0]*x[0]+W1[h][1]*x[1]+b1[h]));
+        var z=[0,1,2].map(function(c){ var v=b2[c]; for(var h=0;h<H;h++) v+=hv[h]*W2[h][c]; return v; }), m=Math.max.apply(null,z), e=z.map(function(v){return Math.exp(v-m);}), se=e[0]+e[1]+e[2];
+        var dz=e.map(function(v,c){ return v/se-(c===DB[k][2]?1:0); });
+        for(var h=0;h<H;h++){ var dh=0; for(var c=0;c<3;c++){ gW2[h][c]+=hv[h]*dz[c]; dh+=W2[h][c]*dz[c]; } dh*=1-hv[h]*hv[h]; gW1[h][0]+=dh*x[0]; gW1[h][1]+=dh*x[1]; gb1[h]+=dh; }
+        for(var c2=0;c2<3;c2++) gb2[c2]+=dz[c2];
+      });
+      var n=X.length;
+      for(var h=0;h<H;h++){ W1[h][0]-=lr*gW1[h][0]/n; W1[h][1]-=lr*gW1[h][1]/n; b1[h]-=lr*gb1[h]/n; for(var c=0;c<3;c++) W2[h][c]-=lr*gW2[h][c]/n; }
+      for(var c3=0;c3<3;c3++) b2[c3]-=lr*gb2[c3]/n;
+    }
+    return function(p){ var x=[nx(p[0])*4-2, ny(p[1])*4-2], hv=[]; for(var h=0;h<H;h++) hv.push(Math.tanh(W1[h][0]*x[0]+W1[h][1]*x[1]+b1[h])); var best=0, bv=-1e9; for(var c=0;c<3;c++){ var v=b2[c]; for(var h2=0;h2<H;h2++) v+=hv[h2]*W2[h2][c]; if(v>bv){ bv=v; best=c; } } return best; };
+  }
+  var DBP={rule:['walk / shake threshold on motion',1,10,5],tree:['maximum depth',1,6,3],knn:['k (neighbours that vote)',1,15,5],nn:['hidden neurons',2,12,6]};
+  function dbDraw(p, keepSlider){
+    var m=p.querySelector('.dbm button.sel').dataset.m, sl=p.querySelector('.dbs');
+    if(!keepSlider){ sl.min=DBP[m][1]; sl.max=DBP[m][2]; sl.value=DBP[m][3]; }
+    var v=+sl.value; p.querySelector('.dbpl').textContent=DBP[m][0]; p.querySelector('.dbsv').textContent= m==='rule'? (v/10).toFixed(1)+' g' : v;
+    var pred, size;
+    if(m==='rule'){ var T=v/10; pred=function(x){ return x[0]<0.15?0:(x[0]<T?1:2); }; size='2 thresholds · 8 B'; }
+    else if(m==='tree'){ var tr=treeBuild(DB.map(function(d,k){return k;}),0,v); pred=function(x){ return treePred(tr,x); }; var nd=treeNodes(tr); size=nd+' nodes · ~'+(nd*8)+' B'; }
+    else if(m==='knn'){ pred=function(x){ var ds=DB.map(function(d){ var a=(nx(d[0])-nx(x[0])), b=(ny(d[1])-ny(x[1])); return [a*a+b*b,d[2]]; }).sort(function(a,b){return a[0]-b[0];}), c=[0,0,0]; for(var k=0;k<v;k++) c[ds[k][1]]++; return c.indexOf(Math.max.apply(null,c)); }; size='all '+DB.length+' points · '+(DB.length*9)+' B'; }
+    else { pred=nnTrain(v); var np=2*v+v+v*3+3; size=np+' weights · '+np+' B int8'; }
+    function X(f){ return 70+nx(f)*600; } function Y(f){ return 420-ny(f)*400; }
+    var o='', GX=60, GY=40;
+    for(var gx=0;gx<GX;gx++) for(var gy=0;gy<GY;gy++){ var fx=(gx+0.5)/GX*1.2, fy=(gy+0.5)/GY*8, c=pred([fx,fy]); o+='<rect x="'+(70+gx*10)+'" y="'+(20+(GY-1-gy)*10)+'" width="10" height="10" fill="'+DCOL[c]+'" opacity=".16"/>'; }
+    var right=0;
+    DB.forEach(function(d){ var ok=pred(d)===d[2]; if(ok) right++; o+='<circle cx="'+X(d[0]).toFixed(1)+'" cy="'+Y(d[1]).toFixed(1)+'" r="6" fill="'+DCOL[d[2]]+'" stroke="'+(ok?'#ffffff':'#15171b')+'" stroke-width="'+(ok?1:2.5)+'"/>'; });
+    o+='<rect x="70" y="20" width="600" height="400" fill="none" stroke="#c6c3ba"/><text x="370" y="448" font-size="14" text-anchor="middle" fill="#4b5057">motion · standard deviation (0 to 1.2 g)</text><text x="44" y="220" font-size="14" text-anchor="middle" fill="#4b5057" transform="rotate(-90 44 220)">rhythm · dominant frequency (0 to 8 Hz)</text>';
+    DNAME.forEach(function(nm,k){ o+='<circle cx="'+(90+k*110)+'" cy="465" r="6" fill="'+DCOL[k]+'"/><text x="'+(102+k*110)+'" y="470" font-size="13" fill="#4b5057">'+nm+'</text>'; });
+    o+='<text x="670" y="470" font-size="13" fill="#4b5057" text-anchor="end">dark ring = misclassified</text>';
+    p.querySelector('.dbsvg').innerHTML=o;
+    p.querySelector('.dbstats').innerHTML='<div>training accuracy<b>'+Math.round(right/DB.length*100)+'%</b></div><div>stored on device<b style="font-size:19px">'+size+'</b></div>';
+  }
+  deck.querySelectorAll('.dbp').forEach(function(p){ dbDraw(p,false); p.querySelector('.dbs').addEventListener('change',function(){ dbDraw(p,true); }); p.querySelector('.dbs').addEventListener('input',function(){ var m=p.querySelector('.dbm button.sel').dataset.m; if(m!=='nn') dbDraw(p,true); else p.querySelector('.dbsv').textContent=this.value; }); });
+  /* comparison */
+  var CMP={mem:['memory to store the model',true,'bytes',[8,72,5400,60,50000]],ops:['work for one answer',true,'operations',[2,4,1800,70,1000000]],data:['training data needed',false,'relative, 1 to 5',[1,2,2,3,5]],exp:['how easy to explain the answer',false,'relative, 1 to 5',[5,4,3,2,1]]};
+  var CMPN=['rules','decision tree','k-NN','tiny network','small CNN'];
+  function cmpDraw(p,key){
+    var c=CMP[key], o='', mx=Math.max.apply(null,c[3]);
+    c[3].forEach(function(v,k){ var w= c[1]? Math.log10(v+1)/Math.log10(mx+1)*880 : v/5*880, y=20+k*58;
+      o+='<text x="200" y="'+(y+30)+'" font-size="18" text-anchor="end" fill="#15171b">'+CMPN[k]+'</text><rect x="215" y="'+(y+6)+'" width="'+Math.max(w,4)+'" height="36" rx="5" fill="'+(k<2?'#b06a12':(k===2?'#8b9096':'#23408f'))+'" opacity=".85"/><text x="'+(225+Math.max(w,4))+'" y="'+(y+30)+'" font-size="16" fill="#4b5057">'+(c[1]? v.toLocaleString('en-IN'):v)+'</text>'; });
+    o+='<text x="215" y="318" font-size="14" fill="#8b9096">'+c[0]+' · '+c[2]+(c[1]?' · log scale':'')+'</text>';
+    p.querySelector('.cmpsvg').innerHTML=o;
+    p.querySelectorAll('.cmpb button').forEach(function(b){ b.classList.toggle('sel',b.dataset.c===key); });
+    var msg={mem:'k-NN stores its training data; a CNN stores tens of thousands of weights. A tree fits in a few cache lines.',ops:'A CNN does a million multiply-adds per answer; a tree does four comparisons.',data:'Rules need knowledge, not data. CNNs need thousands of labelled examples.',exp:'"It said walking because motion was below 0.5 g" is easy for a tree, impossible for a CNN.'};
+    p.querySelector('.cmpinfo').textContent=msg[key];
+  }
+  deck.querySelectorAll('.cmpp').forEach(function(p){ cmpDraw(p,'mem'); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.qsbtns button'); if(b){ b.blur(); qsDraw(b.closest('.qsp'),+b.dataset.q); return; }
+    b=e.target.closest('.dbm button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); dbDraw(b.closest('.dbp'),false); return; }
+    b=e.target.closest('.cmpb button'); if(b){ b.blur(); cmpDraw(b.closest('.cmpp'),b.dataset.c); return; }
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

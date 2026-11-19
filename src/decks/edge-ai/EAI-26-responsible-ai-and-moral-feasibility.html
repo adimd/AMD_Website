@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 25 · Edge AI Tools and Workflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 25 */
+.wfp{padding:14px 22px}
+.wfinfo{font-size:19px}
+.wfinfo .wh{font-family:var(--display);font-size:34px;font-weight:600;color:var(--accent);margin-bottom:6px}
+.wfinfo .wq{font-size:21px;font-style:italic;color:var(--ink);margin-bottom:12px}
+.wfinfo .wl{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin-top:10px}
+.fmt .cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.fmtout{margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.fmtout div{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:14px 18px}
+.fmtout .fk{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.fmtout .fv{font-size:22px;font-weight:600;color:var(--ink);margin-top:6px}
+.fmtout .fn{grid-column:1 / -1;font-size:19px;color:var(--body)}
+.tm{padding:22px 30px;max-width:1300px}
+.tmhead{display:flex;justify-content:space-between;font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.tmq{font-family:var(--display);font-size:36px;font-weight:600;color:var(--ink);line-height:1.2;margin:12px 0 20px}
+.tmo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tmo button{text-align:left;padding:16px 20px;border:1px solid var(--rule2);background:var(--card);border-radius:10px;font-family:var(--sans);font-size:22px;color:var(--ink);cursor:pointer}
+.tmo button b{font-family:var(--mono);color:var(--accent);margin-right:12px}
+.tmo button.right{background:var(--ok-soft);border-color:var(--ok);border-width:2px}
+.tmo button.wrong{background:var(--fail-soft);border-color:var(--fail);color:var(--fail)}
+.tme{min-height:56px;margin-top:14px;font-size:20px;color:var(--body)}
+.tmnav{display:flex;justify-content:space-between;margin-top:6px}
+.tmnav button{height:44px;padding:0 20px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:15px;color:var(--ink);cursor:pointer}
+.tmnav .tmnext{background:var(--accent);border-color:var(--accent);color:#fff}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 25</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 25 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 25 · unit III · edge AI tools and workflow</div>
+    <h1>From an idea to a model<br>on the board: the toolchain.</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Six classes of ideas. Today: the steps every edge AI project walks through, the tools at each step, and a full run of one platform on your own phones.</p>
+  </div>
+  <div class="cue">Theory runs to slide 14; the Edge Impulse exercise is one block at the end (slides 15 to 17). Teams need a laptop and a phone with internet, and a free Edge Impulse account. Do a full dry run the day before: the site's menus and free-tier limits change.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>int8 is twice as fast but 5% less accurate. Win the accuracy back.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">training</div><div class="ut">quantisation-aware training</div><div class="ud">Let the model practise with int8 rounding while it learns.</div></div>
+      <div class="ucard frag"><div class="un">data</div><div class="ut">better calibration data</div><div class="ud">Representative samples so the int8 ranges fit real inputs.</div></div>
+      <div class="ucard frag"><div class="un">model</div><div class="ut">mixed precision, distillation, a little wider</div><div class="ud">Keep a sensitive layer at higher precision, learn from a big teacher, or add a few channels.</div></div>
+    </div>
+    <p class="frag" style="margin-top:20px;max-width:74ch">Every one of these is a <strong>tool</strong> choice as much as an idea. Today we map the tools.</p>
+  </div>
+  <div class="cue">Accept any two that keep the int8 speed. "Go back to float32" is the answer that fails the question.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="How many tools?" data-act="the hook">
+  <div>
+    <div class="kicker">the hook · guess first</div>
+    <h2>How many different tools does it take to put one keyword spotter on the S3?</h2>
+    <svg viewBox="-4 0 1388 160" width="100%" height="170"><defs><marker id="tc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><g class="frag"><rect x="0" y="40" width="136" height="96" rx="10" fill="#fff" stroke="#146b5c" stroke-width="2"/><text x="68" y="80" font-size="18" text-anchor="middle" font-weight="700" fill="#146b5c">record</text><text x="68" y="108" font-size="12.5" text-anchor="middle" fill="#4b5057">phone, board</text><line x1="137" y1="88" x2="150" y2="88" stroke="#8b9096" stroke-width="2" marker-end="url(#tc)"/></g><g class="frag"><rect x="152" y="40" width="136" height="96" rx="10" fill="#fff" stroke="#146b5c" stroke-width="2"/><text x="220" y="80" font-size="18" text-anchor="middle" font-weight="700" fill="#146b5c">label</text><text x="220" y="108" font-size="12.5" text-anchor="middle" fill="#4b5057">Audacity</text><line x1="289" y1="88" x2="302" y2="88" stroke="#8b9096" stroke-width="2" marker-end="url(#tc)"/></g><g class="frag"><rect x="304" y="40" width="136" height="96" rx="10" fill="#fff" stroke="#23408f" stroke-width="2"/><text x="372" y="80" font-size="18" text-anchor="middle" font-weight="700" fill="#23408f">explore</text><text x="372" y="108" font-size="12.5" text-anchor="middle" fill="#4b5057">Colab</text><line x1="441" y1="88" x2="454" y2="88" stroke="#8b9096" stroke-width="2" marker-end="url(#tc)"/></g><g class="frag"><rect x="456" y="40" width="136" height="96" rx="10" fill="#fff" stroke="#23408f" stroke-width="2"/><text x="524" y="80" font-size="18" text-anchor="middle" font-weight="700" fill="#23408f">features</text><text x="524" y="108" font-size="12.5" text-anchor="middle" fill="#4b5057">librosa</text><line x1="593" y1="88" x2="606" y2="88" stroke="#8b9096" stroke-width="2" marker-end="url(#tc)"/></g><g class="frag"><rect x="608" y="40" width="136" height="96" rx="10" fill="#fff" stroke="#23408f" stroke-width="2"/><text x="676" y="80" font-size="18" text-anchor="middle" font-weight="700" fill="#23408f">train</text><text x="676" y="108" font-size="12.5" text-anchor="middle" fill="#4b5057">TensorFlow</text><line x1="745" y1="88" x2="758" y2="88" stroke="#8b9096" stroke-width="2" marker-end="url(#tc)"/></g><g class="frag"><rect x="760" y="40" width="136" height="96" rx="10" fill="#fff" stroke="#b06a12" stroke-width="2"/><text x="828" y="80" font-size="18" text-anchor="middle" font-weight="700" fill="#b06a12">quantise</text><text x="828" y="108" font-size="12.5" text-anchor="middle" fill="#4b5057">LiteRT converter</text><line x1="897" y1="88" x2="910" y2="88" stroke="#8b9096" stroke-width="2" marker-end="url(#tc)"/></g><g class="frag"><rect x="912" y="40" width="136" height="96" rx="10" fill="#fff" stroke="#b06a12" stroke-width="2"/><text x="980" y="80" font-size="18" text-anchor="middle" font-weight="700" fill="#b06a12">convert</text><text x="980" y="108" font-size="12.5" text-anchor="middle" fill="#4b5057">C array</text><line x1="1049" y1="88" x2="1062" y2="88" stroke="#8b9096" stroke-width="2" marker-end="url(#tc)"/></g><g class="frag"><rect x="1064" y="40" width="136" height="96" rx="10" fill="#fff" stroke="#a8231f" stroke-width="2"/><text x="1132" y="80" font-size="18" text-anchor="middle" font-weight="700" fill="#a8231f">run</text><text x="1132" y="108" font-size="12.5" text-anchor="middle" fill="#4b5057">LiteRT Micro</text><line x1="1201" y1="88" x2="1214" y2="88" stroke="#8b9096" stroke-width="2" marker-end="url(#tc)"/></g><g class="frag"><rect x="1216" y="40" width="136" height="96" rx="10" fill="#fff" stroke="#a8231f" stroke-width="2"/><text x="1284" y="80" font-size="18" text-anchor="middle" font-weight="700" fill="#a8231f">flash</text><text x="1284" y="108" font-size="12.5" text-anchor="middle" fill="#4b5057">Arduino IDE</text></g></svg>
+    <p class="frag big" style="max-width:52ch;margin-top:10px">Nine steps and about as many tools, by hand. Or one platform that hides most of them. Today you meet both.</p>
+  </div>
+  <div class="cue">Take guesses first (most students say two: "Python and Arduino"). Reveal step by step. The point is not to memorise the tools but to see that a model is only one link in a long chain, and any link can break the product.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Why the edge workflow differs" data-act="the workflow">
+  <div>
+    <h2>The need for edge AI changes the workflow, not just the destination.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:22%"></th><th style="width:38%">cloud ML</th><th>edge ML</th></tr>
+      <tr class="frag"><td>constraints</td><td>add servers when it is slow</td><td>RAM, flash, power and latency fixed from day one</td></tr>
+      <tr class="frag"><td>data</td><td>public datasets, logs already there</td><td>recorded on your sensor, in your room, by you</td></tr>
+      <tr class="frag"><td>"deploy"</td><td>replace a file on a server</td><td>build firmware, flash or send it over the air</td></tr>
+      <tr class="frag"><td>monitoring</td><td>every request logged centrally</td><td>the device may be offline; you must decide what to log</td></tr>
+    </table>
+    <p class="frag" style="margin-top:16px;max-width:76ch">The reasons we wanted edge AI (Class 2's BLERP: bandwidth, latency, economics, reliability, privacy) are exactly what make each step harder.</p>
+  </div>
+  <div class="cue">The syllabus lists "Need of Edge AI" under this unit's tools and workflow; this slide is where it lives. Ask which BLERP letter makes monitoring hardest (privacy: you may not be allowed to send data back).</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="The workflow map" data-act="the workflow">
+  <div>
+    <div class="kicker">try it live · click a stage</div>
+    <h2>Nine stages. Click one for its question, its tools and your project's version.</h2>
+    <div class="panel wfp split" style="grid-template-columns:1fr 1fr;gap:24px;align-items:center">
+      <svg viewBox="-70 -10 780 540" width="100%" class="wfsvg"></svg>
+      <div class="wfinfo"></div>
+    </div>
+  </div>
+  <div class="cue">The ring is deliberate: real projects go round more than once. The tool lists are examples, not a complete catalogue. Product names were checked in November 2026; they change, so check before quoting them in a report.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="A loop, not a line" data-act="the workflow">
+  <div>
+    <h2>Where projects really go back to.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:30%">what you find</th><th style="width:22%">at stage</th><th>where you go back</th></tr>
+      <tr class="frag"><td>accuracy great in Colab, poor on the board</td><td>evaluation</td><td>data: recorded on a phone, not on the INMP441</td></tr>
+      <tr class="frag"><td>the model does not fit in SRAM</td><td>deployment</td><td>features or training: a smaller input, a smaller model</td></tr>
+      <tr class="frag"><td>false alarms every few minutes</td><td>monitoring</td><td>data: more "nothing happening" recordings</td></tr>
+      <tr class="frag"><td>nobody can collect enough data</td><td>data</td><td>feasibility: should we build this at all? (Classes 26–27)</td></tr>
+    </table>
+  </div>
+  <div class="cue">Ask teams which of these has already happened to them in the course project. The first row is the most common in this course: train and test on data from the sensor the product will use.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Tool families" data-act="the tools">
+  <div>
+    <h2>Eight families of tool. Most projects use one or two from each.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:24px">data</div><div class="ns">recording and labelling: phone, board, Audacity, Label Studio, Edge Impulse data acquisition</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">notebooks</div><div class="ns">exploring and plotting: Colab, Jupyter</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">frameworks</div><div class="ns">training: TensorFlow / Keras, PyTorch, scikit-learn</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">converters and runtimes</div><div class="ns">LiteRT (was TensorFlow Lite), LiteRT for Microcontrollers, ONNX, ExecuTorch</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">vendor libraries</div><div class="ns">fast kernels for one chip: ESP-NN, ESP-DL, ESP-DSP, CMSIS-NN</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">platforms</div><div class="ns">end to end in a browser: Edge Impulse (now part of Qualcomm)</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">device tools</div><div class="ns">build and flash: Arduino IDE, ESP-IDF, PlatformIO</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">monitoring</div><div class="ns">logs, over-the-air updates, model versions</div></div>
+    </div>
+  </div>
+  <div class="cue">Name changes worth knowing: Google renamed TensorFlow Lite to LiteRT in September 2024; Qualcomm acquired Edge Impulse in March 2025; PyTorch's on-device runtime ExecuTorch reached 1.0 in October 2025. Older tutorials use the old names.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="The path a model takes" data-act="the tools">
+  <div>
+    <h2>What actually happens to a trained model before the board can run it.</h2>
+    <svg viewBox="0 0 1380 160" width="100%" height="165"><defs><marker id="pm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><g class="frag"><rect x="0" y="30" width="230" height="110" rx="12" fill="#fff" stroke="#23408f" stroke-width="2"/><text x="115" y="72" font-size="19" text-anchor="middle" font-weight="700" fill="#23408f">Keras model</text><text x="115" y="98" font-size="13.5" text-anchor="middle" fill="#4b5057">float32 · in Colab</text><text x="115" y="124" font-size="13" text-anchor="middle" fill="#8b9096">~200 KB</text><line x1="232" y1="85" x2="272" y2="85" stroke="#8b9096" stroke-width="2" marker-end="url(#pm)"/></g><g class="frag"><rect x="276" y="30" width="230" height="110" rx="12" fill="#fff" stroke="#b06a12" stroke-width="2"/><text x="391" y="72" font-size="19" text-anchor="middle" font-weight="700" fill="#b06a12">converter</text><text x="391" y="98" font-size="13.5" text-anchor="middle" fill="#4b5057">int8 quantisation</text><text x="391" y="124" font-size="13" text-anchor="middle" fill="#8b9096">~50 KB</text><line x1="508" y1="85" x2="548" y2="85" stroke="#8b9096" stroke-width="2" marker-end="url(#pm)"/></g><g class="frag"><rect x="552" y="30" width="230" height="110" rx="12" fill="#fff" stroke="#b06a12" stroke-width="2"/><text x="667" y="72" font-size="19" text-anchor="middle" font-weight="700" fill="#b06a12">.tflite file</text><text x="667" y="98" font-size="13.5" text-anchor="middle" fill="#4b5057">a flat buffer</text><text x="667" y="124" font-size="13" text-anchor="middle" fill="#8b9096">~50 KB</text><line x1="784" y1="85" x2="824" y2="85" stroke="#8b9096" stroke-width="2" marker-end="url(#pm)"/></g><g class="frag"><rect x="828" y="30" width="230" height="110" rx="12" fill="#fff" stroke="#a8231f" stroke-width="2"/><text x="943" y="72" font-size="19" text-anchor="middle" font-weight="700" fill="#a8231f">C array</text><text x="943" y="98" font-size="13.5" text-anchor="middle" fill="#4b5057">xxd -i model.tflite</text><text x="943" y="124" font-size="13" text-anchor="middle" fill="#8b9096">in flash</text><line x1="1060" y1="85" x2="1100" y2="85" stroke="#8b9096" stroke-width="2" marker-end="url(#pm)"/></g><g class="frag"><rect x="1104" y="30" width="230" height="110" rx="12" fill="#fff" stroke="#146b5c" stroke-width="2"/><text x="1219" y="72" font-size="19" text-anchor="middle" font-weight="700" fill="#146b5c">firmware</text><text x="1219" y="98" font-size="13.5" text-anchor="middle" fill="#4b5057">LiteRT Micro + ESP-NN</text><text x="1219" y="124" font-size="13" text-anchor="middle" fill="#8b9096">on the S3</text></g></svg>
+    <div class="split frag" style="gap:24px;margin-top:10px">
+      <div class="rem"><div class="h">why a C array?</div><ul><li>A microcontroller has no file system to load a model from. The model's bytes are compiled into the firmware and live in flash (Class 7).</li></ul></div>
+      <div class="rem green"><div class="h">why the vendor kernels?</div><ul><li>The interpreter calls ESP-NN for each layer: the S3's vector instructions, not Class 15's plain C loop.</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">Sizes are illustrative for a small keyword model: int8 makes the weights about four times smaller than float32. xxd -i is a standard command-line tool that turns any file into a C array. Edge Impulse does all five steps behind its "deploy" button.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Pick the format" data-act="the tools">
+  <div>
+    <div class="kicker">try it live · where will it run, and what was it trained in?</div>
+    <h2>The target decides the runtime and the file format.</h2>
+    <div class="panel calc fmt">
+      <div class="crow" style="grid-template-columns:200px 1fr"><span class="cl">target</span><span class="cb" data-g="t"><button data-v="mcu" class="sel">ESP32-S3</button><button data-v="pi">Raspberry Pi 5</button><button data-v="phone">Android phone</button><button data-v="jet">Jetson</button></span></div>
+      <div class="crow" style="grid-template-columns:200px 1fr"><span class="cl">trained in</span><span class="cb" data-g="f"><button data-v="tf" class="sel">TensorFlow / Keras</button><button data-v="pt">PyTorch</button></span></div>
+      <div class="fmtout"></div>
+    </div>
+  </div>
+  <div class="cue">Common routes, not the only ones. ONNX is the "exchange format" that most runtimes can read, so it is the usual bridge between frameworks. Exact support changes quickly, especially for PyTorch on microcontrollers: check the current ESP-DL and ExecuTorch documentation before committing a project to a route.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Which tool for this job?" data-act="the tools">
+  <div>
+    <div class="kicker">try it live · vote with hands, then click</div>
+    <h2>Which tool for this job?</h2>
+    <div class="panel tm" data-j='[["Trim and label 200 short voice clips by hand", ["Audacity", "ESP-IDF", "TensorRT", "CMSIS-NN"], 0, "A free audio editor: cut, listen, export. Label Studio does the same at team scale."], ["Try three feature settings and see which separates the classes", ["PlatformIO", "a Colab notebook", "ESP-NN", "an OTA server"], 1, "Notebooks are for exploring: plot, tweak, plot again (Class 19&#39;s scatter plot)."], ["Train a small CNN on spectrograms", ["Audacity", "TensorFlow / Keras", "xxd", "Arduino IDE"], 1, "A training framework. PyTorch would also do."], ["Turn a trained Keras model into int8", ["the LiteRT converter", "Label Studio", "ESP-IDF menuconfig", "Audacity"], 0, "The converter quantises using calibration data (Class 24)."], ["Make the int8 layers run fast on the S3", ["scikit-learn", "ESP-NN / ESP-DL", "Colab", "TensorRT"], 1, "Vendor kernels use the S3&#39;s vector instructions (Class 15)."], ["Run a PyTorch model inside an Android app", ["ExecuTorch", "CMSIS-NN", "Audacity", "ESP-DSP"], 0, "PyTorch&#39;s on-device runtime for phones and embedded Linux."], ["Get latency and RAM estimates before you own the board", ["Edge Impulse", "Audacity", "xxd", "Label Studio"], 0, "It estimates on-device performance for many targets: today&#39;s exercise."], ["Build firmware with Wi-Fi, I2S and the model", ["Arduino IDE or ESP-IDF", "Colab", "Label Studio", "ONNX"], 0, "Device tools compile and flash everything together."]]'>
+      <div class="tmhead"><span class="tmn"></span><span class="tms"></span></div>
+      <div class="tmq"></div>
+      <div class="tmo"></div>
+      <div class="tme"></div>
+      <div class="tmnav"><button class="tmprev">← previous</button><button class="tmnext">next job →</button></div>
+    </div>
+  </div>
+  <div class="cue">Eight jobs. Distractors are real tools used at the wrong stage, so a wrong answer is a chance to place that tool on the workflow map.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Platform or by hand?" data-act="the tools">
+  <div>
+    <h2>One platform, or your own chain of tools?</h2>
+    <div class="split" style="gap:26px">
+      <div class="panel frag"><span class="lab" style="color:var(--ok)">end-to-end platform · e.g. Edge Impulse</span><ul style="font-size:20px;line-height:1.5"><li>a working model in an afternoon</li><li>on-device estimates before you deploy</li><li>exports a ready library for many boards</li><li style="color:var(--fail)">free tier has limits; your project lives on someone else's service</li><li style="color:var(--fail)">less control over unusual models</li></ul></div>
+      <div class="panel frag"><span class="lab" style="color:var(--accent)">by hand · Colab + LiteRT + ESP-IDF</span><ul style="font-size:20px;line-height:1.5"><li>full control of every step</li><li>any model, any trick from Unit IV</li><li>nothing hidden: you can explain it in a viva</li><li style="color:var(--fail)">days, not hours</li><li style="color:var(--fail)">every link can break separately</li></ul></div>
+    </div>
+    <p class="frag" style="margin-top:18px;max-width:74ch">A common pattern: prototype on the platform to learn what is possible, then rebuild the parts that matter by hand.</p>
+  </div>
+  <div class="cue">Both routes are acceptable for the course project. Teams that use a platform must still be able to explain each stage it did for them: that is what the viva tests.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="After deployment" data-act="the tools">
+  <div>
+    <h2>Shipping is the middle of the workflow, not the end.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:26px">log a little</div><div class="ns">counts and confidences, not raw audio: how often it fired, how sure it was</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">version everything</div><div class="ns">the model, the feature settings and the firmware together: one number on the device</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">update over the air</div><div class="ns">a new model without anyone touching the device (OTA)</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">bring failures home</div><div class="ns">every false alarm a user reports is tomorrow's training data</div></div>
+    </div>
+  </div>
+  <div class="cue">Version mismatches are a classic bug: the model trained with 40 mel bands deployed with firmware that computes 32. Keep the feature settings and the model in the same version. The privacy row of BLERP limits what may be logged.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Your project's toolchain" data-act="closing theory">
+  <div>
+    <div class="kicker">the course project</div>
+    <h2>One reasonable toolchain for the voice-command project.</h2>
+    <svg viewBox="0 0 1380 150" width="100%" height="155"><defs><marker id="pj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="0" y="30" width="236" height="100" rx="12" fill="#fff" stroke="#146b5c" stroke-width="2"/><text x="118" y="72" font-size="18" text-anchor="middle" font-weight="700" fill="#146b5c">record</text><text x="118" y="100" font-size="13" text-anchor="middle" fill="#4b5057">INMP441 + phones</text><line x1="238" y1="80" x2="272" y2="80" stroke="#8b9096" stroke-width="2" marker-end="url(#pj)"/><rect x="276" y="30" width="236" height="100" rx="12" fill="#fff" stroke="#23408f" stroke-width="2"/><text x="394" y="72" font-size="18" text-anchor="middle" font-weight="700" fill="#23408f">label and explore</text><text x="394" y="100" font-size="13" text-anchor="middle" fill="#4b5057">Audacity, Colab</text><line x1="514" y1="80" x2="548" y2="80" stroke="#8b9096" stroke-width="2" marker-end="url(#pj)"/><rect x="552" y="30" width="236" height="100" rx="12" fill="#fff" stroke="#23408f" stroke-width="2"/><text x="670" y="72" font-size="18" text-anchor="middle" font-weight="700" fill="#23408f">train + int8</text><text x="670" y="100" font-size="13" text-anchor="middle" fill="#4b5057">Keras or Edge Impulse</text><line x1="790" y1="80" x2="824" y2="80" stroke="#8b9096" stroke-width="2" marker-end="url(#pj)"/><rect x="828" y="30" width="236" height="100" rx="12" fill="#fff" stroke="#b06a12" stroke-width="2"/><text x="946" y="72" font-size="18" text-anchor="middle" font-weight="700" fill="#b06a12">run on the S3</text><text x="946" y="100" font-size="13" text-anchor="middle" fill="#4b5057">LiteRT Micro, ESP-NN</text><line x1="1066" y1="80" x2="1100" y2="80" stroke="#8b9096" stroke-width="2" marker-end="url(#pj)"/><rect x="1104" y="30" width="236" height="100" rx="12" fill="#fff" stroke="#a8231f" stroke-width="2"/><text x="1222" y="72" font-size="18" text-anchor="middle" font-weight="700" fill="#a8231f">language model</text><text x="1222" y="100" font-size="13" text-anchor="middle" fill="#4b5057">off the board</text></svg>
+    <p class="frag" style="max-width:76ch">Record on the INMP441 you will deploy on, not only on phones (slide 6's first row). Whichever route you pick, keep the feature settings identical in training and on the board.</p>
+  </div>
+  <div class="cue">A suggestion, not a requirement. Where the language model runs is still an open decision in the project plan (cloud API or lab laptop). End of theory: laptops and phones out.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Exercise: one platform, end to end" data-act="exercise">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">exercise · teams of four · laptop + phone</div><h2 style="margin-bottom:6px">Two keywords, one afternoon's workflow, in 30 minutes.</h2></div>
+      <div class="panel timer" data-secs="1800"><span class="tdisp">30:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="un">A</div><div class="ut">collect</div><div class="ud">With a phone: about 40 × "on", 40 × "off", and a minute of background noise.</div></div>
+      <div class="ucard"><div class="un">B</div><div class="ut">build and train</div><div class="ud">A 1-second window, an MFE or MFCC block, a classifier. Look at the feature explorer.</div></div>
+      <div class="ucard"><div class="un">C</div><div class="ut">read the estimates</div><div class="ud">Choose an ESP32 target. Latency, RAM and flash, int8 against float32.</div></div>
+    </div>
+    <p class="small" style="margin-top:14px">Every step maps to a stage on the workflow ring. Write down which as you go.</p>
+  </div>
+  <div class="cue">One account per team is enough; others can watch or collect. If the network is slow, teams can upload short WAV files recorded on the board in Class 19 instead of using the phone link.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="The steps" data-act="exercise">
+  <div>
+    <h2>The steps, in workflow order.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:5%">#</th><th style="width:22%">stage</th><th>what to do</th></tr>
+      <tr><td>1</td><td>problem</td><td>Create a new project. Name it after your team and the two keywords.</td></tr>
+      <tr><td>2</td><td>data</td><td>Connect your phone (the platform shows a QR code). Record 1-second samples: ~40 per keyword, ~60 of noise. Keep some for testing.</td></tr>
+      <tr><td>3</td><td>features</td><td>Create an impulse: 1 s window, an audio feature block (MFE or MFCC), a classification block. Generate features; look at the explorer.</td></tr>
+      <tr><td>4</td><td>training</td><td>Train with the default settings. Note accuracy and the confusion matrix.</td></tr>
+      <tr><td>5</td><td>optimisation</td><td>Pick an ESP32 target device. Read latency, RAM and flash for int8 and for float32.</td></tr>
+      <tr><td>6</td><td>evaluation</td><td>Run model testing on the held-out samples. Which mistakes does it make?</td></tr>
+      <tr><td>7</td><td>deployment · extension</td><td>Export an Arduino library and run it on the board (fast teams only).</td></tr>
+    </table>
+  </div>
+  <div class="cue">Steps are kept generic because the interface changes; check the current menu names in your dry run and say them aloud in class. If an ESP32-S3 target is not listed, choose the closest ESP32 entry and note it on the worksheet: the estimates are approximate anyway.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Worksheet" data-act="exercise">
+  <div>
+    <div class="kicker">exercise · worksheet</div>
+    <h2>Eight numbers and two judgements.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)"><div class="wbox" style="min-height:190px"><div class="wk">accuracy</div><div class="wq">int8 · float32</div></div><div class="wbox" style="min-height:190px"><div class="wk">latency</div><div class="wq">int8 · float32, on the ESP32 target</div></div><div class="wbox" style="min-height:190px"><div class="wk">RAM</div><div class="wq">int8 · float32</div></div><div class="wbox" style="min-height:190px"><div class="wk">flash</div><div class="wq">int8 · float32</div></div><div class="wbox" style="min-height:190px"><div class="wk">feature explorer</div><div class="wq">do the classes separate? which overlap?</div></div><div class="wbox" style="min-height:190px"><div class="wk">go back to</div><div class="wq">one stage you would redo first, and why</div></div></div>
+  </div>
+  <div class="cue">Expect int8 to be several times smaller and faster, with a small accuracy change; compare with Class 24's trade-off. Teams whose explorer shows overlap almost always need more or cleaner data, which is the workflow loop in action.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">Name the tool you would use at three stages of the workflow for your course project, with one reason for each.</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>responsible AI, and should we build it at all?</strong></p>
+  </div>
+  <div class="cue">Good answers name a stage, a specific tool and a reason tied to the project's constraints (for example: "data: record on the INMP441 with our own sketch, because phone microphones sound different").</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer')||e.target.closest('.tm')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* workflow ring */
+  var WF=[['problem and feasibility','Should we build this, and can it possibly fit?','spreadsheets, back-of-envelope sums, the feasibility checklist (Classes 26–27)','Gate 1: scope and budget'],
+    ['data','What will the sensor really see, and who labels it?','phone or board recordings, Audacity, Label Studio, Edge Impulse data acquisition','record the five team members, the room, the fan'],
+    ['exploration','Is there a pattern at all?','Colab, Jupyter, pandas and matplotlib; Edge Impulse feature explorer','listen to failures; plot loudness and ZCR (Class 19)'],
+    ['features and DSP','Which few numbers make the answer easy?','librosa or NumPy in Colab, Edge Impulse processing blocks, ESP-DSP on the board','voice detector + spectrogram (Classes 19–21)'],
+    ['training','Which model, trained how?','TensorFlow / Keras, PyTorch, scikit-learn; Edge Impulse learning blocks','one classifier first, then split models'],
+    ['evaluation','Is it good enough, on the data that matters?','confusion matrices, false alarms per hour, held-out speakers; scikit-learn metrics','test on voices that were never in training'],
+    ['optimisation','Will it fit and run in time?','LiteRT converter (int8), PyTorch quantisation, pruning; Edge Impulse estimates','fit the board: RAM, flash, latency'],
+    ['deployment','How does it get onto the device?','LiteRT for Microcontrollers, ESP-DL, ESP-NN; Arduino IDE, ESP-IDF, PlatformIO','listen live on the S3'],
+    ['monitoring and iteration','Is it still right, months later?','on-device counters, logs, over-the-air updates, model versions','log false alarms during the demo week']];
+  function wfDraw(p,k){
+    var o='<defs><marker id="wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#c6c3ba"/></marker></defs>', cx=320, cy=260, R=190, n=WF.length;
+    o+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="#e2e0d9" stroke-width="10"/>';
+    for(var q=0;q<n;q++){ var a=(q/n)*2*Math.PI-Math.PI/2, a2=((q+0.5)/n)*2*Math.PI-Math.PI/2;
+      o+='<path d="M '+(cx+R*Math.cos(a2-0.06)).toFixed(1)+' '+(cy+R*Math.sin(a2-0.06)).toFixed(1)+' A '+R+' '+R+' 0 0 1 '+(cx+R*Math.cos(a2+0.04)).toFixed(1)+' '+(cy+R*Math.sin(a2+0.04)).toFixed(1)+'" fill="none" stroke="#c6c3ba" stroke-width="3" marker-end="url(#wa)"/>'; }
+    for(var q2=0;q2<n;q2++){ var a3=(q2/n)*2*Math.PI-Math.PI/2, x=cx+R*Math.cos(a3), y=cy+R*Math.sin(a3), on=q2===k;
+      o+='<g data-wf="'+q2+'" style="cursor:pointer"><circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(on?40:34)+'" fill="'+(on?'#23408f':'#ffffff')+'" stroke="#23408f" stroke-width="2.5"/><text x="'+x.toFixed(1)+'" y="'+(y+8).toFixed(1)+'" font-size="'+(on?24:21)+'" text-anchor="middle" font-weight="700" fill="'+(on?'#ffffff':'#23408f')+'">'+(q2+1)+'</text></g>';
+      var lx=cx+(R+64)*Math.cos(a3), ly=cy+(R+64)*Math.sin(a3), anc= Math.cos(a3)>0.3?'start':(Math.cos(a3)<-0.3?'end':'middle');
+      var lab=['problem','data','exploration','features','training','evaluation','optimisation','deployment','monitoring'][q2];
+      var lx2= anc==='start'? cx+(R+44)*Math.cos(a3) : (anc==='end'? cx+(R+44)*Math.cos(a3) : lx);
+      o+='<text x="'+lx2.toFixed(1)+'" y="'+(ly+5).toFixed(1)+'" font-size="15" text-anchor="'+anc+'" fill="'+(on?'#23408f':'#4b5057')+'" font-weight="'+(on?700:400)+'">'+lab+'</text>'; }
+    o+='<text x="'+cx+'" y="'+(cy-6)+'" font-size="18" text-anchor="middle" fill="#8b9096" font-weight="700">the edge AI</text><text x="'+cx+'" y="'+(cy+18)+'" font-size="18" text-anchor="middle" fill="#8b9096" font-weight="700">workflow</text>';
+    p.querySelector('.wfsvg').innerHTML=o;
+    var w=WF[k];
+    p.querySelector('.wfinfo').innerHTML='<div class="wl">stage '+(k+1)+' of 9</div><div class="wh">'+w[0]+'</div><div class="wq">'+w[1]+'</div><div class="wl">tools</div><div>'+w[2]+'</div><div class="wl">in your project</div><div>'+w[3]+'</div>';
+  }
+  deck.querySelectorAll('.wfp').forEach(function(p){ wfDraw(p,0); });
+  /* format chooser */
+  var FMT={ 'mcu|tf':['LiteRT for Microcontrollers','.tflite → C array, int8','ESP-NN kernels underneath; ESP-DL is the alternative runtime. Edge Impulse uses this route for ESP32 boards.'],
+    'mcu|pt':['ESP-DL (or ExecuTorch on some Arm MCUs)','ONNX → quantised .espdl file','PyTorch on microcontrollers is younger: export to ONNX, then use the vendor’s quantisation tool. Check current ESP-DL docs first.'],
+    'pi|tf':['LiteRT (Python or C++)','.tflite, int8 or float','Runs on the CPU; a Hailo add-on board needs Hailo’s own compiler (Class 16).'],
+    'pi|pt':['ONNX Runtime or ExecuTorch','.onnx or .pte','ONNX Runtime is the common choice on Linux boards.'],
+    'phone|tf':['LiteRT with a GPU or NPU delegate','.tflite','The delegate hands supported layers to the phone’s accelerator (Class 16).'],
+    'phone|pt':['ExecuTorch','.pte','PyTorch’s on-device runtime; backends for phone NPUs and GPUs.'],
+    'jet|tf':['TensorRT','via ONNX → TensorRT engine','NVIDIA’s optimiser builds an engine for that exact GPU.'],
+    'jet|pt':['TensorRT','via ONNX → TensorRT engine','Same route from PyTorch: export to ONNX, then build the engine.']};
+  function fmtDraw(p){
+    var t=p.querySelector('[data-g="t"] button.sel').dataset.v, f=p.querySelector('[data-g="f"] button.sel').dataset.v, r=FMT[t+'|'+f];
+    p.querySelector('.fmtout').innerHTML='<div><div class="fk">runtime</div><div class="fv">'+r[0]+'</div></div><div><div class="fk">file format</div><div class="fv">'+r[1]+'</div></div><div><div class="fk">precision</div><div class="fv">'+(t==='mcu'?'int8: no choice really':(t==='jet'?'fp16 or int8':'int8 or float'))+'</div></div><div class="fn">'+r[2]+'</div>';
+  }
+  deck.querySelectorAll('.fmt').forEach(fmtDraw);
+  /* tool matcher */
+  deck.querySelectorAll('.tm').forEach(function(p){
+    var J=JSON.parse(p.dataset.j), st={i:0,ans:J.map(function(){return -1;})};
+    function draw(){
+      var j=J[st.i], got=st.ans[st.i];
+      p.querySelector('.tmn').textContent='job '+(st.i+1)+' of '+J.length;
+      var sc=st.ans.filter(function(a,k){return a===J[k][2];}).length, done=st.ans.filter(function(a){return a>=0;}).length;
+      p.querySelector('.tms').textContent='score '+sc+' / '+done;
+      p.querySelector('.tmq').textContent=j[0];
+      p.querySelector('.tmo').innerHTML=j[1].map(function(o,k){ var c=''; if(got>=0){ if(k===j[2]) c='right'; else if(k===got) c='wrong'; } return '<button data-k="'+k+'" class="'+c+'"><b>'+'ABCD'[k]+'</b>'+o+'</button>'; }).join('');
+      p.querySelector('.tme').textContent= got>=0 ? (got===j[2]?'Yes. ':'Not quite. ')+j[3] : '';
+      p.querySelector('.tmprev').style.visibility=st.i>0?'visible':'hidden';
+      p.querySelector('.tmnext').textContent= st.i<J.length-1?'next job →':'final score: '+sc+' / '+J.length;
+    }
+    p.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return; b.blur();
+      if(b.dataset.k!==undefined){ if(st.ans[st.i]<0) st.ans[st.i]=+b.dataset.k; draw(); return; }
+      if(b.classList.contains('tmnext') && st.i<J.length-1){ st.i++; draw(); }
+      if(b.classList.contains('tmprev') && st.i>0){ st.i--; draw(); }
+    });
+    draw();
+  });
+  document.addEventListener('click',function(e){
+    var g=e.target.closest('[data-wf]'); if(g){ wfDraw(g.closest('.wfp'),+g.dataset.wf); return; }
+    var b=e.target.closest('.fmt .cb button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); fmtDraw(b.closest('.fmt')); }
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

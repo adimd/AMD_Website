@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 27 · Feasibility and Unit III Wrap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 27 */
+.num{font-family:var(--mono);font-size:18px}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.big-n.green{color:var(--ok)}
+.dstats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+.dstats div{border-top:1px solid var(--rule);padding-top:6px;font-size:15px;color:var(--soft)}
+.dstats b{display:block;font-family:var(--mono);font-size:24px;color:var(--ink)}
+.scard{padding:16px 22px}
+.scbtns button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.scr{display:grid;grid-template-columns:170px 120px 1fr;align-items:center;gap:16px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.scr .ln{font-family:var(--serif);font-size:24px;font-weight:700}
+.scr .lt{width:100px;height:40px;border-radius:20px;border:1px solid var(--rule2);cursor:pointer;font-family:var(--mono);font-size:13px;color:#fff}
+.scr .rk{font-size:18px}
+.quiz{padding:26px 32px;max-width:1300px}
+.qhead{display:flex;justify-content:space-between;font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.qq{font-family:var(--display);font-size:38px;font-weight:600;color:var(--ink);line-height:1.2;margin:14px 0 22px}
+.qo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qo button{text-align:left;padding:16px 20px;border:1px solid var(--rule2);background:var(--card);border-radius:10px;font-family:var(--sans);font-size:22px;color:var(--ink);cursor:pointer}
+.qo button b{font-family:var(--mono);color:var(--accent);margin-right:12px}
+.qo button.right{background:var(--ok-soft);border-color:var(--ok);border-width:2px}
+.qo button.wrong{background:var(--fail-soft);border-color:var(--fail);color:var(--fail)}
+.qe{min-height:62px;margin-top:16px;font-size:20px;color:var(--body)}
+.qnav{display:flex;justify-content:space-between;margin-top:8px}
+.qnav button{height:44px;padding:0 20px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:15px;color:var(--ink);cursor:pointer}
+.qnav .qnext{background:var(--accent);border-color:var(--accent);color:#fff}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 27</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 27 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 27 · unit III wrap · business, dataset and technological feasibility</div>
+    <h1>Can we build it?<br>Should we? Will it pay?</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Last class asked whether a product is right to build. Today, the other three questions: is there data, will it fit, and is it worth the money. Then the Unit III quiz, and your project's first gate.</p>
+  </div>
+  <div class="cue">Theory, recap and quiz run to slide 15; the gate-1 exercise is one block at the end (slides 16 and 17). Teams need their course-project option chosen before class.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>What is recorded, where it goes, and who it may fail.</h2>
+    <table class="dt txt" style="width:100%;max-width:1250px">
+      <tr><th style="width:22%">product</th><th style="width:44%">one sentence for users</th><th>may work worse for</th></tr>
+      <tr class="frag"><td>voice light switch</td><td>"Sound is analysed on the switch and never stored or sent."</td><td>quiet or accented speakers</td></tr>
+      <tr class="frag"><td>bed-call system</td><td>"Only the word heard and the time are sent to the nurses' station."</td><td>patients with weak or slurred voices</td></tr>
+      <tr class="frag"><td>kitchen assistant</td><td>"Audio stays on the device; only commands go to the server."</td><td>cooks speaking over loud appliances</td></tr>
+    </table>
+    <p class="frag" style="margin-top:18px;max-width:72ch">That was <strong>moral feasibility</strong>. Three more lenses today.</p>
+  </div>
+  <div class="cue">Take two student answers first. Push for specifics: "everyone" is not a group; "people with hoarse voices after surgery" is.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Possible is not the same as worth it" data-act="the hook">
+  <div>
+    <div class="kicker">the hook · a water tank on a roof</div>
+    <h2>An AI water-level monitor, or a float switch?</h2>
+    <div class="split" style="gap:26px;align-items:stretch">
+      <div class="panel frag"><span class="lab" style="color:var(--accent)">the AI version</span><p>Microphone listens to the pump; a model estimates the level from the sound; Wi-Fi alerts. Board, sensor, enclosure, months of data collection.</p><p class="big-n" style="font-size:44px;margin-top:10px">₹1,500+ a unit</p></div>
+      <div class="panel frag"><span class="lab" style="color:var(--ok)">the float switch</span><p>A plastic float on a wire. Cuts the pump when the tank is full. Works for ten years, no data, no training.</p><p class="big-n green" style="font-size:44px;margin-top:10px">~₹150</p></div>
+    </div>
+    <p class="frag" style="margin-top:20px;max-width:74ch">Everything in Units II and III says the AI version is <em>possible</em>. Feasibility asks whether it is <em>worth it</em>: what does the AI add that the float cannot?</p>
+  </div>
+  <div class="cue">Rough, illustrative prices. Let the class argue: the AI version might detect a dry-running pump or a leaking valve, which the float cannot. That is the value question: what problem does the AI solve that cheaper things do not?</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Four lenses" data-act="four lenses">
+  <div>
+    <h2>Four lenses. A project must pass all four.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ucard"><div class="un" style="color:var(--soft)">done · Class 26</div><div class="ut">moral</div><div class="ud">Should it exist? Who could it harm, exclude or watch?</div></div>
+      <div class="ucard frag"><div class="un">today</div><div class="ut">business</div><div class="ud">Does the value beat the cost, for someone who will pay?</div></div>
+      <div class="ucard frag"><div class="un">today</div><div class="ut">dataset</div><div class="ud">Can we get enough of the right data, labelled, in time?</div></div>
+      <div class="ucard frag"><div class="un">today</div><div class="ut">technological</div><div class="ud">Does the workload fit the device: memory, compute, latency, power?</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:74ch">Check them in order of cost: the cheapest lens to check first is usually the one that kills the project fastest.</p>
+  </div>
+  <div class="cue">These four follow the syllabus's Unit III list: moral, business, dataset and technological feasibility. A red on any one lens is enough to stop, or to rescope.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Business feasibility" data-act="business">
+  <div>
+    <h2>Business: five questions before any code.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:28%">question</th><th>what a good answer looks like</th></tr>
+      <tr class="frag"><td>what problem, for whom?</td><td>a named user and a cost they pay today: wasted water, missed calls, a burnt pressure cooker</td></tr>
+      <tr class="frag"><td>who pays?</td><td>the user, a hospital, a farmer co-op, a manufacturer: someone with a budget</td></tr>
+      <tr class="frag"><td>what does one unit cost?</td><td>the bill of materials (board, sensor, case, power) plus a share of the development cost</td></tr>
+      <tr class="frag"><td>what is the alternative?</td><td>no AI at all, a rule, a cloud service, a person: AI must beat the cheapest of these</td></tr>
+      <tr class="frag"><td>who keeps it running?</td><td>batteries, updates, retraining when conditions drift (Class 20)</td></tr>
+    </table>
+  </div>
+  <div class="cue">"Bill of materials" (BOM) is the cost of every part in one unit. For a student prototype it is the ESP32-S3 board plus sensors; for a product it also includes the enclosure, power supply, assembly and testing.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Value against cost" data-act="business">
+  <div>
+    <div class="kicker">try it live · illustrative rupee figures</div>
+    <h2>Does each unit earn more than it costs, once development is shared out?</h2>
+    <div class="panel calc bcalc">
+      <div class="crow" style="grid-template-columns:280px 1fr 140px;gap:16px"><span class="cl">units sold</span><input type="range" class="bu" min="0" max="8" step="1" value="3"><span class="num buv"></span></div>
+      <div class="crow" style="grid-template-columns:280px 1fr 140px;gap:16px"><span class="cl">parts per unit (BOM)</span><input type="range" class="bb" min="200" max="3000" step="50" value="900"><span class="num bbv"></span></div>
+      <div class="crow" style="grid-template-columns:280px 1fr 140px;gap:16px"><span class="cl">development, one-off</span><input type="range" class="bd" min="1" max="50" step="1" value="10"><span class="num bdv"></span></div>
+      <div class="crow" style="grid-template-columns:280px 1fr 140px;gap:16px"><span class="cl">value to the buyer, per unit</span><input type="range" class="bv" min="300" max="6000" step="100" value="2000"><span class="num bvv"></span></div>
+      <div class="cformula"></div>
+      <div class="cbar" style="grid-template-columns:280px 1fr 150px"><span class="cl">cost per unit</span><div class="ctrack"><div class="cfill bcost"></div></div><span class="cpct bcostv"></span></div>
+      <div class="cbar" style="grid-template-columns:280px 1fr 150px"><span class="cl">value per unit</span><div class="ctrack"><div class="cfill bval"></div></div><span class="cpct bvalv"></span></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Cost per unit = BOM + development ÷ units. Drag units from 100 to 1,00,000 with development at ₹10 lakh: at 100 units each one carries ₹10,000 of development; at 1 lakh units, ₹10. The same idea as Class 17's break-even. Value is what the buyer saves or would pay; it must also beat the non-AI alternative, which this calculator does not show.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Dataset feasibility" data-act="dataset">
+  <div>
+    <h2>Dataset: often the lens that kills a project.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(5,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:26px">how much?</div><div class="ns">hundreds of examples per class for small models; more for more classes</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">what coverage?</div><div class="ns">every room, noise level, accent, age and device the product will meet</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">who labels?</div><div class="ns">labels cost time; some need experts (a nurse, a mechanic)</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">how long?</div><div class="ns">recording, cleaning and labelling often take longer than training</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">rare events?</div><div class="ns">falls, faults, fires: you cannot wait for them</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:74ch">Coverage matters more than size: ten thousand clips of one speaker in one quiet room make a model that fails in the first real kitchen.</p>
+  </div>
+  <div class="cue">Link to Class 26: gaps in coverage are where the model works worse for some group. Dataset feasibility and moral feasibility meet here.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="How much data?" data-act="dataset">
+  <div>
+    <div class="kicker">try it live · a keyword dataset · rough planning numbers</div>
+    <h2>Words × places × people × repeats. It multiplies fast.</h2>
+    <div class="panel calc dcalc">
+      <div class="crow" style="grid-template-columns:280px 1fr 110px;gap:16px"><span class="cl">words (classes)</span><input type="range" class="dw" min="2" max="20" step="1" value="6"><span class="num dwv"></span></div>
+      <div class="crow" style="grid-template-columns:280px 1fr 110px;gap:16px"><span class="cl">conditions (rooms, noise)</span><input type="range" class="dc" min="1" max="6" step="1" value="3"><span class="num dcv"></span></div>
+      <div class="crow" style="grid-template-columns:280px 1fr 110px;gap:16px"><span class="cl">different speakers</span><input type="range" class="ds" min="4" max="200" step="2" value="30"><span class="num dsv"></span></div>
+      <div class="crow" style="grid-template-columns:280px 1fr 110px;gap:16px"><span class="cl">repeats each</span><input type="range" class="dr" min="1" max="10" step="1" value="3"><span class="num drv"></span></div>
+      <div class="cformula"></div>
+      <div class="dstats"></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Planning assumptions: each clip takes about 3 seconds of a speaker's time including pauses, and about 5 seconds to check and label. The coverage warning uses a rule of thumb (fewer than about 20 speakers is risky for a speaker-independent keyword model); treat the numbers as a planning sketch, not a requirement.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Data you cannot wait for" data-act="dataset">
+  <div>
+    <h2>Rare events: a month of recording, one example.</h2>
+    <svg viewBox="0 0 1300 115" width="100%" height="115"><rect x="60" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="101" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="142" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="183" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="224" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="265" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="306" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="347" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="388" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="429" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="470" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="511" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="552" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="593" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="634" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="675" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="716" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="757" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="798" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="839" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="880" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="921" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="962" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="1003" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="1044" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="1085" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="1126" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="1167" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="1208" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="1249" y="40" width="36" height="40" rx="4" fill="#e2e0d9"/><rect x="757" y="40" width="36" height="40" rx="4" fill="#a8231f"/><text x="775" y="30" font-size="14" text-anchor="middle" fill="#a8231f" font-weight="700">one real fall</text><text x="60" y="104" font-size="14" fill="#8b9096">one month of a wearable on one person · each box is a day</text></svg>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr);margin-top:8px">
+      <div class="ucard frag"><div class="un">option 1</div><div class="ut">act it out</div><div class="ud">Volunteers fall onto mats. Plenty of data, but staged falls are not real ones.</div></div>
+      <div class="ucard frag"><div class="un">option 2</div><div class="ut">learn "normal" only</div><div class="ud">Anomaly detection (Class 23): flag whatever does not look like normal days.</div></div>
+      <div class="ucard frag"><div class="un">option 3</div><div class="ut">borrow and adapt</div><div class="ud">Public datasets, synthetic data, then fine-tune on a little real data (Class 24).</div></div>
+    </div>
+    <p class="frag" style="margin-top:16px;max-width:74ch">If none of the three gives data you trust, the project is not dataset-feasible yet, however good the model idea is.</p>
+  </div>
+  <div class="cue">Illustrative timeline. The same problem hits machine faults (a bearing may fail once in years), the Help project's emergency word, and any safety system. Each option carries a risk worth writing on the gate-1 sheet.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Technological feasibility" data-act="technology">
+  <div>
+    <div class="kicker">the five numbers (Class 18) against the device · a wake-word model on the S3</div>
+    <h2>Technology: put the need next to what the board has.</h2>
+    <svg viewBox="0 0 1380 330" width="100%" height="330"><g class="frag"><text x="0" y="46" font-size="17" fill="#15171b" font-weight="700">flash for the model</text><rect x="300" y="26" width="640" height="30" rx="5" fill="#e2e0d9"/><rect x="300" y="26" width="6" height="30" rx="5" fill="#146b5c"/><text x="956" y="47" font-size="15" fill="#4b5057">need ~100 KB · have 16 MB</text></g><g class="frag"><text x="0" y="108" font-size="17" fill="#15171b" font-weight="700">SRAM at run time</text><rect x="300" y="88" width="640" height="30" rx="5" fill="#e2e0d9"/><rect x="300" y="88" width="128" height="30" rx="5" fill="#146b5c"/><text x="956" y="109" font-size="15" fill="#4b5057">need ~60 KB · have ~300 KB free</text></g><g class="frag"><text x="0" y="170" font-size="17" fill="#15171b" font-weight="700">compute per second</text><rect x="300" y="150" width="640" height="30" rx="5" fill="#e2e0d9"/><rect x="300" y="150" width="320" height="30" rx="5" fill="#b06a12"/><text x="956" y="171" font-size="15" fill="#4b5057">need ~10 M MACs · have ~20 M MAC/s measured</text></g><g class="frag"><text x="0" y="232" font-size="17" fill="#15171b" font-weight="700">latency</text><rect x="300" y="212" width="640" height="30" rx="5" fill="#e2e0d9"/><rect x="300" y="212" width="384" height="30" rx="5" fill="#b06a12"/><text x="956" y="233" font-size="15" fill="#4b5057">need < 300 ms · have ~180 ms (Class 20 sum)</text></g><g class="frag"><text x="0" y="294" font-size="17" fill="#15171b" font-weight="700">power</text><rect x="300" y="274" width="640" height="30" rx="5" fill="#e2e0d9"/><rect x="300" y="274" width="64" height="30" rx="5" fill="#146b5c"/><text x="956" y="295" font-size="15" fill="#4b5057">need mains · have mains</text></g></svg>
+    <p class="frag small">Green under 40% of what the board has, amber under 80%, red beyond. Leave room: Wi-Fi, the voice detector and the rest of the firmware need their share too.</p>
+  </div>
+  <div class="cue">Illustrative numbers for a small int8 keyword model; use your team's own from Classes 15, 19 and 24. The compute line is the one most likely to turn amber: 50% of the core is busy before Wi-Fi does anything. Algorithm choice (Class 23) and optimisation (Class 24) are the levers.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="The scorecard" data-act="all four lenses">
+  <div>
+    <div class="kicker">try it live · click a light to change it</div>
+    <h2>One page, four lenses, one verdict.</h2>
+    <div class="panel scard">
+      <div class="cb scbtns"><button data-p="0" class="sel">voice doorbell (worked)</button><button data-p="1">fall detector (worked)</button><button data-p="2">your project (blank)</button></div>
+      <div class="scrows"></div>
+      <div class="cverdict scv"></div>
+    </div>
+  </div>
+  <div class="cue">The two worked examples are one reasonable reading, not the answer; argue with them. Rule: any red means stop or rescope; ambers are fine if each has a written mitigation. The blank card is what teams fill in for their own project in the exercise.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Cheapest thing first" data-act="all four lenses">
+  <div>
+    <h2>Climb only as far as you have to. Know when to stop.</h2>
+    <svg viewBox="0 0 1380 300" width="100%" height="300">
+      <g class="frag"><rect x="0" y="230" width="250" height="60" rx="8" fill="#e6f1ee" stroke="#146b5c"/><text x="125" y="266" font-size="17" text-anchor="middle" font-weight="700" fill="#146b5c">a rule or a threshold</text></g>
+      <g class="frag"><rect x="270" y="180" width="250" height="110" rx="8" fill="#e6f1ee" stroke="#146b5c"/><text x="395" y="232" font-size="17" text-anchor="middle" font-weight="700" fill="#146b5c">classical ML</text><text x="395" y="256" font-size="17" text-anchor="middle" font-weight="700" fill="#146b5c">on features</text></g>
+      <g class="frag"><rect x="540" y="130" width="250" height="160" rx="8" fill="#eaeef7" stroke="#23408f"/><text x="665" y="215" font-size="17" text-anchor="middle" font-weight="700" fill="#23408f">a small int8 network</text></g>
+      <g class="frag"><rect x="810" y="80" width="250" height="210" rx="8" fill="#fbf0dc" stroke="#b06a12"/><text x="935" y="190" font-size="17" text-anchor="middle" font-weight="700" fill="#b06a12">bigger hardware</text></g>
+      <g class="frag"><rect x="1080" y="30" width="280" height="260" rx="8" fill="#fbeceb" stroke="#a8231f"/><text x="1220" y="150" font-size="17" text-anchor="middle" font-weight="700" fill="#a8231f">rescope, or stop</text><text x="1220" y="176" font-size="14" text-anchor="middle" fill="#4b5057">a fair result, not a failure</text></g>
+    </svg>
+  </div>
+  <div class="cue">Unit I's "cheapest thing first", now with the whole of Unit III behind it. Each step up costs data, compute, power and money. Stopping early because a threshold already works is a success. Stopping because a lens is red, and saying so clearly, is good engineering.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Unit III on one page" data-act="unit recap">
+  <div>
+    <h2>Unit III on one page.</h2>
+    <table class="dt txt" style="width:100%;font-size:18px"><tr><th>class</th><th>topic</th><th>the sentence to remember</th></tr><tr class="frag"><td style="width:6%">19</td><td style="width:28%">Feature engineering</td><td>A few well-chosen numbers per window beat thousands of raw samples.</td></tr><tr class="frag"><td style="width:6%">20</td><td style="width:28%">Data streams</td><td>Windows, hops and ring buffers; keep up every frame; smooth decisions, and add up the latency.</td></tr><tr class="frag"><td style="width:6%">21</td><td style="width:28%">DSP algorithms</td><td>IIR filters, envelopes, window functions, Goertzel, autocorrelation, resampling: cheap tools before any model.</td></tr><tr class="frag"><td style="width:6%">22</td><td style="width:28%">Combining features and sensors</td><td>Two weak clues can make one strong answer, if their timing and scales are aligned.</td></tr><tr class="frag"><td style="width:6%">23</td><td style="width:28%">Algorithm types</td><td>Classify, detect, regress, find anomalies; rules, classical ML or networks, chosen by the job.</td></tr><tr class="frag"><td style="width:6%">24</td><td style="width:28%">Optimisation and on-device training</td><td>Quantise, prune, shrink; adapt on the device only when the world drifts.</td></tr><tr class="frag"><td style="width:6%">25</td><td style="width:28%">Tools and workflow</td><td>Collect, design, train, test, deploy, monitor: and the tools for each step.</td></tr><tr class="frag"><td style="width:6%">26</td><td style="width:28%">Responsible AI and moral feasibility</td><td>Ask who it could harm, exclude or watch, before building.</td></tr></table>
+  </div>
+  <div class="cue">Revision sheet for the CIE. Ask a student to say each sentence before it appears; adjust the wording to match what you actually emphasised in Classes 22 to 26.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Unit III quiz" data-act="quiz">
+  <div>
+    <div class="kicker">unit III quiz · vote with hands, then click</div>
+    <div class="panel quiz" data-q='[{"q": "Which feature changes least when the speaker steps back from the microphone?", "o": ["loudness (RMS)", "peak level", "zero-crossing rate", "total energy"], "a": 2, "e": "Distance scales the amplitude; zero-crossing rate counts sign changes, so it barely moves (Class 19)."}, {"q": "A 1-second window moves with a 0.25-second hop. How much do neighbouring windows overlap?", "o": ["25%", "50%", "75%", "100%"], "a": 2, "e": "1 \u2212 0.25 \u00f7 1 = 0.75: each window shares 75% of its samples with the next (Class 20)."}, {"q": "Your code takes 25 ms for each 20 ms audio frame. What happens?", "o": ["Nothing; it averages out", "It falls behind and audio is lost", "The sample rate drops to 12.8 kHz automatically", "The model becomes more accurate"], "a": 1, "e": "The buffer fills and frames are thrown away: on a stream you must keep up every frame (Class 20)."}, {"q": "The cheapest way to measure the strength of one known frequency is\u2026", "o": ["a full FFT", "the Goertzel algorithm", "a mel spectrogram", "autocorrelation"], "a": 1, "e": "Goertzel computes one FFT bin for about 3 operations per sample (Class 21)."}, {"q": "Before dropping from 16 kHz to 8 kHz sampling, you must\u2026", "o": ["add pre-emphasis", "low-pass filter below 4 kHz", "apply a Hann window", "normalise the volume"], "a": 1, "e": "Without the anti-alias filter, sound above 4 kHz folds down into the band you keep (Classes 8 and 21)."}, {"q": "Why combine a PIR sensor with a microphone for a doorbell?", "o": ["To raise the sample rate", "Two independent clues cut false alarms", "PIR sensors are more accurate than microphones", "To avoid feature engineering"], "a": 1, "e": "Each sensor alone is fooled by different things; requiring both makes false alarms much rarer (Class 22)."}, {"q": "Anomaly detection is the natural choice when\u2026", "o": ["you have many labelled faults", "you have plenty of normal data but almost no faults", "there are exactly two classes", "the data is images"], "a": 1, "e": "It learns what normal looks like and flags anything else, so it needs no fault examples (Class 23)."}, {"q": "Quantising a float32 model to int8 mainly\u2026", "o": ["makes it 4\u00d7 more accurate", "cuts weight memory about 4\u00d7 and allows faster integer maths", "removes the need for training", "works only on GPUs"], "a": 1, "e": "One byte per weight instead of four, and cheaper arithmetic (Classes 15 and 24)."}, {"q": "Which tool covers data collection, feature design, training and deployment to a microcontroller in one place?", "o": ["Edge Impulse", "Arduino Serial Plotter", "Wireshark", "Excel"], "a": 0, "e": "Edge Impulse is an end-to-end edge ML platform (Class 25)."}, {"q": "A fall detector&#39;s biggest dataset problem is usually\u2026", "o": ["too much data", "real falls are rare, so data must be acted, borrowed or modelled as anomalies", "the sample rate is too high", "labels are free"], "a": 1, "e": "You cannot wait for real falls; each workaround carries a risk to record on the feasibility sheet (Class 27)."}]'>
+      <div class="qhead"><span class="qn"></span><span class="qs"></span></div>
+      <div class="qq"></div>
+      <div class="qo"></div>
+      <div class="qe"></div>
+      <div class="qnav"><button class="qprev">← previous</button><button class="qnext">next question →</button></div>
+    </div>
+  </div>
+  <div class="cue">Ten questions, one or two per class. Questions 6 to 9 assume the Class 22 to 25 content as planned; check the wording against what you taught. The score counts first clicks only.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Next: Unit IV" data-act="bridge">
+  <div>
+    <div class="kicker">where we are</div>
+    <h2>We know what to build and whether it is feasible. Now design it and make it fit.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ucard frag"><div class="un">IV</div><div class="ut">designing the application</div><div class="ud">product, experience and architecture design</div></div>
+      <div class="ucard frag"><div class="un">IV</div><div class="ut">an iterative workflow</div><div class="ud">build, evaluate, deploy, and go round again</div></div>
+      <div class="ucard frag"><div class="un">IV</div><div class="ut">optimising models</div><div class="ud">general and edge-specific methods to make models fit</div></div>
+      <div class="ucard frag"><div class="un">IV</div><div class="ut">splitting the work</div><div class="ud">segmenting a model and sharing computation across devices</div></div>
+    </div>
+  </div>
+  <div class="cue">One minute. Then the gate-1 exercise: teams apply today's scorecard to their own project.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Exercise: gate 1" data-act="exercise">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">exercise · teams · your course-project option</div><h2 style="margin-bottom:6px">Gate 1: score your own project on the four lenses.</h2></div>
+      <div class="panel timer" data-secs="900"><span class="tdisp">15:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ucard"><div class="un">1</div><div class="ut">moral</div><div class="ud">your Class 26 sentence: what is recorded, where it goes, who it may fail</div></div>
+      <div class="ucard"><div class="un">2</div><div class="ut">business</div><div class="ud">who would pay, the BOM of your build, the non-AI alternative</div></div>
+      <div class="ucard"><div class="un">3</div><div class="ut">dataset</div><div class="ud">words × conditions × speakers × repeats; who records and labels</div></div>
+      <div class="ucard"><div class="un">4</div><div class="ut">technology</div><div class="ud">flash, SRAM, compute and latency against the S3</div></div>
+    </div>
+    <p class="small" style="margin-top:14px">For each lens: a light (green, amber, red), the top risk, and one mitigation. Use the scorecard on slide 11 ("your project") to check your verdict. Two teams will present.</p>
+  </div>
+  <div class="cue">This is the course project's gate 1 (scope and budget). Collect the sheets: a red without a rescoping plan should not pass the gate. The Bell, Pump, Robo, Chef and Help options each have a natural weak lens: dataset for Pump (number words in motor noise) and Help (weak voices), technology for Bell if teams keep separate models.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Worksheet" data-act="exercise">
+  <div>
+    <div class="kicker">exercise · gate-1 sheet</div>
+    <h2>Four lenses, four risks, four mitigations.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(4,1fr)"><div class="wbox" style="min-height:260px"><div class="wk">moral</div><div class="wq">light · top risk · one mitigation</div></div><div class="wbox" style="min-height:260px"><div class="wk">business</div><div class="wq">light · top risk · one mitigation</div></div><div class="wbox" style="min-height:260px"><div class="wk">dataset</div><div class="wq">light · top risk · one mitigation</div></div><div class="wbox" style="min-height:260px"><div class="wk">technology</div><div class="wq">light · top risk · one mitigation</div></div></div>
+    <p class="small" style="margin-top:12px">Verdict at the bottom: go, go with risks, or rescope.</p>
+  </div>
+  <div class="cue">After two teams present, ask the class to challenge one light per team. A good challenge names a number: "30 speakers is not enough for six words in a noisy pump house."</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">In three lines, is your course project feasible? One line each for dataset, technology, and business or moral feasibility.</h2>
+    <p class="small frag" style="margin-top:30px">That is Unit III. Next: <strong>Unit IV, design, development and inference at the edge</strong>.</p>
+  </div>
+  <div class="cue">Good answers commit to a verdict and a number on each line, for example "Dataset: amber, 30 speakers in 3 rooms is about 1,600 clips, two weeks of recording."</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.quiz')||e.target.closest('.timer'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  function inr(v){ if(v>=1e7) return '₹'+(v/1e7).toFixed(v>=1e8?0:1)+' cr'; if(v>=1e5) return '₹'+(v/1e5).toFixed(v>=1e6?0:1)+' L'; return '₹'+Math.round(v).toLocaleString('en-IN'); }
+  var BU=[100,300,1000,3000,10000,30000,100000,300000,1000000];
+  function bDraw(p){
+    var u=BU[+p.querySelector('.bu').value], bom=+p.querySelector('.bb').value, dev=+p.querySelector('.bd').value*1e5, val=+p.querySelector('.bv').value;
+    p.querySelector('.buv').textContent=u.toLocaleString('en-IN'); p.querySelector('.bbv').textContent=inr(bom); p.querySelector('.bdv').textContent=inr(dev); p.querySelector('.bvv').textContent=inr(val);
+    var cpu=bom+dev/u, mx=Math.max(cpu,val);
+    p.querySelector('.cformula').innerHTML=inr(bom)+' + '+inr(dev)+' ÷ '+u.toLocaleString('en-IN')+' = <b>'+inr(cpu)+' per unit</b>';
+    var c=p.querySelector('.bcost'); c.style.width=(cpu/mx*100)+'%'; c.classList.toggle('over',cpu>val); p.querySelector('.bcostv').textContent=inr(cpu);
+    p.querySelector('.bval').style.width=(val/mx*100)+'%'; p.querySelector('.bvalv').textContent=inr(val);
+    var v=p.querySelector('.cverdict'), be=dev/Math.max(1,val-bom);
+    if(val<=bom){ v.style.color='var(--fail)'; v.textContent='Even the parts cost more than the value: no number of sales fixes this. Cut the BOM or find more value.'; }
+    else if(cpu>val){ v.style.color='var(--fail)'; v.textContent='Loses '+inr(cpu-val)+' a unit at this volume. It pays only beyond about '+Math.ceil(be).toLocaleString('en-IN')+' units.'; }
+    else { v.style.color='var(--ok)'; v.textContent='Each unit leaves '+inr(val-cpu)+' of value over cost. Break-even at about '+Math.ceil(be).toLocaleString('en-IN')+' units.'; }
+  }
+  deck.querySelectorAll('.bcalc').forEach(function(p){ bDraw(p); p.querySelectorAll('input').forEach(function(x){ x.addEventListener('input',function(){bDraw(p);}); }); });
+  function dDraw(p){
+    var w=+p.querySelector('.dw').value, c=+p.querySelector('.dc').value, sp=+p.querySelector('.ds').value, r=+p.querySelector('.dr').value;
+    p.querySelector('.dwv').textContent=w; p.querySelector('.dcv').textContent=c; p.querySelector('.dsv').textContent=sp; p.querySelector('.drv').textContent=r;
+    var n=w*c*sp*r, rec=n*3/3600, lab=n*5/3600, per=c*sp*r;
+    p.querySelector('.cformula').innerHTML=w+' words × '+c+' conditions × '+sp+' speakers × '+r+' repeats = <b>'+n.toLocaleString('en-IN')+' clips</b>';
+    p.querySelector('.dstats').innerHTML='<div>clips per word<b>'+per.toLocaleString('en-IN')+'</b></div><div>speaker time<b>'+rec.toFixed(1)+' h</b></div><div>labelling time<b>'+lab.toFixed(1)+' h</b></div><div>per speaker<b>'+(w*c*r*3/60).toFixed(1)+' min</b></div>';
+    var v=p.querySelector('.cverdict');
+    if(sp<20){ v.style.color='var(--fail)'; v.textContent='Too few speakers: the model will learn these voices, not the words. Coverage first, size second.'; }
+    else if(per<300){ v.style.color='var(--amber)'; v.textContent='Thin: under 300 clips per word. Feasible for a demo; expect errors in new conditions.'; }
+    else { v.style.color='var(--ok)'; v.textContent='Plausible for a small keyword model, if every condition is really recorded.'; }
+  }
+  deck.querySelectorAll('.dcalc').forEach(function(p){ dDraw(p); p.querySelectorAll('input').forEach(function(x){ x.addEventListener('input',function(){dDraw(p);}); }); });
+  var LIGHT=[['#8b9096','—'],['#146b5c','green'],['#b06a12','amber'],['#a8231f','red']];
+  var SC=[
+    {r:[[1,'Audio stays on the device; tell visitors a doorbell is listening.'],[2,'Must beat a ₹300 plain doorbell: what does voice add?'],[1,'Six words, many voices: recordable in a fortnight.'],[1,'Small keyword model fits the S3 with room to spare.']]},
+    {r:[[2,'Worn all day: false alarms embarrass, missed falls endanger.'],[1,'Families and care homes already pay for alarm pendants.'],[3,'Real falls are rare; acted falls may not match.'],[1,'IMU features and a small model fit a wearable MCU.']]},
+    {r:[[0,'your top risk…'],[0,'your top risk…'],[0,'your top risk…'],[0,'your top risk…']]}];
+  var LN=['moral','business','dataset','technology'];
+  function scDraw(p){
+    var k=+(p.dataset.p||0), st=JSON.parse(p.dataset.st||'null')||SC[k].r.map(function(x){return x[0];}); p.dataset.st=JSON.stringify(st);
+    p.querySelector('.scrows').innerHTML=LN.map(function(n,j){ var L=LIGHT[st[j]]; return '<div class="scr"><span class="ln">'+n+'</span><button class="lt" data-j="'+j+'" style="background:'+L[0]+'">'+L[1]+'</button><span class="rk" style="color:'+(k===2?'var(--soft)':'var(--ink)')+'">'+SC[k].r[j][1]+'</span></div>'; }).join('');
+    var red=st.indexOf(3)>=0, blank=st.indexOf(0)>=0, amb=st.filter(function(x){return x===2;}).length, v=p.querySelector('.scv');
+    if(blank){ v.style.color='var(--soft)'; v.textContent='Click each light: green, amber or red.'; }
+    else if(red){ v.style.color='var(--fail)'; v.textContent='Not yet: a red lens means rescope or stop.'; }
+    else if(amb){ v.style.color='var(--amber)'; v.textContent='Go, with '+amb+' risk'+(amb>1?'s':'')+' to mitigate in writing.'; }
+    else { v.style.color='var(--ok)'; v.textContent='Go.'; }
+    p.querySelectorAll('.scbtns button').forEach(function(b){ b.classList.toggle('sel',+b.dataset.p===k); });
+  }
+  deck.querySelectorAll('.scard').forEach(scDraw);
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.scbtns button'); if(b){ b.blur(); var p=b.closest('.scard'); p.dataset.p=b.dataset.p; p.dataset.st=''; scDraw(p); return; }
+    b=e.target.closest('.scr .lt'); if(b){ b.blur(); var p2=b.closest('.scard'), st=JSON.parse(p2.dataset.st), j=+b.dataset.j; st[j]=st[j]%3+1; p2.dataset.st=JSON.stringify(st); scDraw(p2); return; }
+  });
+  deck.querySelectorAll('.quiz').forEach(function(p){
+    var Q=JSON.parse(p.dataset.q), st={i:0,ans:Q.map(function(){return -1;})};
+    function draw(){
+      var q=Q[st.i], got=st.ans[st.i];
+      p.querySelector('.qn').textContent='question '+(st.i+1)+' of '+Q.length;
+      var sc=st.ans.filter(function(a,k){return a===Q[k].a;}).length, done=st.ans.filter(function(a){return a>=0;}).length;
+      p.querySelector('.qs').textContent='score '+sc+' / '+done;
+      p.querySelector('.qq').textContent=q.q;
+      p.querySelector('.qo').innerHTML=q.o.map(function(o,k){ var c=''; if(got>=0){ if(k===q.a) c='right'; else if(k===got) c='wrong'; } return '<button data-k="'+k+'" class="'+c+'"><b>'+'ABCD'[k]+'</b>'+o+'</button>'; }).join('');
+      p.querySelector('.qe').textContent= got>=0 ? (got===q.a?'Correct. ':'Not quite. ')+q.e : '';
+      p.querySelector('.qprev').style.visibility=st.i>0?'visible':'hidden';
+      p.querySelector('.qnext').textContent= st.i<Q.length-1?'next question →':'final score: '+sc+' / '+Q.length;
+    }
+    p.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return; b.blur();
+      if(b.dataset.k!==undefined){ if(st.ans[st.i]<0) st.ans[st.i]=+b.dataset.k; draw(); return; }
+      if(b.classList.contains('qnext') && st.i<Q.length-1){ st.i++; draw(); }
+      if(b.classList.contains('qprev') && st.i>0){ st.i--; draw(); }
+    });
+    draw();
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

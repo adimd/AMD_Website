@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 24 · Optimisation and On-Device Training</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 24 */
+pre{font-size:13.6px;line-height:1.33}
+.num{font-family:var(--mono);font-size:18px}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.qx,.px,.pz{padding:14px 22px}
+.qx .cb button.sel,.px .cb button.sel,.fitc .cb button.sel,.pzbtns button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.qstats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:4px}
+.qstats div{border-top:1px solid var(--rule);padding-top:6px;font-size:15px;color:var(--soft)}
+.qstats b{display:block;font-family:var(--mono);font-size:22px;color:var(--ink)}
+.pinfo,.pzinfo{font-size:19px;margin-top:10px}
+.pzbtns button{text-align:left;height:46px;font-size:17px;margin-bottom:8px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 24</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 24 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 24 · unit III · optimisation for edge devices and on-device training</div>
+    <h1>Make it smaller.<br>Then let it learn.</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">A model that works in Colab is often too big, too slow or too hungry for the board. Today: the main ways to shrink it, and how a small device can still learn something new after it ships.</p>
+  </div>
+  <div class="cue">Theory runs to slide 14; the lab is one block at the end (slides 15 to 18). Lab needs the MPU6050 (SDA 8, SCL 9) and the two foil touch pads on GPIO 4 and 5 from Class 13. This is an introduction: Unit IV returns to optimisation in depth.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>Name the algorithm type for each question.</h2>
+    <table class="dt txt" style="width:100%;max-width:1200px">
+      <tr><th style="width:40%">question</th><th>type</th></tr>
+      <tr class="frag"><td>(a) is this pump about to fail?</td><td>anomaly detection: learn "normal", flag what is not</td></tr>
+      <tr class="frag"><td>(b) how many people are in the room?</td><td>regression or counting (or object detection, then count)</td></tr>
+      <tr class="frag"><td>(c) did someone say "stop"?</td><td>classification on a stream: keyword spotting</td></tr>
+    </table>
+    <p class="frag" style="margin-top:18px;max-width:72ch">Whatever the type, the model must then fit the board. That is today.</p>
+  </div>
+  <div class="cue">Two minutes. Credit "object detection, then count" for (b): it is a common real design, just more expensive.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Four versions of one model" data-act="the hook">
+  <div>
+    <div class="kicker">the hook · illustrative numbers</div>
+    <h2>One model, four versions. The board has 512 KB of SRAM and must answer in 100 ms.</h2>
+    <div class="ngrid" style="grid-template-columns:repeat(4,1fr);gap:18px"><div class="cellx frag" style="border-top:4px solid #8b9096;text-align:left;padding-top:12px"><div class="nlab" style="color:#8b9096;font-weight:700;letter-spacing:.06em">float32</div><div class="big-n" style="font-size:38px;margin-top:8px">2.4 MB</div><div style="font-family:var(--mono);font-size:20px;margin-top:6px">160 ms · 92.0%</div></div><div class="cellx frag" style="border-top:4px solid #23408f;text-align:left;padding-top:12px"><div class="nlab" style="color:#23408f;font-weight:700;letter-spacing:.06em">int8 · post-training</div><div class="big-n" style="font-size:38px;margin-top:8px">0.6 MB</div><div style="font-family:var(--mono);font-size:20px;margin-top:6px">60 ms · 91.2%</div></div><div class="cellx frag" style="border-top:4px solid #146b5c;text-align:left;padding-top:12px"><div class="nlab" style="color:#146b5c;font-weight:700;letter-spacing:.06em">int8 · quantisation-aware</div><div class="big-n" style="font-size:38px;margin-top:8px">0.6 MB</div><div style="font-family:var(--mono);font-size:20px;margin-top:6px">60 ms · 91.8%</div></div><div class="cellx frag" style="border-top:4px solid #b06a12;text-align:left;padding-top:12px"><div class="nlab" style="color:#b06a12;font-weight:700;letter-spacing:.06em">int8 + half the channels pruned</div><div class="big-n" style="font-size:38px;margin-top:8px">0.3 MB</div><div style="font-family:var(--mono);font-size:20px;margin-top:6px">35 ms · 91.0%</div></div></div>
+    <p class="frag big" style="margin-top:26px;max-width:46ch">Which would you ship? And what did each step cost?</p>
+  </div>
+  <div class="cue">Size · time · accuracy. The figures are invented to show the usual pattern: int8 cuts size by 4× and time by 2–3× for a small accuracy loss; quantisation-aware training wins most of that loss back; pruning trades a little more accuracy for more speed. Take a vote, then tell them the rest of the class explains each step.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="The optimisation toolbox" data-act="optimisation">
+  <div>
+    <h2>Every technique attacks one of four budgets: flash, SRAM, time, energy.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:26%">technique</th><th style="width:28%">what shrinks</th><th>the price</th></tr>
+      <tr class="frag"><td>quantisation</td><td>size 4×, time 2–4×, energy</td><td>a little accuracy; needs int8 kernels</td></tr>
+      <tr class="frag"><td>pruning</td><td>weights and MACs</td><td>accuracy if overdone; speed only if the hardware can skip zeros</td></tr>
+      <tr class="frag"><td>knowledge distillation</td><td>the whole model: a small student copies a big teacher</td><td>a second training run</td></tr>
+      <tr class="frag"><td>efficient architecture</td><td>MACs per layer (depthwise separable convolutions)</td><td>design effort up front</td></tr>
+      <tr class="frag"><td>smaller input</td><td>everything downstream</td><td>detail you may need</td></tr>
+      <tr class="frag"><td>better kernels, fused layers</td><td>time and memory traffic</td><td>nothing, if your toolchain does it (ESP-NN)</td></tr>
+    </table>
+  </div>
+  <div class="cue">Link back to Class 15: moving data costs more than multiplying it, so anything that shrinks the bytes moved (int8, pruning, fusion) saves energy as well as time. Factor ranges are typical, not guaranteed.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Quantisation" data-act="quantisation">
+  <div>
+    <h2>Quantisation: store each weight as a small integer, plus two numbers for the whole layer.</h2>
+    <div class="cformula" style="font-size:32px;text-align:center;margin:14px 0 24px">real value ≈ <b>scale</b> × (q − <b>zero point</b>)</div>
+    <div class="ngrid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="cellx frag"><div class="big-n" style="font-size:42px">q</div><div class="nlab">an int8: −128 to 127, one byte</div></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:42px">scale</div><div class="nlab">how much real value one step of q is worth</div></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:42px">zero point</div><div class="nlab">which q means real 0 (0 if the range is symmetric)</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:76ch">Example: weights from −0.5 to +0.5, symmetric. scale = 0.5 ÷ 127 ≈ 0.0039. The weight 0.2 becomes q = round(0.2 ÷ 0.0039) = 51, and comes back as 51 × 0.0039 ≈ 0.1992.</p>
+  </div>
+  <div class="cue">This is the scheme TensorFlow Lite and most int8 toolchains use. Weights are usually symmetric per channel; activations often use a zero point because they are mostly positive after ReLU. The error in the example is 0.0008: tiny, and spread over thousands of weights it mostly averages out.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Quantisation explorer" data-act="quantisation">
+  <div>
+    <div class="kicker">try it live · 24 weights of one layer</div>
+    <h2>Fewer bits, coarser steps. One outlier ruins the scale for everyone.</h2>
+    <div class="panel qx">
+      <div class="crow" style="grid-template-columns:160px 1fr 90px;gap:16px"><span class="cl">bits</span><input type="range" class="qb" min="2" max="8" step="1" value="8"><span class="num qbv"></span></div>
+      <div class="crow" style="grid-template-columns:160px 1fr"><span class="cl">options</span><span class="cb"><button data-q="sym" class="sel">symmetric</button><button data-q="asym">asymmetric</button><button data-q="out" class="tog">add one outlier</button></span></div>
+      <svg viewBox="0 0 1300 250" width="100%" class="qsvg"></svg>
+      <div class="qstats"></div>
+    </div>
+  </div>
+  <div class="cue">Top row: the float weights. Bottom row: what comes back after quantising and de-quantising; grey ticks are the values the integer can represent. At 8 bits the error is invisible; at 3 bits most weights collapse onto a handful of levels. Turn on the outlier: the scale stretches to cover it, the steps get wide, and the error for all the ordinary weights grows. This is why calibration data and per-channel scales matter.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Post-training or quantisation-aware?" data-act="quantisation">
+  <div>
+    <h2>Two ways to get an int8 model.</h2>
+    <div class="split" style="gap:26px">
+      <div class="panel frag"><span class="lab" style="color:var(--accent)">post-training quantisation (PTQ)</span><p>Train in float32 as usual. Then convert, showing the converter a few hundred <strong>representative</strong> samples so it can measure the range of every activation.</p><p class="small">Minutes. Often loses only a little accuracy; sometimes more for small or unusual models.</p></div>
+      <div class="panel frag"><span class="lab" style="color:var(--ok)">quantisation-aware training (QAT)</span><p>During training, simulate the rounding in the forward pass, so the weights learn to live on the integer grid.</p><p class="small">A longer training run. Usually wins back most of what PTQ lost.</p></div>
+    </div>
+    <p class="frag" style="margin-top:20px;max-width:76ch">Start with PTQ. Measure on your test set. Reach for QAT only if the drop matters. Bad calibration data (all silence, all one class) is the commonest cause of a bad PTQ model.</p>
+  </div>
+  <div class="cue">Edge Impulse and the TensorFlow Lite converter both do PTQ with a representative dataset. How much accuracy is lost varies a lot by model; the hook's 0.8% and 0.2% were illustrative.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Pruning" data-act="pruning">
+  <div>
+    <div class="kicker">try it live · a 12 × 16 weight matrix</div>
+    <h2>Pruning: many weights are nearly zero. Remove them.</h2>
+    <div class="panel px split" style="grid-template-columns:1fr 1fr;gap:26px;align-items:center">
+      <div>
+        <div class="crow" style="grid-template-columns:120px 1fr 80px;gap:14px"><span class="cl">prune</span><input type="range" class="pp" min="0" max="95" step="5" value="0"><span class="num ppv"></span></div>
+        <div class="crow" style="grid-template-columns:120px 1fr"><span class="cl">style</span><span class="cb"><button data-pr="u" class="sel">single weights</button><button data-pr="s">whole rows</button></span></div>
+        <svg viewBox="0 0 600 450" width="100%" height="330" class="pgrid"></svg>
+      </div>
+      <div>
+        <svg viewBox="0 0 600 300" width="100%" class="pacc"></svg>
+        <div class="pinfo"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The smallest-magnitude weights go first. Single-weight ("unstructured") pruning keeps accuracy longer, but the matrix keeps its shape full of zeros: it only gets faster with sparse kernels, and stored as value + index it only gets smaller beyond about two-thirds pruned. Whole-row ("structured") pruning removes channels: a genuinely smaller dense layer, faster on any hardware, but accuracy falls sooner. The accuracy curves are illustrative shapes, not measurements; real models are usually fine-tuned after pruning.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Distil, and design small" data-act="smaller by design">
+  <div>
+    <h2>Or start small: learn from a big model, and use cheaper layers.</h2>
+    <div class="split" style="grid-template-columns:.9fr 1.1fr;gap:30px;align-items:start">
+      <div><div class="kicker">knowledge distillation</div><svg viewBox="0 0 510 200" width="100%"><defs><marker id="dd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="0" y="40" width="220" height="140" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="2"/><text x="110" y="100" font-size="19" text-anchor="middle" font-weight="700" fill="#23408f">teacher</text><text x="110" y="128" font-size="14" text-anchor="middle" fill="#4b5057">big, accurate, cloud-sized</text><line x1="224" y1="110" x2="356" y2="110" stroke="#8b9096" stroke-width="2" marker-end="url(#dd)"/><text x="290" y="96" font-size="13" text-anchor="middle" fill="#4b5057">its soft answers</text><text x="290" y="132" font-size="12" text-anchor="middle" fill="#8b9096">"80% stop, 15% go"</text><rect x="360" y="70" width="140" height="80" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="2"/><text x="430" y="108" font-size="18" text-anchor="middle" font-weight="700" fill="#146b5c">student</text><text x="430" y="132" font-size="13" text-anchor="middle" fill="#4b5057">board-sized</text></svg><p class="small">The student learns from the teacher's confidences, not just right/wrong labels: richer lessons for a small model.</p></div>
+      <div class="frag"><div class="kicker">depthwise separable convolution</div><svg viewBox="0 0 580 150" width="100%"><text x="0" y="24" font-size="15" fill="#4b5057" font-weight="700">one 3 × 3 convolution, 32 channels in, 64 out</text><rect x="0" y="40" width="560" height="38" rx="5" fill="#8b9096" opacity=".8"/><text x="10" y="65" font-size="15" fill="#fff" font-weight="700">standard · 3·3·32·64 = 18,432 weights</text><g class="frag"><rect x="0" y="94" width="9" height="38" rx="2" fill="#146b5c"/><rect x="12" y="94" width="62" height="38" rx="3" fill="#146b5c" opacity=".7"/><text x="84" y="119" font-size="15" fill="#146b5c" font-weight="700">depthwise 288 + pointwise 2,048 = 2,336 (8× fewer)</text></g></svg><p class="small">Filter each channel on its own (depthwise), then mix channels with 1 × 1 filters (pointwise). MobileNet is built from these. MACs fall by about the same factor.</p></div>
+    </div>
+  </div>
+  <div class="cue">3·3·32 = 288; 1·1·32·64 = 2,048; 18,432 ÷ 2,336 ≈ 7.9. The saving grows with the number of output channels. Class 16's MobileNetV2 (300 M MACs) owes its small size to exactly this layer.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="The cheapest optimisations" data-act="smaller by design">
+  <div>
+    <h2>The cheapest optimisations are not in the model at all.</h2>
+    <div class="split" style="gap:26px">
+      <div class="panel frag"><span class="lab" style="color:var(--accent)">shrink the input</span><ul style="font-size:20px;margin-top:8px"><li>Image 224 × 224 → 96 × 96: about <strong>5.4×</strong> fewer pixels, and roughly 5× fewer MACs in a CNN.</li><li>Audio 16 → 8 kHz, 40 → 20 mel bands: half the front end (Class 21).</li><li>IMU 400 → 50 Hz: an eighth of the samples (Class 21).</li></ul></div>
+      <div class="panel frag"><span class="lab" style="color:var(--ok)">better kernels, fused layers</span><ul style="font-size:20px;margin-top:8px"><li><strong>ESP-NN</strong>: int8 layers written for the S3's vector instructions (Class 15).</li><li><strong>Fusion</strong>: convolution + batch-norm + ReLU in one pass over memory, not three. Batch-norm is folded into the weights at conversion.</li></ul></div>
+    </div>
+    <p class="frag" style="margin-top:20px;max-width:74ch">Try these first: they cost no accuracy you can't measure, and no retraining.</p>
+  </div>
+  <div class="cue">(224 ÷ 96)² = 50,176 ÷ 9,216 ≈ 5.4. Whether a smaller input costs accuracy depends on the task: a person at 96 × 96 is fine, a licence plate is not.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Will it fit? Will it be fast enough?" data-act="smaller by design">
+  <div>
+    <div class="kicker">try it live · ESP32-S3: 512 KB SRAM, 16 MB flash</div>
+    <h2>Size and speed, before and after.</h2>
+    <div class="panel calc fitc">
+      <div class="crow" style="grid-template-columns:240px 1fr 120px;gap:16px"><span class="cl">parameters</span><input type="range" class="fpar" min="0" max="8" step="1" value="4"><span class="num fparv"></span></div>
+      <div class="crow" style="grid-template-columns:240px 1fr 120px;gap:16px"><span class="cl">MACs per inference</span><input type="range" class="fmac" min="0" max="8" step="1" value="4"><span class="num fmacv"></span></div>
+      <div class="crow" style="grid-template-columns:240px 1fr"><span class="cl">precision</span><span class="cb" data-g="pr"><button data-v="4" class="sel">float32</button><button data-v="1">int8</button></span></div>
+      <div class="crow" style="grid-template-columns:240px 1fr 120px;gap:16px"><span class="cl">channels pruned</span><input type="range" class="fpru" min="0" max="75" step="5" value="0"><span class="num fpruv"></span></div>
+      <div class="cbar" style="grid-template-columns:240px 1fr 190px"><span class="cl">weights vs 512 KB SRAM</span><div class="ctrack"><div class="cfill fw"></div></div><span class="cpct fwv"></span></div>
+      <div class="cbar" style="grid-template-columns:240px 1fr 190px"><span class="cl">time vs 100 ms deadline</span><div class="ctrack"><div class="cfill ft"></div></div><span class="cpct ftv"></span></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Rates are illustrative: 10 M MAC/s for float32 and 40 M MAC/s for int8 with optimised kernels; replace them with your Class 15 measurements (plain C loops will be slower). Weights can also live in flash and be read through the cache, so "doesn't fit SRAM" is a warning, not always a stop; activations need SRAM regardless. Structured pruning is assumed to cut weights and MACs in proportion.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Learning after shipping" data-act="on-device training">
+  <div>
+    <h2>Why learn on the device, and why it is hard.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">why</div><div class="ut">personalisation</div><div class="ud">your voice, your gait, your kitchen</div></div>
+      <div class="ucard frag"><div class="un">why</div><div class="ut">drift</div><div class="ud">sensors age, rooms change (Class 20)</div></div>
+      <div class="ucard frag"><div class="un">why</div><div class="ut">privacy</div><div class="ud">the data never leaves the device</div></div>
+    </div>
+    <svg viewBox="0 0 1380 230" width="100%" height="230" class="frag" style="margin-top:12px"><text x="0" y="56" font-size="17" font-weight="700">inference · int8</text><rect x="230" y="30" width="48.0" height="40" rx="4" fill="#23408f" opacity=".85"/><rect x="280.0" y="30" width="13.0" height="40" rx="4" fill="#146b5c" opacity=".85"/><text x="307.0" y="56" font-size="17" font-weight="700">130 KB</text><text x="230" y="92" font-size="13" fill="#4b5057">weights 100 KB · activations 30 KB</text><text x="0" y="156" font-size="17" font-weight="700">training · float32</text><rect x="230" y="130" width="198.0" height="40" rx="4" fill="#23408f" opacity=".85"/><rect x="430.0" y="130" width="198.0" height="40" rx="4" fill="#b06a12" opacity=".85"/><rect x="630.0" y="130" width="398.0" height="40" rx="4" fill="#a8231f" opacity=".85"/><rect x="1030.0" y="130" width="148.0" height="40" rx="4" fill="#146b5c" opacity=".85"/><text x="1192.0" y="156" font-size="17" font-weight="700">1,900 KB</text><text x="230" y="192" font-size="13" fill="#4b5057">weights 400 · gradients 400 · optimiser state 800 KB · stored activations 300 KB</text><line x1="486" y1="20" x2="486" y2="76" stroke="#a8231f" stroke-dasharray="6 5"/><line x1="486" y1="124" x2="486" y2="176" stroke="#a8231f" stroke-dasharray="6 5"/><text x="492" y="22" font-size="13" fill="#a8231f">512 KB SRAM</text></svg>
+  </div>
+  <div class="cue">Illustrative memory for a 100,000-parameter model. Training needs every layer's activations kept for backpropagation, a gradient for every weight, and (for Adam) two more numbers per weight, all usually in float32. Hence the next slide: on a microcontroller we train only a tiny part, or nothing that needs gradients at all.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="What a microcontroller can learn" data-act="on-device training">
+  <div>
+    <h2>A ladder of on-device learning, cheapest first.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:26px">adapt a threshold</div><div class="ns">re-learn "normal loudness" or "normal vibration" every hour: a few numbers</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">nearest centroid</div><div class="ns">store the average feature vector per class from a few examples: today's lab</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">retrain the last layer</div><div class="ns">freeze the network as a feature extractor; train only the final layer</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px;color:var(--fail)">full training</div><div class="ns">rarely on an MCU: memory and energy (last slide)</div></div>
+    </div>
+    <div class="panel frag" style="margin-top:20px"><span class="lab" style="color:var(--accent)">federated learning</span><p>Many devices each improve the model on their own data and send only the <strong>weight updates</strong> to a server, which averages them into a better shared model. Phone keyboards use this idea. The raw data never leaves the device.</p></div>
+  </div>
+  <div class="cue">A centroid classifier on good features is surprisingly strong for a few classes, and costs no gradients: just running averages. Pair it with a frozen network's embedding (its second-last layer) and you have few-shot learning on a microcontroller.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Personalise it" data-act="on-device training">
+  <div>
+    <div class="kicker">try it live · factory model vs a new user</div>
+    <h2>A few examples from the new user move the centroids, and the boundary.</h2>
+    <div class="panel pz split" style="grid-template-columns:1.2fr .8fr;gap:26px;align-items:center">
+      <svg viewBox="0 0 620 460" width="100%" class="pzsvg" style="cursor:crosshair"></svg>
+      <div>
+        <div class="cb pzbtns" style="flex-direction:column;align-items:stretch"><button data-m="A" class="sel">click adds gesture A</button><button data-m="B">click adds gesture B</button><button data-m="auto">add 3 of each for me</button><button data-m="reset">back to factory model</button></div>
+        <div class="pzinfo"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Rings are the new user's real gestures (hidden test set): green ring = classified correctly, red = wrong. Filled squares are the class centroids; the dashed line is the decision boundary halfway between them. The factory centroids count as 3 examples each, so new examples pull them over gradually. Synthetic 2-D data standing in for the six features of the lab.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Lab: teach the board" data-act="lab">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">lab · teams of four · board + MPU6050 + touch pads</div><h2 style="margin-bottom:6px">Train a gesture classifier on the board itself.</h2></div>
+      <div class="panel timer" data-secs="1500"><span class="tdisp">25:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="un">A</div><div class="ut">teach</div><div class="ud">One person holds pad 4 while another does gesture A (say, shake) for a few seconds. Pad 5 for gesture B (say, tilt and hold). Each second is one example.</div></div>
+      <div class="ucard"><div class="un">B</div><div class="ut">test</div><div class="ud">Hands off the pads: the LED shows green for A, amber for B. Ten tries each.</div></div>
+      <div class="ucard"><div class="un">C</div><div class="ut">new user</div><div class="ud">Someone else tries it. Type r in the Serial Monitor to forget, re-teach with their gestures, test again.</div></div>
+    </div>
+    <p class="small" style="margin-top:14px">Wiring as Class 13: MPU6050 SDA 8, SCL 9; foil pads on GPIO 4 and 5. Libraries: Adafruit MPU6050.</p>
+  </div>
+  <div class="cue">The whole "model" is two centroids of six floats: 48 bytes. Pick gestures that differ in both orientation and motion so both feature types matter. Fast teams: add a third class, "still", on a third touch pin, or weight recent examples more.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Lab code 1: features" data-act="lab">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre><span class="c">// On-device learning · part 1 of 2: setup and features</span>
+<span class="k">#include</span> <span class="s">&lt;Adafruit_MPU6050.h&gt;</span>
+Adafruit_MPU6050 mpu;
+<span class="k">const int</span> PAD_A = <span class="s">4</span>, PAD_B = <span class="s">5</span>;
+<span class="k">float</span> baseA, baseB;
+<span class="k">const int</span> W = <span class="s">50</span>;                       <span class="c">// 50 samples ≈ 1 s at 50 Hz</span>
+<span class="k">const int</span> D = <span class="s">6</span>;                        <span class="c">// mean and std of x, y, z</span>
+<span class="k">float</span> win[W][<span class="s">3</span>];  <span class="k">int</span> n = <span class="s">0</span>;
+<span class="k">float</span> sumA[D], sumB[D];  <span class="k">int</span> cntA = <span class="s">0</span>, cntB = <span class="s">0</span>;
+
+<span class="k">bool</span> <span class="f">touched</span>(<span class="k">int</span> pin, <span class="k">float</span> base) {
+  <span class="k">return</span> touchRead(pin) &gt; base * <span class="s">1.2</span>;     <span class="c">// ← 20% rise: check your Class 13 numbers</span>
+}
+
+<span class="k">void</span> <span class="f">features</span>(<span class="k">float</span> f[D]) {
+  <span class="k">for</span> (<span class="k">int</span> j = <span class="s">0</span>; j &lt; <span class="s">3</span>; j++) {
+    <span class="k">float</span> m = <span class="s">0</span>, v = <span class="s">0</span>;
+    <span class="k">for</span> (<span class="k">int</span> k = <span class="s">0</span>; k &lt; W; k++) m += win[k][j];
+    m /= W;
+    <span class="k">for</span> (<span class="k">int</span> k = <span class="s">0</span>; k &lt; W; k++) v += (win[k][j] - m) * (win[k][j] - m);
+    f[j] = m;                                <span class="c">// orientation</span>
+    f[<span class="s">3</span> + j] = sqrt(v / W);                  <span class="c">// how much motion</span>
+  }
+}
+
+<span class="k">void</span> <span class="f">setup</span>() {
+  Serial.begin(<span class="s">115200</span>);
+  Wire.begin(<span class="s">8</span>, <span class="s">9</span>);  mpu.begin();
+  delay(<span class="s">500</span>);                                 <span class="c">// hands off the pads</span>
+  baseA = touchRead(PAD_A);  baseB = touchRead(PAD_B);
+}</pre>
+    <div class="stack">
+      <div class="kicker">lab · code, part 1</div>
+      <h2>Six numbers per second.</h2>
+      <p class="small">The same mean and standard deviation as Class 19's IMU slide, per axis.</p>
+      <p class="small">Both are in m/s², so no standardising is needed here. Why would it be, if you added the gyroscope?</p>
+    </div>
+  </div>
+  <div class="cue">On the ESP32-S3, touchRead() values rise when a pad is touched (the original ESP32 falls), which is why the test is "greater than baseline × 1.2". The 20% is a placeholder: teams should use the rise they measured in Class 13. Keep hands off the pads during the half-second baseline at start-up.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Lab code 2: learn and infer" data-act="lab">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre><span class="c">// On-device learning · part 2 of 2: learn while touched, infer otherwise</span>
+<span class="k">void</span> <span class="f">loop</span>() {
+  sensors_event_t a, g, t;
+  mpu.getEvent(&amp;a, &amp;g, &amp;t);
+  win[n][<span class="s">0</span>] = a.acceleration.x;  win[n][<span class="s">1</span>] = a.acceleration.y;  win[n][<span class="s">2</span>] = a.acceleration.z;
+  delay(<span class="s">20</span>);
+  <span class="k">if</span> (++n &lt; W) <span class="k">return</span>;                         <span class="c">// wait for a full 1 s window</span>
+  n = <span class="s">0</span>;
+  <span class="k">float</span> f[D];  features(f);
+
+  <span class="k">if</span> (Serial.available() &amp;&amp; Serial.read() == <span class="s">'r'</span>) {   <span class="c">// forget: new user</span>
+    cntA = cntB = <span class="s">0</span>;
+    <span class="k">for</span> (<span class="k">int</span> j = <span class="s">0</span>; j &lt; D; j++) sumA[j] = sumB[j] = <span class="s">0</span>;
+    Serial.println(<span class="s">"forgotten"</span>);
+  }
+  <span class="k">if</span> (touched(PAD_A, baseA)) {                   <span class="c">// LEARN gesture A</span>
+    <span class="k">for</span> (<span class="k">int</span> j = <span class="s">0</span>; j &lt; D; j++) sumA[j] += f[j];
+    cntA++;  rgbLedWrite(RGB_BUILTIN, <span class="s">0</span>, <span class="s">0</span>, <span class="s">40</span>);
+    Serial.printf(<span class="s">"learned A · %d examples\n"</span>, cntA);
+  } <span class="k">else if</span> (touched(PAD_B, baseB)) {            <span class="c">// LEARN gesture B</span>
+    <span class="k">for</span> (<span class="k">int</span> j = <span class="s">0</span>; j &lt; D; j++) sumB[j] += f[j];
+    cntB++;  rgbLedWrite(RGB_BUILTIN, <span class="s">20</span>, <span class="s">0</span>, <span class="s">40</span>);
+    Serial.printf(<span class="s">"learned B · %d examples\n"</span>, cntB);
+  } <span class="k">else if</span> (cntA &amp;&amp; cntB) {                    <span class="c">// INFER: nearest centroid</span>
+    <span class="k">float</span> dA = <span class="s">0</span>, dB = <span class="s">0</span>;
+    <span class="k">for</span> (<span class="k">int</span> j = <span class="s">0</span>; j &lt; D; j++) {
+      <span class="k">float</span> ea = f[j] - sumA[j] / cntA, eb = f[j] - sumB[j] / cntB;
+      dA += ea * ea;  dB += eb * eb;
+    }
+    <span class="k">bool</span> isA = dA &lt; dB;
+    rgbLedWrite(RGB_BUILTIN, isA ? <span class="s">0</span> : <span class="s">40</span>, isA ? <span class="s">40</span> : <span class="s">20</span>, <span class="s">0</span>);   <span class="c">// green A, amber B</span>
+    Serial.printf(<span class="s">"%s   dA %.1f   dB %.1f\n"</span>, isA ? <span class="s">"A"</span> : <span class="s">"B"</span>, dA, dB);
+  }
+}</pre>
+    <div class="stack">
+      <div class="kicker">lab · code, part 2</div>
+      <h2>Learning is just a running sum.</h2>
+      <p class="small">How many examples per gesture before it works reliably?</p>
+      <p class="small">What does it say when you do neither gesture? Why?</p>
+    </div>
+  </div>
+  <div class="cue">Blue LED while learning A, purple while learning B. With no "still" class, every window is forced into A or B; that is the point of the second question, and the motivation for the third-class extension. The distances are squared, in (m/s²)².</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Worksheet" data-act="lab">
+  <div>
+    <div class="kicker">lab · worksheet</div>
+    <h2>Six answers.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)"><div class="wbox" style="min-height:190px"><div class="wk">A · examples</div><div class="wq">per gesture until it works</div></div><div class="wbox" style="min-height:190px"><div class="wk">B · your gestures</div><div class="wq">10 tries each: how many right?</div></div><div class="wbox" style="min-height:190px"><div class="wk">B · doing nothing</div><div class="wq">what does it say, and why?</div></div><div class="wbox" style="min-height:190px"><div class="wk">C · new user, old model</div><div class="wq">10 tries each</div></div><div class="wbox" style="min-height:190px"><div class="wk">C · after re-teaching</div><div class="wq">10 tries each, and how many examples</div></div><div class="wbox" style="min-height:190px"><div class="wk">the model's size</div><div class="wq">bytes in flash or RAM</div></div></div>
+  </div>
+  <div class="cue">Size answer: 2 classes × 6 floats × 4 bytes = 48 bytes, plus two counts. Compare with the hook's 0.6 MB keyword model: personalisation can be very cheap when the features are good.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">Your int8 keyword model is 5% less accurate than float32 and twice as fast. Name two things you could try to win back accuracy without losing the speed.</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>tools for edge AI and the edge AI workflow</strong>.</p>
+  </div>
+  <div class="cue">Good answers: quantisation-aware training; better, more varied calibration data for post-training quantisation; per-channel instead of per-layer scales; keep one sensitive layer (often the first or last) in higher precision; distil from a bigger teacher into the same int8 student; personalise the last layer or centroids on the device.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  function srand(seed){ return function(){ seed=(seed*16807)%2147483647; return seed/2147483647; }; }
+  function gaussR(r){ var u=r()||1e-9, v=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+  /* quantisation explorer */
+  var QW=(function(){ var r=srand(41), a=[]; for(var k=0;k<24;k++) a.push(gaussR(r)*0.22); return a; })();
+  function qDraw(p){
+    var bits=+p.querySelector('.qb').value, asym=p.querySelector('[data-q="asym"]').classList.contains('sel'), out=p.querySelector('[data-q="out"]').classList.contains('sel');
+    p.querySelector('.qbv').textContent=bits;
+    var w=QW.slice(); if(out) w.push(1.6);
+    var mn=Math.min.apply(null,w), mx=Math.max.apply(null,w), scale, zp, qmin, qmax;
+    if(asym){ qmin=-Math.pow(2,bits-1); qmax=Math.pow(2,bits-1)-1; scale=(mx-mn)/(qmax-qmin); zp=Math.round(qmin-mn/scale); }
+    else { qmax=Math.pow(2,bits-1)-1; qmin=-qmax; scale=Math.max(Math.abs(mn),Math.abs(mx))/qmax; zp=0; }
+    var R=Math.max(1.7,Math.max(Math.abs(mn),Math.abs(mx))*1.05);
+    function X(v){ return 650+v/R*600; }
+    var o='<line x1="40" y1="70" x2="1260" y2="70" stroke="#e2e0d9"/><line x1="40" y1="180" x2="1260" y2="180" stroke="#e2e0d9"/><text x="40" y="40" font-size="14" fill="#23408f" font-weight="700">float32 weights</text><text x="40" y="226" font-size="14" fill="#146b5c" font-weight="700">after int'+bits+' and back</text>';
+    var levels=qmax-qmin+1, stepL=Math.max(1,Math.ceil(levels/96));
+    for(var q=qmin;q<=qmax;q+=stepL){ var xv=X(scale*(q-zp)); if(xv>=40&&xv<=1260) o+='<line x1="'+xv.toFixed(1)+'" y1="168" x2="'+xv.toFixed(1)+'" y2="192" stroke="#c6c3ba"/>'; }
+    var err=0, emax=0, used={};
+    w.forEach(function(v,k){ var q=Math.max(qmin,Math.min(qmax,Math.round(v/scale)+zp)), d=scale*(q-zp), e=Math.abs(d-v); err+=e; emax=Math.max(emax,e); used[q]=1;
+      var isOut=out&&k===w.length-1;
+      o+='<line x1="'+X(v).toFixed(1)+'" y1="76" x2="'+X(d).toFixed(1)+'" y2="174" stroke="'+(e>scale*0.25?'#b06a12':'#c6c3ba')+'" stroke-width="1.4"/>';
+      o+='<circle cx="'+X(v).toFixed(1)+'" cy="70" r="7" fill="'+(isOut?'#a8231f':'#23408f')+'"/><circle cx="'+X(d).toFixed(1)+'" cy="180" r="7" fill="'+(isOut?'#a8231f':'#146b5c')+'"/>'; });
+    [-1.5,-1,-0.5,0,0.5,1,1.5].forEach(function(v){ if(Math.abs(v)<=R) o+='<text x="'+X(v)+'" y="110" font-size="12" text-anchor="middle" fill="#8b9096">'+v+'</text>'; });
+    p.querySelector('.qsvg').innerHTML=o;
+    var n=w.length;
+    p.querySelector('.qstats').innerHTML='<div>scale<b>'+scale.toFixed(4)+'</b></div><div>zero point<b>'+zp+'</b></div><div>mean error<b>'+(err/n).toFixed(4)+'</b></div><div>levels used<b>'+Object.keys(used).length+' of '+levels+'</b></div><div>size<b>'+Math.ceil(n*bits/8)+' B vs '+(n*4)+' B</b></div>';
+  }
+  deck.querySelectorAll('.qx').forEach(function(p){ qDraw(p); p.querySelector('.qb').addEventListener('input',function(){qDraw(p);}); });
+  /* pruning */
+  var PW=(function(){ var r=srand(77), a=[]; for(var k=0;k<192;k++) a.push(gaussR(r)); return a; })();
+  function accCurve(f,st){ return st? 91-30*Math.pow(Math.max(0,f-0.3),1.5) : 91-26*Math.pow(Math.max(0,f-0.55),1.6); }
+  function pDraw(p){
+    var f=+p.querySelector('.pp').value/100, st=p.querySelector('[data-pr="s"]').classList.contains('sel'); p.querySelector('.ppv').textContent=Math.round(f*100)+'%';
+    var keep=PW.map(function(){return true;});
+    if(st){ var rows=[]; for(var r=0;r<12;r++){ var s2=0; for(var c=0;c<16;c++) s2+=PW[r*16+c]*PW[r*16+c]; rows.push([s2,r]); } rows.sort(function(a,b){return a[0]-b[0];}); var nr=Math.round(f*12); for(var q=0;q<nr;q++){ for(var c2=0;c2<16;c2++) keep[rows[q][1]*16+c2]=false; } }
+    else { var idx=PW.map(function(v,k){return [Math.abs(v),k];}).sort(function(a,b){return a[0]-b[0];}); var np=Math.round(f*192); for(var q2=0;q2<np;q2++) keep[idx[q2][1]]=false; }
+    var o='', nz=0;
+    for(var k=0;k<192;k++){ var r3=Math.floor(k/16), c3=k%16, v=PW[k], a=Math.min(1,Math.abs(v)/2.2);
+      if(keep[k]){ nz++; o+='<rect x="'+(c3*37)+'" y="'+(r3*37)+'" width="33" height="33" rx="4" fill="'+(v>0?'#23408f':'#a8231f')+'" opacity="'+(0.2+0.8*a).toFixed(2)+'"/>'; }
+      else o+='<rect x="'+(c3*37)+'" y="'+(r3*37)+'" width="33" height="33" rx="4" fill="#ffffff" stroke="#e2e0d9"/>'; }
+    p.querySelector('.pgrid').innerHTML=o;
+    function X(v){ return 60+v*520; } function Y(a){ return 260-(a-60)/35*230; }
+    var o2='<line x1="60" y1="260" x2="580" y2="260" stroke="#c6c3ba"/>';
+    [0,0.25,0.5,0.75,0.95].forEach(function(v){ o2+='<text x="'+X(v)+'" y="282" font-size="12" text-anchor="middle" fill="#8b9096">'+Math.round(v*100)+'%</text>'; });
+    [60,75,90].forEach(function(a){ o2+='<text x="52" y="'+(Y(a)+4)+'" font-size="12" text-anchor="end" fill="#8b9096">'+a+'%</text><line x1="60" y1="'+Y(a)+'" x2="580" y2="'+Y(a)+'" stroke="#f0eee8"/>'; });
+    [[false,'#8b9096','single'],[true,'#b06a12','rows']].forEach(function(cv){ var d=''; for(var q3=0;q3<=19;q3++){ var fv=q3*0.05; d+=(q3?'L':'M')+X(fv).toFixed(1)+' '+Y(Math.max(60,accCurve(fv,cv[0]))).toFixed(1); } o2+='<path d="'+d+'" fill="none" stroke="'+cv[1]+'" stroke-width="'+(cv[0]===st?3.5:1.5)+'" opacity="'+(cv[0]===st?1:0.5)+'"/>'; });
+    var acc=accCurve(f,st); o2+='<circle cx="'+X(f)+'" cy="'+Y(Math.max(60,acc))+'" r="8" fill="#15171b"/><text x="60" y="18" font-size="14" fill="#4b5057" font-weight="700">accuracy (illustrative) vs share pruned</text>';
+    p.querySelector('.pacc').innerHTML=o2;
+    var dense=192, sparse=nz*3;
+    p.querySelector('.pinfo').innerHTML=nz+' of 192 weights left · accuracy about <strong>'+acc.toFixed(1)+'%</strong><br>'+(st? 'Stored densely: a '+(12-Math.round(f*12))+' × 16 matrix, <strong>'+(16*(12-Math.round(f*12)))+' B</strong>, and every row removed is work removed.' : 'Stored densely: still 192 B. As value + index: '+sparse+' B'+(sparse<dense?' (smaller now).':' (bigger than dense!).'));
+  }
+  deck.querySelectorAll('.px').forEach(function(p){ pDraw(p); p.querySelector('.pp').addEventListener('input',function(){pDraw(p);}); });
+  /* fit calculator */
+  var PV=[10e3,20e3,50e3,100e3,200e3,500e3,1e6,2e6,5e6], MV=[0.1e6,0.3e6,1e6,3e6,10e6,30e6,100e6,300e6,1e9];
+  function fmtN(v){ return v>=1e9?(v/1e9)+' G':(v>=1e6?(v/1e6)+' M':(v/1e3)+' k'); }
+  function fitDraw(p){
+    var par=PV[+p.querySelector('.fpar').value], mac=MV[+p.querySelector('.fmac').value], b=+p.querySelector('[data-g="pr"] button.sel').dataset.v, pr=+p.querySelector('.fpru').value/100;
+    p.querySelector('.fparv').textContent=fmtN(par); p.querySelector('.fmacv').textContent=fmtN(mac); p.querySelector('.fpruv').textContent=Math.round(pr*100)+'%';
+    var bytes=par*(1-pr)*b, rate=(b===4?10e6:40e6), ms=mac*(1-pr)/rate*1000;
+    var w=p.querySelector('.fw'); w.style.width=Math.min(100,bytes/524288*100)+'%'; w.classList.toggle('over',bytes>524288); p.querySelector('.fwv').textContent=(bytes>=1048576?(bytes/1048576).toFixed(1)+' MB':Math.round(bytes/1024)+' KB');
+    var t=p.querySelector('.ft'); t.style.width=Math.min(100,ms)+'%'; t.classList.toggle('over',ms>100); p.querySelector('.ftv').textContent=(ms<10?ms.toFixed(1):Math.round(ms))+' ms';
+    var v=p.querySelector('.cverdict'), okS=bytes<=524288, okT=ms<=100;
+    v.style.color= okS&&okT?'var(--ok)':'var(--fail)';
+    v.textContent= okS&&okT? 'Fits in SRAM and meets the deadline.' : (!okT? 'Too slow: '+(ms/100).toFixed(1)+'× over the deadline. Try int8, pruning, or a smaller input.' : 'Fast enough, but the weights exceed SRAM: keep them in flash, or shrink further.');
+  }
+  deck.querySelectorAll('.fitc').forEach(function(p){ fitDraw(p); p.querySelectorAll('input').forEach(function(x){ x.addEventListener('input',function(){fitDraw(p);}); }); });
+  /* personalisation */
+  var FAC={A:[30,62],B:[66,36]}, NEW={A:[44,74],B:[56,52]}, PZT=(function(){ var r=srand(5), a=[]; ['A','B'].forEach(function(c){ for(var k=0;k<20;k++) a.push([NEW[c][0]+gaussR(r)*5.5, NEW[c][1]+gaussR(r)*5.5, c]); }); return a; })(), PZR=srand(99);
+  function pzState(p){ if(!p._s) p._s={A:[],B:[],mode:'A'}; return p._s; }
+  function cen(p,c){ var s=pzState(p), K=3, x=FAC[c][0]*K, y=FAC[c][1]*K; s[c].forEach(function(q){ x+=q[0]; y+=q[1]; }); return [x/(K+s[c].length), y/(K+s[c].length)]; }
+  function pzDraw(p){
+    var s=pzState(p), cA=cen(p,'A'), cB=cen(p,'B');
+    function X(v){ return 40+v*5.6; } function Y(v){ return 430-v*4.1; }
+    var o='<rect x="40" y="20" width="560" height="410" fill="#ffffff" stroke="#e2e0d9"/><clipPath id="pzc"><rect x="40" y="20" width="560" height="410"/></clipPath>';
+    o+='<text x="320" y="455" font-size="13" text-anchor="middle" fill="#4b5057">feature 1 · how much motion</text><text x="22" y="225" font-size="13" text-anchor="middle" fill="#4b5057" transform="rotate(-90 22 225)">feature 2 · tilt</text>';
+    var mx=(cA[0]+cB[0])/2, my=(cA[1]+cB[1])/2, dx=cB[0]-cA[0], dy=cB[1]-cA[1];
+    o+='<g clip-path="url(#pzc)"><line x1="'+X(mx-dy*10)+'" y1="'+Y(my+dx*10)+'" x2="'+X(mx+dy*10)+'" y2="'+Y(my-dx*10)+'" stroke="#15171b" stroke-width="2" stroke-dasharray="7 6"/></g>';
+    var right=0;
+    PZT.forEach(function(t){ var da=(t[0]-cA[0])*(t[0]-cA[0])+(t[1]-cA[1])*(t[1]-cA[1]), db=(t[0]-cB[0])*(t[0]-cB[0])+(t[1]-cB[1])*(t[1]-cB[1]), pr=da<db?'A':'B', ok=pr===t[2]; if(ok) right++;
+      o+='<circle cx="'+X(t[0]).toFixed(1)+'" cy="'+Y(t[1]).toFixed(1)+'" r="7" fill="'+(t[2]==='A'?'#e6f1ee':'#fbf0dc')+'" stroke="'+(ok?'#146b5c':'#a8231f')+'" stroke-width="2.5"/>'; });
+    ['A','B'].forEach(function(c){ s[c].forEach(function(q){ o+='<circle cx="'+X(q[0]).toFixed(1)+'" cy="'+Y(q[1]).toFixed(1)+'" r="5" fill="'+(c==='A'?'#146b5c':'#b06a12')+'"/>'; }); });
+    [['A',cA,'#146b5c'],['B',cB,'#b06a12']].forEach(function(z){ o+='<rect x="'+(X(z[1][0])-11)+'" y="'+(Y(z[1][1])-11)+'" width="22" height="22" fill="'+z[2]+'" stroke="#15171b" stroke-width="2"/><text x="'+(X(z[1][0])+16)+'" y="'+(Y(z[1][1])+6)+'" font-size="16" font-weight="700" fill="'+z[2]+'">'+z[0]+'</text>'; });
+    p.querySelector('.pzsvg').innerHTML=o;
+    var n=s.A.length+s.B.length;
+    p.querySelector('.pzinfo').innerHTML='New user’s gestures classified correctly: <strong style="color:'+(right>=36?'var(--ok)':'var(--fail)')+'">'+right+' of 40</strong><br><span style="color:var(--soft)">'+(n?n+' new example'+(n===1?'':'s')+' added':'factory model, no new examples')+'</span>';
+    p.querySelectorAll('.pzbtns button').forEach(function(b){ b.classList.toggle('sel',b.dataset.m===s.mode); });
+  }
+  deck.querySelectorAll('.pz').forEach(function(p){ pzDraw(p);
+    p.querySelector('.pzsvg').addEventListener('click',function(e){ var r=this.getBoundingClientRect(), sx=(e.clientX-r.left)/r.width*620, sy=(e.clientY-r.top)/r.height*460; if(sx<40||sx>600||sy<20||sy>430) return; var s=pzState(p); s[s.mode].push([(sx-40)/5.6,(430-sy)/4.1]); pzDraw(p); }); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.qx .cb button'); if(b){ b.blur(); if(b.dataset.q==='out') b.classList.toggle('sel'); else { b.parentNode.querySelectorAll('[data-q="sym"],[data-q="asym"]').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); } qDraw(b.closest('.qx')); return; }
+    b=e.target.closest('.px .cb button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); pDraw(b.closest('.px')); return; }
+    b=e.target.closest('.fitc .cb button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); fitDraw(b.closest('.fitc')); return; }
+    b=e.target.closest('.pzbtns button'); if(b){ b.blur(); var p=b.closest('.pz'), s=pzState(p), m=b.dataset.m;
+      if(m==='reset'){ s.A=[]; s.B=[]; }
+      else if(m==='auto'){ ['A','B'].forEach(function(c){ for(var k=0;k<3;k++) s[c].push([NEW[c][0]+gaussR(PZR)*5, NEW[c][1]+gaussR(PZR)*5]); }); }
+      else s.mode=m;
+      pzDraw(p); return; }
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
