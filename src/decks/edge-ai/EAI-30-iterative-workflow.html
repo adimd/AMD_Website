@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 29 · Architecture Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 29 */
+pre{font-size:15px;line-height:1.4}
+.stack7{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.stk{display:grid;grid-template-columns:220px 1fr 420px;gap:16px;align-items:center;padding:10px 18px;border-radius:8px;background:var(--card);border:1px solid var(--rule);border-left:5px solid var(--accent)}
+.stk b{font-family:var(--serif);font-size:21px;color:var(--accent)}
+.stk span{font-size:18px;color:var(--ink)}
+.stk i{font-style:normal;font-family:var(--mono);font-size:13px;color:var(--soft)}
+.bld{padding:16px 22px}
+.brow{display:grid;grid-template-columns:170px 1fr;align-items:center;padding:6px 0;border-bottom:1px solid var(--rule)}
+.bn{font-size:18px}
+.seg{display:flex;gap:6px}
+.seg button,.bpre{height:38px;padding:0 14px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer}
+.seg button.on[data-t="0"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.seg button.on[data-t="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.seg button.on[data-t="2"]{background:var(--fail);border-color:var(--fail);color:#fff}
+.bstats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.bstats div{border-top:1px solid var(--rule);padding-top:6px;font-size:15px;color:var(--soft)}
+.bstats b{display:block;font-size:20px;color:var(--ink);font-weight:600}
+.bud .cb button.sel,.nd .cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.nd{padding:14px 22px}
+.ndinfo{font-size:20px;margin-top:6px;min-height:56px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 29</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 29 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 29 · unit IV · designing edge AI applications · architecture design</div>
+    <h1>Where does each<br>step run?</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Last class designed what the user experiences. Today: the boxes behind it. Which stage runs on the board, which on a laptop or in the cloud, what crosses each arrow, and what still works when the network goes away.</p>
+  </div>
+  <div class="cue">Theory runs to slide 13; the exercise is one block at the end (slides 14 to 16). No boards needed. Unit V returns to architecture patterns in depth; today is a first pass tied to the course project's design.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>Two seconds after a command the system did not understand.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">worst</div><div class="ut">nothing happens</div><div class="ud">The user cannot tell "not heard" from "heard, failed" from "broken". They repeat louder, then give up.</div></div>
+      <div class="ucard frag"><div class="un">better</div><div class="ut">a distinct "didn't get that"</div><div class="ud">A short tone or an amber LED, different from success, within half a second.</div></div>
+      <div class="ucard frag"><div class="un">best</div><div class="ut">a way forward</div><div class="ud">"Say fan on or fan off": the options, so the second try succeeds.</div></div>
+    </div>
+    <p class="frag" style="margin-top:20px;max-width:74ch">Each of these needs something to run within half a second, even with no network. Where it runs is today's question.</p>
+  </div>
+  <div class="cue">Take two or three answers first. The link to today: a reply that depends on a cloud call cannot promise half a second, so the "didn't get that" path must live on the device.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="One command, three architectures" data-act="the hook">
+  <div>
+    <div class="kicker">the hook · "turn the fan on"</div>
+    <h2>The same command, built three ways. Which would you ship?</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:22%"></th><th style="width:26%">A · stream to the cloud</th><th style="width:26%">B · words to a language model</th><th>C · everything on the board</th></tr>
+      <tr class="frag"><td>sent per command</td><td>all audio, ~100 KB, plus every silence</td><td>~100 bytes of words</td><td>nothing</td></tr>
+      <tr class="frag"><td>Wi-Fi drops</td><td style="color:var(--fail)">dead</td><td style="color:var(--amber)">core commands still work, offline</td><td style="color:var(--ok)">works</td></tr>
+      <tr class="frag"><td>privacy</td><td style="color:var(--fail)">your voice leaves the room</td><td style="color:var(--amber)">your words leave, your voice does not</td><td style="color:var(--ok)">nothing leaves</td></tr>
+      <tr class="frag"><td>flexibility</td><td style="color:var(--ok)">understands anything</td><td style="color:var(--ok)">natural replies, any phrasing of known words</td><td style="color:var(--fail)">only a fixed list of commands</td></tr>
+    </table>
+    <p class="frag" style="margin-top:16px;max-width:74ch">Your course project is B. Today you will see why, and draw your own version of it.</p>
+  </div>
+  <div class="cue">Byte counts are rough: 16 kHz, 16-bit audio is 32 KB a second, and a 3-second command is about 100 KB. Ask before revealing the rows: which one would a hospital (the Help project) choose? Which would a toy company choose?</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="What architecture means" data-act="architecture">
+  <div>
+    <h2>An architecture says which hardware, software and services you use, and where each stage runs.</h2>
+    <svg viewBox="0 0 1380 270" width="100%" height="270"><rect x="0" y="10" width="1380" height="70" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="2"/><text x="24" y="52" font-size="20" font-weight="700" fill="#146b5c">hardware</text><text x="230" y="52" font-size="17" fill="#15171b">ESP32-S3 · INMP441 microphone · LED or speaker · power · a laptop · a server</text>
+<g class="frag"><rect x="0" y="100" width="1380" height="70" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="2"/><text x="24" y="142" font-size="20" font-weight="700" fill="#23408f">software</text><text x="230" y="142" font-size="17" fill="#15171b">firmware on the board · models · the grammar · scripts on the laptop · the language-model prompt</text></g>
+<g class="frag"><rect x="0" y="190" width="1380" height="70" rx="12" fill="#fbf0dc" stroke="#b06a12" stroke-width="2"/><text x="24" y="232" font-size="20" font-weight="700" fill="#b06a12">services</text><text x="230" y="232" font-size="17" fill="#15171b">a language-model API · Wi-Fi and the internet · update server · logging and dashboards</text></g></svg>
+    <p class="frag" style="max-width:76ch">The decisions are the arrows between them: what is sent, how big, how often, how fast, and what happens when an arrow breaks.</p>
+  </div>
+  <div class="cue">Ask which of the three layers the team controls fully (hardware and software) and which it rents (services). Anything rented can change price, change behaviour or disappear, which is why the offline path matters.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="The tiers" data-act="architecture">
+  <div>
+    <h2>Five places a stage can run. Classes 5 and 18 gave us the patterns that join them.</h2>
+    <svg viewBox="0 0 1380 340" width="100%" height="340"><g class="frag"><rect x="0" y="170" width="256" height="130" rx="10" fill="#8b9096" opacity=".14" stroke="#8b9096" stroke-width="2"/><text x="14" y="200" font-size="20" font-weight="700" fill="#8b9096">sensor</text><text x="14" y="224" font-size="14" fill="#4b5057">INMP441, MPU6050</text><text x="14" y="262" font-size="14" fill="#15171b">power µW–mW</text><text x="14" y="284" font-size="14" fill="#15171b">reach 0 ms</text></g><g class="frag"><rect x="276" y="130" width="256" height="170" rx="10" fill="#146b5c" opacity=".14" stroke="#146b5c" stroke-width="2"/><text x="290" y="160" font-size="20" font-weight="700" fill="#146b5c">device</text><text x="290" y="184" font-size="14" fill="#4b5057">ESP32-S3 · your board</text><text x="290" y="262" font-size="14" fill="#15171b">power ~0.3 W</text><text x="290" y="284" font-size="14" fill="#15171b">reach 0 ms</text></g><g class="frag"><rect x="552" y="90" width="256" height="210" rx="10" fill="#23408f" opacity=".14" stroke="#23408f" stroke-width="2"/><text x="566" y="120" font-size="20" font-weight="700" fill="#23408f">nearby</text><text x="566" y="144" font-size="14" fill="#4b5057">laptop, phone, gateway</text><text x="566" y="262" font-size="14" fill="#15171b">power 5–50 W</text><text x="566" y="284" font-size="14" fill="#15171b">reach ~10–50 ms</text></g><g class="frag"><rect x="828" y="50" width="256" height="250" rx="10" fill="#b06a12" opacity=".14" stroke="#b06a12" stroke-width="2"/><text x="842" y="80" font-size="20" font-weight="700" fill="#b06a12">edge server</text><text x="842" y="104" font-size="14" fill="#4b5057">in the building</text><text x="842" y="262" font-size="14" fill="#15171b">power 100s of W</text><text x="842" y="284" font-size="14" fill="#15171b">reach ~5–20 ms</text></g><g class="frag"><rect x="1104" y="10" width="256" height="290" rx="10" fill="#a8231f" opacity=".14" stroke="#a8231f" stroke-width="2"/><text x="1118" y="40" font-size="20" font-weight="700" fill="#a8231f">cloud</text><text x="1118" y="64" font-size="14" fill="#4b5057">a data centre</text><text x="1118" y="262" font-size="14" fill="#15171b">power effectively unlimited</text><text x="1118" y="284" font-size="14" fill="#15171b">reach ~100–300 ms</text></g><text x="0" y="330" font-size="14" fill="#8b9096">more compute and memory, more power, further away →</text></svg>
+    <div class="ucards frag" style="grid-template-columns:repeat(4,1fr);margin-top:6px">
+      <div class="ucard"><div class="ut">cascade</div><div class="ud">cheap stage wakes the expensive one</div></div>
+      <div class="ucard"><div class="ut">split</div><div class="ud">first half here, second half there</div></div>
+      <div class="ucard"><div class="ut">gateway</div><div class="ud">many devices, one helper nearby</div></div>
+      <div class="ucard"><div class="ut">hierarchy</div><div class="ud">device filters, server analyses, cloud trains</div></div>
+    </div>
+  </div>
+  <div class="cue">Latencies are typical round-trip orders of magnitude, not measurements: a laptop on the same Wi-Fi is tens of milliseconds away, a cloud API hundreds. The project uses a cascade on the board, then a split to a language model.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Inside the board" data-act="architecture">
+  <div>
+    <h2>Inside the device: seven layers of firmware, from the hardware up.</h2>
+    <div class="stack7"><div class="stk frag" data-l="0"><b>drivers</b><span>I2S microphone, I2C IMU, LED, touch pads</span><i>Class 10–13 · ESP-IDF / Arduino core</i></div><div class="stk frag" data-l="1"><b>DSP front end</b><span>DC removal, framing, VAD features, spectrogram</span><i>Classes 19–21 · ESP-DSP</i></div><div class="stk frag" data-l="2"><b>model runtime</b><span>wake model and slot models, int8</span><i>Class 24 · TFLite Micro / ESP-DL + ESP-NN</i></div><div class="stk frag" data-l="3"><b>application logic</b><span>the grammar state machine, confidence rules, the offline table</span><i>your code: the product's behaviour lives here</i></div><div class="stk frag" data-l="4"><b>connectivity</b><span>Wi-Fi, HTTP or MQTT to the laptop or API, retries, timeouts</span><i>must never block the audio</i></div><div class="stk frag" data-l="5"><b>storage</b><span>model files and settings in flash, a small log</span><i>Class 12's flash and PSRAM</i></div><div class="stk frag" data-l="6"><b>update</b><span>how new firmware and models arrive</span><i>Class 32: deployment</i></div></div>
+    <p class="frag small" style="margin-top:10px">The S3 has two cores: a common split is audio and models on one, Wi-Fi and networking on the other, so a slow network never makes the microphone drop samples (Class 20's hook).</p>
+  </div>
+  <div class="cue">Read it bottom-up for how data flows, top-down for how the product behaves. The application-logic layer is where most project bugs live, because it decides what to do with uncertain model outputs. The two-core split is one common choice, not a rule; FreeRTOS tasks pinned to cores make it possible.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="What crosses each arrow" data-act="data flow">
+  <div>
+    <h2>Every arrow carries something. Size it, and ask who could read it.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:30%">what is sent</th><th style="width:18%">bytes, one command</th><th>what it reveals</th></tr>
+      <tr class="frag"><td>raw audio, 3 s</td><td>~96,000</td><td>voice, accent, background talk, the room</td></tr>
+      <tr class="frag"><td>spectrogram, 1 s, int8</td><td>~2,000</td><td>still enough to recognise a speaker</td></tr>
+      <tr class="frag"><td>audio clips of 2 words</td><td>~64,000</td><td>the voice, only during commands</td></tr>
+      <tr class="frag"><td>words + confidences</td><td>~100</td><td>what was said, not how</td></tr>
+      <tr class="frag"><td>a reply sentence</td><td>~200</td><td>the action taken</td></tr>
+    </table>
+    <p class="frag" style="margin-top:14px;max-width:74ch">Moving the boundary one stage later can shrink the arrow a thousand times. That is the project's central design decision.</p>
+  </div>
+  <div class="cue">Rough figures: 16 kHz × 2 bytes; a 49 × 40 int8 spectrogram is 1,960 bytes; the 100-byte message is the project plan's figure. Link to Class 26: the smaller, later arrow is also the more private one.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Architecture builder" data-act="data flow">
+  <div>
+    <div class="kicker">try it live · place each stage of the course project</div>
+    <h2>Move a stage. Watch bytes, delay, privacy and offline change.</h2>
+    <div class="panel bld split" style="grid-template-columns:.9fr 1.1fr;gap:26px;align-items:start">
+      <div><div class="brows"><div class="brow"><span class="bn">voice detector</span><span class="seg" data-s="0"><button data-t="0">board</button><button data-t="1">laptop</button><button data-t="2">cloud</button></span></div><div class="brow"><span class="bn">wake model</span><span class="seg" data-s="1"><button data-t="0">board</button><button data-t="1">laptop</button><button data-t="2">cloud</button></span></div><div class="brow"><span class="bn">grammar</span><span class="seg" data-s="2"><button data-t="0">board</button><button data-t="1">laptop</button><button data-t="2">cloud</button></span></div><div class="brow"><span class="bn">slot models</span><span class="seg" data-s="3"><button data-t="0">board</button><button data-t="1">laptop</button><button data-t="2">cloud</button></span></div><div class="brow"><span class="bn">language model</span><span class="seg" data-s="4"><button data-t="0">board</button><button data-t="1">laptop</button><button data-t="2">cloud</button></span></div><div class="brow"><span class="bn">offline table</span><span class="seg" data-s="5"><button data-t="0">board</button><button data-t="1">laptop</button><button data-t="2">cloud</button></span></div></div><div class="cb" style="margin-top:12px"><button class="bpre" data-p="proj">project plan</button><button class="bpre" data-p="cloud">all cloud</button><button class="bpre" data-p="board">all board</button></div></div>
+      <div><svg viewBox="0 0 700 250" width="100%" class="bsvg"></svg><div class="bstats"></div></div>
+    </div>
+  </div>
+  <div class="cue">A simple model with illustrative numbers: board-to-laptop hop ~20 ms, any hop to the cloud ~150 ms, a language model ~0.8 s in the cloud or ~1.5 s on a laptop, and it cannot fit on the S3 at all. "Offline" here means the internet is down but the room's Wi-Fi and laptop still work. Try putting the voice detector in the cloud: every second of silence is streamed.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="The time and energy budget" data-act="budgets">
+  <div>
+    <div class="kicker">try it live · from the end of the word to the fan turning on</div>
+    <h2>Add up the delay end to end. One choice dominates.</h2>
+    <div class="panel calc bud">
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">language model</span><span class="cb" data-g="lm"><button data-v="0">offline table only</button><button data-v="1" class="sel">laptop</button><button data-v="2">cloud API</button></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">Wi-Fi</span><span class="cb" data-g="wf"><button data-v="0" class="sel">stays connected</button><button data-v="1">connects per command</button></span></div>
+      <svg viewBox="0 0 1300 110" width="100%" class="busvg"></svg>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Illustrative figures: end-of-speech hang-over 300 ms (Class 20), wake 30 ms, two slot models 80 ms, LAN hop 20 ms, cloud round trip 300 ms, laptop model 1.5 s, cloud model 0.8 s, Wi-Fi reconnect about 2 s. Energy: about 0.3 W awake; keeping Wi-Fi connected adds standby power all day, while reconnecting costs seconds per command. For a mains-powered project, stay connected; for a battery one, it is a real trade.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="When the network drops" data-act="failure">
+  <div>
+    <div class="kicker">try it live · break something</div>
+    <h2>What still works when part of the system disappears?</h2>
+    <div class="panel nd">
+      <div class="crow" style="grid-template-columns:200px 1fr"><span class="cl">language model on</span><span class="cb" data-g="where"><button data-v="1" class="sel">laptop</button><button data-v="2">cloud</button></span></div>
+      <div class="crow" style="grid-template-columns:200px 1fr"><span class="cl">what fails</span><span class="cb" data-g="fail"><button data-v="0" class="sel">nothing</button><button data-v="1">internet</button><button data-v="2">Wi-Fi</button><button data-v="3">laptop off</button><button data-v="4">API too slow</button></span></div>
+      <svg viewBox="0 0 1300 220" width="100%" class="ndsvg"></svg>
+      <div class="ndinfo"></div>
+    </div>
+  </div>
+  <div class="cue">The offline table on the board is what keeps the project useful in every failure case: core commands with fixed replies. Ask each team to name its own offline commands. "API too slow" matters as much as "down": set a timeout (say 2 s) and fall back rather than leaving the user waiting.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Design the failure paths" data-act="failure">
+  <div>
+    <h2>Every box can fail. Decide now what the user experiences when it does.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:26%">failure</th><th style="width:30%">how you notice</th><th>what the user gets</th></tr>
+      <tr class="frag"><td>low confidence</td><td>top score below your threshold</td><td>"didn't get that" tone, plus the options (Class 28)</td></tr>
+      <tr class="frag"><td>language model times out</td><td>no reply within 2 s</td><td>the offline table's fixed reply</td></tr>
+      <tr class="frag"><td>microphone dead</td><td>loudness flat at the floor for minutes</td><td>a fault LED; a log entry</td></tr>
+      <tr class="frag"><td>wrong action taken</td><td>user says "no" or "cancel" next</td><td>undo, and log the example for retraining</td></tr>
+      <tr class="frag"><td>power cut mid-command</td><td>boot after an unclean shutdown</td><td>safe default state (fan off, robot stopped)</td></tr>
+    </table>
+  </div>
+  <div class="cue">The last row is a safety question for Robo and Help: what state must the device wake up in? Unit V's design patterns build on this table; Class 31 measures how often each failure happens.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Contracts between boxes" data-act="interfaces">
+  <div>
+    <h2>Write down exactly what crosses each arrow: the interface contract.</h2>
+    <div class="split" style="grid-template-columns:1fr 1fr;gap:26px;align-items:start">
+      <pre style="font-size:18px"><span class="c">// board → language model · about 100 bytes</span>
+&#123;
+  <span class="s">"v"</span>: <span class="s">1</span>,
+  <span class="s">"id"</span>: <span class="s">417</span>,
+  <span class="s">"words"</span>: [
+    &#123; <span class="s">"w"</span>: <span class="s">"fan"</span>, <span class="s">"p"</span>: <span class="s">0.94</span> &#125;,
+    &#123; <span class="s">"w"</span>: <span class="s">"on"</span>,  <span class="s">"p"</span>: <span class="s">0.88</span> &#125;
+  ],
+  <span class="s">"ms"</span>: <span class="s">1240</span>
+&#125;</pre>
+      <div>
+        <div class="rem frag"><div class="h">every contract says</div><ul><li>the fields, their types and units (ms, not seconds)</li><li>a version number, so firmware v1 and server v2 can still talk</li><li>what the reply looks like, and the timeout</li><li>what happens on garbage: missing fields, unknown words</li></ul></div>
+        <p class="frag small" style="margin-top:14px">Two teammates can now build the board and the laptop side in parallel, and test each against the contract.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">This JSON is about 100 bytes, matching the project plan's figure. "p" is the slot model's confidence; "id" lets the reply be matched to the command; "ms" is the board's own latency, useful for evaluation in Class 31. The exact field names are each team's choice.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Seven questions" data-act="closing theory">
+  <div>
+    <h2>A good architecture answers seven questions, on one page.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:24px">where</div><div class="ns">does each stage run?</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">what</div><div class="ns">crosses each arrow, how big, how often?</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">how fast</div><div class="ns">end to end, worst case?</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">how much</div><div class="ns">power, and money per month?</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">who sees</div><div class="ns">which data, and is it kept?</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">what if</div><div class="ns">each box or arrow fails?</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">how agreed</div><div class="ns">the contract for each arrow</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:24px">why</div><div class="ns">one line per decision, so you can revisit it</div></div>
+    </div>
+  </div>
+  <div class="cue">Seven questions plus "why": the last tile is a light decision record. When a choice changes later (say, laptop to cloud), the team updates one line rather than arguing from memory. End of theory.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Exercise: draw yours" data-act="exercise">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">exercise · teams of four · one A4 sheet per team</div><h2 style="margin-bottom:6px">Draw your project's architecture on this template.</h2></div>
+      <div class="panel timer" data-secs="1200"><span class="tdisp">20:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <svg viewBox="0 0 1340 335" width="100%" height="335"><defs><marker id="ta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="0" y="0" width="440" height="330" rx="14" fill="none" stroke="#146b5c" stroke-width="2" stroke-dasharray="8 6"/><text x="16" y="28" font-size="16" font-weight="700" fill="#146b5c">BOARD</text><rect x="460" y="0" width="440" height="330" rx="14" fill="none" stroke="#23408f" stroke-width="2" stroke-dasharray="8 6"/><text x="476" y="28" font-size="16" font-weight="700" fill="#23408f">LAPTOP / PHONE</text><rect x="920" y="0" width="440" height="330" rx="14" fill="none" stroke="#a8231f" stroke-width="2" stroke-dasharray="8 6"/><text x="936" y="28" font-size="16" font-weight="700" fill="#a8231f">CLOUD</text><rect x="30" y="50" width="380" height="50" rx="8" fill="#ffffff" stroke="#c6c3ba"/><rect x="30" y="118" width="380" height="50" rx="8" fill="#ffffff" stroke="#c6c3ba"/><rect x="30" y="186" width="380" height="50" rx="8" fill="#ffffff" stroke="#c6c3ba"/><rect x="30" y="254" width="380" height="50" rx="8" fill="#ffffff" stroke="#c6c3ba"/><rect x="490" y="90" width="380" height="50" rx="8" fill="#ffffff" stroke="#c6c3ba"/><rect x="490" y="200" width="380" height="50" rx="8" fill="#ffffff" stroke="#c6c3ba"/><rect x="950" y="140" width="380" height="50" rx="8" fill="#ffffff" stroke="#c6c3ba"/><line x1="414" y1="160" x2="486" y2="115" stroke="#8b9096" stroke-width="2" marker-end="url(#ta)"/><rect x="416" y="68" width="68" height="36" rx="4" fill="#ffffff"/><text x="450" y="82" font-size="12" text-anchor="middle" fill="#4b5057">___ B</text><text x="450" y="98" font-size="12" text-anchor="middle" fill="#4b5057">___ ms</text><line x1="874" y1="115" x2="946" y2="160" stroke="#8b9096" stroke-width="2" marker-end="url(#ta)"/><rect x="876" y="78" width="68" height="36" rx="4" fill="#ffffff"/><text x="910" y="92" font-size="12" text-anchor="middle" fill="#4b5057">___ B</text><text x="910" y="108" font-size="12" text-anchor="middle" fill="#4b5057">___ ms</text><line x1="946" y1="175" x2="874" y2="220" stroke="#8b9096" stroke-width="2" marker-end="url(#ta)"/><rect x="876" y="236" width="68" height="36" rx="4" fill="#ffffff"/><text x="910" y="250" font-size="12" text-anchor="middle" fill="#4b5057">___ B</text><text x="910" y="266" font-size="12" text-anchor="middle" fill="#4b5057">reply</text><line x1="486" y1="225" x2="414" y2="260" stroke="#8b9096" stroke-width="2" marker-end="url(#ta)"/><rect x="416" y="276" width="68" height="36" rx="4" fill="#ffffff"/><text x="450" y="290" font-size="12" text-anchor="middle" fill="#4b5057">___ B</text><text x="450" y="306" font-size="12" text-anchor="middle" fill="#4b5057">reply</text></svg>
+    <p class="small" style="margin-top:6px">Fill each box with a stage. Label every arrow with bytes and milliseconds for one command. Mark the offline path in a second colour.</p>
+  </div>
+  <div class="cue">Copy the template onto A4 or the board. Boxes are suggestions; teams add or remove as needed. Two teams present in the last five minutes; the class asks "what if the laptop is off?" of each.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Worksheet" data-act="exercise">
+  <div>
+    <div class="kicker">exercise · worksheet</div>
+    <h2>Six answers, beside the drawing.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)"><div class="wbox" style="min-height:190px"><div class="wk">1 · where</div><div class="wq">each stage and the tier it runs on</div></div><div class="wbox" style="min-height:190px"><div class="wk">2 · arrows</div><div class="wq">bytes and ms per arrow, one command</div></div><div class="wbox" style="min-height:190px"><div class="wk">3 · end to end</div><div class="wq">worst-case delay, word ending to action</div></div><div class="wbox" style="min-height:190px"><div class="wk">4 · offline</div><div class="wq">which commands still work with no internet</div></div><div class="wbox" style="min-height:190px"><div class="wk">5 · one contract</div><div class="wq">the fields of one message, with a version number</div></div><div class="wbox" style="min-height:190px"><div class="wk">6 · one risk</div><div class="wq">the box most likely to fail, and what the user then gets</div></div></div>
+  </div>
+  <div class="cue">Keep these sheets: they are the starting point for the project's design document, and Class 31 will measure the numbers the teams estimate here.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">Draw, in boxes, where each stage of your project runs, and write how many bytes cross each arrow for one command.</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>the iterative workflow for edge AI development</strong>. Build the smallest thing that works, then improve it in loops.</p>
+  </div>
+  <div class="cue">Individual, not per team: check that each student can reproduce the team's drawing. The common mistake is an arrow carrying raw audio where the team meant words.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* architecture builder */
+  var STG=['voice detector','wake model','grammar','slot models','language model','offline table'];
+  var INB=[96000,32000,100,64000,100,100];
+  var CMP=[[1,1,1],[30,15,15],[1,1,1],[80,30,30],[null,1500,800],[1,1,1]];
+  var PRE={proj:[0,0,0,0,2,0],cloud:[2,2,2,2,2,2],board:[0,0,0,0,0,0]};
+  function hop(a,b){ if(a===b) return 0; return (a===2||b===2)?150:20; }
+  function bldDraw(p){
+    var T=(p.dataset.t||'0,0,0,0,2,0').split(',').map(Number), bytes=0, lat=300, prev=0, fits=true, audioOut=false, wordsOut=false, o='';
+    for(var k=0;k<5;k++){ if(k===4 && T[4]===0){ fits=false; } if(T[k]!==prev){ bytes+=INB[k]; lat+=hop(prev,T[k]); if(k<=1||k===3) audioOut=true; else wordsOut=true; } var c=CMP[k][T[k]]; if(c!==null) lat+=c; prev=T[k]; }
+    if(prev!==0){ bytes+=200; lat+=hop(prev,0); }
+    var cols=['#146b5c','#23408f','#a8231f'], names=['board','laptop','cloud'];
+    for(var t=0;t<3;t++){ o+='<rect x="'+(t*235)+'" y="0" width="225" height="245" rx="10" fill="'+cols[t]+'" opacity=".06" stroke="'+cols[t]+'" stroke-dasharray="6 5"/><text x="'+(t*235+12)+'" y="22" font-size="14" font-weight="700" fill="'+cols[t]+'">'+names[t].toUpperCase()+'</text>'; }
+    var pos=[]; STG.forEach(function(n,k){ var x=T[k]*235+16, y=34+k*34; pos.push([x,y]); var bad=(k===4&&T[4]===0); o+='<rect x="'+x+'" y="'+y+'" width="193" height="28" rx="6" fill="'+(bad?'#fbeceb':'#ffffff')+'" stroke="'+(bad?'#a8231f':cols[T[k]])+'" stroke-width="1.6"/><text x="'+(x+96)+'" y="'+(y+19)+'" font-size="13" text-anchor="middle" fill="'+(bad?'#a8231f':'#15171b')+'">'+n+(bad?' · will not fit':'')+'</text>'; });
+    for(var k2=1;k2<5;k2++){ if(T[k2]!==T[k2-1]){ var a=pos[k2-1], b=pos[k2]; o+='<line x1="'+(a[0]+96)+'" y1="'+(a[1]+28)+'" x2="'+(b[0]+96)+'" y2="'+(b[1])+'" stroke="#b06a12" stroke-width="2.5"/>'; } }
+    p.querySelector('.bsvg').innerHTML=o;
+    var off; var needInternet=T.slice(0,4).some(function(x){return x===2;});
+    if(needInternet) off='<span style="color:var(--fail)">nothing: a core stage needs the internet</span>';
+    else if(T[5]===2) off='<span style="color:var(--fail)">nothing useful: the fallback table is in the cloud too</span>';
+    else if(T[4]===2) off='<span style="color:var(--amber)">core commands via the offline table</span>';
+    else off='<span style="color:var(--ok)">everything (laptop on the same Wi-Fi)</span>';
+    var priv= audioOut? '<span style="color:var(--fail)">your voice leaves the board</span>' : (wordsOut||T[4]!==0? '<span style="color:var(--amber)">words leave, voice stays</span>' : '<span style="color:var(--ok)">nothing leaves</span>');
+    var bt= bytes>=1000? (bytes/1000).toFixed(0)+' KB' : bytes+' B';
+    if(T[0]!==0) bt+=' + all silence, streamed';
+    p.querySelector('.bstats').innerHTML='<div>sent per command<b>'+bt+'</b></div><div>delay, word end to action<b>'+(fits? (lat/1000).toFixed(2)+' s' : '<span style="color:var(--fail)">the language model cannot run on the S3</span>')+'</b></div><div>privacy<b>'+priv+'</b></div><div>internet down<b>'+off+'</b></div>';
+    p.querySelectorAll('.seg').forEach(function(sg){ var k=+sg.dataset.s; sg.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',+b.dataset.t===T[k]); }); });
+  }
+  deck.querySelectorAll('.bld').forEach(bldDraw);
+  /* budget */
+  function selv(p,g){ var b=p.querySelector('[data-g="'+g+'"] button.sel'); return b?+b.dataset.v:0; }
+  function budDraw(p){
+    var lm=selv(p,'lm'), wf=selv(p,'wf');
+    var parts=[['end of speech',300,'#8b9096'],['wake + slots',110,'#146b5c']];
+    if(lm>0){ if(wf) parts.push(['Wi-Fi reconnect',2000,'#a8231f']); parts.push([lm===1?'LAN hop':'cloud round trip',lm===1?20:300,'#b06a12']); parts.push([lm===1?'laptop model':'cloud model',lm===1?1500:800,'#23408f']); }
+    else parts.push(['offline table',1,'#23408f']);
+    parts.push(['reply',100,'#4b5057']);
+    var tot=0; parts.forEach(function(q){tot+=q[1];}); var sc=1150/Math.max(1500,tot), x=40, o='';
+    parts.forEach(function(q){ var w=q[1]*sc; o+='<rect x="'+x+'" y="10" width="'+Math.max(w-2,2)+'" height="54" rx="5" fill="'+q[2]+'" opacity=".85"/>'; if(w>95) o+='<text x="'+(x+w/2)+'" y="43" font-size="14" text-anchor="middle" fill="#fff" font-weight="700">'+q[0]+'</text>'; x+=w; });
+    o+='<text x="'+(x+10)+'" y="43" font-size="18" font-weight="700" fill="#15171b">'+(tot/1000).toFixed(2)+' s</text><text x="40" y="94" font-size="13" fill="#8b9096">grey: waiting for the speaker to stop · green: on the board · amber/red: the network · blue: the language model</text>';
+    p.querySelector('.busvg').innerHTML=o;
+    var v=p.querySelector('.cverdict'); v.style.color= tot<1000?'var(--ok)':(tot<2500?'var(--amber)':'var(--fail)');
+    v.textContent= lm===0? 'Instant, private, offline, but only fixed replies.' : (wf? 'Reconnecting Wi-Fi for every command dominates: the user waits over 3 s. Stay connected if you have mains power.' : 'The language model is most of the delay. The board’s own work is about a tenth of a second.');
+  }
+  deck.querySelectorAll('.bud').forEach(budDraw);
+  /* network drop */
+  function ndDraw(p){
+    var where=selv(p,'where'), f=selv(p,'fail');
+    var boxes=[['board: voice detector, wake, grammar, slots, offline table',30,'#146b5c'],['Wi-Fi router',520,'#8b9096'],[where===1?'laptop: language model':'cloud: language model',830,where===1?'#23408f':'#a8231f']];
+    var dead=[false,f===2,(where===1&&f===3)||(where===2&&(f===1||f===2))||f===4];
+    if(where===1&&f===2) dead[2]=true;
+    var o='';
+    o+='<rect x="30" y="60" width="430" height="80" rx="10" fill="#e6f1ee" stroke="#146b5c" stroke-width="2"/><text x="245" y="96" font-size="15" text-anchor="middle" font-weight="700" fill="#146b5c">board</text><text x="245" y="120" font-size="13" text-anchor="middle" fill="#4b5057">VAD · wake · grammar · slots · offline table</text>';
+    o+='<rect x="540" y="60" width="200" height="80" rx="10" fill="'+(f===2?'#fbeceb':'#ffffff')+'" stroke="'+(f===2?'#a8231f':'#8b9096')+'" stroke-width="2"/><text x="640" y="106" font-size="15" text-anchor="middle" font-weight="700" fill="'+(f===2?'#a8231f':'#15171b')+'">Wi-Fi'+(f===2?' · down':'')+'</text>';
+    var rx=where===1?820:1060;
+    if(where===2){ o+='<rect x="820" y="60" width="200" height="80" rx="10" fill="'+(f===1?'#fbeceb':'#ffffff')+'" stroke="'+(f===1?'#a8231f':'#8b9096')+'" stroke-width="2"/><text x="920" y="106" font-size="15" text-anchor="middle" font-weight="700" fill="'+(f===1?'#a8231f':'#15171b')+'">internet'+(f===1?' · down':'')+'</text>'; }
+    var lmDead=dead[2];
+    o+='<rect x="'+rx+'" y="60" width="220" height="80" rx="10" fill="'+(lmDead?'#fbeceb':'#eaeef7')+'" stroke="'+(lmDead?'#a8231f':'#23408f')+'" stroke-width="2"/><text x="'+(rx+110)+'" y="96" font-size="15" text-anchor="middle" font-weight="700" fill="'+(lmDead?'#a8231f':'#23408f')+'">'+(where===1?'laptop':'cloud API')+'</text><text x="'+(rx+110)+'" y="120" font-size="13" text-anchor="middle" fill="#4b5057">'+(f===4?'model · very slow':(lmDead?'unreachable':'language model'))+'</text>';
+    o+='<line x1="460" y1="100" x2="540" y2="100" stroke="'+(f===2?'#a8231f':'#8b9096')+'" stroke-width="3" stroke-dasharray="'+(f===2?'6 6':'0')+'"/>';
+    if(where===2){ o+='<line x1="740" y1="100" x2="820" y2="100" stroke="'+(f===1||f===2?'#a8231f':'#8b9096')+'" stroke-width="3" stroke-dasharray="'+(f===1||f===2?'6 6':'0')+'"/><line x1="1020" y1="100" x2="1060" y2="100" stroke="'+(f===1||f===2?'#a8231f':'#8b9096')+'" stroke-width="3" stroke-dasharray="'+(f===1||f===2?'6 6':'0')+'"/>'; }
+    else o+='<line x1="740" y1="100" x2="820" y2="100" stroke="'+(f===2||f===3?'#a8231f':'#8b9096')+'" stroke-width="3" stroke-dasharray="'+(f===2||f===3?'6 6':'0')+'"/>';
+    o+='<text x="30" y="190" font-size="15" fill="'+(lmDead?'#b06a12':'#146b5c')+'" font-weight="700">'+(lmDead?'→ board answers from its offline table':'→ full replies from the language model')+'</text>';
+    p.querySelector('.ndsvg').innerHTML=o;
+    var msg;
+    if(f===0) msg='All up: the board sends ~100 bytes of words and gets a natural reply.';
+    else if(f===1) msg= where===1? 'Internet down, but the laptop is on the same Wi-Fi: <strong>nothing changes</strong>. A local language model buys this.' : 'Internet down: the cloud model is unreachable. <strong>Core commands still work</strong> from the offline table, with fixed replies.';
+    else if(f===2) msg='Wi-Fi down: the board is on its own. Wake, grammar and slot models still run; <strong>the offline table answers</strong>.';
+    else if(f===3) msg= where===1? 'Laptop off: same as Wi-Fi down for the language model. <strong>The offline table answers.</strong>' : 'The laptop is not in this design: nothing changes.';
+    else msg='The model answers, but after 6 s. Without a timeout the user waits; with a 2 s timeout, <strong>the offline table answers</strong> and the late reply is dropped.';
+    p.querySelector('.ndinfo').innerHTML=msg;
+  }
+  deck.querySelectorAll('.nd').forEach(ndDraw);
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.seg button'); if(b){ b.blur(); var p=b.closest('.bld'), T=(p.dataset.t||'0,0,0,0,2,0').split(','); T[+b.parentNode.dataset.s]=b.dataset.t; p.dataset.t=T.join(','); bldDraw(p); return; }
+    b=e.target.closest('.bpre'); if(b){ b.blur(); var p2=b.closest('.bld'); p2.dataset.t=PRE[b.dataset.p].join(','); bldDraw(p2); return; }
+    b=e.target.closest('.bud .cb button, .nd .cb button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); var p3=b.closest('.bud'); if(p3) budDraw(p3); else ndDraw(b.closest('.nd')); return; }
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

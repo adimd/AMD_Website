@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 36 · Sharing AI Computation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+.quiz{padding:26px 32px;max-width:1300px}
+.qhead{display:flex;justify-content:space-between;font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.qq{font-family:var(--display);font-size:38px;font-weight:600;color:var(--ink);line-height:1.2;margin:14px 0 22px}
+.qo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qo button{text-align:left;padding:16px 20px;border:1px solid var(--rule2);background:var(--card);border-radius:10px;font-family:var(--sans);font-size:22px;color:var(--ink);cursor:pointer}
+.qo button b{font-family:var(--mono);color:var(--accent);margin-right:12px}
+.qo button.right{background:var(--ok-soft);border-color:var(--ok);border-width:2px}
+.qo button.wrong{background:var(--fail-soft);border-color:var(--fail);color:var(--fail)}
+.qe{min-height:62px;margin-top:16px;font-size:20px;color:var(--body)}
+.qnav{display:flex;justify-content:space-between;margin-top:8px}
+.qnav button{height:44px;padding:0 20px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:15px;color:var(--ink);cursor:pointer}
+.qnav .qnext{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* class 36 */
+pre{font-size:15px;line-height:1.38}
+.num{font-family:var(--mono);font-size:18px}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.fdp{padding:16px 22px}
+.sbtns{display:flex;gap:10px}
+.sbtns button{height:44px;padding:0 22px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:16px;color:var(--ink);cursor:pointer}
+.sbtns button[data-f="step"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.fdstats{margin-top:16px;font-size:19px}
+.fdstats .yr{display:grid;grid-template-columns:1fr 130px;padding:9px 0;border-bottom:1px solid var(--rule)}
+.fdstats .yr b{font-family:var(--mono);text-align:right;color:var(--accent)}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 36</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 36 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 36 · unit IV · sharing AI computation · unit wrap</div>
+    <h1>Who thinks,<br>and where?</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">One board rarely does everything. Today: when to compute locally and when to send, how several devices, two cores or a whole fleet share the work, and what happens when one of them disappears. Then the Unit IV quiz.</p>
+  </div>
+  <div class="cue">Theory, recap and quiz run to slide 15; the lab is one block at the end (slides 16 to 18). Lab needs only the board and the INMP441 (SCK 15, WS 16, SD 17, L/R to GND).</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>Where does your pipeline split, and what crosses?</h2>
+    <svg viewBox="0 0 1380 190" width="100%" height="190">
+      <defs><marker id="rc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs>
+      <rect x="0" y="20" width="820" height="150" rx="14" fill="#e6f1ee" stroke="#146b5c" stroke-width="2"/><text x="16" y="14" font-size="14" fill="#146b5c" font-weight="700">ON THE BOARD</text>
+      <rect x="20" y="60" width="140" height="70" rx="8" fill="#fff" stroke="#c6c3ba"/><text x="90" y="100" font-size="15" text-anchor="middle" font-weight="700">microphone</text>
+      <rect x="180" y="60" width="140" height="70" rx="8" fill="#fff" stroke="#c6c3ba"/><text x="250" y="100" font-size="15" text-anchor="middle" font-weight="700">voice detector</text>
+      <rect x="340" y="60" width="140" height="70" rx="8" fill="#fff" stroke="#c6c3ba"/><text x="410" y="100" font-size="15" text-anchor="middle" font-weight="700">wake model</text>
+      <rect x="500" y="60" width="140" height="70" rx="8" fill="#fff" stroke="#c6c3ba"/><text x="570" y="100" font-size="15" text-anchor="middle" font-weight="700">grammar</text>
+      <rect x="660" y="60" width="140" height="70" rx="8" fill="#fff" stroke="#c6c3ba"/><text x="730" y="100" font-size="15" text-anchor="middle" font-weight="700">slot models</text>
+      <g class="frag"><line x1="824" y1="95" x2="1036" y2="95" stroke="#a8231f" stroke-width="3" marker-end="url(#rc)"/><text x="930" y="80" font-size="15" text-anchor="middle" fill="#a8231f" font-weight="700">words + confidences</text><text x="930" y="122" font-size="14" text-anchor="middle" fill="#a8231f">about 100 bytes</text></g>
+      <rect x="1040" y="40" width="330" height="110" rx="14" fill="#eaeef7" stroke="#23408f" stroke-width="2"/><text x="1205" y="90" font-size="17" text-anchor="middle" font-weight="700" fill="#23408f">language model</text><text x="1205" y="116" font-size="14" text-anchor="middle" fill="#4b5057">laptop or cloud: action + reply</text>
+    </svg>
+    <p class="frag" style="max-width:74ch">Audio never leaves the board; only a sentence's worth of text does. Today asks the general question behind that choice.</p>
+  </div>
+  <div class="cue">Ask two teams for their answer before revealing. Some teams put the split earlier (send audio to the laptop); push them on bandwidth, privacy and what happens with no network.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Think it or send it?" data-act="the hook">
+  <div>
+    <div class="kicker">the hook</div>
+    <h2>Someone says "lights on". Should the board work it out, or send it away?</h2>
+    <div class="split" style="gap:24px;margin-top:8px">
+      <div class="panel frag"><span class="lab" style="color:var(--ok)">think it on the board</span><p>A 30 ms model. No network, no waiting, nothing leaves the room. But the board is small, and every model costs battery.</p></div>
+      <div class="panel frag"><span class="lab" style="color:var(--accent)">send it to a bigger computer</span><p>Any model you like. But the radio costs energy, the network adds delay, and on Monday morning the Wi-Fi is down.</p></div>
+    </div>
+    <p class="frag big" style="margin-top:22px;max-width:46ch">Neither answer is always right. It depends on five questions.</p>
+  </div>
+  <div class="cue">Take a vote first. Most students say "send it, the cloud is faster". The calculator on slide 5 shows when that is true and when the radio alone costs more than the whole local model.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Five questions before offloading" data-act="offloading">
+  <div>
+    <h2>Five questions decide whether to compute here or send it there.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(5,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:26px">latency</div><div class="ns">round trip + server time, against local compute time</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">energy</div><div class="ns">radio on-time against compute on-time; the radio often loses</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">bandwidth</div><div class="ns">how many bytes, how often, over which link</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">privacy</div><div class="ns">raw audio or a few words? (Class 26)</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">availability</div><div class="ns">what happens when the link or server is down?</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:74ch">This is BLERP from Class 2, turned into a decision you make for every stage of the pipeline.</p>
+  </div>
+  <div class="cue">The first three are numbers you can calculate (next slide). The last two are design decisions: a "yes" on privacy or availability can overrule a cheaper offload.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Offload calculator" data-act="offloading">
+  <div>
+    <div class="kicker">try it live · illustrative powers and speeds</div>
+    <h2>Compute locally, or send it? Add up time and energy for both.</h2>
+    <div class="panel calc ofc">
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">what you would send</span><span class="cb" data-g="pl"><button data-v="0.1" class="sel">words + confidences · 0.1 KB</button><button data-v="2">features · 2 KB</button><button data-v="32">1 s of raw audio · 32 KB</button><button data-v="300">10 s of audio · 300 KB</button></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">link</span><span class="cb" data-g="bw"><button data-v="0.1">BLE · ~0.1 Mbps</button><button data-v="5" class="sel">Wi-Fi, busy · ~5 Mbps</button><button data-v="20">Wi-Fi, good · ~20 Mbps</button></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr 110px;gap:16px"><span class="cl">local model time</span><input type="range" class="olm" min="5" max="1000" step="5" value="30"><span class="num olmv"></span></div>
+      <div class="cbar" style="grid-template-columns:230px 1fr 200px"><span class="cl">local · time / energy</span><div class="ctrack"><div class="cfill oloc"></div></div><span class="cpct olocv"></span></div>
+      <div class="cbar" style="grid-template-columns:230px 1fr 200px"><span class="cl">offload · time / energy</span><div class="ctrack"><div class="cfill ooff"></div></div><span class="cpct ooffv"></span></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Assumptions, all illustrative: board computing at 0.3 W; radio transmitting at 0.6 W plus 50 ms of round trip and wake-up per request; server time 10 ms. Bars show time; the numbers show time and energy. Raw audio over BLE is the clearest loss. A slow local model (try 800 ms) is where offloading wins, if the link is good and the user accepts the privacy cost.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="The continuum" data-act="sharing across tiers">
+  <div>
+    <h2>Not two choices but a continuum: device, edge, cloud.</h2>
+    <svg viewBox="0 0 1380 245" width="100%" height="245"><defs><marker id="ct" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><g class="frag"><rect x="0" y="20" width="430" height="150" rx="14" fill="#fff" stroke="#146b5c" stroke-width="2"/><text x="215" y="62" font-size="20" text-anchor="middle" font-weight="700" fill="#146b5c">device</text><text x="215" y="92" font-size="14" text-anchor="middle" fill="#8b9096">mW to 1 W · KB to MB</text><text x="215" y="130" font-size="16" text-anchor="middle" fill="#15171b">filter, detect, react in ms</text></g><g class="frag"><rect x="470" y="20" width="430" height="150" rx="14" fill="#fff" stroke="#23408f" stroke-width="2"/><text x="685" y="62" font-size="20" text-anchor="middle" font-weight="700" fill="#23408f">edge: gateway, laptop, server</text><text x="685" y="92" font-size="14" text-anchor="middle" fill="#8b9096">10 to 300 W · GB</text><text x="685" y="130" font-size="16" text-anchor="middle" fill="#15171b">many streams, bigger models, one site</text></g><g class="frag"><rect x="940" y="20" width="430" height="150" rx="14" fill="#fff" stroke="#8b9096" stroke-width="2"/><text x="1155" y="62" font-size="20" text-anchor="middle" font-weight="700" fill="#8b9096">cloud</text><text x="1155" y="92" font-size="14" text-anchor="middle" fill="#8b9096">data centre</text><text x="1155" y="130" font-size="16" text-anchor="middle" fill="#15171b">training, fleet updates, history</text></g><line x1="10" y1="210" x2="1360" y2="210" stroke="#4b5057" stroke-width="2" marker-end="url(#ct)"/><text x="10" y="236" font-size="14" fill="#4b5057">closer to the data: faster, more private, smaller</text><text x="1360" y="236" font-size="14" fill="#4b5057" text-anchor="end">further away: more powerful, needs the network</text></svg>
+    <p class="frag" style="max-width:76ch">Good systems use every tier for what it is best at: react on the device, combine at the edge, learn in the cloud. Class 29 drew the tiers; today is about the traffic between them.</p>
+  </div>
+  <div class="cue">Power and memory ranges are rough orders of magnitude. Ask where the course project sits: device for everything time-critical, laptop or cloud only for the language model.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Several devices, one answer" data-act="sharing across tiers">
+  <div>
+    <h2>Collaborative inference: several cheap devices, one better answer.</h2>
+    <svg viewBox="0 0 1380 270" width="100%" height="270"><defs><marker id="cl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="0" y="20" width="260" height="48" rx="8" fill="#e6f1ee" stroke="#146b5c"/><text x="130" y="50" font-size="15" text-anchor="middle" font-weight="700" fill="#146b5c">mic node 1 · VAD + features</text><line x1="264" y1="44" x2="476" y2="150" stroke="#8b9096" stroke-width="1.6" marker-end="url(#cl)"/><rect x="0" y="82" width="260" height="48" rx="8" fill="#e6f1ee" stroke="#146b5c"/><text x="130" y="112" font-size="15" text-anchor="middle" font-weight="700" fill="#146b5c">mic node 2 · VAD + features</text><line x1="264" y1="106" x2="476" y2="150" stroke="#8b9096" stroke-width="1.6" marker-end="url(#cl)"/><rect x="0" y="144" width="260" height="48" rx="8" fill="#e6f1ee" stroke="#146b5c"/><text x="130" y="174" font-size="15" text-anchor="middle" font-weight="700" fill="#146b5c">mic node 3 · VAD + features</text><line x1="264" y1="168" x2="476" y2="150" stroke="#8b9096" stroke-width="1.6" marker-end="url(#cl)"/><rect x="0" y="206" width="260" height="48" rx="8" fill="#e6f1ee" stroke="#146b5c"/><text x="130" y="236" font-size="15" text-anchor="middle" font-weight="700" fill="#146b5c">mic node 4 · VAD + features</text><line x1="264" y1="230" x2="476" y2="150" stroke="#8b9096" stroke-width="1.6" marker-end="url(#cl)"/><rect x="480" y="90" width="320" height="120" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="2"/><text x="640" y="140" font-size="18" text-anchor="middle" font-weight="700" fill="#23408f">gateway</text><text x="640" y="166" font-size="14" text-anchor="middle" fill="#4b5057">picks the clearest node</text><g class="frag"><line x1="804" y1="150" x2="956" y2="150" stroke="#8b9096" stroke-width="2" marker-end="url(#cl)"/><rect x="960" y="100" width="400" height="100" rx="12" fill="#fff" stroke="#c6c3ba"/><text x="1160" y="146" font-size="16" text-anchor="middle" font-weight="700">one decision for the room</text><text x="1160" y="172" font-size="14" text-anchor="middle" fill="#4b5057">the speaker was nearest node 3</text></g></svg>
+    <div class="ucards frag" style="grid-template-columns:repeat(3,1fr);margin-top:4px">
+      <div class="ucard"><div class="ut">split the input</div><div class="ud">each node hears part of the room; the gateway combines</div></div>
+      <div class="ucard"><div class="ut">split the work</div><div class="ud">nodes compute features; the gateway runs the model (Class 18)</div></div>
+      <div class="ucard"><div class="ut">vote</div><div class="ud">several nodes decide; the gateway takes the majority (Class 22's late fusion)</div></div>
+    </div>
+  </div>
+  <div class="cue">Smart speakers with several units in one home do a version of this: the unit that heard the wake word loudest answers. Details vary by product; treat it as an example of the idea, not a description of any one system.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Two cores, one chip" data-act="sharing on one chip">
+  <div>
+    <h2>Sharing starts on your own board: the S3 has two cores.</h2>
+    <svg viewBox="0 0 1380 230" width="100%" height="230">
+      <defs><marker id="dc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs>
+      <rect x="0" y="40" width="200" height="90" rx="10" fill="#fff" stroke="#c6c3ba"/><text x="100" y="92" font-size="17" text-anchor="middle" font-weight="700">microphone</text>
+      <line x1="204" y1="85" x2="276" y2="85" stroke="#8b9096" stroke-width="2" marker-end="url(#dc)"/>
+      <rect x="280" y="20" width="320" height="130" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="2"/><text x="440" y="62" font-size="18" text-anchor="middle" font-weight="700" fill="#146b5c">core 0 · sampling task</text><text x="440" y="90" font-size="14" text-anchor="middle" fill="#4b5057">read 20 ms frames, never late</text><text x="440" y="114" font-size="14" text-anchor="middle" fill="#4b5057">(Wi-Fi also lives here)</text>
+      <line x1="604" y1="85" x2="676" y2="85" stroke="#8b9096" stroke-width="2" marker-end="url(#dc)"/>
+      <g class="frag"><rect x="680" y="45" width="240" height="80" rx="10" fill="#fbf0dc" stroke="#b06a12" stroke-width="2"/><text x="800" y="80" font-size="17" text-anchor="middle" font-weight="700" fill="#b06a12">queue</text><text x="800" y="104" font-size="14" text-anchor="middle" fill="#4b5057">frames waiting, in order</text></g>
+      <line x1="924" y1="85" x2="996" y2="85" stroke="#8b9096" stroke-width="2" marker-end="url(#dc)"/>
+      <rect x="1000" y="20" width="370" height="130" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="2"/><text x="1185" y="62" font-size="18" text-anchor="middle" font-weight="700" fill="#23408f">core 1 · inference task</text><text x="1185" y="90" font-size="14" text-anchor="middle" fill="#4b5057">features + model, at its own pace</text>
+      <text x="0" y="200" font-size="15" fill="#4b5057">FreeRTOS, the small operating system inside every ESP32 sketch, runs each task on the core you choose.</text>
+    </svg>
+    <p class="frag" style="max-width:76ch">The queue is the trick: a slow moment on core 1 no longer stops core 0 from catching the next frame. It absorbs bursts; it cannot fix a model that is slow on average.</p>
+  </div>
+  <div class="cue">Arduino's loop() already runs on core 1; Wi-Fi and Bluetooth run on core 0. In the lab, the sampling task is light enough to share core 0 with Wi-Fi. This is the same producer-consumer idea as Class 20's double buffer, with a longer buffer you choose yourself.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="One core or two?" data-act="sharing on one chip">
+  <div>
+    <div class="kicker">try it live · frames every 20 ms · the model is usually quick, sometimes slow</div>
+    <h2>A model that is fast on average but bursty: who loses frames?</h2>
+    <div class="panel calc dct">
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">setup</span><span class="cb" data-g="md"><button data-v="1" class="sel">one loop · driver buffer of 4 frames</button><button data-v="2">two cores · queue you choose</button></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr 120px;gap:16px"><span class="cl">usual frame time</span><input type="range" class="dbase" min="1" max="30" step="1" value="5"><span class="num dbasev"></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr 120px;gap:16px"><span class="cl">every 10th frame</span><input type="range" class="dburst" min="10" max="400" step="10" value="150"><span class="num dburstv"></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr 120px;gap:16px"><span class="cl">queue length (two cores)</span><input type="range" class="dq" min="2" max="30" step="1" value="10"><span class="num dqv"></span></div>
+      <svg viewBox="0 0 1300 170" width="100%" class="dsvg"></svg>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Simulation over 3 seconds. The 4-frame driver buffer is illustrative: the real ESP_I2S driver's DMA buffering depends on its settings. The lesson the lab checks: if the average frame time is under 20 ms, a queue long enough for the longest burst loses nothing. If the average is over 20 ms, nothing saves you except a faster model.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Sharing learning" data-act="sharing learning">
+  <div>
+    <h2>Federated learning: share what the model learned, not the data.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ucard frag"><div class="un">1</div><div class="ut">send the model</div><div class="ud">the server sends the current model to many devices</div></div>
+      <div class="ucard frag"><div class="un">2</div><div class="ut">train locally</div><div class="ud">each device improves it a little on its own data</div></div>
+      <div class="ucard frag"><div class="un">3</div><div class="ut">send updates</div><div class="ud">only the changed weights go back, never the audio</div></div>
+      <div class="ucard frag"><div class="un">4</div><div class="ut">average</div><div class="ud">the server averages the updates into a new model; repeat</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:76ch">Class 24 personalised one board. Federated learning lets a whole fleet improve together while each person's data stays at home. Phone keyboards have used it for next-word suggestions.</p>
+  </div>
+  <div class="cue">Caveats worth saying aloud: updates can still leak something about the data, so real systems add protections (secure aggregation, added noise); training on a microcontroller is limited (Class 24's ladder), so federated learning on MCUs usually updates only the last layer or a small part of the model.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="A federated round" data-act="sharing learning">
+  <div>
+    <div class="kicker">try it live · five homes, each with its own best model (the coloured dots)</div>
+    <h2>Each round: train at home, average at the server.</h2>
+    <div class="panel fdp split" style="grid-template-columns:1.15fr .85fr;gap:26px;align-items:center">
+      <svg viewBox="0 0 640 420" width="100%" class="fdsvg"></svg>
+      <div>
+        <div class="sbtns"><button data-f="step">one round</button><button data-f="run">run 10</button><button data-f="reset">reset</button></div>
+        <div class="fdstats"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">A two-weight toy: each home's data has its own ideal point; local training moves the shared model part-way towards it; the server averages. The black dot settles where it suits everyone reasonably, without any home sending a single recording. Numbers are illustrative.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="When a tier disappears" data-act="degrading gracefully">
+  <div>
+    <h2>Every link fails sometimes. Decide in advance what still works.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:26%">what is missing</th><th style="width:38%">what the project still does</th><th>how</th></tr>
+      <tr class="frag"><td>the internet</td><td>common commands still work: "lights on", "pump off"</td><td>the offline fallback table on the board maps word sequences to actions</td></tr>
+      <tr class="frag"><td>the language model</td><td>no friendly reply; the action still happens</td><td>the grammar already knows the slots; reply with a beep or LED</td></tr>
+      <tr class="frag"><td>a sensor</td><td>falls back to the other one, and says so</td><td>Class 22's failure handling</td></tr>
+      <tr class="frag"><td>battery running low</td><td>wake word only; everything else off</td><td>shed the expensive tiers first</td></tr>
+      <tr class="frag"><td>"stop" or "emergency"</td><td>always works, whatever else is down</td><td>handled on the board, never sent anywhere first</td></tr>
+    </table>
+  </div>
+  <div class="cue">The last row is the Robo and Help projects' rule: safety-critical words must never depend on the network. This table is a good thing for every team to fill in before the demo.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Unit IV on one page" data-act="unit recap">
+  <div>
+    <h2>Unit IV on one page.</h2>
+    <table class="dt txt" style="width:100%;font-size:18px"><tr><th>class</th><th>topic</th><th>the sentence to remember</th></tr><tr class="frag"><td style="width:6%">28</td><td style="width:26%">Product and experience design</td><td>Design for the moment it gets it wrong: feedback, confidence, and a way out for the user.</td></tr><tr class="frag"><td style="width:6%">29</td><td style="width:26%">Architecture design</td><td>Decide what runs on the sensor, the board, the gateway and the cloud, and what crosses each link.</td></tr><tr class="frag"><td style="width:6%">30</td><td style="width:26%">Iterative workflow</td><td>Baseline first, measure, study the errors, and fix the data before the model.</td></tr><tr class="frag"><td style="width:6%">31</td><td style="width:26%">Evaluating</td><td>Measure on realistic streams: per-class results, false alarms per hour, latency, memory, energy.</td></tr><tr class="frag"><td style="width:6%">32</td><td style="width:26%">Deploying</td><td>Ship a version you can update, monitor and roll back.</td></tr><tr class="frag"><td style="width:6%">33</td><td style="width:26%">General optimisation methods</td><td>Quantise, prune and distil: buy size and speed with a little accuracy, and measure the trade.</td></tr><tr class="frag"><td style="width:6%">34</td><td style="width:26%">Optimisation for edge devices</td><td>The board has the final word: supported operators, memory arena and kernels, measured on the device.</td></tr><tr class="frag"><td style="width:6%">35</td><td style="width:26%">Segmentation of models</td><td>Split a model or pipeline so cheap parts run first and only what is needed travels on.</td></tr></table>
+  </div>
+  <div class="cue">Revision sheet for the CIE: tell students to photograph it. These sentences were written to the Unit IV plan; adjust any wording to match what you emphasised in Classes 28 to 35.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Unit IV quiz" data-act="quiz">
+  <div>
+    <div class="kicker">unit IV quiz · vote with hands, then click</div>
+    <div class="panel quiz" data-q='[{"q": "The board did not understand a voice command. The best experience is to\u2026", "o": ["do nothing and wait", "guess the closest command and act", "say or show \"didn&#39;t catch that\" and let the user try again", "restart the board"], "a": 2, "e": "Visible feedback and an easy retry: failing gracefully is part of the product (Class 28)."}, {"q": "In the course project, what crosses from the board to the language model?", "o": ["raw audio", "the spectrogram", "words plus confidences, about 100 bytes", "the whole model"], "a": 2, "e": "Small, private and enough for the language model to choose the action (Classes 29 and 35)."}, {"q": "After collecting your first data, the next step in the iterative workflow is\u2026", "o": ["design the final PCB", "train a simple baseline and measure it", "quantise the model", "write the user manual"], "a": 1, "e": "A baseline tells you how hard the problem is and which errors matter (Class 30)."}, {"q": "A wake word is tested on 24 hours of normal household audio. The key number is\u2026", "o": ["accuracy per clip", "false wake-ups per hour", "model size", "training time"], "a": 1, "e": "On a stream, false alarms per hour is what users feel, alongside the miss rate (Class 31)."}, {"q": "For a hospital-bed \"emergency\" word, which error must you push down hardest?", "o": ["false alarms", "missed emergencies", "slow replies", "large model size"], "a": 1, "e": "A missed emergency costs far more than a false call: favour recall (Classes 26 and 31)."}, {"q": "Why must over-the-air updates support rollback?", "o": ["to save flash", "a bad update can break devices that nobody can reach", "to make the model smaller", "to speed up inference"], "a": 1, "e": "Devices in the field must be able to return to the last working version (Class 32)."}, {"q": "Post-training quantisation to int8 needs\u2026", "o": ["the full training set and GPUs", "a small representative calibration set", "a new model architecture", "no data at all, ever"], "a": 1, "e": "A few hundred typical inputs set the ranges (scales and zero points) for each tensor (Class 33)."}, {"q": "A model fits in flash but crashes when it runs. The likely cause is\u2026", "o": ["the weights are too large", "the activations need more SRAM than the memory arena has", "the sample rate is too high", "the LED pin is wrong"], "a": 1, "e": "Weights live in flash; activations need working memory at run time (Classes 7 and 34)."}, {"q": "An early-exit model saves compute by\u2026", "o": ["skipping the input layer", "letting easy inputs leave at an early layer when confident", "running on the cloud", "using float32"], "a": 1, "e": "Confident early answers stop the rest of the network running (Class 35)."}, {"q": "Splitting a CNN between the board and a laptop only helps if\u2026", "o": ["the split point&#39;s data is smaller than the raw input", "the laptop is slower", "there is no network", "the model is tiny"], "a": 0, "e": "What crosses the split must be cheaper to send than the raw data, or just send the data (Class 35)."}]'>
+      <div class="qhead"><span class="qn"></span><span class="qs"></span></div>
+      <div class="qq"></div>
+      <div class="qo"></div>
+      <div class="qe"></div>
+      <div class="qnav"><button class="qprev">← previous</button><button class="qnext">next question →</button></div>
+    </div>
+  </div>
+  <div class="cue">Ten questions, one or two per class of Unit IV. They follow the Unit IV plan; check each against what Classes 28 to 35 actually showed before using it for marks. The score counts first clicks only.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Next: Unit V" data-act="bridge">
+  <div>
+    <div class="kicker">where we are</div>
+    <h2>You can build it and make it fit. Unit V: build it well, and prove it.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ucard frag"><div class="un">V</div><div class="ut">scoping and design goals</div><div class="ud">what exactly are we building, and how will we know it is good enough?</div></div>
+      <div class="ucard frag"><div class="un">V</div><div class="ut">design patterns</div><div class="ud">basic and complex application architectures, in depth</div></div>
+      <div class="ucard frag"><div class="un">V</div><div class="ut">developing and supporting</div><div class="ud">exploration to deployment, and keeping it working afterwards</div></div>
+      <div class="ucard frag"><div class="un">V</div><div class="ut">evaluating systems</div><div class="ud">metrics, techniques, and responsible AI in evaluation</div></div>
+    </div>
+  </div>
+  <div class="cue">One minute. Unit V revisits several Unit IV topics more deeply, with the course project as the running case.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Lab: two cores, one queue" data-act="lab">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">lab · teams of four · board + INMP441</div><h2 style="margin-bottom:6px">Split sampling and thinking across the two cores.</h2></div>
+      <div class="panel timer" data-secs="1500"><span class="tdisp">25:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="un">A</div><div class="ut">two cores</div><div class="ud">Run the sketch with TWO_CORES 1. Frames read, processed and dropped each second?</div></div>
+      <div class="ucard"><div class="un">B</div><div class="ut">one loop</div><div class="ud">Set TWO_CORES 0: the same bursty work in one loop, as in Class 20. What changes?</div></div>
+      <div class="ucard"><div class="un">C</div><div class="ut">find the limits</div><div class="ud">Raise BURST_MS until frames drop. Then raise QUEUE_LEN. Then raise BASE_MS above 20.</div></div>
+    </div>
+  </div>
+  <div class="cue">Expected: with the defaults (2 ms usually, 150 ms every 10th frame, average under 20 ms) the two-core version drops nothing; the one-loop version reads fewer than 50 frames a second during bursts, if the burst outlasts the driver's buffering. If no loss appears in one-loop mode, raise BURST_MS to 300. With BASE_MS above 20, both versions lose frames: a queue cannot fix a model that is slow on average.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Lab code" data-act="lab">
+  <div class="split" style="grid-template-columns:1.55fr .45fr;align-items:center">
+    <pre style="font-size:12.5px;line-height:1.26"><span class="c">// Class 36 lab · sampling on core 0, a bursty "model" on core 1, a queue between</span>
+<span class="k">#include</span> <span class="s">&lt;ESP_I2S.h&gt;</span>
+<span class="k">#define</span> TWO_CORES <span class="s">1</span>                 <span class="c">// ← 1: two tasks + queue · 0: one loop, as in Class 20</span>
+I2SClass i2s;
+<span class="k">const int</span> FRAME = <span class="s">320</span>;             <span class="c">// 20 ms at 16 kHz</span>
+<span class="k">const int</span> BASE_MS = <span class="s">2</span>, BURST_MS = <span class="s">150</span>, QUEUE_LEN = <span class="s">10</span>;   <span class="c">// ← try other values</span>
+<span class="k">struct</span> Frame <span class="k">{</span> <span class="k">int32_t</span> s[FRAME]; <span class="k">}</span>;  QueueHandle_t q;
+<span class="k">volatile uint32_t</span> got = <span class="s">0</span>, done = <span class="s">0</span>, dropped = <span class="s">0</span>, nFrame = <span class="s">0</span>;
+
+<span class="k">void</span> <span class="f">think</span>(Frame &amp;f) <span class="k">{</span>                          <span class="c">// features + a pretend model</span>
+  <span class="k">float</span> sum = <span class="s">0</span>;  <span class="k">for</span> (<span class="k">int</span> k = <span class="s">0</span>; k &lt; FRAME; k++) <span class="k">{</span> <span class="k">float</span> v = (f.s[k] &gt;&gt; <span class="s">8</span>) / <span class="s">8388608.0</span>; sum += v * v; <span class="k">}</span>
+  delay(++nFrame % <span class="s">10</span> == <span class="s">0</span> ? BURST_MS : BASE_MS);  done++;   <span class="c">// usually quick, sometimes slow</span>
+<span class="k">}</span>
+
+<span class="k">void</span> <span class="f">sampler</span>(<span class="k">void</span>*) <span class="k">{</span>                             <span class="c">// core 0: never late</span>
+  <span class="k">static</span> Frame f;
+  <span class="k">for</span> (;;) <span class="k">{</span> i2s.readBytes((<span class="k">char</span>*)f.s, <span class="k">sizeof</span>(f.s));  got++;
+           <span class="k">if</span> (xQueueSend(q, &amp;f, <span class="s">0</span>) != pdTRUE) dropped++; <span class="k">}</span>   <span class="c">// queue full: frame lost</span>
+<span class="k">}</span>
+<span class="k">void</span> <span class="f">worker</span>(<span class="k">void</span>*) <span class="k">{</span>                              <span class="c">// core 1: at its own pace</span>
+  <span class="k">static</span> Frame f;  <span class="k">for</span> (;;) <span class="k">if</span> (xQueueReceive(q, &amp;f, portMAX_DELAY) == pdTRUE) think(f);
+<span class="k">}</span>
+
+<span class="k">void</span> <span class="f">setup</span>() <span class="k">{</span>
+  Serial.begin(<span class="s">115200</span>);  i2s.setPins(<span class="s">15</span>, <span class="s">16</span>, -<span class="s">1</span>, <span class="s">17</span>);
+  i2s.begin(I2S_MODE_STD, <span class="s">16000</span>, I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO);
+<span class="k">#if</span> TWO_CORES
+  q = xQueueCreate(QUEUE_LEN, <span class="k">sizeof</span>(Frame));
+  xTaskCreatePinnedToCore(sampler, <span class="s">"sampler"</span>, <span class="s">4096</span>, NULL, <span class="s">2</span>, NULL, <span class="s">0</span>);
+  xTaskCreatePinnedToCore(worker,  <span class="s">"worker"</span>,  <span class="s">4096</span>, NULL, <span class="s">1</span>, NULL, <span class="s">1</span>);
+<span class="k">#endif</span>
+<span class="k">}</span>
+
+<span class="k">uint32_t</span> t0 = <span class="s">0</span>;  <span class="k">void</span> <span class="f">loop</span>() <span class="k">{</span>
+<span class="k">#if</span> !TWO_CORES
+  <span class="k">static</span> Frame f;  i2s.readBytes((<span class="k">char</span>*)f.s, <span class="k">sizeof</span>(f.s));  got++;  think(f);   <span class="c">// one at a time</span>
+<span class="k">#else</span>
+  delay(<span class="s">10</span>);
+<span class="k">#endif</span>
+  <span class="k">if</span> (millis() - t0 &gt;= <span class="s">1000</span>) <span class="k">{</span>
+    Serial.printf(<span class="s">"read %u/50   processed %u   dropped %u\n"</span>, got, done, dropped);
+    got = done = dropped = <span class="s">0</span>;  t0 = millis();
+  <span class="k">}</span>
+<span class="k">}</span></pre>
+    <div class="stack">
+      <div class="kicker">lab · parts A to C</div>
+      <h2>Read the three numbers every second.</h2>
+      <p class="small">"read" below 50 means audio was lost before your code saw it.</p>
+      <p class="small">"dropped" counts frames the queue had no room for.</p>
+    </div>
+  </div>
+  <div class="cue">The queue copies whole frames (1,280 bytes each), so QUEUE_LEN 10 uses about 13 KB of SRAM: fine on the S3, but a real cost to note. delay() inside a task lets the other task run; a real model would compute instead of sleeping, which is why the work goes on the other core. Untested on hardware at the time of writing: run it once before class.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Worksheet" data-act="lab">
+  <div>
+    <div class="kicker">lab · worksheet</div>
+    <h2>Six answers.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)"><div class="wbox" style="min-height:190px"><div class="wk">A · two cores</div><div class="wq">read · processed · dropped, per second</div></div><div class="wbox" style="min-height:190px"><div class="wk">B · one loop</div><div class="wq">read · processed, per second; what changed?</div></div><div class="wbox" style="min-height:190px"><div class="wk">C · burst limit</div><div class="wq">BURST_MS where two-core starts dropping, at QUEUE_LEN 10</div></div><div class="wbox" style="min-height:190px"><div class="wk">C · bigger queue</div><div class="wq">QUEUE_LEN that fixes it, and its SRAM cost</div></div><div class="wbox" style="min-height:190px"><div class="wk">C · slow on average</div><div class="wq">BASE_MS 25: what happens in both modes, and why</div></div><div class="wbox" style="min-height:190px"><div class="wk">your project</div><div class="wq">what would you put on core 0, and what on core 1?</div></div></div>
+  </div>
+  <div class="cue">Burst limit shape: the queue must hold the frames that arrive during the longest burst, about BURST_MS ÷ 20 frames. A good project answer: core 0 for sampling, the voice detector and Wi-Fi; core 1 for the wake and slot models.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">In three lines, how is your project's computation shared between the board, the laptop or cloud, and the user?</h2>
+    <p class="small frag" style="margin-top:30px">That is Unit IV. Next: <strong>Unit V, designing, developing and evaluating Edge AI applications</strong>.</p>
+  </div>
+  <div class="cue">Good answers name what each part does and what crosses between them, and include the user: they confirm, retry or correct, which is computation too in a sense (Class 28).</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.quiz')||e.target.closest('.timer')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  function selv(p,g){ var b=p.querySelector('[data-g="'+g+'"] button.sel'); return b?+b.dataset.v:0; }
+  /* offload */
+  function ofDraw(p){
+    var kb=selv(p,'pl'), mbps=selv(p,'bw'), lm=+p.querySelector('.olm').value; p.querySelector('.olmv').textContent=lm+' ms';
+    var air=kb*8/(mbps*1000)*1000, offT=air+50+10, offE=0.6*(air+50)/1000*1000, locE=0.3*lm/1000*1000, mx=Math.max(lm,offT);
+    p.querySelector('.oloc').style.width=(lm/mx*100)+'%'; p.querySelector('.olocv').textContent=Math.round(lm)+' ms · '+locE.toFixed(1)+' mJ';
+    p.querySelector('.ooff').style.width=(offT/mx*100)+'%'; p.querySelector('.ooffv').textContent=Math.round(offT)+' ms · '+offE.toFixed(1)+' mJ';
+    var tW= lm<=offT?'local':'offload', eW= locE<=offE?'local':'offload', v=p.querySelector('.cverdict');
+    v.style.color= (tW==='local'&&eW==='local')?'var(--ok)':((tW==='offload'&&eW==='offload')?'var(--accent)':'var(--amber)');
+    v.textContent= (tW===eW? 'Both time and energy favour '+(tW==='local'?'computing on the board.':'offloading.') : tW+' is faster, but '+eW+' uses less energy: decide which matters more.')+(kb>=32?' Raw audio is leaving the device: check privacy (Class 26).':'');
+  }
+  deck.querySelectorAll('.ofc').forEach(function(p){ ofDraw(p); p.querySelector('.olm').addEventListener('input',function(){ofDraw(p);}); });
+  /* dual core */
+  function dcDraw(p){
+    var mode=selv(p,'md'), base=+p.querySelector('.dbase').value, burst=+p.querySelector('.dburst').value, ql=+p.querySelector('.dq').value;
+    p.querySelector('.dbasev').textContent=base+' ms'; p.querySelector('.dburstv').textContent=burst+' ms'; p.querySelector('.dqv').textContent=ql;
+    var cap= mode===1?4:ql, T=3000, per=20, queue=[], free=0, lost=0, busy=[], drops=[], n=0;
+    for(var a=0;a*per<T;a++){
+      var t=a*per;
+      while(queue.length && free<=t){ var st=Math.max(free,queue[0]); var w=(++n%10===0)?burst:base; busy.push([st,st+w]); free=st+w; queue.shift(); }
+      if(queue.length>=cap){ lost++; drops.push(t); } else queue.push(t);
+      while(queue.length && free<=t){ var st2=Math.max(free,queue[0]); var w2=(++n%10===0)?burst:base; busy.push([st2,st2+w2]); free=st2+w2; queue.shift(); }
+    }
+    function X(t){ return 60+t/T*1220; }
+    var o='<text x="60" y="16" font-size="14" fill="#4b5057">processing, each bar a frame · 3 seconds</text>';
+    busy.forEach(function(b){ if(b[0]<T) o+='<rect x="'+X(b[0])+'" y="30" width="'+Math.max(1,X(Math.min(b[1],T))-X(b[0])-1)+'" height="50" fill="'+((b[1]-b[0])>per?'#b06a12':'#23408f')+'" opacity=".85"/>'; });
+    o+='<text x="60" y="112" font-size="14" fill="#4b5057">frames lost</text>';
+    drops.forEach(function(t){ o+='<line x1="'+X(t)+'" y1="120" x2="'+X(t)+'" y2="160" stroke="#a8231f" stroke-width="2"/>'; });
+    p.querySelector('.dsvg').innerHTML=o;
+    var avg=(9*base+burst)/10, v=p.querySelector('.cverdict');
+    v.style.color= lost?'var(--fail)':'var(--ok)';
+    v.textContent='Average '+avg.toFixed(1)+' ms per 20 ms frame · buffer of '+cap+' frames · '+lost+' of '+(T/per)+' frames lost'+(avg>per?': slow on average, no buffer can save it.':(lost?': the burst is longer than the buffer can hold.':': the buffer absorbs every burst.'));
+  }
+  deck.querySelectorAll('.dct').forEach(function(p){ dcDraw(p); p.querySelectorAll('input').forEach(function(x){ x.addEventListener('input',function(){dcDraw(p);}); }); });
+  /* federated */
+  var FDO=[[120,110,'#146b5c'],[520,90,'#23408f'],[560,330,'#b06a12'],[150,340,'#a8231f'],[340,60,'#8b9096']];
+  function fdDraw(p){
+    var st=p._st; if(!st){ st=p._st={g:[320,390],r:0,locals:null}; }
+    var o='<rect x="20" y="20" width="600" height="380" rx="10" fill="#ffffff" stroke="#e2e0d9"/><text x="30" y="414" font-size="13" fill="#8b9096">two model weights · each home’s ideal is a coloured dot</text>';
+    var mx=0,my=0; FDO.forEach(function(q){ mx+=q[0]/FDO.length; my+=q[1]/FDO.length; });
+    o+='<circle cx="'+mx.toFixed(1)+'" cy="'+my.toFixed(1)+'" r="16" fill="none" stroke="#c6c3ba" stroke-dasharray="4 4"/>';
+    FDO.forEach(function(q,k){ o+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="10" fill="'+q[2]+'"/><text x="'+(q[0]+14)+'" y="'+(q[1]+5)+'" font-size="13" fill="'+q[2]+'">home '+(k+1)+'</text>';
+      if(st.locals){ var L=st.locals[k]; o+='<line x1="'+st.prev[0]+'" y1="'+st.prev[1]+'" x2="'+L[0]+'" y2="'+L[1]+'" stroke="'+q[2]+'" stroke-width="2" opacity=".6"/><circle cx="'+L[0]+'" cy="'+L[1]+'" r="5" fill="'+q[2]+'" opacity=".7"/>'; } });
+    o+='<circle cx="'+st.g[0].toFixed(1)+'" cy="'+st.g[1].toFixed(1)+'" r="11" fill="#15171b"/><text x="'+(st.g[0]+15).toFixed(1)+'" y="'+(st.g[1]-10).toFixed(1)+'" font-size="14" font-weight="700" fill="#15171b">shared model</text>';
+    p.querySelector('.fdsvg').innerHTML=o;
+    var dist=Math.sqrt(Math.pow(st.g[0]-mx,2)+Math.pow(st.g[1]-my,2));
+    p.querySelector('.fdstats').innerHTML='<div class="yr"><span>rounds</span><b>'+st.r+'</b></div><div class="yr"><span>recordings sent to the server</span><b>0</b></div><div class="yr"><span>numbers sent per round</span><b>'+(st.r?'5 × 2':'—')+'</b></div><div class="yr"><span>distance from the best shared model</span><b>'+dist.toFixed(0)+'</b></div>';
+  }
+  function fdStep(p){ var st=p._st; st.prev=st.g.slice(); st.locals=FDO.map(function(q){ return [st.g[0]+0.5*(q[0]-st.g[0]), st.g[1]+0.5*(q[1]-st.g[1])]; });
+    var sx=0,sy=0; st.locals.forEach(function(L){ sx+=L[0]; sy+=L[1]; }); st.g=[sx/5,sy/5]; st.r++; fdDraw(p); }
+  var fdT=null;
+  deck.querySelectorAll('.fdp').forEach(fdDraw);
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.ofc .cb button, .dct .cb button');
+    if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); var p=b.closest('.calc'); if(p.classList.contains('ofc')) ofDraw(p); else dcDraw(p); return; }
+    b=e.target.closest('.fdp .sbtns button'); if(b){ b.blur(); var p2=b.closest('.fdp');
+      if(fdT){ clearInterval(fdT); fdT=null; }
+      if(b.dataset.f==='reset'){ p2._st=null; fdDraw(p2); }
+      else if(b.dataset.f==='step') fdStep(p2);
+      else { var c=0; fdT=setInterval(function(){ fdStep(p2); if(++c>=10){ clearInterval(fdT); fdT=null; } },450); }
+      return; }
+  });
+
+  deck.querySelectorAll('.quiz').forEach(function(p){
+    var Q=JSON.parse(p.dataset.q), st={i:0,ans:Q.map(function(){return -1;})};
+    function draw(){
+      var q=Q[st.i], got=st.ans[st.i];
+      p.querySelector('.qn').textContent='question '+(st.i+1)+' of '+Q.length;
+      var sc=st.ans.filter(function(a,k){return a===Q[k].a;}).length, done=st.ans.filter(function(a){return a>=0;}).length;
+      p.querySelector('.qs').textContent='score '+sc+' / '+done;
+      p.querySelector('.qq').textContent=q.q;
+      p.querySelector('.qo').innerHTML=q.o.map(function(o,k){ var c=''; if(got>=0){ if(k===q.a) c='right'; else if(k===got) c='wrong'; } return '<button data-k="'+k+'" class="'+c+'"><b>'+'ABCD'[k]+'</b>'+o+'</button>'; }).join('');
+      p.querySelector('.qe').textContent= got>=0 ? (got===q.a?'Correct. ':'Not quite. ')+q.e : '';
+      p.querySelector('.qprev').style.visibility=st.i>0?'visible':'hidden';
+      p.querySelector('.qnext').textContent= st.i<Q.length-1?'next question →':'final score: '+sc+' / '+Q.length;
+    }
+    p.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return; b.blur();
+      if(b.dataset.k!==undefined){ if(st.ans[st.i]<0) st.ans[st.i]=+b.dataset.k; draw(); return; }
+      if(b.classList.contains('qnext') && st.i<Q.length-1){ st.i++; draw(); }
+      if(b.classList.contains('qprev') && st.i>0){ st.i--; draw(); }
+    });
+    draw();
+  });
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

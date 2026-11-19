@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 35 · Segmentation of AI Models</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 35 */
+pre{font-size:13px;line-height:1.32}
+.slide pre.tight{font-size:11.5px;line-height:1.26;padding:14px 18px}
+.num{font-family:var(--mono);font-size:18px}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.cas .cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.eestats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:6px}
+.eestats div{border-top:1px solid var(--rule);padding-top:6px;font-size:16px;color:var(--soft)}
+.eestats b{display:block;font-family:var(--mono);font-size:24px;color:var(--ink)}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 35</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 35 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 35 · unit IV · segmentation of AI models</div>
+    <h1>Cut the model.<br>Then decide where each piece runs.</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">A model does not have to run in one piece, on one chip. Today: splitting a network across devices, across processors, and splitting one big job into a chain of small models that mostly stay asleep.</p>
+  </div>
+  <div class="cue">Theory runs to slide 13; the lab is one block at the end (slides 14 to 16). INMP441 wiring as in Class 19 (SCK 15, WS 16, SD 17, L/R to GND). The lab is the course project's own design in miniature.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>The largest layer needs 300 KB of activations. Where does it go?</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">probably not SRAM</div><div class="ut">512 KB, already shared</div><div class="ud">Wi-Fi, I2S buffers, the stack and the rest of the arena all live there too.</div></div>
+      <div class="ucard frag"><div class="un">PSRAM</div><div class="ut">it fits, slowly</div><div class="ud">8 MB through a cache: every pass over the layer costs memory time (Class 15's lab).</div></div>
+      <div class="ucard frag"><div class="un">or change the model</div><div class="ut">shrink the layer</div><div class="ud">Fewer channels, stride earlier, smaller input; or move that layer somewhere else. Today.</div></div>
+    </div>
+  </div>
+  <div class="cue">Good answers name the cost (slower memory, or accuracy lost by shrinking). The third card leads into today: if a layer does not fit here, maybe it should not run here.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Is there a middle?" data-act="the hook">
+  <div>
+    <div class="kicker">the hook · the doorbell's person detector</div>
+    <h2>Too slow on the S3. Too much video for the Wi-Fi. Is there a middle?</h2>
+    <svg viewBox="0 0 1300 210" width="100%" height="210"><defs><marker id="hk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="40" y="80.0" width="110" height="60" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><line x1="152" y1="110" x2="196" y2="110" stroke="#8b9096" stroke-width="2" marker-end="url(#hk)"/><rect x="200" y="50.0" width="110" height="120" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><line x1="312" y1="110" x2="356" y2="110" stroke="#8b9096" stroke-width="2" marker-end="url(#hk)"/><rect x="360" y="60.0" width="110" height="100" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><line x1="472" y1="110" x2="516" y2="110" stroke="#8b9096" stroke-width="2" marker-end="url(#hk)"/><rect x="520" y="65.0" width="110" height="90" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><line x1="632" y1="110" x2="676" y2="110" stroke="#8b9096" stroke-width="2" marker-end="url(#hk)"/><rect x="680" y="75.0" width="110" height="70" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><line x1="792" y1="110" x2="836" y2="110" stroke="#8b9096" stroke-width="2" marker-end="url(#hk)"/><rect x="840" y="80.0" width="110" height="60" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><line x1="952" y1="110" x2="996" y2="110" stroke="#8b9096" stroke-width="2" marker-end="url(#hk)"/><rect x="1000" y="90.0" width="110" height="40" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><line x1="1112" y1="110" x2="1156" y2="110" stroke="#8b9096" stroke-width="2" marker-end="url(#hk)"/><rect x="1160" y="95.0" width="110" height="30" rx="8" fill="#eaeef7" stroke="#23408f" stroke-width="1.6"/><text x="40" y="200" font-size="15" fill="#4b5057">a person detector, layer by layer</text><g class="frag"><line x1="665" y1="20" x2="665" y2="200" stroke="#a8231f" stroke-width="3" stroke-dasharray="8 6"/><text x="655" y="34" font-size="16" fill="#146b5c" text-anchor="end" font-weight="700">on the doorbell</text><text x="675" y="34" font-size="16" fill="#23408f" font-weight="700">on the server</text></g></svg>
+    <div class="split frag" style="gap:24px;margin-top:8px">
+      <div class="rem"><div class="h">all on the board</div><ul><li>Private and offline, but seconds per frame (Class 16's hook).</li></ul></div>
+      <div class="rem green"><div class="h">all in the cloud</div><ul><li>Fast maths, but every frame crosses the network.</li></ul></div>
+    </div>
+    <p class="frag" style="margin-top:14px;max-width:72ch">Run the first few layers on the board and send what comes out of them. Where you cut is a design decision with numbers behind it.</p>
+  </div>
+  <div class="cue">Ask for a guess before revealing the cut: would you cut early or late? Most students say early ("do as little as possible on the weak chip"). Slide 7 shows why early can be the worst choice.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Three ways to segment" data-act="what segmenting means">
+  <div>
+    <h2>Segmenting means cutting the work into pieces. Three kinds of cut.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">across devices</div><div class="ut">split computing</div><div class="ud">The first layers on the device, the rest on a gateway or server. Slides 5 to 8.</div></div>
+      <div class="ucard frag"><div class="un">across processors</div><div class="ut">one chip, several engines</div><div class="ud">NPU for most layers, CPU for the rest; or one core for the front end, one for the model. Slide 9.</div></div>
+      <div class="ucard frag"><div class="un">across models</div><div class="ut">cascades, early exits, routing</div><div class="ud">Several small models instead of one big one, most of them asleep most of the time. Slides 10 to 12.</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:76ch">All three answer one question: <strong>which piece of computation should run where, and what has to travel between the pieces?</strong></p>
+  </div>
+  <div class="cue">Unit I's patterns (Class 5: cascade, split inference, gateway) were the vocabulary; this is the engineering behind them.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Split computing" data-act="across devices">
+  <div>
+    <h2>Split computing: a head on the device, a tail on the server.</h2>
+    <svg viewBox="0 0 1300 160" width="100%" height="160"><defs><marker id="sc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="0" y="50" width="160" height="80" rx="10" fill="#fff" stroke="#c6c3ba"/><text x="80" y="96" font-size="16" text-anchor="middle" font-weight="700">sensor</text><line x1="164" y1="90" x2="216" y2="90" stroke="#8b9096" stroke-width="2" marker-end="url(#sc)"/><rect x="220" y="30" width="300" height="120" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="2"/><text x="370" y="74" font-size="18" text-anchor="middle" font-weight="700" fill="#146b5c">head</text><text x="370" y="100" font-size="14" text-anchor="middle" fill="#4b5057">first layers, on the device</text><text x="370" y="122" font-size="14" text-anchor="middle" fill="#4b5057">device MACs ÷ device speed</text><line x1="524" y1="90" x2="776" y2="90" stroke="#a8231f" stroke-width="3" marker-end="url(#sc)"/><text x="650" y="72" font-size="15" text-anchor="middle" fill="#a8231f" font-weight="700">the intermediate tensor</text><text x="650" y="116" font-size="13" text-anchor="middle" fill="#4b5057">size ÷ link speed + round trip</text><rect x="780" y="30" width="300" height="120" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="2"/><text x="930" y="74" font-size="18" text-anchor="middle" font-weight="700" fill="#23408f">tail</text><text x="930" y="100" font-size="14" text-anchor="middle" fill="#4b5057">remaining layers, on a server</text><text x="930" y="122" font-size="14" text-anchor="middle" fill="#4b5057">server MACs ÷ server speed</text><line x1="1084" y1="90" x2="1146" y2="90" stroke="#8b9096" stroke-width="2" marker-end="url(#sc)"/><rect x="1150" y="50" width="150" height="80" rx="10" fill="#fff" stroke="#c6c3ba"/><text x="1225" y="96" font-size="16" text-anchor="middle" font-weight="700">answer</text></svg>
+    <div class="cformula frag" style="font-size:24px;text-align:center;margin:18px 0">latency = head time + transfer time + tail time</div>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:26px">device speed</div><div class="ns">your measured MACs per second (Class 15)</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">bytes at the cut</div><div class="ns">the size of one layer's output, not the model's</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">link</div><div class="ns">bandwidth and round-trip time: Wi-Fi, LoRa, cellular</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">energy</div><div class="ns">radio time costs battery too, often more than the maths</div></div>
+    </div>
+  </div>
+  <div class="cue">The weights never travel: each side stores its own part of the model. Only the activations at the cut cross the link, once per inference.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Split-point explorer" data-act="across devices">
+  <div>
+    <div class="kicker">try it live · a keyword CNN on a 49 × 40 spectrogram · cut after any layer</div>
+    <h2>Where should the cut go? It depends on the link.</h2>
+    <div class="panel calc spx">
+      <div class="crow" style="grid-template-columns:230px 1fr 140px;gap:14px"><span class="cl">device speed</span><input type="range" class="sd" min="0" max="100" step="1" value="35"><span class="num sdv"></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr 140px;gap:14px"><span class="cl">link bandwidth</span><input type="range" class="sb" min="0" max="100" step="1" value="40"><span class="num sbv"></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr 140px;gap:14px"><span class="cl">round trip</span><input type="range" class="sr" min="5" max="300" step="5" value="40"><span class="num srv"></span></div>
+      <svg viewBox="0 0 1300 330" width="100%" class="spsvg"></svg>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Layer sizes and multiply-adds are computed for a small keyword CNN of the kind used in Class 7 and 23 (int8 activations, about 5 million MACs in total); the server is fixed at 10 billion MACs a second. Grey: device compute; red: sending the tensor; blue: server compute. Try a fast Wi-Fi link (everything to the server wins), then a slow LoRa-like link of 10 kbps (everything on the device wins), then the middle. Illustrative, but the arithmetic is the real formula.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Cut where the data is small" data-act="across devices">
+  <div>
+    <h2>The first conv layer makes the data 16× bigger. Cutting there is worse than sending the input.</h2>
+    <svg viewBox="0 0 1300 250" width="100%" height="250"><rect x="40" y="208" width="110" height="12" rx="5" fill="#146b5c" opacity=".85"/><text x="95" y="200" font-size="14" text-anchor="middle" font-weight="700">1,960 B</text><text x="95" y="242" font-size="13" text-anchor="middle" fill="#4b5057">input 49×40</text><rect x="196" y="30" width="110" height="190" rx="5" fill="#a8231f" opacity=".85"/><text x="251" y="22" font-size="14" text-anchor="middle" font-weight="700">31,360 B</text><text x="251" y="242" font-size="13" text-anchor="middle" fill="#4b5057">conv 3×3 ×16</text><rect x="352" y="172" width="110" height="48" rx="5" fill="#a8231f" opacity=".85"/><text x="407" y="164" font-size="14" text-anchor="middle" font-weight="700">8,000 B</text><text x="407" y="242" font-size="13" text-anchor="middle" fill="#4b5057">pool</text><rect x="508" y="123" width="110" height="97" rx="5" fill="#a8231f" opacity=".85"/><text x="563" y="115" font-size="14" text-anchor="middle" font-weight="700">16,000 B</text><text x="563" y="242" font-size="13" text-anchor="middle" fill="#4b5057">conv 3×3 ×32</text><rect x="664" y="195" width="110" height="25" rx="5" fill="#a8231f" opacity=".85"/><text x="719" y="187" font-size="14" text-anchor="middle" font-weight="700">4,160 B</text><text x="719" y="242" font-size="13" text-anchor="middle" fill="#4b5057">pool</text><rect x="820" y="170" width="110" height="50" rx="5" fill="#a8231f" opacity=".85"/><text x="875" y="162" font-size="14" text-anchor="middle" font-weight="700">8,320 B</text><text x="875" y="242" font-size="13" text-anchor="middle" fill="#4b5057">conv 3×3 ×64</text><rect x="976" y="220" width="110" height="0" rx="5" fill="#146b5c" opacity=".85"/><text x="1031" y="212" font-size="14" text-anchor="middle" font-weight="700">64 B</text><text x="1031" y="242" font-size="13" text-anchor="middle" fill="#4b5057">global pool</text><rect x="1132" y="220" width="110" height="0" rx="5" fill="#146b5c" opacity=".85"/><text x="1187" y="212" font-size="14" text-anchor="middle" font-weight="700">12 B</text><text x="1187" y="242" font-size="13" text-anchor="middle" fill="#4b5057">dense → 12 words</text><line x1="30" y1="208" x2="1290" y2="208" stroke="#4b5057" stroke-dasharray="6 5"/><text x="1290" y="14" font-size="13" text-anchor="end" fill="#4b5057">dashed line: the raw input, 1,960 B · red: bigger than the input</text></svg>
+    <div class="ucards frag" style="grid-template-columns:repeat(3,1fr);margin-top:6px">
+      <div class="ucard"><div class="ut">cut after a pooling layer</div><div class="ud">pooling shrinks the tensor for no multiply-adds</div></div>
+      <div class="ucard"><div class="ut">add a bottleneck</div><div class="ud">a 1×1 conv down to a few channels, trained into the model, just before the cut</div></div>
+      <div class="ucard"><div class="ut">compress what crosses</div><div class="ud">int8 instead of float, then ordinary compression; features are often very compressible</div></div>
+    </div>
+  </div>
+  <div class="cue">Red bars are bigger than the raw input: cutting there sends more than sending the spectrogram itself. Good cut points are where the network naturally narrows. Split-computing research designs the network with a deliberate narrow "waist" at the cut, then trains the whole thing end to end.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Features are not anonymous" data-act="across devices">
+  <div>
+    <h2>"We only send features, not audio." That is not the same as private.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:28px">invertible</div><div class="ns">early-layer features keep a lot of the input; a model trained to reverse them can rebuild a rough version</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:28px">revealing</div><div class="ns">even late features can carry who is speaking, their gender or accent, not only which word</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:28px">cut later</div><div class="ns">the deeper the cut, the more task-specific (and less personal) the tensor</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:76ch">The most private thing to send is the <strong>answer</strong>: "the word was <em>lights</em>, 0.93 confident". That is exactly what your project sends to the language model.</p>
+  </div>
+  <div class="cue">Links back to Class 26: on-device is a privacy tool, not a guarantee, and the same is true of sending features. Treat intermediate tensors as personal data unless you have tested otherwise.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Splitting inside one chip" data-act="across processors">
+  <div>
+    <h2>Inside one chip: split by engine, or split by core.</h2>
+    <svg viewBox="0 0 1300 220" width="100%" height="220"><text x="0" y="20" font-size="15" fill="#4b5057" font-weight="700">ONE CORE · front end then model, in turn</text><rect x="0" y="34" width="120" height="40" rx="4" fill="#146b5c" opacity=".85"/><text x="60" y="60" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">features</text><rect x="122" y="34" width="196" height="40" rx="4" fill="#23408f" opacity=".85"/><text x="220" y="60" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">model</text><rect x="320" y="34" width="120" height="40" rx="4" fill="#146b5c" opacity=".85"/><text x="380" y="60" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">features</text><rect x="442" y="34" width="196" height="40" rx="4" fill="#23408f" opacity=".85"/><text x="540" y="60" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">model</text><rect x="640" y="34" width="120" height="40" rx="4" fill="#146b5c" opacity=".85"/><text x="700" y="60" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">features</text><rect x="762" y="34" width="196" height="40" rx="4" fill="#23408f" opacity=".85"/><text x="860" y="60" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">model</text><rect x="960" y="34" width="120" height="40" rx="4" fill="#146b5c" opacity=".85"/><text x="1020" y="60" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">features</text><rect x="1082" y="34" width="196" height="40" rx="4" fill="#23408f" opacity=".85"/><text x="1180" y="60" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">model</text><g class="frag"><text x="0" y="120" font-size="15" fill="#4b5057" font-weight="700">TWO CORES · a pipeline: core 0 makes frame n+1 while core 1 classifies frame n</text><rect x="0" y="134" width="120" height="36" rx="4" fill="#146b5c" opacity=".85"/><text x="60" y="158" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">features</text><rect x="122" y="178" width="196" height="36" rx="4" fill="#23408f" opacity=".85"/><text x="220" y="202" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">model</text><rect x="200" y="134" width="120" height="36" rx="4" fill="#146b5c" opacity=".85"/><text x="260" y="158" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">features</text><rect x="322" y="178" width="196" height="36" rx="4" fill="#23408f" opacity=".85"/><text x="420" y="202" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">model</text><rect x="400" y="134" width="120" height="36" rx="4" fill="#146b5c" opacity=".85"/><text x="460" y="158" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">features</text><rect x="522" y="178" width="196" height="36" rx="4" fill="#23408f" opacity=".85"/><text x="620" y="202" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">model</text><rect x="600" y="134" width="120" height="36" rx="4" fill="#146b5c" opacity=".85"/><text x="660" y="158" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">features</text><rect x="722" y="178" width="196" height="36" rx="4" fill="#23408f" opacity=".85"/><text x="820" y="202" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">model</text><rect x="800" y="134" width="120" height="36" rx="4" fill="#146b5c" opacity=".85"/><text x="860" y="158" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">features</text><rect x="922" y="178" width="196" height="36" rx="4" fill="#23408f" opacity=".85"/><text x="1020" y="202" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">model</text><rect x="1000" y="134" width="120" height="36" rx="4" fill="#146b5c" opacity=".85"/><text x="1060" y="158" font-size="13" text-anchor="middle" fill="#fff" font-weight="700">features</text></g></svg>
+    <div class="split frag" style="gap:24px;margin-top:10px">
+      <div class="rem"><div class="h">by engine: NPU + CPU</div><ul><li>Supported layers on the NPU, the rest fall back to the CPU, with copies in between (Class 16's slide 9). The tool chain decides the split; you check it.</li></ul></div>
+      <div class="rem green"><div class="h">by core: a pipeline</div><ul><li>The S3 has two cores. Each step takes as long as before, but a new answer arrives more often. Throughput up, latency the same.</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">The pipeline needs a queue between the cores (FreeRTOS gives one) and enough memory for two frames in flight. The bars are schematic. On the S3, Wi-Fi also likes to live on one core, which is a good reason to plan which core does what.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Split the task, not the network" data-act="across models">
+  <div>
+    <div class="kicker">the course project</div>
+    <h2>Your project is already segmented: a chain of small models, each waking the next.</h2>
+    <svg viewBox="0 0 1300 190" width="100%" height="190"><defs><marker id="pc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="0" y="30" width="270" height="110" rx="12" fill="#fff" stroke="#146b5c" stroke-width="2"/><text x="135" y="68" font-size="17" text-anchor="middle" font-weight="700" fill="#146b5c">voice detector</text><text x="135" y="94" font-size="14" text-anchor="middle" fill="#4b5057">a rule · always on</text><text x="135" y="118" font-size="14" text-anchor="middle" fill="#8b9096">runs every frame</text><line x1="274" y1="85" x2="326" y2="85" stroke="#8b9096" stroke-width="2" marker-end="url(#pc)"/><rect x="330" y="30" width="270" height="110" rx="12" fill="#fff" stroke="#146b5c" stroke-width="2"/><text x="465" y="68" font-size="17" text-anchor="middle" font-weight="700" fill="#146b5c">wake model</text><text x="465" y="94" font-size="14" text-anchor="middle" fill="#4b5057">small CNN</text><text x="465" y="118" font-size="14" text-anchor="middle" fill="#8b9096">runs when there is speech</text><line x1="604" y1="85" x2="656" y2="85" stroke="#8b9096" stroke-width="2" marker-end="url(#pc)"/><rect x="660" y="30" width="270" height="110" rx="12" fill="#fff" stroke="#23408f" stroke-width="2"/><text x="795" y="68" font-size="17" text-anchor="middle" font-weight="700" fill="#23408f">grammar + slot models</text><text x="795" y="94" font-size="14" text-anchor="middle" fill="#4b5057">int8 CNNs</text><text x="795" y="118" font-size="14" text-anchor="middle" fill="#8b9096">runs after the wake word</text><line x1="934" y1="85" x2="986" y2="85" stroke="#8b9096" stroke-width="2" marker-end="url(#pc)"/><rect x="990" y="30" width="270" height="110" rx="12" fill="#fff" stroke="#b06a12" stroke-width="2"/><text x="1125" y="68" font-size="17" text-anchor="middle" font-weight="700" fill="#b06a12">language model</text><text x="1125" y="94" font-size="14" text-anchor="middle" fill="#4b5057">off the board</text><text x="1125" y="118" font-size="14" text-anchor="middle" fill="#8b9096">runs once per command</text><g class="frag"><line x1="975" y1="10" x2="975" y2="160" stroke="#a8231f" stroke-width="3" stroke-dasharray="8 6"/><text x="965" y="180" font-size="15" text-anchor="end" fill="#a8231f" font-weight="700">the board ↑ · what crosses: words + confidences, about 100 bytes</text></g></svg>
+    <p class="frag" style="max-width:76ch">Each stage is cheap enough to run as often as it is needed, and no more. The expensive stages run rarely because the cheap ones say no most of the time.</p>
+  </div>
+  <div class="cue">This is the cascade from Class 5, built with Classes 19 to 24. Ask: why is the voice detector a rule rather than a model? (It runs on every frame forever; it must cost almost nothing.)</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Cascade calculator" data-act="across models">
+  <div>
+    <div class="kicker">try it live · 50 frames a second · a cheap gate in front of an expensive model</div>
+    <h2>How much does the gate save? It depends on the room.</h2>
+    <div class="panel calc cas">
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">the room</span><span class="cb"><button data-p="2">quiet bedroom · 2%</button><button data-p="20" class="sel">office · 20%</button><button data-p="90">TV on · 90%</button></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr 140px;gap:14px"><span class="cl">gate cost per frame</span><input type="range" class="cg" min="10" max="2000" step="10" value="50"><span class="num cgv"></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr 140px;gap:14px"><span class="cl">model cost per frame</span><input type="range" class="cm" min="1" max="20" step="1" value="8"><span class="num cmv"></span></div>
+      <div class="cbar" style="grid-template-columns:230px 1fr 150px"><span class="cl">model on every frame</span><div class="ctrack"><div class="cfill over cb1"></div></div><span class="cpct cb1v"></span></div>
+      <div class="cbar" style="grid-template-columns:230px 1fr 150px"><span class="cl">gate, then model</span><div class="ctrack"><div class="cfill cb2"></div></div><span class="cpct cb2v"></span></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Percentages are the share of frames the gate lets through (illustrative). Average cost = gate + share passed × model. In a noisy room the gate saves little, and if the gate itself is expensive it can make things worse: try the TV with a 2 ms gate. The lab measures this on the board.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Early exits" data-act="across models">
+  <div>
+    <div class="kicker">try it live · one network with three exits · 200 test examples</div>
+    <h2>Early exits: stop as soon as the network is sure.</h2>
+    <div class="panel calc eex">
+      <div class="crow" style="grid-template-columns:230px 1fr 110px;gap:14px"><span class="cl">confidence to exit</span><input type="range" class="et" min="50" max="99" step="1" value="85"><span class="num etv"></span></div>
+      <svg viewBox="0 0 1300 170" width="100%" class="eesvg"></svg>
+      <div class="eestats"></div>
+    </div>
+  </div>
+  <div class="cue">Exits after about 25%, 60% and 100% of the compute, each a small classifier on that layer's output. Easy examples (a loud, clear "lights") leave at the first exit; hard ones go all the way. The trade: lower the threshold and average compute drops, but some early answers are wrong. Synthetic examples, generated so that deeper exits are more often right.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="When splitting pays" data-act="closing theory">
+  <div>
+    <h2>When segmenting pays, and when it does not.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:24%">technique</th><th style="width:38%">pays when…</th><th>hurts when…</th></tr>
+      <tr class="frag"><td>split computing</td><td>the device is slow, the link is decent, a narrow layer exists</td><td>the link is slow or flaky; privacy needs the data to stay; the server is down</td></tr>
+      <tr class="frag"><td>NPU + CPU, two cores</td><td>most layers are supported; the work pipelines</td><td>copies between engines dominate; memory for two frames does not fit</td></tr>
+      <tr class="frag"><td>cascade</td><td>the interesting event is rare and the gate is cheap</td><td>the event is common, or the gate misses what the model would have caught</td></tr>
+      <tr class="frag"><td>early exit</td><td>many inputs are easy</td><td>every input is hard; the exits' extra weights do not fit</td></tr>
+      <tr class="frag"><td>routing to specialists</td><td>conditions differ (quiet room vs kitchen) and each model is small</td><td>flash cannot hold all the specialists; the router picks wrongly</td></tr>
+    </table>
+  </div>
+  <div class="cue">Routing (sometimes called a mixture of experts): a cheap selector picks one of several small specialist models; all are stored, only one runs. End of theory: boards out.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Lab: a two-stage cascade" data-act="lab">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">lab · teams of four · board + INMP441</div><h2 style="margin-bottom:6px">A cheap gate in front of an expensive stage. Measure what it saves.</h2></div>
+      <div class="panel timer" data-secs="1500"><span class="tdisp">25:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="un">A</div><div class="ut">three rooms</div><div class="ud">With the gate on, record stage-2 runs and core busy % in silence, while talking, and with music from a phone.</div></div>
+      <div class="ucard"><div class="un">B</div><div class="ut">gate off</div><div class="ud">Send <code>g</code> over Serial to switch the gate off. Same three conditions. What does the gate save in each?</div></div>
+      <div class="ucard"><div class="un">C</div><div class="ut">the cut, on paper</div><div class="ud">Worksheet: work out the latency for three cut points of the keyword CNN.</div></div>
+    </div>
+  </div>
+  <div class="cue">Stage 2 is a stand-in for a model: 64 Goertzel frequencies per frame, chosen to be costly enough to show up in the busy figure. Teams can raise B in the sketch to make it heavier. Use the GATE_DB threshold from Class 19.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Lab code" data-act="lab">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre class="tight"><span class="c">// Class 35 lab · a two-stage cascade: loudness gate → expensive stage</span>
+<span class="k">#include</span> <span class="s">&lt;ESP_I2S.h&gt;</span>
+I2SClass i2s;
+<span class="k">const int</span> N = <span class="s">320</span>, B = <span class="s">64</span>;              <span class="c">// 20 ms frames · 64 bins in stage 2</span>
+<span class="k">static int32_t</span> raw[N];  <span class="k">float</span> x[N];
+<span class="k">const float</span> GATE_DB = -<span class="s">45</span>;             <span class="c">// ← your Class 19 threshold</span>
+<span class="k">bool</span> gateOn = <span class="k">true</span>;
+<span class="k">uint32_t</span> t0, busy = <span class="s">0</span>, frames = <span class="s">0</span>, stage2 = <span class="s">0</span>;
+<span class="k">volatile float</span> sink;
+<span class="k">float</span> <span class="f">goertzel</span>(<span class="k">const float</span>* v, <span class="k">float</span> f) &#123;
+  <span class="k">float</span> c = <span class="s">2</span> * cosf(<span class="s">2</span> * PI * f / <span class="s">16000</span>), s1 = <span class="s">0</span>, s2 = <span class="s">0</span>;
+  <span class="k">for</span> (<span class="k">int</span> k = <span class="s">0</span>; k &lt; N; k++) &#123; <span class="k">float</span> s0 = v[k] + c * s1 - s2; s2 = s1; s1 = s0; &#125;
+  <span class="k">return</span> s1 * s1 + s2 * s2 - c * s1 * s2;
+&#125;
+<span class="k">float</span> <span class="f">expensive</span>(<span class="k">const float</span>* v) &#123;              <span class="c">// stage 2: a stand-in for a model</span>
+  <span class="k">float</span> best = <span class="s">0</span>;
+  <span class="k">for</span> (<span class="k">int</span> b = <span class="s">0</span>; b &lt; B; b++) best = fmaxf(best, goertzel(v, <span class="s">200</span> + b * <span class="s">100</span>));
+  <span class="k">return</span> best;
+&#125;
+<span class="k">void</span> <span class="f">setup</span>() &#123;
+  Serial.begin(<span class="s">115200</span>);
+  i2s.setPins(<span class="s">15</span>, <span class="s">16</span>, -<span class="s">1</span>, <span class="s">17</span>);
+  i2s.begin(I2S_MODE_STD, <span class="s">16000</span>, I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO);
+  t0 = millis();  Serial.println(<span class="s">"send g to switch the gate on or off"</span>);
+&#125;
+<span class="k">void</span> <span class="f">loop</span>() &#123;
+  i2s.readBytes((<span class="k">char</span>*)raw, <span class="k">sizeof</span>(raw));
+  <span class="k">uint32_t</span> s = micros();
+  <span class="k">float</span> m = <span class="s">0</span>, e = <span class="s">0</span>;
+  <span class="k">for</span> (<span class="k">int</span> k = <span class="s">0</span>; k &lt; N; k++) &#123; x[k] = (raw[k] &gt;&gt; <span class="s">8</span>) / <span class="s">8388608.0</span>; m += x[k]; &#125;
+  m /= N;
+  <span class="k">for</span> (<span class="k">int</span> k = <span class="s">0</span>; k &lt; N; k++) &#123; x[k] -= m; e += x[k] * x[k]; &#125;
+  <span class="k">float</span> db = <span class="s">10</span> * log10(e / N + <span class="s">1e-12</span>);         <span class="c">// stage 1: the gate</span>
+  frames++;
+  <span class="k">if</span> (!gateOn || db &gt; GATE_DB) &#123; sink = expensive(x); stage2++; &#125;
+  busy += micros() - s;
+  <span class="k">if</span> (Serial.available() &amp;&amp; Serial.read() == <span class="s">'g'</span>) &#123;
+    gateOn = !gateOn;  Serial.printf(<span class="s">"gate %s\n"</span>, gateOn ? <span class="s">"ON"</span> : <span class="s">"OFF"</span>);
+  &#125;
+  <span class="k">if</span> (millis() - t0 &gt;= <span class="s">5000</span>) &#123;                     <span class="c">// report every 5 s</span>
+    Serial.printf(<span class="s">"gate %s · stage 2 ran %u of %u frames · core busy %.1f%%\n"</span>,
+                  gateOn ? <span class="s">"on"</span> : <span class="s">"off"</span>, stage2, frames, busy / <span class="s">50000.0</span>);
+    busy = frames = stage2 = <span class="s">0</span>;  t0 = millis();
+  &#125;
+&#125;</pre>
+    <div class="stack">
+      <div class="kicker">lab · parts A and B</div>
+      <h2>Silence, talking, music. Gate on, then off.</h2>
+      <p class="small">Each report covers 5 seconds (about 250 frames).</p>
+      <p class="small">If the busy figure is tiny even with the gate off, raise B until it is around 30–50%.</p>
+    </div>
+  </div>
+  <div class="cue">busy ÷ 50,000 turns microseconds in 5 s into a percentage. The volatile sink stops the compiler deleting stage 2. Expected shape: in silence the gate saves almost everything; with music almost nothing. Exact percentages depend on the room and the board.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Worksheet" data-act="lab">
+  <div>
+    <div class="kicker">lab · worksheet</div>
+    <h2>Your cascade numbers, and the split arithmetic.</h2>
+    <div class="split" style="grid-template-columns:.9fr 1.1fr;gap:24px;align-items:start">
+      <table class="dt txt" style="width:100%"><tr><th></th><th>gate on: stage 2 runs · busy</th><th>gate off: busy</th></tr><tr><td>silence</td><td></td><td></td></tr><tr><td>talking</td><td></td><td></td></tr><tr><td>music</td><td></td><td></td></tr></table>
+      <div>
+        <p class="small" style="margin-top:0">Device 20 M MAC/s · server 10 G MAC/s · link 250 kbps · round trip 40 ms. Cumulative multiply-adds: after the second pool 2,586,240; total 4,983,168.</p>
+        <table class="dt txt" style="width:100%"><tr><th>cut after</th><th>bytes sent</th><th>device ms</th><th>link ms</th><th>server ms</th><th>total ms</th></tr><tr><td>input · all on server</td><td>1,960 B</td><td></td><td></td><td></td><td></td></tr><tr><td>second pool</td><td>4,160 B</td><td></td><td></td><td></td><td></td></tr><tr><td>dense · all on board</td><td>12 B</td><td></td><td></td><td></td><td></td></tr></table>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Answers (worst case, ignoring compression): input · device 0 ms, link 103 ms (1,960 B × 8 ÷ 250,000 = 62.7 ms + 40 ms round trip), server 0.5 ms, total ≈ 103 ms. After the second pool · device 129 ms, link 173 ms, server 0.24 ms, total ≈ 303 ms. All on the device · device 249 ms, link 40.4 ms to send the answer, total ≈ 290 ms. On this link, sending the raw spectrogram wins; the middle cut is the worst of both. Discuss what would change on a slow LoRa link.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">Where would you split your project's pipeline between the board and the language model, and what crosses the split?</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>sharing AI computation</strong>. Offloading, collaboration between devices, and learning together without sharing data. Then the Unit IV wrap.</p>
+  </div>
+  <div class="cue">Expected: everything up to the slot models on the board; what crosses is the recognised words with confidences (about 100 bytes), never audio. Strong answers mention the offline fallback table for when the link is down, and why words are more private than features.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* split explorer */
+  var SL=[["input 49×40", 0, 1960], ["conv 3×3 ×16", 282240, 31360], ["pool", 0, 8000], ["conv 3×3 ×32", 2304000, 16000], ["pool", 0, 4160], ["conv 3×3 ×64", 2396160, 8320], ["global pool", 0, 64], ["dense → 12 words", 768, 12]];
+  function fmtRate(v){ return v>=1e9?(v/1e9).toFixed(1)+' G':(v>=1e6?(v/1e6).toFixed(v<1e7?1:0)+' M':(v/1e3).toFixed(0)+' k'); }
+  function spDraw(p){
+    var dev=5e6*Math.pow(40,+p.querySelector('.sd').value/100), bw=10e3*Math.pow(1000,+p.querySelector('.sb').value/100), rtt=+p.querySelector('.sr').value, srv=10e9;
+    p.querySelector('.sdv').textContent=fmtRate(dev)+' MAC/s'; p.querySelector('.sbv').textContent=fmtRate(bw)+'bps'; p.querySelector('.srv').textContent=rtt+' ms';
+    var tot=0; SL.forEach(function(l){ tot+=l[1]; });
+    var res=[], cum=0;
+    SL.forEach(function(l,k){ cum+=l[1]; var d=cum/dev*1000, t=l[2]*8/bw*1000+rtt, sv=(tot-cum)/srv*1000; res.push([d,t,sv,d+t+sv]); });
+    var best=0; res.forEach(function(r,k){ if(r[3]<res[best][3]) best=k; });
+    var mx=0; res.forEach(function(r){ mx=Math.max(mx,r[3]); });
+    var o='';
+    res.forEach(function(r,k){ var y=8+k*39, x=300, sc=900/mx;
+      o+='<text x="290" y="'+(y+21)+'" font-size="14" text-anchor="end" fill="'+(k===best?'#146b5c':'#15171b')+'" font-weight="'+(k===best?700:400)+'">after '+SL[k][0]+' · '+SL[k][2].toLocaleString('en-IN')+' B</text>';
+      [[r[0],'#8b9096'],[r[1],'#a8231f'],[r[2],'#23408f']].forEach(function(q){ var w=q[0]*sc; if(w>0.5) o+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="28" fill="'+q[1]+'" opacity=".85"/>'; x+=w; });
+      o+='<text x="'+(x+8)+'" y="'+(y+20)+'" font-size="14" fill="'+(k===best?'#146b5c':'#4b5057')+'" font-weight="'+(k===best?700:400)+'">'+(r[3]<1000?r[3].toFixed(0)+' ms':(r[3]/1000).toFixed(1)+' s')+(k===best?'  ← best':'')+'</text>'; });
+    p.querySelector('.spsvg').innerHTML=o;
+    var v=p.querySelector('.cverdict'); v.style.color='var(--ok)';
+    v.textContent= best===0? 'Send the raw input: the link is fast enough that the server should do everything.' : (best===SL.length-1? 'Keep it all on the board: the link costs more than the maths.' : 'A middle cut wins: after '+SL[best][0]+'.');
+  }
+  deck.querySelectorAll('.spx').forEach(function(p){ spDraw(p); p.querySelectorAll('input').forEach(function(x){ x.addEventListener('input',function(){spDraw(p);}); }); });
+  /* cascade */
+  function casDraw(p){
+    var pass=+p.querySelector('.cas .cb button.sel, .cb button.sel').dataset.p/100, g=+p.querySelector('.cg').value, m=+p.querySelector('.cm').value*1000;
+    p.querySelector('.cgv').textContent=(g<1000?g+' µs':(g/1000).toFixed(1)+' ms'); p.querySelector('.cmv').textContent=(m/1000)+' ms';
+    var frame=20000, always=m/frame*100, gated=(g+pass*m)/frame*100;
+    var f1=p.querySelector('.cb1'); f1.style.width=Math.min(100,always)+'%'; p.querySelector('.cb1v').textContent=always.toFixed(1)+'% busy';
+    var f2=p.querySelector('.cb2'); f2.style.width=Math.min(100,gated)+'%'; f2.classList.toggle('over',gated>always); p.querySelector('.cb2v').textContent=gated.toFixed(1)+'% busy';
+    var v=p.querySelector('.cverdict');
+    if(gated<always){ v.style.color='var(--ok)'; v.textContent='The gate cuts the average load '+(always/gated).toFixed(1)+'×: the model runs on '+Math.round(pass*100)+'% of frames.'; }
+    else { v.style.color='var(--fail)'; v.textContent='The gate costs more than it saves here: nearly every frame passes, and the gate is not free.'; }
+  }
+  deck.querySelectorAll('.cas').forEach(function(p){ casDraw(p); p.querySelectorAll('input').forEach(function(x){ x.addEventListener('input',function(){casDraw(p);}); }); });
+  /* early exit */
+  var EX=[]; (function(){ var seed=5; function r(){ seed=(seed*16807)%2147483647; return seed/2147483647; }
+    for(var q=0;q<200;q++){ var e=r(); var row=[];
+      [[0.25,0.55],[0.6,0.35],[1.0,0.15]].forEach(function(x,k){ var c=Math.min(0.995,Math.max(0.34,0.35+ (e-x[1]+0.45)*0.9 + (r()-0.5)*0.25)); var ok= r()< (k===2?0.95: Math.min(0.92,0.1+c*0.8)); row.push([c,ok]); });
+      EX.push(row); } })();
+  function eeDraw(p){
+    var th=+p.querySelector('.et').value/100; p.querySelector('.etv').textContent=th.toFixed(2);
+    var cost=[25,60,100], cnt=[0,0,0], ok=0, comp=0;
+    EX.forEach(function(row){ var k=0; while(k<2 && row[k][0]<th) k++; cnt[k]++; if(row[k][1]) ok++; comp+=cost[k]; });
+    var o='', x=0, cols=['#146b5c','#23408f','#b06a12'], labs=['exit 1 · 25%','exit 2 · 60%','exit 3 · 100%'];
+    cnt.forEach(function(c,k){ var w=c/200*1280; if(w>0){ o+='<rect x="'+(10+x)+'" y="20" width="'+(w-2)+'" height="60" rx="5" fill="'+cols[k]+'" opacity=".85"/>'; if(w>140) o+='<text x="'+(10+x+w/2)+'" y="56" font-size="15" text-anchor="middle" fill="#fff" font-weight="700">'+labs[k]+' · '+c+'</text>'; } x+=w; });
+    o+='<text x="10" y="110" font-size="14" fill="#4b5057">where the 200 examples left the network · green exits early, amber runs the whole network</text>';
+    var allAcc=EX.filter(function(r){return r[2][1];}).length/200;
+    p.querySelector('.eesvg').innerHTML=o;
+    p.querySelector('.eestats').innerHTML='<div>average compute<b>'+(comp/200).toFixed(0)+'%</b></div><div>accuracy with exits<b>'+(ok/2).toFixed(1)+'%</b></div><div>accuracy, full network always<b>'+(allAcc*100).toFixed(1)+'%</b></div><div>saved<b style="color:var(--ok)">'+(100-comp/200).toFixed(0)+'% of the work</b></div>';
+  }
+  deck.querySelectorAll('.eex').forEach(function(p){ eeDraw(p); p.querySelector('.et').addEventListener('input',function(){eeDraw(p);}); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.cas .cb button'); if(!b) return; b.blur();
+    b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); casDraw(b.closest('.cas'));
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 34 · Optimisation for Edge Devices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 34 */
+pre{font-size:14px;line-height:1.36}
+.num{font-family:var(--mono);font-size:18px}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.mpl,.prf{padding:14px 22px}
+.mpin button.sel,.mpch button.sel,.plc .cb button.sel,.prbtns button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.sbtns{display:flex;gap:10px;margin-top:4px}
+.sbtns button{height:42px;padding:0 20px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:15px;color:var(--ink);cursor:pointer}
+.sbtns button[data-m="step"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.mpstats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+.mpstats div{border-top:1px solid var(--rule);padding-top:6px;font-size:15px;color:var(--soft)}
+.mpstats b{display:block;font-family:var(--mono);font-size:22px;color:var(--ink)}
+.prinfo{font-size:20px;margin-top:4px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 34</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 34 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 34 · unit IV · artificial intelligence inference at the edge · model optimisation for edge devices</div>
+    <h1>Same model,<br>same chip,<br>ten times faster.</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Last class shrank the model itself. Today the model stays exactly the same: we change how it is run, where its numbers live, and which code does the maths.</p>
+  </div>
+  <div class="cue">Theory runs to slide 14; the lab is one block at the end (slides 15 to 18). The lab needs PSRAM enabled in the board settings (ESP32S3 Dev Module, PSRAM: OPI PSRAM), as in Class 15. Board only: no sensors needed.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>Two optimisation methods for your slot models, and what each costs.</h2>
+    <table class="dt txt" style="width:100%;max-width:1250px">
+      <tr><th style="width:26%">method</th><th style="width:34%">what it buys</th><th>what it costs</th></tr>
+      <tr class="frag"><td>int8 quantisation</td><td>about 4× smaller, integer maths</td><td>a little accuracy; needs calibration data</td></tr>
+      <tr class="frag"><td>pruning</td><td>fewer weights</td><td>accuracy; speed only if the kernels can skip zeros</td></tr>
+      <tr class="frag"><td>distillation</td><td>a small model that learns from a big one</td><td>training time; a teacher model to build first</td></tr>
+      <tr class="frag"><td>a smaller architecture</td><td>fewer MACs, smaller activations</td><td>accuracy, and redesign effort</td></tr>
+    </table>
+    <p class="frag" style="margin-top:18px;max-width:72ch">All four change the <strong>model</strong>. Today none of them: we change the <strong>device side</strong>.</p>
+  </div>
+  <div class="cue">Take two or three team answers first. Push on "costs": every answer should name a price, not just a benefit.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Nothing about the model changed" data-act="the hook">
+  <div>
+    <div class="kicker">the hook · one int8 keyword model, one ESP32-S3</div>
+    <h2>Three runs of the same model file. Why are they so different?</h2>
+    <svg viewBox="0 0 1380 290" width="100%" height="290"><g class="frag"><text x="0" y="56" font-size="18" fill="#15171b" font-weight="700">reference kernels · tensors in PSRAM</text><rect x="420" y="20" width="780" height="56" rx="6" fill="#a8231f" opacity=".88"/><text x="1214" y="56" font-size="22" fill="#a8231f" font-weight="700">410 ms</text></g><g class="frag"><text x="0" y="146" font-size="18" fill="#15171b" font-weight="700">optimised kernels · tensors in PSRAM</text><rect x="420" y="110" width="247" height="56" rx="6" fill="#b06a12" opacity=".88"/><text x="681" y="146" font-size="22" fill="#b06a12" font-weight="700">130 ms</text></g><g class="frag"><text x="0" y="236" font-size="18" fill="#15171b" font-weight="700">optimised kernels · tensors in SRAM</text><rect x="420" y="200" width="86" height="56" rx="6" fill="#146b5c" opacity=".88"/><text x="520" y="236" font-size="22" fill="#146b5c" font-weight="700">45 ms</text></g></svg>
+    <p class="frag" style="max-width:76ch">Same weights, same accuracy, same answer. Only two things changed: <strong>which code</strong> does the multiply-adds, and <strong>which memory</strong> holds the numbers.</p>
+  </div>
+  <div class="cue">Illustrative timings, chosen to show the typical shape, not measured on a specific model. Ask students to guess, from Class 15, which change matters more. Today's lab measures the memory half on their own boards.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="What the runtime does" data-act="the runtime">
+  <div>
+    <h2>A model file does nothing on its own. A runtime turns it into work.</h2>
+    <div class="split" style="gap:26px">
+      <div class="panel frag"><span class="lab" style="color:var(--accent)">interpreter · e.g. LiteRT for Microcontrollers</span>
+        <p>The model is a file in flash. At start-up the runtime reads it, plans the memory, and for each layer calls a <strong>kernel</strong>: the C function that does that layer's maths.</p>
+        <p class="small">Swap the model without recompiling. Small overhead per layer. Only the kernels you register are linked in.</p></div>
+      <div class="panel frag"><span class="lab" style="color:var(--ok)">compiled or vendor runtime · e.g. TVM, ESP-DL</span>
+        <p>A tool turns the model into code or a tuned format ahead of time, specialised for one chip. ESP-DL is Espressif's own, tuned for the S3.</p>
+        <p class="small">Often faster and leaner. Tied to one vendor or one model build.</p></div>
+    </div>
+    <div class="cformula frag" style="font-size:22px;text-align:center;margin-top:18px">model file + runtime + kernels + memory plan = an inference</div>
+  </div>
+  <div class="cue">LiteRT for Microcontrollers is the current name of TensorFlow Lite for Microcontrollers (TFLite Micro); Class 25 covered the rename. TVM (microTVM) compiles models for many targets. Name these; students do not need to learn their APIs today.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="Is every layer supported?" data-act="the runtime">
+  <div>
+    <h2>The runtime can only run layers it has a kernel for.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:28%">layer in your model</th><th style="width:30%">kernel on the S3</th><th>what happens</th></tr>
+      <tr class="frag"><td>Conv2D, depthwise conv</td><td style="color:var(--ok)">optimised (ESP-NN)</td><td>fast: uses the vector instructions</td></tr>
+      <tr class="frag"><td>fully connected, add, pooling</td><td style="color:var(--ok)">optimised or simple</td><td>fast enough: little work in these</td></tr>
+      <tr class="frag"><td>softmax, an unusual activation</td><td style="color:var(--amber)">reference only</td><td>works, but plain C: slow if it is a big layer</td></tr>
+      <tr class="frag"><td>a custom layer from your notebook</td><td style="color:var(--fail)">none</td><td>the model will not load until you write the kernel or change the layer</td></tr>
+    </table>
+    <p class="frag" style="margin-top:16px;max-width:76ch">Class 16 saw the same trap on an NPU: one unsupported layer and the whole pipeline slows down. Check the supported-operator list <strong>before</strong> training, not after.</p>
+  </div>
+  <div class="cue">In LiteRT for Microcontrollers you list the kernels you need in an op resolver; a missing one shows up as an error at start-up saying it could not find the operator. The table is a typical pattern; check the current ESP-NN and runtime operator lists for your version.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Two kinds of numbers" data-act="memory">
+  <div>
+    <h2>A model has two kinds of numbers, and they want different homes.</h2>
+    <svg viewBox="0 0 1380 260" width="100%" height="260"><defs><marker id="wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="0" y="40" width="330" height="200" rx="12" fill="#fbf0dc" stroke="#b06a12" stroke-width="2"/><text x="165" y="80" font-size="20" text-anchor="middle" font-weight="700" fill="#b06a12">flash · 16 MB</text><text x="165" y="114" font-size="16" text-anchor="middle" fill="#4b5057">the weights</text><text x="165" y="140" font-size="14" text-anchor="middle" fill="#4b5057">read-only, fixed after training</text><text x="165" y="166" font-size="14" text-anchor="middle" fill="#4b5057">read through a small cache</text><rect x="525" y="40" width="330" height="200" rx="12" fill="#eaeef7" stroke="#23408f" stroke-width="2"/><text x="690" y="80" font-size="20" text-anchor="middle" font-weight="700" fill="#23408f">CPU + vector unit</text><text x="690" y="114" font-size="16" text-anchor="middle" fill="#4b5057">the kernels</text><text x="690" y="140" font-size="14" text-anchor="middle" fill="#4b5057">multiply-adds, one layer at a time</text><rect x="1050" y="40" width="330" height="200" rx="12" fill="#e6f1ee" stroke="#146b5c" stroke-width="2"/><text x="1215" y="80" font-size="20" text-anchor="middle" font-weight="700" fill="#146b5c">SRAM · 512 KB</text><text x="1215" y="114" font-size="16" text-anchor="middle" fill="#4b5057">the activations</text><text x="1215" y="140" font-size="14" text-anchor="middle" fill="#4b5057">written and read every layer</text><text x="1215" y="166" font-size="14" text-anchor="middle" fill="#4b5057">the "tensor arena"</text><line x1="334" y1="140" x2="520" y2="140" stroke="#8b9096" stroke-width="2.5" marker-end="url(#wa)"/><text x="427" y="128" font-size="13" text-anchor="middle" fill="#4b5057">read</text><line x1="859" y1="125" x2="1045" y2="125" stroke="#8b9096" stroke-width="2.5" marker-end="url(#wa)"/><line x1="1045" y1="155" x2="864" y2="155" stroke="#8b9096" stroke-width="2.5" marker-end="url(#wa)"/><text x="952" y="113" font-size="13" text-anchor="middle" fill="#4b5057">read and write</text></svg>
+    <div class="ntiles frag" style="grid-template-columns:repeat(3,1fr);margin-top:6px">
+      <div class="ntile"><div class="nb" style="font-size:28px">weights</div><div class="ns">size set by the model's parameters (Class 7): can be megabytes</div></div>
+      <div class="ntile"><div class="nb" style="font-size:28px">activations</div><div class="ns">size set by the layers' outputs: change with input size and channels</div></div>
+      <div class="ntile"><div class="nb" style="font-size:28px">the arena</div><div class="ns">one block of RAM the runtime carves up for all activations</div></div>
+    </div>
+  </div>
+  <div class="cue">Class 7 said "weights in flash, activations in SRAM". Today we make that precise. The weights never change, so flash is fine; activations are rewritten every layer, so they need fast read-write memory. The arena size is the number that usually decides whether a model fits.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Memory planner" data-act="memory">
+  <div>
+    <div class="kicker">try it live · a small int8 image CNN · step through the layers</div>
+    <h2>Only two buffers need to be alive at once: the layer's input and its output.</h2>
+    <div class="panel mpl">
+      <div class="crow" style="grid-template-columns:150px 1fr"><span class="cl">input</span><span class="cb mpin"><button data-v="32">32 × 32</button><button data-v="48">48 × 48</button><button data-v="64">64 × 64</button><button data-v="96" class="sel">96 × 96</button></span></div>
+      <div class="crow" style="grid-template-columns:150px 1fr"><span class="cl">first-layer channels</span><span class="cb mpch"><button data-v="4">4</button><button data-v="8" class="sel">8</button><button data-v="16">16</button><button data-v="32">32</button></span></div>
+      <svg viewBox="0 0 1300 300" width="100%" class="mpsvg"></svg>
+      <div class="sbtns"><button data-m="step">next layer</button><button data-m="reset">reset</button></div>
+      <div class="mpstats"></div>
+    </div>
+  </div>
+  <div class="cue">Every tensor is int8, one byte per number. Bars are tensor sizes; while running layer k, only its input and output (highlighted) must exist, so the arena only needs the largest such pair. Try 96 × 96 with 32 channels: the first convolution's output alone is about 288 KB. Real runtimes add some overhead and scratch buffers on top; the planner shows the core idea.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Where should it live?" data-act="memory">
+  <div>
+    <div class="kicker">try it live · estimate the cost of each placement</div>
+    <h2>Fit first, then speed: choose where the weights and the arena live.</h2>
+    <div class="panel calc plc">
+      <div class="crow" style="grid-template-columns:230px 1fr 120px;gap:16px"><span class="cl">weights</span><input type="range" class="pw" min="20" max="2000" step="10" value="250"><span class="num pwv"></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr 120px;gap:16px"><span class="cl">arena (peak activations)</span><input type="range" class="pa" min="10" max="600" step="10" value="100"><span class="num pav"></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">weights live in</span><span class="cb" data-g="w"><button data-v="flash" class="sel">flash</button><button data-v="sram">SRAM</button><button data-v="psram">PSRAM</button></span></div>
+      <div class="crow" style="grid-template-columns:230px 1fr"><span class="cl">arena lives in</span><span class="cb" data-g="a"><button data-v="sram" class="sel">SRAM</button><button data-v="psram">PSRAM</button></span></div>
+      <div class="cbar" style="grid-template-columns:230px 1fr 170px"><span class="cl">internal SRAM used</span><div class="ctrack"><div class="cfill plsr"></div></div><span class="cpct plsrv"></span></div>
+      <div class="cbar" style="grid-template-columns:230px 1fr 170px"><span class="cl">time vs all-SRAM</span><div class="ctrack"><div class="cfill pltm"></div></div><span class="cpct pltmv"></span></div>
+      <div class="cverdict"></div>
+    </div>
+  </div>
+  <div class="cue">Illustrative model. It assumes about 300 KB of internal SRAM is free for the model (the rest goes to Wi-Fi, buffers and your own code), and rough slowdown factors: weights in flash or PSRAM cost little while they fit in the cache, more once they do not; an arena in PSRAM slows every layer. The lab measures the real factors on your board; Class 15 already measured PSRAM against SRAM.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Optimised kernels" data-act="kernels">
+  <div>
+    <h2>Same maths, rearranged for the hardware.</h2>
+    <div class="split" style="grid-template-columns:1fr 1fr;gap:26px">
+      <div class="panel frag"><span class="lab" style="color:var(--fail)">reference kernel</span><p>Plain C loops: one multiply-add at a time, written to be correct and portable.</p><p class="small">Class 15's plain int8 loop.</p></div>
+      <div class="panel frag"><span class="lab" style="color:var(--ok)">optimised kernel</span><p>Uses the S3's 128-bit vector instructions: 16 int8 multiply-adds per instruction, data laid out so loads are aligned and sequential.</p><p class="small">ESP-NN for neural-network layers; ESP-DSP for the FFT, filters and dot products.</p></div>
+    </div>
+    <div class="ntiles frag" style="grid-template-columns:repeat(3,1fr);margin-top:16px">
+      <div class="ntile"><div class="nb" style="font-size:26px">turn it on</div><div class="ns">usually a library or build option, not new code</div></div>
+      <div class="ntile"><div class="nb" style="font-size:26px">check it is on</div><div class="ns">time a layer before and after (slide 13)</div></div>
+      <div class="ntile"><div class="nb" style="font-size:26px">shape matters</div><div class="ns">channel counts that are multiples of 8 or 16 often run fastest</div></div>
+    </div>
+  </div>
+  <div class="cue">The multiple-of-8/16 point is a common rule of thumb for vector kernels, not a guarantee; check by timing. This is where Class 15's "the gap between a plain loop and the vector unit" pays off.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Layer fusion" data-act="kernels">
+  <div>
+    <h2>Fusion: do three small jobs while the numbers are already in registers.</h2>
+    <svg viewBox="0 0 1200 240" width="1200" height="240"><defs><marker id="fu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><text x="0" y="22" font-size="15" fill="#a8231f" font-weight="700">UNFUSED · three passes over memory</text><rect x="0" y="40" width="200" height="56" rx="8" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="100.0" y="74" font-size="16" text-anchor="middle" font-weight="700" fill="#15171b">convolution</text><line x1="204" y1="68" x2="326" y2="68" stroke="#a8231f" stroke-width="2.5" marker-end="url(#fu)"/><text x="265" y="58" font-size="13" text-anchor="middle" fill="#a8231f">write · read</text><rect x="330" y="40" width="200" height="56" rx="8" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="430.0" y="74" font-size="16" text-anchor="middle" font-weight="700" fill="#15171b">batch norm</text><line x1="534" y1="68" x2="656" y2="68" stroke="#a8231f" stroke-width="2.5" marker-end="url(#fu)"/><text x="595" y="58" font-size="13" text-anchor="middle" fill="#a8231f">write · read</text><rect x="660" y="40" width="200" height="56" rx="8" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="760.0" y="74" font-size="16" text-anchor="middle" font-weight="700" fill="#15171b">ReLU</text><line x1="864" y1="68" x2="986" y2="68" stroke="#a8231f" stroke-width="2.5" marker-end="url(#fu)"/><text x="925" y="58" font-size="13" text-anchor="middle" fill="#a8231f">write · read</text><rect x="990" y="40" width="200" height="56" rx="8" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="1090.0" y="74" font-size="16" text-anchor="middle" font-weight="700" fill="#15171b">next layer</text><g class="frag"><text x="0" y="152" font-size="15" fill="#146b5c" font-weight="700">FUSED · one pass</text><rect x="0" y="170" width="860" height="56" rx="8" fill="#e6f1ee" stroke="#146b5c" stroke-width="2"/><text x="430.0" y="204" font-size="16" text-anchor="middle" font-weight="700" fill="#15171b">convolution + batch norm + ReLU, one kernel</text><line x1="864" y1="198" x2="986" y2="198" stroke="#146b5c" stroke-width="2.5" marker-end="url(#fu)"/><text x="925" y="188" font-size="13" text-anchor="middle" fill="#146b5c">write once</text><rect x="990" y="170" width="200" height="56" rx="8" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="1090.0" y="204" font-size="16" text-anchor="middle" font-weight="700" fill="#15171b">next layer</text></g></svg>
+    <p class="frag" style="max-width:76ch">Batch norm folds into the convolution's weights at conversion time; the ReLU is applied before the result is written. Fewer trips to memory: Class 15's lesson, applied by the converter.</p>
+  </div>
+  <div class="cue">Converters do this automatically for common patterns, which is one reason to use a standard conversion path rather than hand-exporting weights. The saving is in memory traffic, which Class 15 showed costs more than the maths.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="int8 end to end" data-act="kernels">
+  <div>
+    <h2>An int8 model inside a float pipeline wastes some of its speed.</h2>
+    <svg viewBox="0 0 1380 140" width="100%" height="140"><defs><marker id="ie" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><rect x="0" y="30" width="230" height="90" rx="10" fill="#ffffff" stroke="#c6c3ba" stroke-width="2"/><text x="115" y="68" font-size="18" text-anchor="middle" font-weight="700">microphone</text><text x="115" y="96" font-size="14" text-anchor="middle" fill="#c6c3ba" font-weight="700">int32</text><line x1="234" y1="75" x2="271" y2="75" stroke="#8b9096" stroke-width="2" marker-end="url(#ie)"/><rect x="275" y="30" width="230" height="90" rx="10" fill="#ffffff" stroke="#b06a12" stroke-width="2"/><text x="390" y="68" font-size="18" text-anchor="middle" font-weight="700">front end</text><text x="390" y="96" font-size="14" text-anchor="middle" fill="#b06a12" font-weight="700">float32 → int16</text><line x1="509" y1="75" x2="546" y2="75" stroke="#8b9096" stroke-width="2" marker-end="url(#ie)"/><rect x="550" y="30" width="230" height="90" rx="10" fill="#ffffff" stroke="#23408f" stroke-width="2"/><text x="665" y="68" font-size="18" text-anchor="middle" font-weight="700">quantise</text><text x="665" y="96" font-size="14" text-anchor="middle" fill="#23408f" font-weight="700">→ int8</text><line x1="784" y1="75" x2="821" y2="75" stroke="#8b9096" stroke-width="2" marker-end="url(#ie)"/><rect x="825" y="30" width="230" height="90" rx="10" fill="#ffffff" stroke="#146b5c" stroke-width="2"/><text x="940" y="68" font-size="18" text-anchor="middle" font-weight="700">model</text><text x="940" y="96" font-size="14" text-anchor="middle" fill="#146b5c" font-weight="700">int8 throughout</text><line x1="1059" y1="75" x2="1096" y2="75" stroke="#8b9096" stroke-width="2" marker-end="url(#ie)"/><rect x="1100" y="30" width="230" height="90" rx="10" fill="#ffffff" stroke="#146b5c" stroke-width="2"/><text x="1215" y="68" font-size="18" text-anchor="middle" font-weight="700">scores</text><text x="1215" y="96" font-size="14" text-anchor="middle" fill="#146b5c" font-weight="700">int8: argmax</text></svg>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr);margin-top:8px">
+      <div class="ucard frag"><div class="un">1</div><div class="ut">fixed-point front end</div><div class="ud">ESP-DSP offers int16 FFTs and filters: the spectrogram need not be float.</div></div>
+      <div class="ucard frag"><div class="un">2</div><div class="ut">quantise once</div><div class="ud">Convert to int8 at the model's door, with the scale and zero-point from training (Class 24).</div></div>
+      <div class="ucard frag"><div class="un">3</div><div class="ut">don't convert back</div><div class="ud">To pick the winning word you only need the largest int8 score, not float probabilities.</div></div>
+    </div>
+  </div>
+  <div class="cue">Every float-to-int conversion is a pass over the data. For a small keyword model the front end can take as long as the network itself, so it deserves the same care. The input quantisation must use the exact scale and zero-point the converter stored, or accuracy collapses.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Where does the time go?" data-act="profiling">
+  <div>
+    <div class="kicker">try it live · a keyword-spotting pipeline, layer by layer</div>
+    <h2>Profile on the device, then optimise the longest bar.</h2>
+    <div class="panel prf">
+      <div class="cb prbtns"><button data-p="nn">optimised kernels</button><button data-p="ps">arena in PSRAM</button><button data-p="fx">fixed-point front end</button></div>
+      <svg viewBox="0 0 1300 330" width="100%" class="prsvg"></svg>
+      <div class="prinfo"></div>
+    </div>
+  </div>
+  <div class="cue">Illustrative per-layer times, shaped like a small depthwise-separable keyword CNN; not measurements. Measure your own by wrapping each layer (or the whole Invoke call) in esp_timer_get_time(). The lesson: the biggest bar is rarely where you guessed, and the front end can rival the network.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Device-level knobs" data-act="profiling">
+  <div>
+    <h2>Four knobs that live on the device, not in the model.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:26px">input size</div><div class="ns">96 × 96 to 64 × 64 cuts activations and MACs by more than half (the model must be retrained)</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">how often</div><div class="ns">run every 100 ms instead of 20 ms: one fifth of the work (Class 20's hop)</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">when at all</div><div class="ns">only after the cheap detector fires (Class 19's voice detector)</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">both cores</div><div class="ns">one core runs audio and features, the other runs the model</div></div>
+    </div>
+    <div class="split frag" style="gap:24px;margin-top:20px">
+      <div class="rem"><div class="h">core 0</div><ul><li>I2S, ring buffer, spectrogram columns: every 20 ms, never late</li></ul></div>
+      <div class="rem green"><div class="h">core 1</div><ul><li>the model, whenever a new window is ready; Wi-Fi when needed</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">The two-core split is a preview of Class 36, sharing computation, starting inside one chip. On Arduino-ESP32 you can pin a FreeRTOS task to a core with xTaskCreatePinnedToCore; we do not code it today.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="The device-side checklist" data-act="closing theory">
+  <div>
+    <h2>Before you blame the model, check the device.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:6%">#</th><th style="width:40%">question</th><th>if not</th></tr>
+      <tr class="frag"><td>1</td><td>Does every layer have a kernel?</td><td>change the layer, or write the kernel</td></tr>
+      <tr class="frag"><td>2</td><td>Are the optimised kernels actually on?</td><td>time one layer with and without</td></tr>
+      <tr class="frag"><td>3</td><td>Does the arena fit in internal SRAM?</td><td>smaller input or channels; or PSRAM, and pay for it</td></tr>
+      <tr class="frag"><td>4</td><td>Is the pipeline int8 from the door to the decision?</td><td>fixed-point front end; skip dequantising</td></tr>
+      <tr class="frag"><td>5</td><td>Where is the longest bar in the profile?</td><td>optimise that, and only that</td></tr>
+    </table>
+  </div>
+  <div class="cue">End of theory. Boards out. The lab answers question 3 for the students' own boards and measures what placement costs.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Lab: how much room, and where?" data-act="lab">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">lab · teams of four · board only · PSRAM: OPI PSRAM</div><h2 style="margin-bottom:6px">Measure your board's memory, then time one layer in three places.</h2></div>
+      <div class="panel timer" data-secs="1500"><span class="tdisp">25:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="un">A</div><div class="ut">how much room</div><div class="ud">Free heap, free internal SRAM, free PSRAM, and the largest single block in each.</div></div>
+      <div class="ucard"><div class="un">B</div><div class="ut">one layer, three homes</div><div class="ud">A 1,000 × 64 int8 layer with its weights in flash, SRAM and PSRAM. Time each.</div></div>
+      <div class="ucard"><div class="un">C</div><div class="ut">by hand</div><div class="ud">Work out two models' peak activations on paper. Would they fit?</div></div>
+    </div>
+  </div>
+  <div class="cue">Run Part A twice: once as is, once after adding WiFi.begin() in setup, to see how much SRAM Wi-Fi takes. Fast teams: in Part B, try 10 × 64 weights (fits in cache) against 1,000 × 64 and compare the flash gap.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Lab A: how much room" data-act="lab">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre><span class="c">// Part A · how much room is there, and where?</span>
+<span class="k">#include</span> <span class="s">"esp_heap_caps.h"</span>
+
+<span class="k">void</span> setup() {
+  Serial.begin(<span class="s">115200</span>);
+  delay(<span class="s">1000</span>);
+  Serial.printf(<span class="s">"free heap (all)      : %u bytes\n"</span>, ESP.getFreeHeap());
+  Serial.printf(<span class="s">"free internal SRAM   : %u bytes\n"</span>, heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+  Serial.printf(<span class="s">"largest SRAM block   : %u bytes\n"</span>, heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
+  Serial.printf(<span class="s">"free PSRAM           : %u bytes\n"</span>, ESP.getFreePsram());
+  Serial.printf(<span class="s">"largest PSRAM block  : %u bytes\n"</span>, heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
+  Serial.printf(<span class="s">"flash chip           : %u bytes\n"</span>, ESP.getFlashChipSize());
+  Serial.printf(<span class="s">"this sketch          : %u bytes\n"</span>, ESP.getSketchSize());
+}
+
+<span class="k">void</span> loop() {}</pre>
+    <div class="stack">
+      <div class="kicker">lab · part A</div>
+      <h2>Is the largest block smaller than the free total? Why?</h2>
+      <p class="small">An arena must be one block. Free memory in pieces does not help.</p>
+      <p class="small">Add WiFi.begin("x", "y"); at the top of setup(). How much SRAM disappears?</p>
+    </div>
+  </div>
+  <div class="cue">Free internal SRAM is well below 512 KB even in an empty sketch: the system, stacks and buffers take their share. "Largest block" is smaller than "free" because memory is fragmented. Wi-Fi typically takes tens of kilobytes more; the exact numbers vary with the core version, so collect each team's figures.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Lab B: one layer, three homes" data-act="lab">
+  <div class="split" style="grid-template-columns:1.55fr .45fr;align-items:center">
+    <pre style="font-size:12.5px"><span class="c">// Part B · one int8 layer (1,000 inputs × 64 outputs), weights in three places</span>
+<span class="k">#include</span> <span class="s">"esp_heap_caps.h"</span>
+<span class="k">const</span> <span class="k">int</span> IN = <span class="s">1000</span>, OUT = <span class="s">64</span>, N = IN * OUT, REPS = <span class="s">20</span>;
+
+<span class="k">struct</span> Weights {                                 <span class="c">// computed by the compiler,</span>
+  <span class="k">int8_t</span> v[N];                                   <span class="c">// stored in flash as constants</span>
+  <span class="k">constexpr</span> Weights() : v() { <span class="k">for</span> (<span class="k">int</span> i = <span class="s">0</span>; i &lt; N; i++) v[i] = (<span class="k">int8_t</span>)((i * <span class="s">37</span>) % <span class="s">201</span> - <span class="s">100</span>); }
+};
+<span class="k">static</span> <span class="k">constexpr</span> Weights W_FLASH;
+
+<span class="k">int8_t</span> x[IN];  <span class="k">int32_t</span> y[OUT];
+
+<span class="k">uint32_t</span> timeLayer(<span class="k">const</span> <span class="k">int8_t</span>* w) {
+  <span class="k">uint32_t</span> t = micros();
+  <span class="k">for</span> (<span class="k">int</span> r = <span class="s">0</span>; r &lt; REPS; r++)
+    <span class="k">for</span> (<span class="k">int</span> o = <span class="s">0</span>; o &lt; OUT; o++) {
+      <span class="k">int32_t</span> acc = <span class="s">0</span>;
+      <span class="k">for</span> (<span class="k">int</span> i = <span class="s">0</span>; i &lt; IN; i++) acc += w[o * IN + i] * x[i];
+      y[o] = acc;
+    }
+  <span class="k">return</span> (micros() - t) / REPS;                  <span class="c">// microseconds per layer</span>
+}
+
+<span class="k">void</span> setup() {
+  Serial.begin(<span class="s">115200</span>);  delay(<span class="s">1000</span>);
+  <span class="k">for</span> (<span class="k">int</span> i = <span class="s">0</span>; i &lt; IN; i++) x[i] = (<span class="k">int8_t</span>)(i % <span class="s">50</span> - <span class="s">25</span>);
+  <span class="k">int8_t</span>* wS = (<span class="k">int8_t</span>*)heap_caps_malloc(N, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  <span class="k">int8_t</span>* wP = (<span class="k">int8_t</span>*)heap_caps_malloc(N, MALLOC_CAP_SPIRAM);
+  <span class="k">if</span> (!wS || !wP) { Serial.println(<span class="s">"alloc failed: is PSRAM on?"</span>); <span class="k">return</span>; }
+  memcpy(wS, W_FLASH.v, N);  memcpy(wP, W_FLASH.v, N);
+  Serial.printf(<span class="s">"flash : %u us per layer\n"</span>, timeLayer(W_FLASH.v));
+  Serial.printf(<span class="s">"SRAM  : %u us per layer\n"</span>, timeLayer(wS));
+  Serial.printf(<span class="s">"PSRAM : %u us per layer\n"</span>, timeLayer(wP));
+  Serial.printf(<span class="s">"(64,000 multiply-adds per layer)\n"</span>);
+}
+
+<span class="k">void</span> loop() {}</pre>
+    <div class="stack">
+      <div class="kicker">lab · part B</div>
+      <h2>Rank the three. By how much?</h2>
+      <p class="small">64 KB of weights: bigger than the cache in front of flash and PSRAM.</p>
+      <p class="small">Divide 64,000 by the time to get millions of multiply-adds per second.</p>
+    </div>
+  </div>
+  <div class="cue">The constexpr struct makes the compiler compute the 64,000 weights and store them in flash, so no huge array has to be typed. It needs C++17, which Arduino-ESP32 core 3.x uses by default; if the compiler complains about the constexpr loop, fall back to filling a PSRAM and an SRAM copy only and compare those two. Expect SRAM fastest; flash and PSRAM slower because 64 KB does not fit in the cache. Exact ratios vary by board and core; do not promise numbers.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Worksheet" data-act="lab">
+  <div>
+    <div class="kicker">lab · worksheet</div>
+    <h2>Your board's numbers, and two models by hand.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)"><div class="wbox" style="min-height:180px"><div class="wk">A · free SRAM</div><div class="wq">free · largest block</div></div><div class="wbox" style="min-height:180px"><div class="wk">A · free PSRAM</div><div class="wq">free · largest block</div></div><div class="wbox" style="min-height:180px"><div class="wk">A · Wi-Fi's share</div><div class="wq">SRAM lost after WiFi.begin()</div></div><div class="wbox" style="min-height:180px"><div class="wk">B · three times</div><div class="wq">flash · SRAM · PSRAM, µs per layer</div></div><div class="wbox" style="min-height:180px"><div class="wk">C · model 1</div><div class="wq">input 49 × 40 × 1 → conv 8 ch, stride 2 → 25 × 20 × 8 → conv 16 ch, stride 2 → 13 × 10 × 16 → dense 64 → dense 4. Peak activations?</div></div><div class="wbox" style="min-height:180px"><div class="wk">C · model 2</div><div class="wq">input 96 × 96 × 1 → conv 16 ch, stride 1 → 96 × 96 × 16 → pool → 48 × 48 × 16 → … Peak activations? Fits in your largest SRAM block?</div></div></div>
+    <p class="small" style="margin-top:10px">int8: one byte per number. Peak = the largest (input + output) of any single layer.</p>
+  </div>
+  <div class="cue">Answers. Model 1: tensors 1,960 · 4,000 · 2,080 · 64 · 4 bytes; peak pair is conv 2 (4,000 + 2,080 = 6,080 bytes), against 8,108 bytes if nothing were reused. Model 2: 9,216 + 147,456 = 156,672 bytes (about 153 KB) at the first convolution; it fits in most boards' largest SRAM block, but only with room to spare if Wi-Fi is off.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">Your model's largest layer needs 300 KB for activations. Where on the ESP32-S3 does it go, and what does that cost you?</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>segmentation of AI models</strong>. Cutting one model into pieces, and stopping early when the answer is already clear.</p>
+  </div>
+  <div class="cue">Good answers: 300 KB is more than the largest free internal SRAM block on most boards (especially with Wi-Fi on), so the arena goes to PSRAM, and every layer pays the PSRAM slowdown they measured. Better answers also offer to shrink it instead: a smaller input or fewer channels in that layer, or a stride to cut the output size, so it fits in SRAM.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* memory planner */
+  function kb(b){ return b<1024? b+' B' : (b/1024).toFixed(b<10240?1:0)+' KB'; }
+  function mpLayers(S0,C){
+    return [['input',S0*S0*1,S0+'×'+S0+'×1'],['conv 3×3',S0*S0*C,S0+'×'+S0+'×'+C],['max pool',(S0/2)*(S0/2)*C,(S0/2)+'×'+(S0/2)+'×'+C],
+      ['conv 3×3',(S0/2)*(S0/2)*2*C,(S0/2)+'×'+(S0/2)+'×'+(2*C)],['max pool',(S0/4)*(S0/4)*2*C,(S0/4)+'×'+(S0/4)+'×'+(2*C)],
+      ['conv 3×3',(S0/4)*(S0/4)*4*C,(S0/4)+'×'+(S0/4)+'×'+(4*C)],['global avg',4*C,''+(4*C)],['dense',3,'3']];
+  }
+  function mpDraw(p){
+    var S0=+p.querySelector('.mpin button.sel').dataset.v, C=+p.querySelector('.mpch button.sel').dataset.v, L=mpLayers(S0,C), step=+(p.dataset.k||0);
+    var mx=0, peak=0, pk=1, sum=0; L.forEach(function(l){ mx=Math.max(mx,l[1]); sum+=l[1]; });
+    for(var q=1;q<L.length;q++){ var pr=L[q-1][1]+L[q][1]; if(pr>peak){ peak=pr; pk=q; } }
+    var o='', bw=150;
+    L.forEach(function(l,q){
+      var x=20+q*160, h=Math.max(3,Math.sqrt(l[1]/mx)*200), live=step>0&&(q===step||q===step-1);
+      var col= live? (q===step?'#146b5c':'#23408f') : '#c6c3ba';
+      o+='<rect x="'+x+'" y="'+(230-h)+'" width="'+bw+'" height="'+h+'" rx="5" fill="'+col+'" opacity="'+(live?0.9:0.55)+'"/>';
+      o+='<text x="'+(x+bw/2)+'" y="252" font-size="14" text-anchor="middle" font-weight="700" fill="#15171b">'+l[0]+'</text><text x="'+(x+bw/2)+'" y="270" font-size="12" text-anchor="middle" fill="#8b9096">'+l[2]+'</text><text x="'+(x+bw/2)+'" y="'+(224-h)+'" font-size="13" text-anchor="middle" fill="#4b5057">'+kb(l[1])+'</text>';
+    });
+    o+='<text x="20" y="294" font-size="13" fill="#8b9096">bar height ∝ √size, so small tensors stay visible · blue = layer input, green = layer output</text>';
+    p.querySelector('.mpsvg').innerHTML=o;
+    var now= step>0? kb(L[step-1][1]+L[step][1]) : '—';
+    p.querySelector('.mpstats').innerHTML='<div>live now'+(step>0?' · layer '+step:'')+'<b>'+now+'</b></div><div>peak (planned arena)<b style="color:var(--accent)">'+kb(peak)+'</b></div><div>no reuse: sum of all<b>'+kb(sum)+'</b></div><div>fits in ~300 KB of SRAM?<b style="color:'+(peak<=300*1024?'var(--ok)':'var(--fail)')+'">'+(peak<=300*1024?'yes':'no')+'</b></div>';
+  }
+  deck.querySelectorAll('.mpl').forEach(mpDraw);
+  /* placement */
+  function plDraw(p){
+    var W=+p.querySelector('.pw').value, A=+p.querySelector('.pa').value; p.querySelector('.pwv').textContent=W+' KB'; p.querySelector('.pav').textContent=A+' KB';
+    var wh=p.querySelector('[data-g="w"] button.sel').dataset.v, ah=p.querySelector('[data-g="a"] button.sel').dataset.v, CAP=300;
+    var sr=(wh==='sram'?W:0)+(ah==='sram'?A:0);
+    var wf= wh==='sram'?1 : (wh==='flash'? (W<=32?1.1:1.8) : (W<=32?1.2:2.2));
+    var af= ah==='sram'?1 : (A<=32?1.2:1.9);
+    var t=0.5*wf+0.5*af, fits=sr<=CAP;
+    var f1=p.querySelector('.plsr'); f1.style.width=Math.min(100,sr/CAP*100)+'%'; f1.classList.toggle('over',!fits); p.querySelector('.plsrv').textContent=sr+' / '+CAP+' KB';
+    var f2=p.querySelector('.pltm'); f2.style.width=Math.min(100,t/2.2*100)+'%'; f2.classList.toggle('over',t>1.6); p.querySelector('.pltmv').textContent=t.toFixed(2)+'×';
+    var v=p.querySelector('.cverdict');
+    if(!fits){ v.style.color='var(--fail)'; v.textContent='Does not fit: '+sr+' KB asked of about 300 KB free internal SRAM. Move the weights to flash, or the arena to PSRAM, or shrink the model.'; }
+    else if(t<1.15){ v.style.color='var(--ok)'; v.textContent='Fits, and close to the fastest possible: about '+t.toFixed(2)+'× the all-SRAM time.'; }
+    else { v.style.color='var(--amber)'; v.textContent='Fits, but about '+t.toFixed(2)+'× slower than all-SRAM. Worth it only if SRAM is needed for something else.'; }
+  }
+  deck.querySelectorAll('.plc').forEach(function(p){ plDraw(p); p.querySelectorAll('input').forEach(function(x){ x.addEventListener('input',function(){plDraw(p);}); }); });
+  /* profiler */
+  var PL=[['front end (spectrogram)',3.0,'fe'],['conv 1',9.0,'conv'],['depthwise 2',2.5,'dw'],['pointwise 2',8.0,'conv'],['depthwise 3',2.0,'dw'],['pointwise 3',7.5,'conv'],['average pool',0.3,'x'],['dense',0.4,'fc'],['softmax',0.1,'x']];
+  function prDraw(p){
+    var nn=p.dataset.nn==='1', ps=p.dataset.ps==='1', fx=p.dataset.fx==='1', tot=0, vals=[];
+    PL.forEach(function(l){ var v=l[1];
+      if(nn){ if(l[2]==='conv') v/=4; else if(l[2]==='dw') v/=3; else if(l[2]==='fc') v/=2; }
+      if(ps && l[2]!=='fe') v*=1.6;
+      if(fx && l[2]==='fe') v/=2;
+      vals.push(v); tot+=v; });
+    var mx=0, mi=0; vals.forEach(function(v,q){ if(v>mx){ mx=v; mi=q; } });
+    var o='';
+    PL.forEach(function(l,q){ var y=8+q*34, w=vals[q]/14.4*900, c=q===mi?'#a8231f':(l[2]==='fe'?'#b06a12':'#23408f');
+      o+='<text x="250" y="'+(y+21)+'" font-size="15" text-anchor="end" fill="#15171b">'+l[0]+'</text><rect x="262" y="'+y+'" width="'+Math.max(2,w).toFixed(1)+'" height="24" rx="4" fill="'+c+'" opacity=".85"/><text x="'+(270+Math.max(2,w)).toFixed(1)+'" y="'+(y+18)+'" font-size="14" fill="#4b5057">'+vals[q].toFixed(1)+' ms</text>'; });
+    p.querySelector('.prsvg').innerHTML=o;
+    p.querySelector('.prinfo').innerHTML='Total <strong>'+tot.toFixed(1)+' ms</strong> per inference · longest bar: <strong style="color:var(--fail)">'+PL[mi][0]+'</strong> ('+Math.round(mx/tot*100)+'% of the time)';
+    p.querySelectorAll('.prbtns button').forEach(function(b){ b.classList.toggle('on',p.dataset[b.dataset.p]==='1'); });
+  }
+  deck.querySelectorAll('.prf').forEach(prDraw);
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.mpin button, .mpch button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); mpDraw(b.closest('.mpl')); return; }
+    b=e.target.closest('.mpl .sbtns button'); if(b){ b.blur(); var p=b.closest('.mpl'); p.dataset.k= b.dataset.m==='reset'?0 : ((+(p.dataset.k||0))%7)+1; mpDraw(p); return; }
+    b=e.target.closest('.plc .cb button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); plDraw(b.closest('.plc')); return; }
+    b=e.target.closest('.prbtns button'); if(b){ b.blur(); var p2=b.closest('.prf'); p2.dataset[b.dataset.p]= p2.dataset[b.dataset.p]==='1'?'0':'1'; prDraw(p2); return; }
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

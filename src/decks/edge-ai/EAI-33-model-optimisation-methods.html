@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 33 · Model Optimisation Methods</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 33 */
+pre{font-size:14px;line-height:1.36}
+.num{font-family:var(--mono);font-size:18px}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.qpc,.cal,.tmp,.par{padding:14px 22px}
+.qpc .cb button.sel,.cal .cb button.sel,.pbtns button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.qinfo{font-size:19px;margin-top:4px}
+.calstats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.calstats div{border-top:1px solid var(--rule);padding-top:6px;font-size:15px;color:var(--soft)}
+.calstats b{display:block;font-family:var(--mono);font-size:22px;color:var(--ink)}
+.pbtns button{text-align:left;height:44px;font-size:17px;margin-bottom:6px}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 33</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 33 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 33 · unit IV · optimisation of AI models at the edge · general methods</div>
+    <h1>Smaller, faster, cooler,<br>and still right.</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Class 24 opened the toolbox: quantisation, pruning, distillation. Today we take each tool apart: where the accuracy goes, how to win it back, and how to combine them without losing the plot.</p>
+  </div>
+  <div class="cue">Theory runs to slide 14; the Colab lab is one block at the end (slides 15 to 17). Students need a Google account and a Colab notebook; no board today. Run the five cells yourself the day before: TensorFlow versions in Colab change.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>Your update makes 1 device in 20 worse. Catch it, then undo it.</h2>
+    <div class="split" style="gap:24px;margin-top:8px">
+      <div class="rem frag"><div class="h">catch it early</div><ul><li>Roll out in stages: a few devices first (a "canary"), then more.</li><li>Compare their numbers with devices still on the old version.</li><li>Test on recordings from many rooms and voices, not one.</li></ul></div>
+      <div class="rem green frag"><div class="h">undo it</div><ul><li>Keep the previous firmware in a second slot; switch back on failure.</li><li>Version every model, so you know exactly what each device runs.</li></ul></div>
+    </div>
+    <p class="frag" style="margin-top:20px;max-width:72ch">Optimisation is one of the commonest reasons an update gets worse for some users. Today: how to shrink a model without that happening.</p>
+  </div>
+  <div class="cue">Two minutes. The 1-in-20 device is often one with an unusual room, voice or microphone: exactly the inputs a careless quantisation step handles worst (slide 7).</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="Three times too big" data-act="the hook">
+  <div>
+    <div class="kicker">the hook · one of your project's slot models</div>
+    <h2>Three times too big, nearly three times too slow, 92% accurate. Now what?</h2>
+    <svg viewBox="0 0 1100 290" width="1100" height="290"><text x="0" y="24" font-size="16" fill="#4b5057" font-weight="700">FLASH FOR THE MODEL</text><rect x="0" y="40" width="1080" height="56" rx="6" fill="#a8231f" opacity=".85"/><text x="16" y="76" font-size="18" fill="#fff" font-weight="700">float32 slot model · 180 KB</text><line x1="384" y1="30" x2="384" y2="106" stroke="#146b5c" stroke-width="4"/><text x="394" y="124" font-size="15" fill="#146b5c" font-weight="700">budget · 64 KB</text><text x="0" y="174" font-size="16" fill="#4b5057" font-weight="700">TIME PER INFERENCE</text><rect x="0" y="190" width="1080" height="56" rx="6" fill="#a8231f" opacity=".85"/><text x="16" y="226" font-size="18" fill="#fff" font-weight="700">40 ms</text><line x1="405" y1="180" x2="405" y2="256" stroke="#146b5c" stroke-width="4"/><text x="415" y="274" font-size="15" fill="#146b5c" font-weight="700">budget · 15 ms</text></svg>
+    <p class="frag" style="max-width:76ch">Int8 alone gets you to 45 KB and about 16 ms. Close, but not quite. Every extra step costs a little accuracy, and the steps interact. Today is about choosing and ordering them.</p>
+  </div>
+  <div class="cue">Illustrative numbers for a slot model (a small CNN that recognises a few command words). Ask for a show of hands: which one method would you try first? Most will say int8; keep their answer for slide 14.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="Four goals, one front" data-act="goals">
+  <div>
+    <h2>Size, speed, energy, accuracy: you trade them, you never get all four free.</h2>
+    <div class="split" style="grid-template-columns:1.2fr .8fr;gap:24px;align-items:center">
+      <svg viewBox="0 0 960 440" width="100%"><rect x="80" y="40" width="860" height="340" fill="#fff" stroke="#e2e0d9"/><text x="80" y="404" font-size="13" text-anchor="middle" fill="#8b9096">10 KB</text><text x="358" y="404" font-size="13" text-anchor="middle" fill="#8b9096">30 KB</text><text x="662" y="404" font-size="13" text-anchor="middle" fill="#8b9096">100 KB</text><text x="940" y="404" font-size="13" text-anchor="middle" fill="#8b9096">300 KB</text><text x="70" y="323" font-size="13" text-anchor="end" fill="#8b9096">84%</text><text x="70" y="200" font-size="13" text-anchor="end" fill="#8b9096">88%</text><text x="70" y="76" font-size="13" text-anchor="end" fill="#8b9096">92%</text><text x="510" y="428" font-size="14" text-anchor="middle" fill="#4b5057">model size (log scale) · smaller is further left</text><text x="20" y="210" font-size="14" text-anchor="middle" fill="#4b5057" transform="rotate(-90 20 210)">accuracy</text><circle cx="811" cy="71" r="9" fill="#8b9096" opacity=".6"/><circle cx="460" cy="117" r="9" fill="#8b9096" opacity=".6"/><circle cx="662" cy="102" r="9" fill="#8b9096" opacity=".6"/><circle cx="506" cy="117" r="9" fill="#8b9096" opacity=".6"/><circle cx="358" cy="188" r="9" fill="#8b9096" opacity=".6"/><circle cx="572" cy="256" r="9" fill="#8b9096" opacity=".6"/><circle cx="765" cy="164" r="9" fill="#8b9096" opacity=".6"/><circle cx="312" cy="318" r="9" fill="#8b9096" opacity=".6"/><circle cx="460" cy="170" r="9" fill="#8b9096" opacity=".6"/><g class="frag"><polyline points="312,318 358,188 460,117 662,102 811,71" fill="none" stroke="#146b5c" stroke-width="3"/><circle cx="312" cy="318" r="10" fill="#146b5c"/><circle cx="358" cy="188" r="10" fill="#146b5c"/><circle cx="460" cy="117" r="10" fill="#146b5c"/><circle cx="662" cy="102" r="10" fill="#146b5c"/><circle cx="811" cy="71" r="10" fill="#146b5c"/><text x="100" y="66" font-size="15" fill="#146b5c" font-weight="700">the Pareto front: nothing beats these on both axes</text></g></svg>
+      <div>
+        <div class="ntiles" style="grid-template-columns:1fr 1fr">
+          <div class="ntile"><div class="nb" style="font-size:24px">size</div><div class="ns">flash for weights, SRAM for activations</div></div>
+          <div class="ntile"><div class="nb" style="font-size:24px">latency</div><div class="ns">ms per inference (Class 20's budget)</div></div>
+          <div class="ntile"><div class="nb" style="font-size:24px">energy</div><div class="ns">mJ per inference: battery life</div></div>
+          <div class="ntile"><div class="nb" style="font-size:24px">accuracy</div><div class="ns">on the people and rooms that matter (Class 26)</div></div>
+        </div>
+        <p class="frag small" style="margin-top:14px">A design is worth considering only if it is on the front. Everything behind it is beaten by something else on every axis.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Illustrative points. On an MCU, latency and energy usually move together (less work, less time, less energy), so size and accuracy are the two axes most worth plotting. The interactive version is slide 13.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="The methods, side by side" data-act="goals">
+  <div>
+    <h2>Eight methods. What each one shrinks, and what it costs.</h2>
+    <table class="dt txt" style="width:100%;font-size:18px">
+      <tr><th style="width:24%">method</th><th style="width:22%">shrinks</th><th style="width:30%">costs</th><th>retrain?</th></tr>
+      <tr class="frag"><td>post-training int8</td><td>size 4×, latency 2–4×</td><td>a little accuracy; needs calibration data</td><td>no</td></tr>
+      <tr class="frag"><td>quantisation-aware training</td><td>same as int8</td><td>training time; more code</td><td>yes, fine-tune</td></tr>
+      <tr class="frag"><td>structured pruning</td><td>size and latency</td><td>accuracy unless fine-tuned</td><td>yes, fine-tune</td></tr>
+      <tr class="frag"><td>unstructured pruning</td><td>file size, if compressed</td><td>little speed-up on an MCU</td><td>yes, fine-tune</td></tr>
+      <tr class="frag"><td>knowledge distillation</td><td>everything: a smaller student</td><td>a teacher model and a full training run</td><td>yes</td></tr>
+      <tr class="frag"><td>low-rank factorisation</td><td>big dense and conv layers</td><td>accuracy if the rank is too low</td><td>usually</td></tr>
+      <tr class="frag"><td>weight clustering</td><td>flash (compressed weights)</td><td>needs lookup or decompression</td><td>fine-tune</td></tr>
+      <tr class="frag"><td>design small / architecture search</td><td>everything, from the start</td><td>design or search time</td><td>yes, from scratch</td></tr>
+    </table>
+  </div>
+  <div class="cue">Typical ranges, not guarantees. Ask which rows need no retraining at all (only post-training quantisation): that is why it is always tried first.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="One scale or one per channel?" data-act="quantisation, deeper">
+  <div>
+    <div class="kicker">try it live · 8 output channels of one layer, channel 6 has large weights</div>
+    <h2>One outlier channel can waste the int8 grid for every other channel.</h2>
+    <div class="panel qpc">
+      <div class="crow" style="grid-template-columns:150px 1fr 180px 1fr 70px;gap:14px"><span class="cl">scales</span><span class="cb"><button data-m="t" class="sel">one per tensor</button><button data-m="c">one per channel</button></span><span class="cl" style="text-align:right">bits</span><input type="range" class="qb" min="2" max="8" step="1" value="4"><span class="num qbv"></span></div>
+      <svg viewBox="0 0 1300 330" width="100%" class="qsvg"></svg>
+      <div class="qinfo"></div>
+    </div>
+  </div>
+  <div class="cue">Synthetic weights. Each column is one output channel; dots are weights, faint lines are the quantisation levels that fall inside that channel's range. With one scale for the whole tensor, the big channel sets the step size and the small channels get only a level or two: large relative error (red bars). Per-channel scales give every channel its own grid. LiteRT's int8 scheme uses per-channel scales for convolution weights for exactly this reason. Start at 4 bits to make the effect obvious, then go to 8.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Calibrating activations" data-act="quantisation, deeper">
+  <div>
+    <div class="kicker">try it live · one layer's activations over the calibration set</div>
+    <h2>Full-integer int8 also squeezes the activations. Where should the range end?</h2>
+    <div class="panel calc cal">
+      <div class="crow" style="grid-template-columns:200px 1fr 110px;gap:16px"><span class="cl">clip the range at</span><input type="range" class="cl1" min="10" max="120" step="1" value="120"><span class="num clv"></span></div>
+      <div class="cb" style="margin:4px 0 8px"><button data-c="max">min–max</button><button data-c="p999">99.9th percentile</button><button data-c="p99">99th percentile</button></div>
+      <svg viewBox="0 0 1300 230" width="100%" class="calsvg"></svg>
+      <div class="calstats"></div>
+    </div>
+  </div>
+  <div class="cue">Synthetic activation values: most are small, a rare few are huge. The converter picks each activation range from a representative dataset (typically a few hundred real examples). Min–max keeps every outlier but makes the step coarse for the common values; clipping gives the common values finer steps at the cost of distorting the rare outliers. Which matters more depends on whether the outliers carry the answer: calibration methods (percentile, or entropy-based) pick a compromise from data. That is why the calibration set must look like real use: calibrate on quiet-room clips only, and the kitchen's loud clips will saturate.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Mixed precision and QAT" data-act="quantisation, deeper">
+  <div>
+    <h2>When int8 hurts: keep a few layers wider, or train with the rounding in.</h2>
+    <div class="split" style="gap:24px">
+      <div class="panel frag"><span class="lab" style="color:var(--accent)">mixed precision</span><p>Most layers int8; the one or two sensitive ones (often the first and last) stay at int16 or float.</p><p class="small">Find them by quantising one layer at a time and watching accuracy. Costs some size and speed, and the runtime must support the mix.</p></div>
+      <div class="panel frag"><span class="lab" style="color:var(--ok)">quantisation-aware training</span><p>Insert "fake quantise" steps in training: the forward pass rounds like int8; the backward pass pretends rounding wasn't there (the straight-through estimator).</p><p class="small">The weights learn to sit where rounding hurts least. Usually a few epochs of fine-tuning from the float model.</p></div>
+    </div>
+    <div class="ntiles frag" style="grid-template-columns:repeat(3,1fr);margin-top:18px">
+      <div class="ntile"><div class="nb" style="font-size:26px">int8</div><div class="ns">the MCU default; ESP-NN and CMSIS-NN kernels</div></div>
+      <div class="ntile"><div class="nb" style="font-size:26px">int4</div><div class="ns">half again the size; needs QAT and kernel support</div></div>
+      <div class="ntile"><div class="nb" style="font-size:26px">binary (1-bit)</div><div class="ns">XNOR and bit-count instead of multiply; big accuracy cost; research-grade</div></div>
+    </div>
+  </div>
+  <div class="cue">Name int4 and binary only. Support for anything below 8 bits varies a lot between runtimes and chips; check before planning on it.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Pruning that actually helps" data-act="pruning, deeper">
+  <div>
+    <h2>On a microcontroller, only pruning whole channels makes it faster.</h2>
+    <svg viewBox="0 0 1100 340" width="1100" height="340"><text x="0" y="24" font-size="16" font-weight="700" fill="#4b5057">dense · 64 weights</text><rect x="0" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="34" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="68" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="102" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="136" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="170" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="204" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="238" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="0" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="34" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="68" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="102" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="136" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="170" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="204" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="238" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="0" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="34" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="68" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="102" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="136" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="170" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="204" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="238" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="0" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="34" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="68" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="102" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="136" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="170" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="204" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="238" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="0" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="34" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="68" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="102" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="136" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="170" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="204" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="238" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="0" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="34" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="68" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="102" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="136" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="170" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="204" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="238" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="0" y="244" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="34" y="244" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="68" y="244" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="102" y="244" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="136" y="244" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="170" y="244" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="204" y="244" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="238" y="244" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="0" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="34" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="68" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="102" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="136" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="170" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="204" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="238" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><g class="frag"><text x="400" y="24" font-size="16" font-weight="700" fill="#b06a12">unstructured · half are zero</text><rect x="400" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="434" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="468" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="502" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="536" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="570" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="604" y="40" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="638" y="40" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="400" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="434" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="468" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="502" y="74" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="536" y="74" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="570" y="74" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="604" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="638" y="74" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="400" y="108" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="434" y="108" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="468" y="108" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="502" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="536" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="570" y="108" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="604" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="638" y="108" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="400" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="434" y="142" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="468" y="142" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="502" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="536" y="142" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="570" y="142" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="604" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="638" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="400" y="176" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="434" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="468" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="502" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="536" y="176" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="570" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="604" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="638" y="176" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="400" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="434" y="210" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="468" y="210" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="502" y="210" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="536" y="210" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="570" y="210" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="604" y="210" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="638" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="400" y="244" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="434" y="244" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="468" y="244" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="502" y="244" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="536" y="244" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="570" y="244" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="604" y="244" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="638" y="244" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="400" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="434" y="278" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="468" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="502" y="278" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="536" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="570" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="604" y="278" width="30" height="30" rx="3" fill="#ffffff" stroke="#c6c3ba" opacity="1"/><rect x="638" y="278" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><text x="400" y="330" font-size="14" fill="#b06a12">same shape: the MCU still does 64</text></g><g class="frag"><text x="800" y="24" font-size="16" font-weight="700" fill="#146b5c">structured · 4 rows removed</text><rect x="800" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="834" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="868" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="902" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="936" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="970" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="1004" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="1038" y="40" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="800" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="834" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="868" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="902" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="936" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="970" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="1004" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="1038" y="108" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="800" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="834" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="868" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="902" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="936" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="970" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="1004" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="1038" y="142" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="800" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="834" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="868" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="902" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="936" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="970" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="1004" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><rect x="1038" y="210" width="30" height="30" rx="3" fill="#23408f" stroke="#c6c3ba" opacity="0.75"/><text x="800" y="330" font-size="14" fill="#146b5c">a smaller layer: 32 multiplies</text></g></svg>
+    <p class="frag" style="max-width:76ch">Prune a little, fine-tune, prune again: <strong>iterative</strong> pruning loses far less accuracy than cutting half in one go. Pick channels by their size (the sum of their weights' magnitudes) or by how much accuracy drops without them.</p>
+  </div>
+  <div class="cue">Unstructured sparsity only saves time on hardware or kernels built for it (some GPUs and NPUs); TFLite Micro and ESP-NN run dense kernels, so the zeros still get multiplied. It can still shrink a compressed file in flash. Structured pruning changes the layer shapes, so later layers shrink too.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Distillation and temperature" data-act="distillation">
+  <div>
+    <div class="kicker">try it live · a big teacher's view of one clip of "on"</div>
+    <h2>Distillation: the student learns from the teacher's whole opinion, not just its answer.</h2>
+    <div class="panel tmp split" style="grid-template-columns:1.2fr .8fr;gap:26px;align-items:center">
+      <svg viewBox="0 0 760 330" width="100%" class="tsvg"></svg>
+      <div>
+        <div class="crow" style="grid-template-columns:130px 1fr 70px;gap:14px"><span class="cl">temperature</span><input type="range" class="tT" min="1" max="10" step="0.5" value="1"><span class="num tTv"></span></div>
+        <div class="tinfo" style="font-size:19px;margin-top:14px"></div>
+        <p class="small" style="margin-top:14px">softmax(z ÷ T): higher T flattens the probabilities, so the small ones carry signal.</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">The "hard label" says only "on". The teacher's soft output also says "this sounds a bit like off, and nothing like noise": dark knowledge about which words are confusable. The student is trained on a mix of the hard labels and the teacher's softened outputs at the same temperature. Logits are made up for the slide.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Low-rank and clustering" data-act="distillation">
+  <div>
+    <h2>Two more ways to store fewer numbers.</h2>
+    <div class="split" style="gap:26px">
+      <div class="panel frag"><span class="lab" style="color:var(--accent)">low-rank factorisation</span>
+        <svg viewBox="0 0 560 190" width="100%"><rect x="0" y="10" width="150" height="150" fill="#23408f" opacity=".8"/><text x="75" y="92" font-size="18" fill="#fff" text-anchor="middle" font-weight="700">W 256×256</text><text x="180" y="92" font-size="26" fill="#4b5057">≈</text><rect x="220" y="10" width="20" height="150" fill="#146b5c" opacity=".85"/><text x="230" y="180" font-size="13" text-anchor="middle" fill="#4b5057">U 256×16</text><text x="258" y="92" font-size="22" fill="#4b5057">×</text><rect x="280" y="75" width="150" height="20" fill="#146b5c" opacity=".85"/><text x="355" y="68" font-size="13" text-anchor="middle" fill="#4b5057">V 16×256</text></svg>
+        <p style="font-family:var(--mono);font-size:20px">65,536 → 8,192 weights</p><p class="small">One big layer becomes two thin ones. Works when the layer's information really lives in a few directions.</p></div>
+      <div class="panel frag"><span class="lab" style="color:var(--ok)">weight clustering (sharing)</span>
+        <p style="font-family:var(--mono);font-size:20px;margin-top:8px">65,536 weights → 16 shared values<br>4-bit index each + a 16-entry table</p>
+        <p style="font-family:var(--mono);font-size:20px">256 KB (float) → 32 KB + 64 B</p>
+        <p class="small">Mostly a flash saving: the runtime needs a lookup step, or the weights are expanded back before use.</p></div>
+    </div>
+  </div>
+  <div class="cue">Rank 16 is an illustrative choice; the right rank comes from checking accuracy. Clustering and int8 are cousins: int8 uses 256 evenly spaced levels, clustering uses a few levels placed where the weights actually are.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Design it small" data-act="design small">
+  <div>
+    <h2>The biggest win is choosing a small model before you train it.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">MobileNet</div><div class="ut">depthwise separable layers</div><div class="ud">Class 23's 8× saving per layer, plus two dials: width (channels × α) and input resolution (× ρ). Work scales roughly with α² and ρ².</div></div>
+      <div class="ucard frag"><div class="un">MCUNet</div><div class="ut">search and runtime, designed together</div><div class="ud">A search for networks that fit a given chip's SRAM and flash (TinyNAS) plus a lean inference engine (TinyEngine). Built for microcontrollers.</div></div>
+      <div class="ucard frag"><div class="un">hardware-aware search</div><div class="ut">let the device score the design</div><div class="ud">Measure latency and memory on the real board inside the search loop, not FLOPs on paper.</div></div>
+    </div>
+    <div class="cformula frag" style="font-size:22px;text-align:center;margin-top:20px">width × 0.5 and input × 0.5 ≈ <b>1/16 of the multiply-adds</b>: before any quantisation</div>
+  </div>
+  <div class="cue">α² × ρ² = 0.25 × 0.25 = 1/16, which holds for the convolution layers; the classifier at the end scales differently. MCUNet is from MIT's Han lab (Lin et al., NeurIPS 2020); name it, do not teach its internals.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Combine, and check the front" data-act="combining">
+  <div>
+    <div class="kicker">try it live · start from the hook's float32 model: 180 KB, 40 ms, 92%</div>
+    <h2>Stack methods until you are inside the budget, and stay on the front.</h2>
+    <div class="panel par split" style="grid-template-columns:1.25fr .75fr;gap:24px;align-items:center">
+      <svg viewBox="0 0 800 420" width="100%" class="psvg"></svg>
+      <div>
+        <div class="cb pbtns" style="flex-direction:column;align-items:stretch"></div>
+        <div class="pinfo" style="margin-top:12px;font-size:19px"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Illustrative multipliers and accuracy losses, invented for teaching; real numbers come from your own measurements. Grey dots are every possible combination; green ones form the front. Post-training int8 and QAT are alternatives, so picking one turns the other off. A sensible order: design small, distil, prune structurally and fine-tune, then quantise (QAT if PTQ loses too much), then measure on the board. Return to the hook's show of hands: int8 alone was not enough.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Lab: one model, three files" data-act="lab">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">lab · Colab · teams of four · no board</div><h2 style="margin-bottom:6px">Convert one model three ways. Weigh it, test it, look inside it.</h2></div>
+      <div class="panel timer" data-secs="1500"><span class="tdisp">25:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="un">1–2</div><div class="ut">data and a model</div><div class="ud">Synthetic 16 × 8 "spectrograms" of four commands, a tiny CNN, eight epochs.</div></div>
+      <div class="ucard"><div class="un">3–4</div><div class="ut">three conversions</div><div class="ud">float32, dynamic-range (int8 weights) and full-integer int8 with a calibration set. Size and accuracy of each.</div></div>
+      <div class="ucard"><div class="un">5</div><div class="ut">look inside</div><div class="ud">Print each tensor's scales and zero points. Which have one scale; which have one per channel?</div></div>
+    </div>
+    <p class="small" style="margin-top:14px">Extension: shrink the calibration set to 5 examples, or feed it only one class. What happens to int8 accuracy?</p>
+  </div>
+  <div class="cue">The code uses tf.lite.TFLiteConverter and tf.lite.Interpreter. Google now calls the runtime LiteRT; recent TensorFlow versions print a deprecation warning for tf.lite.Interpreter and point to the ai_edge_litert package. The warning is harmless for this lab. The code has not been run in the current Colab image: run it the day before.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Cells 1 and 2" data-act="lab">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre><span class="c"># Cell 1 · data: four "commands" as 16 × 8 patterns plus noise</span>
+<span class="k">import</span> numpy <span class="k">as</span> np, tensorflow <span class="k">as</span> tf
+rng = np.random.default_rng(<span class="s">0</span>)
+templates = rng.normal(<span class="s">0</span>, <span class="s">1</span>, (<span class="s">4</span>, <span class="s">16</span>, <span class="s">8</span>))
+<span class="k">def</span> <span class="f">make</span>(n):
+    y = rng.integers(<span class="s">0</span>, <span class="s">4</span>, n)
+    x = templates[y] + rng.normal(<span class="s">0</span>, <span class="s">1.2</span>, (n, <span class="s">16</span>, <span class="s">8</span>))
+    <span class="k">return</span> x[..., <span class="k">None</span>].astype(<span class="s">"float32"</span>), y
+x_tr, y_tr = make(<span class="s">3000</span>);  x_te, y_te = make(<span class="s">600</span>)
+
+<span class="c"># Cell 2 · a tiny CNN</span>
+model = tf.keras.Sequential([
+    tf.keras.Input((<span class="s">16</span>, <span class="s">8</span>, <span class="s">1</span>)),
+    tf.keras.layers.Conv2D(<span class="s">8</span>, <span class="s">3</span>, activation=<span class="s">"relu"</span>),
+    tf.keras.layers.DepthwiseConv2D(<span class="s">3</span>, activation=<span class="s">"relu"</span>),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(<span class="s">32</span>, activation=<span class="s">"relu"</span>),
+    tf.keras.layers.Dense(<span class="s">4</span>)])
+model.compile(<span class="s">"adam"</span>,
+    tf.keras.losses.SparseCategoricalCrossentropy(from_logits=<span class="k">True</span>), [<span class="s">"accuracy"</span>])
+model.fit(x_tr, y_tr, epochs=<span class="s">8</span>, validation_split=<span class="s">0.1</span>, verbose=<span class="s">0</span>)
+print(<span class="s">"Keras float accuracy:"</span>, model.evaluate(x_te, y_te, verbose=<span class="s">0</span>)[<span class="s">1</span>])</pre>
+    <div class="stack">
+      <div class="kicker">lab · cells 1 and 2</div>
+      <h2>Train the float model first.</h2>
+      <p class="small">Write down the Keras accuracy: every conversion is compared with it.</p>
+      <p class="small">How many weights does model.summary() report?</p>
+    </div>
+  </div>
+  <div class="cue">Synthetic data keeps the lab independent of downloads and fast on a free Colab CPU (well under a minute to train). Accuracy should land somewhere in the high 80s to high 90s; the exact number varies with the TensorFlow version.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Cells 3 to 5" data-act="lab">
+  <div class="split" style="grid-template-columns:1.55fr .45fr;align-items:center">
+    <pre style="font-size:12.5px;line-height:1.32"><span class="c"># Cell 3 · three conversions</span>
+<span class="k">def</span> <span class="f">convert</span>(mode):
+    c = tf.lite.TFLiteConverter.from_keras_model(model)
+    <span class="k">if</span> mode != <span class="s">"float32"</span>:
+        c.optimizations = [tf.lite.Optimize.DEFAULT]       <span class="c"># int8 weights</span>
+    <span class="k">if</span> mode == <span class="s">"int8"</span>:
+        <span class="k">def</span> <span class="f">rep</span>():                                       <span class="c"># calibration set</span>
+            <span class="k">for</span> k <span class="k">in</span> range(<span class="s">200</span>):
+                <span class="k">yield</span> [x_tr[k:k+<span class="s">1</span>]]
+        c.representative_dataset = rep
+        c.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+        c.inference_input_type = tf.int8;  c.inference_output_type = tf.int8
+    <span class="k">return</span> c.convert()
+models = dict(float32=convert(<span class="s">"float32"</span>), dynamic=convert(<span class="s">"dynamic"</span>), int8=convert(<span class="s">"int8"</span>))
+<span class="k">for</span> k, m <span class="k">in</span> models.items(): print(k, len(m), <span class="s">"bytes"</span>)
+
+<span class="c"># Cell 4 · accuracy of each file</span>
+<span class="k">def</span> <span class="f">accuracy</span>(tfl):
+    it = tf.lite.Interpreter(model_content=tfl);  it.allocate_tensors()
+    i, o = it.get_input_details()[<span class="s">0</span>], it.get_output_details()[<span class="s">0</span>]
+    hits = <span class="s">0</span>
+    <span class="k">for</span> x, y <span class="k">in</span> zip(x_te, y_te):
+        x = x[<span class="k">None</span>]
+        <span class="k">if</span> i[<span class="s">"dtype"</span>] == np.int8:                             <span class="c"># quantise the input</span>
+            s, z = i[<span class="s">"quantization"</span>];  x = np.round(x / s + z).astype(np.int8)
+        it.set_tensor(i[<span class="s">"index"</span>], x);  it.invoke()
+        hits += int(np.argmax(it.get_tensor(o[<span class="s">"index"</span>])) == y)
+    <span class="k">return</span> hits / len(y_te)
+<span class="k">for</span> k, m <span class="k">in</span> models.items(): print(k, accuracy(m))
+
+<span class="c"># Cell 5 · look inside the int8 file</span>
+it = tf.lite.Interpreter(model_content=models[<span class="s">"int8"</span>]);  it.allocate_tensors()
+<span class="k">for</span> d <span class="k">in</span> it.get_tensor_details():
+    q = d[<span class="s">"quantization_parameters"</span>]
+    <span class="k">if</span> len(q[<span class="s">"scales"</span>]):
+        print(d[<span class="s">"name"</span>][:<span class="s">38</span>], d[<span class="s">"dtype"</span>].__name__, <span class="s">"scales:"</span>, len(q[<span class="s">"scales"</span>]),
+              q[<span class="s">"scales"</span>][:<span class="s">2</span>], <span class="s">"zero points:"</span>, q[<span class="s">"zero_points"</span>][:<span class="s">2</span>])</pre>
+    <div class="stack">
+      <div class="kicker">lab · cells 3 to 5</div>
+      <h2>Three files, three accuracies.</h2>
+      <p class="small">Which tensors have 8 scales? Why 8?</p>
+      <p class="small">Which tensors are int32? (Hint: biases.)</p>
+    </div>
+  </div>
+  <div class="cue">Expected pattern: the int8 file is roughly a quarter of the float32 file plus a fixed overhead (small models carry proportionally more overhead); accuracy within a point or two of float. The first convolution's weights should show 8 scales, one per output channel: slide 6 made real. Biases are stored as int32. Code not tested in the current Colab image.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Worksheet" data-act="lab">
+  <div>
+    <div class="kicker">lab · worksheet</div>
+    <h2>Six answers per team.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)"><div class="wbox" style="min-height:190px"><div class="wk">float32</div><div class="wq">bytes · accuracy</div></div><div class="wbox" style="min-height:190px"><div class="wk">dynamic-range</div><div class="wq">bytes · accuracy</div></div><div class="wbox" style="min-height:190px"><div class="wk">full int8</div><div class="wq">bytes · accuracy</div></div><div class="wbox" style="min-height:190px"><div class="wk">per-channel</div><div class="wq">which tensors had one scale per channel?</div></div><div class="wbox" style="min-height:190px"><div class="wk">calibration test</div><div class="wq">accuracy with 5 calibration examples, or one class only</div></div><div class="wbox" style="min-height:190px"><div class="wk">your call</div><div class="wq">which file would you ship, and why?</div></div></div>
+  </div>
+  <div class="cue">Ask two teams to compare their calibration-test numbers: the one-class calibration set should hurt noticeably, which links back to the recall slide's 1-in-20 device.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">Pick two optimisation methods for your project's slot models and say what each one costs you.</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>model optimisation for edge devices</strong>. Compilers, memory planning and measuring on the board itself.</p>
+  </div>
+  <div class="cue">Good answers name a real cost: post-training int8 (a little accuracy, needs a representative calibration set), QAT (training time), structured pruning (fine-tuning and accuracy), distillation (a teacher and a full training run), designing smaller (accuracy, redesign time).</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* per-channel quantisation */
+  var QW=[]; (function(){ var seed=21; function r(){ seed=(seed*16807)%2147483647; return seed/2147483647; }
+    function g(){ var u=r()||1e-9, v=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+    var spread=[0.12,0.2,0.08,0.15,0.1,1.6,0.18,0.06];
+    for(var c=0;c<8;c++){ var a=[]; for(var k=0;k<24;k++) a.push(g()*spread[c]); QW.push(a); } })();
+  function qDraw(p){
+    var m=p.querySelector('.cb button.sel').dataset.m, b=+p.querySelector('.qb').value, L=Math.pow(2,b-1)-1; p.querySelector('.qbv').textContent=b;
+    var all=0; QW.forEach(function(a){ a.forEach(function(v){ all=Math.max(all,Math.abs(v)); }); });
+    var o='', errs=[], used=[];
+    QW.forEach(function(a,c){
+      var mx=0; a.forEach(function(v){ mx=Math.max(mx,Math.abs(v)); });
+      var sc=(m==='t'?all:mx)/L, x0=40+c*158, cx=x0+60, Y=function(v){ return 150-v/mx*110; };
+      o+='<rect x="'+x0+'" y="30" width="120" height="240" fill="#ffffff" stroke="#e2e0d9"/>';
+      var lv={};
+      for(var q=-L;q<=L;q++){ var v=q*sc; if(Math.abs(v)<=mx*1.02) o+='<line x1="'+(x0+4)+'" y1="'+Y(v).toFixed(1)+'" x2="'+(x0+116)+'" y2="'+Y(v).toFixed(1)+'" stroke="#23408f" stroke-width="1" opacity=".3"/>'; }
+      var se=0, ss=0;
+      a.forEach(function(v,k){ var qv=Math.max(-L,Math.min(L,Math.round(v/sc))); lv[qv]=1; var d=v-qv*sc; se+=d*d; ss+=v*v;
+        o+='<circle cx="'+(x0+14+(k%12)*8)+'" cy="'+Y(v).toFixed(1)+'" r="3.5" fill="'+(c===5?'#b06a12':'#4b5057')+'"/>'; });
+      var rel=Math.sqrt(se/ss)*100; errs.push(rel); used.push(Object.keys(lv).length);
+      var h=Math.min(1,rel/60)*50;
+      o+='<rect x="'+(x0+20)+'" y="'+(330-h)+'" width="80" height="'+h+'" fill="'+(rel>15?'#a8231f':'#146b5c')+'" opacity=".85"/>';
+      o+='<text x="'+cx+'" y="22" font-size="13" text-anchor="middle" fill="#4b5057">ch '+(c+1)+' · '+used[c]+' lvl</text><text x="'+cx+'" y="'+(326-h)+'" font-size="13" text-anchor="middle" fill="#15171b">'+rel.toFixed(0)+'%</text>';
+    });
+    p.querySelector('.qsvg').setAttribute('viewBox','0 0 1300 360');
+    p.querySelector('.qsvg').innerHTML=o+'<text x="40" y="354" font-size="12" fill="#8b9096">bars: error relative to the channel’s own size</text>';
+    var small=errs.filter(function(e,c){return c!==5;}), avg=small.reduce(function(a,b){return a+b;},0)/small.length;
+    p.querySelector('.qinfo').innerHTML='Average error on the seven normal channels: <strong style="color:'+(avg>15?'var(--fail)':'var(--ok)')+'">'+avg.toFixed(1)+'%</strong> · the outlier channel: '+errs[5].toFixed(1)+'%. Each column is drawn on its own vertical scale.';
+  }
+  deck.querySelectorAll('.qpc').forEach(function(p){ qDraw(p); p.querySelector('.qb').addEventListener('input',function(){qDraw(p);}); });
+  /* calibration */
+  var CA=[]; (function(){ var seed=5; function r(){ seed=(seed*16807)%2147483647; return seed/2147483647; }
+    for(var k=0;k<5000;k++){ var v=-Math.log(r()+1e-9)*0.8; if(r()<0.004) v=4+r()*8; CA.push(v); } CA.sort(function(a,b){return a-b;}); })();
+  function pct(q){ return CA[Math.min(CA.length-1,Math.floor(q*CA.length))]; }
+  function calDraw(p){
+    var cl=+p.querySelector('.cl1').value/10; p.querySelector('.clv').textContent=cl.toFixed(1);
+    var step=cl/255, se=0, nclip=0;
+    CA.forEach(function(v){ if(v>cl){ se+=(v-cl)*(v-cl); nclip++; } else { var d=v-Math.round(v/step)*step; se+=d*d; } });
+    var rms=Math.sqrt(se/CA.length);
+    var bins=new Array(60).fill(0); CA.forEach(function(v){ var b=Math.min(59,Math.floor(v/12*60)); bins[b]++; });
+    var mx=Math.max.apply(null,bins), o='';
+    function X(v){ return 40+v/12*1220; }
+    bins.forEach(function(c,b){ var h=c?Math.max(2,Math.sqrt(c/mx)*170):0; o+='<rect x="'+(X(b*0.2)+1)+'" y="'+(190-h)+'" width="'+(1220/60-2)+'" height="'+h+'" fill="'+(b*0.2>=cl?'#a8231f':'#23408f')+'" opacity=".8"/>'; });
+    o+='<line x1="'+X(cl)+'" y1="10" x2="'+X(cl)+'" y2="195" stroke="#a8231f" stroke-width="3"/><text x="'+(X(cl)+(cl>10?-8:8))+'" y="24" font-size="14" fill="#a8231f" font-weight="700" text-anchor="'+(cl>10?'end':'start')+'">clip</text>';
+    [0,2,4,6,8,10,12].forEach(function(v){ o+='<text x="'+X(v)+'" y="214" font-size="12" text-anchor="middle" fill="#8b9096">'+v+'</text>'; });
+    o+='<text x="1260" y="228" font-size="12" text-anchor="end" fill="#8b9096">activation value · bar height on a square-root scale so rare values show</text>';
+    p.querySelector('.calsvg').innerHTML=o;
+    var p99=pct(0.99), se2=0, n2=0; CA.forEach(function(v){ if(v<=p99){ var vv=Math.min(v,cl), d=v-Math.round(vv/step)*step; se2+=d*d; n2++; } });
+    p.querySelector('.calstats').innerHTML='<div>step between levels<b>'+step.toFixed(4)+'</b></div><div>rounding error, typical 99% of values<b>'+Math.sqrt(se2/n2).toFixed(4)+'</b></div><div>values clipped<b>'+(nclip/CA.length*100).toFixed(2)+'%</b></div><div>largest value lost to clipping<b>'+Math.max(0,CA[CA.length-1]-cl).toFixed(1)+'</b></div>';
+  }
+  deck.querySelectorAll('.cal').forEach(function(p){
+    var full=CA[CA.length-1]; p.querySelector('.cl1').max=Math.ceil(full*10); p.querySelector('.cl1').value=Math.ceil(full*10);
+    var base=(function(){ var cl=Math.ceil(full*10)/10, step=cl/255, se=0; CA.forEach(function(v){ var d=v-Math.round(v/step)*step; se+=d*d; }); return Math.sqrt(se/CA.length); })();
+    p.dataset.base=base;
+    calDraw(p);
+    p.querySelector('.cl1').addEventListener('input',function(){calDraw(p);}); });
+  /* temperature */
+  var TL=[['on',6.0],['off',3.6],['stop',1.2],['noise',-1.0]];
+  function tDraw(p){
+    var T=+p.querySelector('.tT').value; p.querySelector('.tTv').textContent=T;
+    var e=TL.map(function(l){return Math.exp(l[1]/T);}), s=e.reduce(function(a,b){return a+b;},0), pr=e.map(function(v){return v/s;}), o='';
+    TL.forEach(function(l,k){ var y=30+k*72, w=pr[k]*560;
+      o+='<text x="0" y="'+(y+30)+'" font-size="18" fill="#15171b" font-weight="700">'+l[0]+'</text>';
+      o+='<rect x="90" y="'+(y+6)+'" width="'+(k===0?560:0)+'" height="16" fill="#c6c3ba"/><rect x="90" y="'+(y+26)+'" width="'+Math.max(w,1)+'" height="26" fill="'+(k===0?'#23408f':'#146b5c')+'" opacity=".85"/><text x="'+(98+Math.max(w,1))+'" y="'+(y+46)+'" font-size="15" fill="#15171b">'+(pr[k]*100).toFixed(1)+'%</text>'; });
+    o+='<rect x="90" y="310" width="16" height="10" fill="#c6c3ba"/><text x="112" y="320" font-size="13" fill="#8b9096">hard label</text><rect x="210" y="310" width="16" height="10" fill="#146b5c"/><text x="232" y="320" font-size="13" fill="#8b9096">teacher, softened at T</text>';
+    p.querySelector('.tsvg').innerHTML=o;
+    p.querySelector('.tinfo').innerHTML= T<2? 'At T = 1 the teacher is nearly certain: almost the same as the hard label.' : 'At T = '+T+' the student can see that <strong>"off"</strong> is a near miss and <strong>"noise"</strong> is not: '+(pr[1]/pr[3]).toFixed(1)+'× more likely.';
+  }
+  deck.querySelectorAll('.tmp').forEach(function(p){ tDraw(p); p.querySelector('.tT').addEventListener('input',function(){tDraw(p);}); });
+  /* pareto playground */
+  var PM=[['int8 post-training',0.25,0.4,1.5],['int8 aware training',0.25,0.4,0.4],['prune channels 50% + fine-tune',0.55,0.6,1.0],['distil to a half-width student',0.3,0.35,1.5],['low-rank dense layers',0.8,0.9,0.5]];
+  function combo(on){ var sz=180, la=40, ac=92; on.forEach(function(k){ sz*=PM[k][1]; la*=PM[k][2]; ac-=PM[k][3]; }); return [sz,la,ac]; }
+  function pDraw(p){
+    var on=(p.dataset.on||'').split(',').filter(Boolean).map(Number), o='';
+    function X(kb){ return 70+(Math.log10(kb)-0.6)/(Math.log10(250)-0.6)*700; } function Y(a){ return 370-(a-85)/8*330; }
+    o+='<rect x="70" y="40" width="700" height="330" fill="#ffffff" stroke="#e2e0d9"/><rect x="70" y="40" width="'+(X(64)-70)+'" height="330" fill="#146b5c" opacity=".07"/><line x1="'+X(64)+'" y1="40" x2="'+X(64)+'" y2="370" stroke="#146b5c" stroke-dasharray="6 5"/><text x="'+(X(64)-6)+'" y="58" font-size="13" text-anchor="end" fill="#146b5c" font-weight="700">fits 64 KB</text>';
+    [5,10,30,100,200].forEach(function(kb){ o+='<text x="'+X(kb)+'" y="392" font-size="12" text-anchor="middle" fill="#8b9096">'+kb+' KB</text>'; });
+    [86,88,90,92].forEach(function(a){ o+='<text x="62" y="'+(Y(a)+4)+'" font-size="12" text-anchor="end" fill="#8b9096">'+a+'%</text>'; });
+    o+='<text x="420" y="414" font-size="13" text-anchor="middle" fill="#4b5057">model size (log scale)</text>';
+    var all=[]; for(var m=0;m<32;m++){ var ks=[]; for(var k=0;k<5;k++) if(m&(1<<k)) ks.push(k); if(ks.indexOf(0)>=0&&ks.indexOf(1)>=0) continue; var c=combo(ks); all.push({ks:ks,c:c}); }
+    all.forEach(function(a){ a.front=!all.some(function(b){ return b!==a && b.c[0]<=a.c[0] && b.c[2]>=a.c[2] && (b.c[0]<a.c[0]||b.c[2]>a.c[2]); }); });
+    var fr=all.filter(function(a){return a.front;}).sort(function(a,b){return a.c[0]-b.c[0];});
+    o+='<polyline points="'+fr.map(function(a){return X(a.c[0]).toFixed(1)+','+Y(a.c[2]).toFixed(1);}).join(' ')+'" fill="none" stroke="#146b5c" stroke-width="2" opacity=".6"/>';
+    all.forEach(function(a){ o+='<circle cx="'+X(a.c[0]).toFixed(1)+'" cy="'+Y(a.c[2]).toFixed(1)+'" r="6" fill="'+(a.front?'#146b5c':'#c6c3ba')+'" opacity=".7"/>'; });
+    var c=combo(on);
+    o+='<circle cx="'+X(c[0]).toFixed(1)+'" cy="'+Y(c[2]).toFixed(1)+'" r="13" fill="none" stroke="#a8231f" stroke-width="4"/><text x="'+(X(c[0])+18).toFixed(1)+'" y="'+(Y(c[2])-12).toFixed(1)+'" font-size="15" fill="#a8231f" font-weight="700">'+c[1].toFixed(0)+' ms</text>';
+    p.querySelector('.psvg').innerHTML=o;
+    p.querySelectorAll('.pbtns button').forEach(function(b){ b.classList.toggle('on',on.indexOf(+b.dataset.k)>=0); });
+    var fits=c[0]<=64&&c[1]<=15, isFront=all.some(function(a){ return a.front && Math.abs(a.c[0]-c[0])<1e-6 && Math.abs(a.c[2]-c[2])<1e-6; });
+    p.querySelector('.pinfo').innerHTML='<strong>'+c[0].toFixed(0)+' KB · '+c[1].toFixed(0)+' ms · '+c[2].toFixed(1)+'%</strong><br>'+(fits?'<span style="color:var(--ok)">Inside both budgets.</span>':'<span style="color:var(--fail)">Outside the budget ('+(c[0]>64?'size':'')+(c[0]>64&&c[1]>15?' and ':'')+(c[1]>15?'time':'')+').</span>')+(isFront?' On the front.':' <span style="color:var(--amber)">Not on the front: another combination is smaller and at least as accurate.</span>');
+  }
+  deck.querySelectorAll('.par').forEach(function(p){ p.querySelector('.pbtns').innerHTML=PM.map(function(m,k){return '<button data-k="'+k+'">'+m[0]+'</button>';}).join('')+'<button data-k="reset">start again</button>'; pDraw(p); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.qpc .cb button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); qDraw(b.closest('.qpc')); return; }
+    b=e.target.closest('.cal .cb button'); if(b){ b.blur(); var p=b.closest('.cal'), v= b.dataset.c==='max'? CA[CA.length-1] : (b.dataset.c==='p999'? pct(0.999) : pct(0.99)); p.querySelector('.cl1').value=Math.max(10,Math.ceil(v*10)); calDraw(p); return; }
+    b=e.target.closest('.pbtns button'); if(b){ b.blur(); var p2=b.closest('.par');
+      if(b.dataset.k==='reset'){ p2.dataset.on=''; pDraw(p2); return; }
+      var on=(p2.dataset.on||'').split(',').filter(Boolean), ix=on.indexOf(b.dataset.k);
+      if(ix>=0) on.splice(ix,1); else { on.push(b.dataset.k); if(b.dataset.k==='0'){ var j=on.indexOf('1'); if(j>=0) on.splice(j,1); } if(b.dataset.k==='1'){ var j2=on.indexOf('0'); if(j2>=0) on.splice(j2,1); } }
+      p2.dataset.on=on.join(','); pDraw(p2); return; }
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

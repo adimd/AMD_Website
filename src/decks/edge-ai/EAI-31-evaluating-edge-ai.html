@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 31 · Evaluating Edge AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 31 */
+pre{font-size:13.5px;line-height:1.34}
+.num{font-family:var(--mono);font-size:18px}
+input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.big-n.red{color:var(--fail)}
+.cmx .cb button.sel,.lath .cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cmgrid{display:grid;grid-template-columns:150px 1fr 1fr;gap:8px;align-items:stretch}
+.cmgrid .h{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);display:flex;align-items:center}
+.cmgrid .c{border:1px solid var(--rule);border-radius:8px;padding:10px 12px;background:var(--card)}
+.cmgrid .c b{display:block;font-family:var(--mono);font-size:26px}
+.cmgrid .c span{font-size:14px;color:var(--soft)}
+.cmgrid .c input{width:100%;accent-color:var(--accent)}
+.cmgrid .ok b{color:var(--ok)} .cmgrid .bad b{color:var(--fail)}
+.cmbars .mb{display:grid;grid-template-columns:120px 1fr 80px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule)}
+.cmbars .mb span:first-child{font-size:19px}
+.cmbars .tr{height:22px;background:var(--rule);border-radius:4px;overflow:hidden}
+.cmbars .fl{height:100%;border-radius:4px;transition:width .25s}
+.cmbars .v{font-family:var(--mono);font-size:19px;text-align:right}
+.cmbars .note{font-size:17px;color:var(--soft);margin-top:12px}
+.thstats,.lstats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:6px}
+.thstats div,.lstats div{border-top:1px solid var(--rule);padding-top:6px;font-size:15px;color:var(--soft)}
+.thstats b,.lstats b{display:block;font-family:var(--mono);font-size:24px;color:var(--ink)}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 31</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 31 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 31 · unit IV · evaluating edge AI</div>
+    <h1>"It works on my laptop"<br>is not a number.</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">A model can score 99% in Colab and still wake your house up at 3 a.m. Today: what to measure, how to measure it on a stream and on the board, and how to test honestly. A first pass; Unit V goes deeper.</p>
+  </div>
+  <div class="cue">Theory runs to slide 14; the lab is one block at the end (slides 15 to 17). The lab needs only the board and a USB cable. This class sets up the "evaluation and responsible AI" part of the course project's marks.</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>What is your project's baseline, and what must your first model beat?</h2>
+    <table class="dt txt" style="width:100%;max-width:1250px">
+      <tr><th style="width:26%">baseline</th><th>what it is</th><th style="width:26%">the number to beat</th></tr>
+      <tr class="frag"><td>always say "no command"</td><td>the laziest possible model</td><td>its accuracy on a stream: embarrassingly high</td></tr>
+      <tr class="frag"><td>loudness + ZCR rule</td><td>Class 19's voice detector, no learning at all</td><td>its false alarms per hour</td></tr>
+      <tr class="frag"><td>one big classifier</td><td>the course project's "one-classifier baseline" phase</td><td>its recall, size and latency together</td></tr>
+    </table>
+    <p class="frag" style="margin-top:18px;max-width:72ch">A baseline only helps if you measure both with the same yardstick. Choosing that yardstick is today.</p>
+  </div>
+  <div class="cue">Take two or three team answers first. The first row sets up slide 5: on a stream where commands are rare, "always no" scores well on accuracy, which is exactly why accuracy alone is the wrong yardstick.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="99% accurate" data-act="the hook">
+  <div>
+    <div class="kicker">the hook</div>
+    <h2>Your wake-word model is 99% accurate. Ship it?</h2>
+    <div class="ngrid" style="grid-template-columns:repeat(4,1fr);margin-top:10px">
+      <div class="cellx frag"><div class="big-n" style="font-size:46px">99%</div><div class="nlab">right, per one-second window</div></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:46px">× 3,600</div><div class="nlab">windows in an hour of a quiet room</div></div>
+      <div class="cellx frag"><div class="big-n red" style="font-size:46px">36</div><div class="nlab">false wake-ups an hour</div></div>
+      <div class="cellx frag"><div class="big-n red" style="font-size:46px">~860</div><div class="nlab">a day: the lights flicker all night</div></div>
+    </div>
+    <p class="frag big" style="margin-top:24px;max-width:48ch">The same model, measured the right way, is unusable. Choosing <em>what</em> to measure is half of evaluation.</p>
+  </div>
+  <div class="cue">Arithmetic, assuming the 1% errors are spread over background windows: 3,600 × 0.01 = 36 an hour; × 24 = 864 a day. Class 20 made the same point with a 0.1 s hop (360 an hour). Real commercial wake words aim for well under one false accept per several hours.</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="What to evaluate" data-act="what to measure">
+  <div>
+    <h2>Five layers to evaluate. The model's score is only the first.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(5,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:26px">model quality</div><div class="ns">precision, recall, false accepts per hour</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">system behaviour</div><div class="ns">smoothing, cascades, what the whole pipeline does on a stream</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">resources</div><div class="ns">latency distribution, flash, peak SRAM, energy per inference</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">user experience</div><div class="ns">does it feel instant? do people trust it? do they repeat themselves?</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">responsible AI</div><div class="ns">does it work as well for every group of users? (Class 26)</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:76ch">A model can pass layer one and fail every other layer. Plan how you will measure all five before you train anything.</p>
+  </div>
+  <div class="cue">Map to the course project's marks: demo (system and experience), cost breakdown per stage (resources), evaluation and responsible AI (layers one and five).</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="The confusion matrix" data-act="what to measure">
+  <div>
+    <div class="kicker">try it live · four counts, four metrics</div>
+    <h2>Count the four kinds of answer. Every metric is built from them.</h2>
+    <div class="panel calc cmx split" style="grid-template-columns:.95fr 1.05fr;gap:26px;align-items:start">
+      <div>
+        <div class="cb cmpre" style="margin-bottom:10px"><button data-p="0" class="sel">balanced test set</button><button data-p="1">real stream</button><button data-p="2">lazy model: always "no"</button></div>
+        <div class="cmgrid"></div>
+      </div>
+      <div class="cmbars"></div>
+    </div>
+  </div>
+  <div class="cue">Rows are what really happened, columns are what the model said. Precision: of everything it fired on, how much was real. Recall: of everything real, how much it caught. F1 is their harmonic mean. Show the lazy model: 98% accuracy with zero recall, because commands are rare. All counts are invented examples; drag the sliders to make your own.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Errors per hour" data-act="what to measure">
+  <div>
+    <h2>On a stream, count errors per hour, not per clip.</h2>
+    <div class="split" style="gap:26px;margin-top:6px">
+      <div class="panel frag"><span class="lab" style="color:var(--fail)">false accepts per hour</span><p style="font-family:var(--mono);font-size:22px">FA/h = false triggers ÷ hours of background audio</p><p class="small">Measured on long, realistic recordings with no commands in them: TV, cooking, chatter, silence.</p></div>
+      <div class="panel frag"><span class="lab" style="color:var(--amber)">false reject rate</span><p style="font-family:var(--mono);font-size:22px">FRR = missed commands ÷ real commands</p><p class="small">Measured on many people saying the command, at different distances and in different rooms.</p></div>
+    </div>
+    <p class="frag" style="margin-top:20px;max-width:76ch">Two numbers, two test sets, one threshold between them. Push one down and the other comes up. Class 20's smoothing and hold-on change both, so measure the whole pipeline, not just the model.</p>
+  </div>
+  <div class="cue">Accuracy mixes the two error types and depends on how rare commands are in the test set. FA/h and FRR do not: they are what product teams quote. Ask: what would a believable FA/h target be for the Bell project? For the Help project's "emergency"?</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Threshold explorer" data-act="choosing a threshold">
+  <div>
+    <div class="kicker">try it live · model scores for one hour of background and 100 real commands</div>
+    <h2>Slide the threshold. Watch the two errors trade places.</h2>
+    <div class="panel calc thx">
+      <div class="crow" style="grid-template-columns:200px 1fr 90px;gap:16px"><span class="cl">threshold</span><input type="range" class="tht" min="20" max="95" step="1" value="50"><span class="num thtv"></span></div>
+      <div class="split" style="grid-template-columns:1.3fr .7fr;gap:20px;align-items:center">
+        <svg viewBox="0 0 820 300" width="100%" class="thd"></svg>
+        <svg viewBox="0 0 440 300" width="100%" class="thc"></svg>
+      </div>
+      <div class="thstats"></div>
+    </div>
+  </div>
+  <div class="cue">Synthetic score distributions: background windows mostly score low, with a small tail of look-alike sounds; commands mostly score high, with a tail of quiet or far-away speakers. The right panel is the trade-off curve (a DET curve: misses against false accepts per hour, log scale); every threshold is one point on it. Precision assumes 20 real commands an hour. Choosing a point on this curve is a product decision, not a modelling one.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Which error costs more?" data-act="choosing a threshold">
+  <div>
+    <h2>Where you sit on the curve depends on what each mistake costs.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:16%">project</th><th style="width:34%">a false accept means…</th><th style="width:34%">a false reject means…</th><th>lean towards</th></tr>
+      <tr class="frag"><td>Bell</td><td>lights switch on at night</td><td>say it again</td><td>fewer false accepts</td></tr>
+      <tr class="frag"><td>Pump</td><td>water wasted, a motor run dry</td><td>walk to the switch</td><td>fewer false accepts</td></tr>
+      <tr class="frag"><td>Robo</td><td>an unnecessary stop</td><td>a robot that will not stop</td><td>fewer misses on "stop"</td></tr>
+      <tr class="frag"><td>Help</td><td>a nurse checks needlessly</td><td>a patient in distress unheard</td><td>fewer misses on "emergency"</td></tr>
+    </table>
+    <p class="frag" style="margin-top:16px;max-width:76ch">One system can use different thresholds for different words: strict for "lights", lenient for "stop".</p>
+  </div>
+  <div class="cue">Links back to Class 26's "which mistake is worse?". Ask the Chef teams to add their own row: a missed cooker whistle against a false whistle alert.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Latency is a distribution" data-act="resources">
+  <div>
+    <div class="kicker">try it live · 1,000 timed runs of the same function</div>
+    <h2>The average hides the slow runs. Users notice the slow runs.</h2>
+    <div class="panel calc lath">
+      <div class="crow" style="grid-template-columns:200px 1fr"><span class="cl">conditions</span><span class="cb"><button data-m="0" class="sel">quiet board</button><button data-m="1">Wi-Fi busy</button></span></div>
+      <div class="crow" style="grid-template-columns:200px 1fr 110px;gap:16px"><span class="cl">deadline</span><input type="range" class="ldl" min="420" max="2600" step="20" value="600"><span class="num ldlv"></span></div>
+      <svg viewBox="0 0 1300 270" width="100%" class="lsv"></svg>
+      <div class="lstats"></div>
+    </div>
+  </div>
+  <div class="cue">Synthetic timings shaped like a short DSP function on the S3: a tight cluster, plus, with Wi-Fi active, a few runs delayed by radio interrupts. p50 is the median (half the runs are faster); p95 means 95% of runs are faster. Quote p95 or the worst case against a deadline, never the mean. The lab measures the real distribution on your board.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Memory and energy" data-act="resources">
+  <div>
+    <h2>Resources: three more numbers that decide whether it ships.</h2>
+    <div class="ngrid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="cellx frag"><div class="big-n" style="font-size:40px">flash</div><div class="nlab">model weights + code</div><p style="font-size:19px;margin-top:10px">Read it from the build output. 16 MB on our board, but OTA updates need room for two copies (Class 32).</p></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:40px">peak SRAM</div><div class="nlab">activations + buffers at their worst moment</div><p style="font-size:19px;margin-top:10px">The tensor arena's size, plus audio buffers. Peak, not average: one bad moment crashes the board.</p></div>
+      <div class="cellx frag"><div class="big-n" style="font-size:40px">energy</div><div class="nlab">per inference = power × time</div><p style="font-size:19px;margin-top:10px;font-family:var(--mono)">0.3 W × 30 ms = 9 mJ</p></div>
+    </div>
+    <div class="cformula frag" style="font-size:22px;text-align:center;margin-top:20px">battery life ≈ battery energy ÷ (energy per inference × inferences per hour + standby energy per hour)</div>
+  </div>
+  <div class="cue">0.3 W is the same rough awake-board estimate used in Class 17; measure it with a USB power meter if the lab has one. Class 18 showed that standby energy often dominates the sum, so measure it too.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Per group, not just overall" data-act="beyond the average">
+  <div>
+    <h2>Break every metric down by who is using it.</h2>
+    <div class="split" style="grid-template-columns:1.2fr .8fr;gap:26px;align-items:center">
+      <table class="dt txt" style="width:100%"><tr><th style="width:36%">group</th><th>recall on the command "help"</th><th style="width:14%"></th></tr><tr class="frag"><td>adult men</td><td><div style="height:20px;width:480px;border-radius:4px;background:var(--ok)"></div></td><td style="font-family:var(--mono)">96%</td></tr><tr class="frag"><td>adult women</td><td><div style="height:20px;width:465px;border-radius:4px;background:var(--ok)"></div></td><td style="font-family:var(--mono)">93%</td></tr><tr class="frag"><td>older adults</td><td><div style="height:20px;width:420px;border-radius:4px;background:var(--amber)"></div></td><td style="font-family:var(--mono)">84%</td></tr><tr class="frag"><td>children</td><td><div style="height:20px;width:405px;border-radius:4px;background:var(--amber)"></div></td><td style="font-family:var(--mono)">81%</td></tr><tr class="frag"><td>weak or hoarse voices</td><td><div style="height:20px;width:340px;border-radius:4px;background:var(--fail)"></div></td><td style="font-family:var(--mono)">68%</td></tr></table>
+      <div>
+        <div class="cellx"><div class="big-n" style="font-size:52px">91%</div><div class="nlab">overall, if most test speakers are adults</div></div>
+        <p class="frag" style="margin-top:16px">The overall number is fine. The patients the Help project exists for get 68%. Report the worst group, not only the average (Class 26).</p>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Invented numbers for illustration. Per-group results need enough test speakers in each group to mean anything: ten children saying "help" five times each is a start, two is not.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="Three places to test" data-act="beyond the average">
+  <div>
+    <h2>Test in three places. Each catches problems the others miss.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">1</div><div class="ut">offline test set</div><div class="ud">In Colab, on held-out recordings. Fast and repeatable. Catches a weak model. Misses everything about the board.</div></div>
+      <div class="ucard frag"><div class="un">2</div><div class="ut">on-device test</div><div class="ud">The same recordings played into the real board, or fed in over Serial. Catches int8 losses, front-end bugs, latency and memory.</div></div>
+      <div class="ucard frag"><div class="un">3</div><div class="ut">field test</div><div class="ud">Real users, real rooms, hours at a time. Catches noise, accents, distance, and people using it in ways you never imagined.</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:76ch">The gap between 1 and 2 is your deployment bug; the gap between 2 and 3 is your data problem.</p>
+  </div>
+  <div class="cue">A common surprise: the Colab model scores well, the board scores badly, and the cause is a front end (spectrogram settings, scaling) that differs between Python and C. Testing the same clip in both places finds it quickly.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Test honestly" data-act="beyond the average">
+  <div>
+    <h2>Three ways to fool yourself, and how not to.</h2>
+    <svg viewBox="0 0 1100 180" width="100%" height="180"><rect x="40" y="40" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><rect x="100" y="70" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><rect x="160" y="100" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><rect x="220" y="40" width="150" height="22" rx="4" fill="#a8231f" opacity=".7"/><rect x="280" y="70" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><rect x="340" y="100" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><rect x="400" y="40" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><rect x="460" y="70" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><rect x="520" y="100" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><rect x="580" y="40" width="150" height="22" rx="4" fill="#a8231f" opacity=".7"/><rect x="640" y="70" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><rect x="700" y="100" width="150" height="22" rx="4" fill="#a8231f" opacity=".7"/><rect x="760" y="40" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><rect x="820" y="70" width="150" height="22" rx="4" fill="#23408f" opacity=".7"/><line x1="40" y1="150" x2="1030" y2="150" stroke="#8b9096"/><text x="40" y="172" font-size="14" fill="#4b5057">one recording, cut into overlapping 1 s windows, then split at random: blue train, red test</text><text x="40" y="22" font-size="15" fill="#a8231f" font-weight="700">the same seconds of audio end up in both sets</text></svg>
+    <table class="dt txt" style="width:100%;margin-top:6px">
+      <tr class="frag"><td style="width:30%">overlapping windows split at random</td><td>split by <strong>recording</strong> first, then cut windows</td></tr>
+      <tr class="frag"><td>same speaker in train and test</td><td>split by <strong>person</strong>: the test speakers are strangers to the model</td></tr>
+      <tr class="frag"><td>tuning the threshold on the test set</td><td>tune on a separate <strong>validation</strong> set; touch the test set once, at the end</td></tr>
+    </table>
+  </div>
+  <div class="cue">Each mistake makes the test score look better than the real world will. Leakage from overlapping windows is the most common one in student projects with streams (Class 20). Ask each team: which of the three could happen in your data pipeline?</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Your project's evaluation plan" data-act="closing theory">
+  <div>
+    <div class="kicker">the course project</div>
+    <h2>Write the evaluation plan before you train.</h2>
+    <table class="dt txt" style="width:100%">
+      <tr><th style="width:26%">layer</th><th>the number</th><th style="width:28%">measured on</th></tr>
+      <tr class="frag"><td>model quality</td><td>FRR per command, FA/h on background audio</td><td>held-out speakers, long background recordings</td></tr>
+      <tr class="frag"><td>system</td><td>end-to-end success per spoken command, with the grammar</td><td>the board, played clips</td></tr>
+      <tr class="frag"><td>resources</td><td>p95 latency, flash, peak SRAM, energy per command</td><td>the board (today's lab)</td></tr>
+      <tr class="frag"><td>experience</td><td>tries per success, time to answer</td><td>five real users</td></tr>
+      <tr class="frag"><td>responsible AI</td><td>worst-group FRR</td><td>speakers grouped by age, voice, accent</td></tr>
+    </table>
+  </div>
+  <div class="cue">This table is a starting template for the "evaluation and responsible AI" part of the project. End of theory: boards out.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Lab: measure the spread" data-act="lab">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">lab · teams of four · board only</div><h2 style="margin-bottom:6px">Time one function 1,000 times. Report the spread, not the average.</h2></div>
+      <div class="panel timer" data-secs="1500"><span class="tdisp">25:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="un">A</div><div class="ut">quiet</div><div class="ud">MODE 0: min, p50, p95, max and mean of Class 21's Goertzel on 320 samples.</div></div>
+      <div class="ucard"><div class="un">B</div><div class="ut">disturbed</div><div class="ud">MODE 1 prints every run; MODE 2 keeps a Wi-Fi scan going. What moves: p50, p95 or max?</div></div>
+      <div class="ucard"><div class="un">C</div><div class="ut">choose</div><div class="ud">Energy per run from an assumed power. Then use slide 7's explorer to pick a threshold for your project.</div></div>
+    </div>
+  </div>
+  <div class="cue">Fast teams: replace the Goertzel call with Class 15's 1,000-element int8 dot product and compare the shape of the two distributions.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Lab: the sketch" data-act="lab">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre><span class="c">// Class 31 · a latency distribution, measured on the board</span>
+<span class="k">#include</span> <span class="s">&lt;WiFi.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;algorithm&gt;</span>
+<span class="k">const int</span> RUNS = <span class="s">1000</span>, M = <span class="s">320</span>;
+<span class="k">int</span> MODE = <span class="s">0</span>;                <span class="c">// ← 0 quiet · 1 print every run · 2 Wi-Fi scanning</span>
+<span class="k">float</span> x[M];  <span class="k">uint32_t</span> t[RUNS];
+
+<span class="k">float</span> <span class="f">goertzel</span>(<span class="k">const float</span>* v, <span class="k">int</span> n, <span class="k">float</span> f) {
+  <span class="k">float</span> c = <span class="s">2</span> * cosf(<span class="s">2</span> * PI * f / <span class="s">16000</span>), s1 = <span class="s">0</span>, s2 = <span class="s">0</span>;
+  <span class="k">for</span> (<span class="k">int</span> k = <span class="s">0</span>; k &lt; n; k++) { <span class="k">float</span> s0 = v[k] + c * s1 - s2; s2 = s1; s1 = s0; }
+  <span class="k">return</span> s1 * s1 + s2 * s2 - c * s1 * s2;
+}
+
+<span class="k">void</span> <span class="f">setup</span>() {
+  Serial.begin(<span class="s">115200</span>);  delay(<span class="s">1000</span>);
+  <span class="k">for</span> (<span class="k">int</span> k = <span class="s">0</span>; k &lt; M; k++) x[k] = sinf(<span class="s">2</span> * PI * <span class="s">1000</span> * k / <span class="s">16000.0</span>) + random(-<span class="s">100</span>, <span class="s">100</span>) / <span class="s">1000.0</span>;
+  <span class="k">if</span> (MODE == <span class="s">2</span>) { WiFi.mode(WIFI_STA);  WiFi.scanNetworks(<span class="k">true</span>); }   <span class="c">// scan in the background</span>
+  <span class="k">volatile float</span> sink = <span class="s">0</span>;
+  <span class="k">for</span> (<span class="k">int</span> r = <span class="s">0</span>; r &lt; RUNS; r++) {
+    int64_t s = esp_timer_get_time();
+    sink += goertzel(x, M, <span class="s">1000</span>);
+    t[r] = (<span class="k">uint32_t</span>)(esp_timer_get_time() - s);
+    <span class="k">if</span> (MODE == <span class="s">1</span>) Serial.printf(<span class="s">"run %d: %u us\n"</span>, r, t[r]);
+    <span class="k">if</span> (MODE == <span class="s">2</span> &amp;&amp; WiFi.scanComplete() &gt;= <span class="s">0</span>) WiFi.scanNetworks(<span class="k">true</span>);  <span class="c">// keep the radio busy</span>
+  }
+  <span class="k">double</span> sum = <span class="s">0</span>;  <span class="k">for</span> (<span class="k">int</span> r = <span class="s">0</span>; r &lt; RUNS; r++) sum += t[r];
+  std::sort(t, t + RUNS);                                     <span class="c">// sorted: percentiles are just positions</span>
+  Serial.printf(<span class="s">"MODE %d  min %u  p50 %u  p95 %u  max %u  mean %.1f  (us)\n"</span>,
+                MODE, t[<span class="s">0</span>], t[RUNS / <span class="s">2</span>], t[RUNS * <span class="s">95</span> / <span class="s">100</span>], t[RUNS - <span class="s">1</span>], sum / RUNS);
+  <span class="k">const float</span> P_ACTIVE = <span class="s">0.3</span>;                               <span class="c">// watts: an ASSUMPTION, not a measurement</span>
+  Serial.printf(<span class="s">"energy per run at p50: about %.0f uJ\n"</span>, P_ACTIVE * t[RUNS / <span class="s">2</span>]);
+}
+<span class="k">void</span> <span class="f">loop</span>() {}</pre>
+    <div class="stack">
+      <div class="kicker">lab · parts A to C</div>
+      <h2>Run MODE 0, 1 and 2. Press reset between runs.</h2>
+      <p class="small">Which number changes most between modes?</p>
+      <p class="small">Watts × microseconds = microjoules.</p>
+    </div>
+  </div>
+  <div class="cue">Untested on a board: check before class. Expect a tight cluster of a few hundred microseconds in MODE 0; MODE 1 and 2 should mostly move p95 and max, not p50, because interrupts hit only some runs. The timing excludes the printing itself. 0.3 W is an assumed active power for the whole board, not the chip; a USB power meter gives a real figure.</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Worksheet" data-act="lab">
+  <div>
+    <div class="kicker">lab · worksheet</div>
+    <h2>Report the spread, then pick an operating point.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)"><div class="wbox" style="min-height:190px"><div class="wk">A · quiet</div><div class="wq">min · p50 · p95 · max · mean</div></div><div class="wbox" style="min-height:190px"><div class="wk">B · printing</div><div class="wq">min · p50 · p95 · max · mean</div></div><div class="wbox" style="min-height:190px"><div class="wk">B · Wi-Fi</div><div class="wq">min · p50 · p95 · max · mean</div></div><div class="wbox" style="min-height:190px"><div class="wk">B · which moved?</div><div class="wq">and why that one</div></div><div class="wbox" style="min-height:190px"><div class="wk">C · energy</div><div class="wq">µJ per run, at the assumed 0.3 W</div></div><div class="wbox" style="min-height:190px"><div class="wk">C · threshold</div><div class="wq">your project's FA/h target, the threshold it needs on slide 7, and the FRR you accept</div></div></div>
+  </div>
+  <div class="cue">The last box needs the threshold explorer: leave slide 7 open on one laptop per team, or let teams open the deck themselves.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">Your wake word gives 1 false accept per hour and misses 8% of real commands. Which would you trade, and how?</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>deploying edge AI</strong>. Getting the model onto a thousand boards, and updating it safely.</p>
+  </div>
+  <div class="cue">Good answers name the product first (a light switch should trade some misses for fewer false accepts; a robot "stop" the other way), then the lever: move the threshold along the trade-off curve, add smoothing or a second-stage check to cut false accepts, or collect more varied speakers to cut misses without moving the threshold.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer')||e.target.closest('pre')||e.target.closest('.calc'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* confusion matrix */
+  var CMP=[[90,10,8,92],[18,2,40,3540],[0,20,0,3580]];
+  function cmStats(p){
+    var v=[0,1,2,3].map(function(i2){ return +p.querySelector('.cmgrid input[data-i="'+i2+'"]').value; });
+    p.querySelectorAll('.cmgrid input').forEach(function(inp){ inp.parentNode.querySelector('b').textContent=(+inp.value).toLocaleString('en-IN'); });
+    var TP=v[0],FN=v[1],FP=v[2],TN=v[3], tot=TP+FN+FP+TN;
+    var acc=(TP+TN)/(tot||1), pre=TP+FP?TP/(TP+FP):0, rec=TP+FN?TP/(TP+FN):0, f1=pre+rec?2*pre*rec/(pre+rec):0;
+    var M=[['accuracy',acc,'#8b9096'],['precision',pre,'#23408f'],['recall',rec,'#146b5c'],['F1',f1,'#b06a12']];
+    var h=M.map(function(m){ return '<div class="mb"><span>'+m[0]+'</span><div class="tr"><div class="fl" style="width:'+(m[1]*100).toFixed(0)+'%;background:'+m[2]+'"></div></div><span class="v">'+(m[1]*100).toFixed(0)+'%</span></div>'; }).join('');
+    var note= acc>0.9 && rec<0.5 ? '<span style="color:var(--fail)">High accuracy, poor recall: accuracy is fooled by how rare commands are.</span>' : 'Precision = TP ÷ (TP + FP) · recall = TP ÷ (TP + FN)';
+    p.querySelector('.cmbars').innerHTML=h+'<div class="note">'+note+'</div>';
+  }
+  function cmDraw(p){
+    var v=CMP[+(p.dataset.p||0)];
+    var cells=[['TP','caught','ok',v[0],0,200],['FN','missed','bad',v[1],1,200],['FP','false alarm','bad',v[2],2,4000],['TN','correctly quiet','ok',v[3],3,4000]];
+    function cellH(c){ return '<div class="c '+c[2]+'"><b>'+c[3]+'</b><span>'+c[0]+' · '+c[1]+'</span><input type="range" min="0" max="'+c[5]+'" step="1" value="'+c[3]+'" data-i="'+c[4]+'"></div>'; }
+    var g='<div class="h"></div><div class="h">model says yes</div><div class="h">model says no</div>';
+    g+='<div class="h">really a command</div>'+cellH(cells[0])+cellH(cells[1]);
+    g+='<div class="h">really background</div>'+cellH(cells[2])+cellH(cells[3]);
+    p.querySelector('.cmgrid').innerHTML=g;
+    p.querySelectorAll('.cmgrid input').forEach(function(inp){ inp.addEventListener('input',function(){ cmStats(p); }); });
+    p.querySelectorAll('.cmpre button').forEach(function(b){ b.classList.toggle('sel',b.dataset.p===(p.dataset.p||'0')); });
+    cmStats(p);
+  }
+  deck.querySelectorAll('.cmx').forEach(cmDraw);
+  /* threshold explorer */
+  function npdf(x,m,s){ return Math.exp(-0.5*((x-m)/s)*((x-m)/s))/(s*Math.sqrt(2*Math.PI)); }
+  function ncdf(x,m,s){ var z=(x-m)/(s*Math.SQRT2), t=1/(1+0.3275911*Math.abs(z)), y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-z*z); return 0.5*(1+(z>=0?y:-y)); }
+  function bgTail(th){ return 0.985*(1-ncdf(th,0.18,0.09))+0.015*(1-ncdf(th,0.52,0.12)); }
+  function kwBelow(th){ return 0.9*ncdf(th,0.78,0.09)+0.1*ncdf(th,0.55,0.12); }
+  function thDraw(p){
+    var th=+p.querySelector('.tht').value/100; p.querySelector('.thtv').textContent=th.toFixed(2);
+    function X(v){ return 40+v*760; }
+    var o='<line x1="40" y1="250" x2="800" y2="250" stroke="#c6c3ba"/>', db='', dk='';
+    for(var q=0;q<=200;q++){ var v=q/200, b=0.985*npdf(v,0.18,0.09)+0.015*npdf(v,0.52,0.12), k=0.9*npdf(v,0.78,0.09)+0.1*npdf(v,0.55,0.12);
+      db+=(q?'L':'M')+X(v).toFixed(1)+' '+(250-b*42).toFixed(1); dk+=(q?'L':'M')+X(v).toFixed(1)+' '+(250-k*42).toFixed(1); }
+    o+='<path d="'+db+'L'+X(1)+' 250L'+X(0)+' 250Z" fill="#8b9096" opacity=".25"/><path d="'+db+'" fill="none" stroke="#4b5057" stroke-width="2"/>';
+    o+='<path d="'+dk+'L'+X(1)+' 250L'+X(0)+' 250Z" fill="#146b5c" opacity=".2"/><path d="'+dk+'" fill="none" stroke="#146b5c" stroke-width="2.5"/>';
+    o+='<rect x="'+X(th)+'" y="20" width="'+(X(1)-X(th))+'" height="230" fill="#23408f" opacity=".06"/><line x1="'+X(th)+'" y1="14" x2="'+X(th)+'" y2="250" stroke="#23408f" stroke-width="3"/><text x="'+(X(th)+6)+'" y="30" font-size="14" fill="#23408f" font-weight="700">fires above here</text>';
+    o+='<text x="'+X(0.18)+'" y="70" font-size="14" fill="#4b5057" text-anchor="middle" font-weight="700">background</text><text x="'+X(0.8)+'" y="150" font-size="14" fill="#146b5c" text-anchor="middle" font-weight="700">real commands</text>';
+    [0,0.5,1].forEach(function(v){ o+='<text x="'+X(v)+'" y="272" font-size="13" fill="#8b9096" text-anchor="middle">'+v+'</text>'; });
+    o+='<text x="420" y="294" font-size="13" fill="#4b5057" text-anchor="middle">model score</text>';
+    p.querySelector('.thd').innerHTML=o;
+    var fa=3600*bgTail(th), frr=kwBelow(th);
+    function CX(f){ return 50+(Math.log10(Math.max(f,0.01))+2)/5*370; } function CY(r){ return 250-Math.min(1,r)*230; }
+    var c='<line x1="50" y1="250" x2="420" y2="250" stroke="#c6c3ba"/><line x1="50" y1="20" x2="50" y2="250" stroke="#c6c3ba"/>', d='';
+    for(var q2=20;q2<=95;q2++){ var tt=q2/100; d+=(q2>20?'L':'M')+CX(3600*bgTail(tt)).toFixed(1)+' '+CY(kwBelow(tt)).toFixed(1); }
+    c+='<path d="'+d+'" fill="none" stroke="#23408f" stroke-width="2.5"/><circle cx="'+CX(fa)+'" cy="'+CY(frr)+'" r="9" fill="#a8231f"/>';
+    [[0.01,'0.01'],[1,'1'],[100,'100'],[1000,'1k']].forEach(function(a){ c+='<text x="'+CX(a[0])+'" y="268" font-size="12" fill="#8b9096" text-anchor="middle">'+a[1]+'</text>'; });
+    c+='<text x="235" y="290" font-size="13" fill="#4b5057" text-anchor="middle">false accepts per hour (log)</text><text x="16" y="135" font-size="13" fill="#4b5057" text-anchor="middle" transform="rotate(-90 16 135)">missed commands</text><text x="44" y="'+(CY(0)+4)+'" font-size="12" fill="#8b9096" text-anchor="end">0</text><text x="44" y="'+(CY(1)+4)+'" font-size="12" fill="#8b9096" text-anchor="end">100%</text>';
+    p.querySelector('.thc').innerHTML=c;
+    var tp=20*(1-frr), pr=tp/(tp+fa||1);
+    p.querySelector('.thstats').innerHTML='<div>false accepts per hour<b style="color:'+(fa>1?'var(--fail)':'var(--ok)')+'">'+(fa<0.1?fa.toFixed(2):fa.toFixed(1))+'</b></div><div>commands missed (FRR)<b style="color:'+(frr>0.1?'var(--fail)':'var(--ok)')+'">'+(frr*100).toFixed(1)+'%</b></div><div>recall<b>'+((1-frr)*100).toFixed(1)+'%</b></div><div>precision · 20 commands/h<b>'+(pr*100).toFixed(0)+'%</b></div>';
+  }
+  deck.querySelectorAll('.thx').forEach(function(p){ thDraw(p); p.querySelector('.tht').addEventListener('input',function(){thDraw(p);}); });
+  /* latency histogram */
+  var LAT=[[],[]]; (function(){ var seed=11; function r(){ seed=(seed*16807)%2147483647; return seed/2147483647; } function g(){ var u=r()||1e-9, v=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+    for(var k=0;k<1000;k++){ var base=412+g()*5; LAT[0].push(base); LAT[1].push(r()<0.06? base+150+Math.pow(r(),2)*2000 : base+g()*4); } })();
+  function latDraw(p){
+    var m=+p.querySelector('.cb button.sel').dataset.m, dl=+p.querySelector('.ldl').value; p.querySelector('.ldlv').textContent=dl+' µs';
+    var d=LAT[m].slice().sort(function(a,b){return a-b;}), mean=d.reduce(function(a,b){return a+b;},0)/d.length, p50=d[500], p95=d[950], mx=d[999];
+    var lo=380, hi=2700, nb=116, bins=new Array(nb).fill(0); d.forEach(function(v){ var b=Math.min(nb-1,Math.max(0,Math.floor((v-lo)/(hi-lo)*nb))); bins[b]++; });
+    function X(v){ return 60+(v-lo)/(hi-lo)*1200; } function Y(c){ return 220-Math.sqrt(c)/Math.sqrt(1000)*190; }
+    var o='<line x1="60" y1="220" x2="1260" y2="220" stroke="#c6c3ba"/>';
+    bins.forEach(function(c,b){ if(c) o+='<rect x="'+X(lo+b*(hi-lo)/nb)+'" y="'+Y(c)+'" width="'+(1200/nb-1)+'" height="'+(220-Y(c))+'" fill="'+(lo+b*(hi-lo)/nb>dl?'#a8231f':'#23408f')+'" opacity=".85"/>'; });
+    [[mean,'mean','#b06a12',50],[p95,'p95','#146b5c',72],[mx,'max','#a8231f',94]].forEach(function(l){ o+='<line x1="'+X(l[0])+'" y1="20" x2="'+X(l[0])+'" y2="220" stroke="'+l[2]+'" stroke-width="2" stroke-dasharray="5 4"/><text x="'+(X(l[0])+5)+'" y="'+l[3]+'" font-size="13" fill="'+l[2]+'" font-weight="700">'+l[1]+'</text>'; });
+    o+='<line x1="'+X(dl)+'" y1="10" x2="'+X(dl)+'" y2="220" stroke="#15171b" stroke-width="2.5"/><text x="'+(X(dl)+6)+'" y="22" font-size="13" fill="#15171b" font-weight="700">deadline</text>';
+    [400,1000,1500,2000,2500].forEach(function(v){ o+='<text x="'+X(v)+'" y="240" font-size="12" fill="#8b9096" text-anchor="middle">'+v+' µs</text>'; });
+    o+='<text x="60" y="262" font-size="13" fill="#4b5057">bar height: square root of the count, so rare slow runs stay visible</text>';
+    p.querySelector('.lsv').innerHTML=o;
+    var miss=d.filter(function(v){return v>dl;}).length;
+    p.querySelector('.lstats').innerHTML='<div>mean<b>'+mean.toFixed(0)+' µs</b></div><div>p50 · p95<b>'+p50.toFixed(0)+' · '+p95.toFixed(0)+' µs</b></div><div>worst run<b>'+mx.toFixed(0)+' µs</b></div><div>runs over the deadline<b style="color:'+(miss?'var(--fail)':'var(--ok)')+'">'+miss+' / 1000</b></div>';
+  }
+  deck.querySelectorAll('.lath').forEach(function(p){ latDraw(p); p.querySelector('.ldl').addEventListener('input',function(){latDraw(p);}); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.cmpre button'); if(b){ b.blur(); var p=b.closest('.cmx'); p.dataset.p=b.dataset.p; cmDraw(p); return; }
+    b=e.target.closest('.lath .cb button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); latDraw(b.closest('.lath')); return; }
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>

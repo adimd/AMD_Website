@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 32 · Deploying Edge AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --letterbox:#e6e4de; --stage:#faf9f6; --card:#ffffff;
+  --ink:#15171b; --body:#4b5057; --soft:#8b9096;
+  --rule:#e2e0d9; --rule2:#c6c3ba;
+  --accent:#23408f; --accent-soft:#eaeef7;
+  --fail:#a8231f; --fail-soft:#fbeeed;
+  --ok:#146b5c; --ok-soft:#e6f1ee;
+  --amber:#b06a12; --amber-soft:#fbf0dc;
+  --display:'Fraunces',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--letterbox);font-family:var(--sans);color:var(--body);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;top:50%;left:50%;width:1600px;height:900px;transform-origin:50% 50%;
+  background:var(--stage);box-shadow:0 24px 70px rgba(20,22,28,.16);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 84px 92px;display:none;flex-direction:column;justify-content:center}
+.slide.on{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrow{position:absolute;top:28px;left:84px;font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);z-index:5}
+.eyebrow b{color:var(--accent);font-weight:400}
+.act{position:absolute;top:28px;right:84px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rule2);z-index:5}
+#rail{position:absolute;left:84px;right:84px;bottom:32px;display:flex;gap:2px;align-items:flex-end;height:11px;z-index:5}
+#rail i{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:.22s}
+#rail i.done{background:var(--rule2)} #rail i.here{background:var(--accent);height:10px}
+#count{position:absolute;right:84px;bottom:54px;font-family:var(--mono);font-size:13px;color:var(--soft);z-index:5}
+#help{position:absolute;left:84px;bottom:54px;font-family:var(--mono);font-size:12px;color:#adb1b6;letter-spacing:.08em;z-index:5}
+
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+h1{font-family:var(--display);font-weight:600;font-size:78px;line-height:1.02;letter-spacing:-.02em;color:var(--ink)}
+h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin-bottom:18px}
+p{font-size:23px;line-height:1.45;max-width:36ch}
+p+p{margin-top:12px}
+.big{font-size:29px;line-height:1.32;color:var(--ink);font-weight:300;max-width:30ch}
+.small{font-size:18px;line-height:1.5;color:var(--soft);max-width:62ch}
+strong{color:var(--ink);font-weight:700} em{font-style:italic;color:var(--ink)}
+.num{font-family:var(--mono);font-weight:700;color:var(--ink)}
+code{font-family:var(--mono);font-size:.87em;color:var(--accent);background:var(--accent-soft);padding:.05em .3em;border-radius:4px}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:center}
+.stack>*+*{margin-top:12px}
+.center{text-align:center;align-items:center}
+.center p,.center .big{margin-left:auto;margin-right:auto}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:18px 20px}
+.panel .lab{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);display:block;margin-bottom:10px}
+.panel p{max-width:none}
+
+.rem{background:var(--card);border:1px solid var(--rule2);border-left:4px solid var(--accent);
+  border-radius:9px;padding:14px 18px;margin-top:14px}
+.rem .h{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.rem ul{list-style:none}
+.rem li{font-size:18.5px;line-height:1.42;color:var(--ink);padding:4px 0 4px 18px;position:relative}
+.rem li::before{content:'';position:absolute;left:0;top:12px;width:6px;height:6px;border-radius:50%;background:var(--rule2)}
+.rem.red{border-left-color:var(--fail)} .rem.red .h{color:var(--fail)}
+.rem.green{border-left-color:var(--ok)} .rem.green .h{color:var(--ok)}
+
+.big-n{font-family:var(--display);font-size:60px;font-weight:600;color:var(--accent);line-height:1}
+.big-n.red{color:var(--fail)} .big-n.green{color:var(--ok)}
+.nlab{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-top:6px}
+.ngrid{display:grid;gap:20px;text-align:center}
+.ngrid .cellx{border-top:2px solid var(--rule2);padding-top:14px}
+
+table.dt{border-collapse:collapse;font-family:var(--mono);font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+table.dt th{font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:12px 22px;border-bottom:1px solid var(--rule);text-align:right}
+table.dt td{padding:10px 22px;text-align:right;border-bottom:1px solid var(--rule)}
+table.dt tr:last-child td{border-bottom:none}
+/* text tables (added for this deck, same palette) */
+table.dt.txt th,table.dt.txt td{text-align:left}
+table.dt.txt td{font-family:var(--sans);font-size:18px;color:var(--body);padding:8px 20px}
+table.dt.txt td:first-child{font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:700;white-space:nowrap}
+
+.eq{font-family:var(--mono);font-size:26px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 22px;display:inline-block}
+.eq .v{color:var(--accent);font-weight:700}
+
+/* video hook (added for this deck) */
+.vid{width:1088px;height:612px;border:0;border-radius:11px;background:#14181f;box-shadow:0 18px 40px rgba(20,22,28,.22);display:block}
+.vidwrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.vidcap{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.vidcap a{color:var(--accent);text-decoration:none}
+
+/* term card (added) */
+.term-card{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:start}
+.term-card .word{font-family:var(--display);font-size:56px;font-weight:600;color:var(--accent);line-height:1.05;letter-spacing:-.015em}
+.term-card .word small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-top:12px;font-weight:400}
+
+/* chips for sorting (added) */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:19px;color:var(--ink);background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:7px 16px}
+.chip.dev{border-color:var(--ok);background:var(--ok-soft)}
+.chip.cld{border-color:var(--accent);background:var(--accent-soft)}
+.chip.mix{border-color:var(--amber);background:var(--amber-soft)}
+
+/* class 6 */
+pre{background:#14181f;border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:16px;line-height:1.5;color:#d9dee6;box-shadow:0 10px 24px rgba(20,22,28,.18);overflow:hidden}
+pre .c{color:#7f8896} pre .k{color:#ff96a2} pre .s{color:#ffd47e} pre .f{color:#84d8ea}
+.river{position:relative;overflow:hidden;height:120px;border-radius:8px;background:#f2f1ec}
+.river .rv{position:absolute;left:0;top:0;animation:flow 9s linear infinite}
+@keyframes flow{from{transform:translateX(0)}to{transform:translateX(-1680px)}}
+.river .now{position:absolute;right:40px;top:0;bottom:0;border-left:3px solid var(--fail);padding-left:8px;font-family:var(--mono);font-size:13px;color:var(--fail)}
+.rmeta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--soft);margin-top:6px}
+.calc{padding:20px 26px}
+.crow{display:grid;grid-template-columns:110px 1fr;align-items:center;padding:8px 0}
+.cl{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.cb{display:flex;gap:8px;flex-wrap:wrap}
+.cb button,.rbtns button{height:42px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--sans);font-size:18px;color:var(--ink);cursor:pointer}
+.cb button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.cformula{font-family:var(--mono);font-size:22px;color:var(--ink);background:var(--stage);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;margin:14px 0}
+.cformula b{color:var(--accent)}
+.cbar{display:grid;grid-template-columns:200px 1fr 120px;align-items:center;gap:14px;margin-top:10px}
+.cbl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+.ctrack{height:26px;border-radius:6px;background:var(--rule);overflow:hidden}
+.cfill{height:100%;width:0;background:var(--ok);transition:width .35s ease}
+.cfill.over{background:var(--fail)}
+.cpct{font-family:var(--mono);font-size:16px;color:var(--ink);text-align:right}
+.cverdict{font-size:24px;font-weight:600;color:var(--ink);margin-top:16px}
+.rbtns{display:flex;gap:10px;justify-content:center;margin-top:6px}
+.rbtns button[data-r="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+/* class 3 */
+.rhead,.rrow{display:grid;grid-template-columns:170px 1fr 44px 1fr 44px 300px;align-items:center;gap:0}
+.rhead span{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);padding:0 0 8px 4px}
+.rrow{margin-top:12px}
+.rlab{font-family:var(--mono);font-size:14px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em}
+.rc{background:var(--card);border:1px solid var(--rule2);border-radius:999px;padding:12px 22px;font-size:20px;color:var(--ink);text-align:center}
+.rc.rr{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-family:var(--mono);font-weight:700}
+.rarr{text-align:center;font-size:26px;color:var(--soft)}
+.siggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.sigp{padding:14px 18px}
+.sigp svg{display:block;width:100%;height:auto}
+.sigp .rate{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:11px;padding:16px 18px}
+.tile .tk{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tile .tp{font-size:21px;color:var(--ink);font-weight:600;line-height:1.25;margin-top:8px;min-height:52px}
+.tile .ts{font-size:15px;color:var(--body);margin-top:6px}
+.tile .tl{display:flex;gap:6px;margin-top:12px}
+.bl{width:30px;height:30px;border-radius:7px;border:1px solid var(--rule2);font-family:var(--mono);font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--rule2)}
+.bl.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.ucards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.ucard{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ucard .un{font-family:var(--display);font-size:30px;font-weight:600;color:var(--accent);line-height:1}
+.ucard .ut{font-size:20px;font-weight:600;color:var(--ink);margin-top:8px;line-height:1.25}
+.ucard .ud{font-size:16px;color:var(--body);margin-top:6px;line-height:1.35}
+.timer{display:flex;align-items:center;gap:18px;padding:12px 18px}
+.timer .tdisp{font-family:var(--mono);font-size:44px;font-weight:700;color:var(--ink);min-width:150px}
+.timer.done .tdisp{color:var(--fail)}
+.timer button{height:38px;padding:0 16px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:14px;color:var(--ink);cursor:pointer;margin-left:6px}
+.timer button[data-a="go"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:12px}
+.wbox{border:2px dashed var(--rule2);border-radius:12px;padding:18px;min-height:300px;background:var(--stage)}
+.wbox .wk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.wbox .wq{font-size:18px;color:var(--soft);margin-top:10px;font-style:italic}
+.wbox.filled{border:1px solid var(--ok);border-top:5px solid var(--ok);background:var(--card)}
+.wbox.filled .wk{color:var(--ok)}
+.wbox.filled.blue{border-color:var(--accent)} .wbox.filled.blue .wk{color:var(--accent)}
+.wbox .wa{font-size:21px;color:var(--ink);margin-top:12px;line-height:1.35}
+.ntiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ntile{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--accent);border-radius:10px;padding:16px 18px}
+.ntile .nb{font-family:var(--display);font-size:40px;font-weight:600;color:var(--accent);line-height:1.05}
+.ntile .nk{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-top:8px}
+.ntile .ns{font-size:15px;color:var(--soft);margin-top:4px}
+
+/* class 32 */
+pre{font-size:13.6px;line-height:1.36}
+.num{font-family:var(--mono);font-size:18px}
+.ota,.roll,.tel{padding:16px 22px}
+.otat button.sel,.rollp button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.sbtns{display:flex;gap:10px;flex-wrap:wrap}
+.sbtns button{height:44px;padding:0 18px;border:1px solid var(--rule2);background:var(--card);border-radius:8px;font-family:var(--mono);font-size:15px;color:var(--ink);cursor:pointer}
+.sbtns button:disabled{opacity:.35;cursor:default}
+.otalog{margin-top:14px;font-family:var(--mono);font-size:15px;line-height:1.55;min-height:150px}
+.otalog .bad{color:var(--fail)} .otalog .good{color:var(--ok)}
+.rollstats{margin-top:14px;font-size:19px;line-height:1.6}
+.rollstats b{font-family:var(--mono)}
+.telitems label{display:grid;grid-template-columns:30px 1fr 110px 70px;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--rule);font-size:18px;cursor:pointer}
+.telitems input{width:20px;height:20px;accent-color:var(--accent)}
+.telitems .tb{font-family:var(--mono);font-size:14px;text-align:right;color:var(--soft)}
+.telitems .tp{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;text-align:right}
+.telbig{font-family:var(--display);font-size:46px;font-weight:600;color:var(--accent)}
+svg text{font-family:'JetBrains Mono',monospace}
+.frag{opacity:0;transition:opacity .28s ease}
+.frag.shown{opacity:1}
+.cue{position:absolute;left:84px;right:84px;bottom:78px;display:none;padding:11px 15px;border-left:4px solid var(--fail);
+  background:var(--fail-soft);color:#8a2420;font-size:17px;line-height:1.4;font-style:italic;z-index:6}
+body.cues .cue{display:block}
+
+#jump{position:absolute;inset:0;z-index:20;background:rgba(250,249,246,.985);display:none;padding:52px 84px}
+#jump.open{display:block}
+#jump h4{font-family:var(--mono);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--soft);margin-bottom:14px;font-weight:400}
+#jump ol{list-style:none;columns:2;column-gap:60px}
+#jump li{padding:5px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:17px;color:var(--body);display:flex;gap:14px;break-inside:avoid}
+#jump li:hover{color:var(--accent)} #jump li span{font-family:var(--mono);font-size:.72em;color:var(--soft);width:36px}
+@media (prefers-reduced-motion:reduce){.slide.on{animation:none}.frag{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="eyebrow">Edge AI &nbsp;·&nbsp; <b>Class 32</b></div>
+  <div class="act" id="actlab"></div>
+  <div id="deck"></div>
+  <div id="rail"></div>
+  <div id="count"></div>
+  <div id="help">← → &nbsp;·&nbsp; o index &nbsp;·&nbsp; n notes &nbsp;·&nbsp; f full</div>
+  <div id="jump"><h4>Class 32 · running order</h4><ol id="jumplist"></ol></div>
+</div>
+
+<template id="slides">
+<!-- 01 -->
+<section class="slide" data-t="Title" data-act="opening">
+  <div>
+    <div class="kicker">class 32 · unit IV · deploying edge AI</div>
+    <h1>It worked on your desk.<br>Now it lives on 500 walls.</h1>
+    <p class="big" style="margin-top:26px;max-width:46ch">Deploying an edge model means shipping firmware: code, runtime, model and settings, onto devices you will never touch again. Today: how to version it, update it safely, watch it, and undo it.</p>
+  </div>
+  <div class="cue">Theory runs to slide 13; the lab is one block at the end (slides 14 to 17). No Wi-Fi needed. Teams start from their Class 24 sketch (MPU6050 on SDA 8, SCL 9; touch pads on GPIO 4 and 5).</div>
+</section>
+
+<!-- 02 -->
+<section class="slide" data-t="Recall" data-act="opening">
+  <div>
+    <div class="kicker">last class's exit ticket</div>
+    <h2>One false accept an hour, 8% of real commands missed. Which would you trade?</h2>
+    <div class="split" style="gap:24px;margin-top:8px">
+      <div class="rem frag"><div class="h">it depends on the product</div><ul><li>A light switch: accept more misses; a false wake at 3 a.m. is worse.</li><li>A hospital "emergency" call: accept more false accepts; a miss is dangerous.</li></ul></div>
+      <div class="rem green frag"><div class="h">how to move along the trade-off</div><ul><li>Move the threshold; add smoothing (Class 20).</li><li>Add a confirming second stage or sensor (Class 22).</li><li>Better data for the cases that fail (Class 30).</li></ul></div>
+    </div>
+    <p class="frag" style="margin-top:20px;max-width:72ch">Every one of those fixes has to reach devices already in people's homes. That is deployment.</p>
+  </div>
+  <div class="cue">Two minutes. The best answers named the product first and the threshold second.</div>
+</section>
+
+<!-- 03 -->
+<section class="slide" data-t="After the demo" data-act="the hook">
+  <div>
+    <div class="kicker">the hook</div>
+    <h2>Your doorbell ships to 500 homes. Three months later…</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">1</div><div class="ut">"It keeps ringing at night."</div><div class="ud">Which version is that house running? Which threshold?</div></div>
+      <div class="ucard frag"><div class="un">2</div><div class="ut">You have a better model.</div><div class="ud">How does it get onto 500 boards without 500 USB cables?</div></div>
+      <div class="ucard frag"><div class="un">3</div><div class="ut">The new model is worse for some houses.</div><div class="ud">How would you even know? And how do you take it back?</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:72ch">On your desk, the answer to all three is "plug it in". In the field, each needs to be designed in before the first device ships.</p>
+  </div>
+  <div class="cue">Ask the class for answers to each before revealing the next. Most will say "update it over Wi-Fi"; push on question 3: how would you know?</div>
+</section>
+
+<!-- 04 -->
+<section class="slide" data-t="The model becomes firmware" data-act="what deploying means">
+  <div>
+    <h2>At the edge, deploying a model means building and flashing firmware.</h2>
+    <svg viewBox="0 0 1380 170" width="100%" height="170"><defs><marker id="dp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b9096"/></marker></defs><g class=""><rect x="0" y="40" width="236" height="110" rx="12" fill="#fff" stroke="#8b9096" stroke-width="2"/><text x="118" y="86" font-size="18" text-anchor="middle" font-weight="700" fill="#8b9096">trained model</text><text x="118" y="114" font-size="13" text-anchor="middle" fill="#4b5057">Keras / PyTorch, float32</text></g><g class="frag"><rect x="276" y="40" width="236" height="110" rx="12" fill="#fff" stroke="#23408f" stroke-width="2"/><text x="394" y="86" font-size="18" text-anchor="middle" font-weight="700" fill="#23408f">converted</text><text x="394" y="114" font-size="13" text-anchor="middle" fill="#4b5057">int8 .tflite file</text><line x1="240" y1="95" x2="272" y2="95" stroke="#8b9096" stroke-width="2" marker-end="url(#dp)"/></g><g class="frag"><rect x="552" y="40" width="236" height="110" rx="12" fill="#fff" stroke="#23408f" stroke-width="2"/><text x="670" y="86" font-size="18" text-anchor="middle" font-weight="700" fill="#23408f">C array</text><text x="670" y="114" font-size="13" text-anchor="middle" fill="#4b5057">model_data.cc · ~300 KB</text><line x1="516" y1="95" x2="548" y2="95" stroke="#8b9096" stroke-width="2" marker-end="url(#dp)"/></g><g class="frag"><rect x="828" y="40" width="236" height="110" rx="12" fill="#fff" stroke="#146b5c" stroke-width="2"/><text x="946" y="86" font-size="18" text-anchor="middle" font-weight="700" fill="#146b5c">firmware image</text><text x="946" y="114" font-size="13" text-anchor="middle" fill="#4b5057">code, runtime, model, config</text><line x1="792" y1="95" x2="824" y2="95" stroke="#8b9096" stroke-width="2" marker-end="url(#dp)"/></g><g class="frag"><rect x="1104" y="40" width="236" height="110" rx="12" fill="#fff" stroke="#146b5c" stroke-width="2"/><text x="1222" y="86" font-size="18" text-anchor="middle" font-weight="700" fill="#146b5c">flash on the board</text><text x="1222" y="114" font-size="13" text-anchor="middle" fill="#4b5057">one file, written once</text><line x1="1068" y1="95" x2="1100" y2="95" stroke="#8b9096" stroke-width="2" marker-end="url(#dp)"/></g></svg>
+    <div class="split frag" style="gap:24px;margin-top:10px">
+      <div class="rem"><div class="h">in flash · read-only, survives power-off</div><ul><li>Your code, the inference runtime (TFLite Micro or ESP-DL), and the model's weights as a constant array.</li></ul></div>
+      <div class="rem green"><div class="h">in SRAM · while it runs</div><ul><li>The "tensor arena": scratch memory for activations, sized once at startup (Class 7: weights in flash, activations in SRAM).</li></ul></div>
+    </div>
+  </div>
+  <div class="cue">In the cloud, "deploying a model" can mean uploading a file to a server. On a microcontroller there is usually no file system for the model: it is compiled into the program. Changing the model means changing the firmware, which is why the rest of today is about firmware updates.</div>
+</section>
+
+<!-- 05 -->
+<section class="slide" data-t="A map of the flash" data-act="what deploying means">
+  <div>
+    <h2>The flash is divided up before your code ever runs.</h2>
+    <svg viewBox="0 0 1340 250" width="100%" height="250"><rect x="0.0" y="40" width="76.8" height="90" rx="6" fill="#8b9096" opacity="0.65"/><line x1="39.4" y1="130" x2="39.4" y2="150" stroke="#8b9096"/><text x="45.4" y="154" font-size="14" fill="#8b9096" font-weight="700">bootloader</text><rect x="78.8" y="40" width="7.9" height="90" rx="6" fill="#8b9096" opacity="0.65"/><line x1="83.8" y1="130" x2="83.8" y2="172" stroke="#8b9096"/><text x="89.8" y="176" font-size="14" fill="#8b9096" font-weight="700">partition table</text><rect x="88.7" y="40" width="47.3" height="90" rx="6" fill="#b06a12" opacity="0.65"/><line x1="113.3" y1="130" x2="113.3" y2="194" stroke="#b06a12"/><text x="119.3" y="198" font-size="14" fill="#b06a12" font-weight="700">NVS · settings</text><rect x="137.9" y="40" width="17.7" height="90" rx="6" fill="#a8231f" opacity="0.65"/><line x1="147.8" y1="130" x2="147.8" y2="216" stroke="#a8231f"/><text x="153.8" y="220" font-size="14" fill="#a8231f" font-weight="700">otadata</text><rect x="157.6" y="40" width="466.0" height="90" rx="6" fill="#146b5c" opacity="0.85"/><text x="391.7" y="92" font-size="16" text-anchor="middle" fill="#fff" font-weight="700">app0 · slot A</text><rect x="625.7" y="40" width="466.0" height="90" rx="6" fill="#23408f" opacity="0.85"/><text x="859.7" y="92" font-size="16" text-anchor="middle" fill="#fff" font-weight="700">app1 · slot B</text><rect x="1093.7" y="40" width="244.3" height="90" rx="6" fill="#8b9096" opacity="0.85"/><text x="1216.8" y="92" font-size="16" text-anchor="middle" fill="#fff" font-weight="700">file system</text><text x="0" y="24" font-size="14" fill="#4b5057">16 MB flash, start to end (not to scale)</text></svg>
+    <div class="ntiles" style="grid-template-columns:repeat(3,1fr);margin-top:4px">
+      <div class="ntile frag"><div class="nb" style="font-size:26px">two app slots</div><div class="ns">one runs, the other receives the next update (slide 8)</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">otadata</div><div class="ns">a tiny record of which slot to boot</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">NVS</div><div class="ns">key–value settings that survive resets and updates (slide 7, and the lab)</div></div>
+    </div>
+  </div>
+  <div class="cue">Illustrative layout, not to scale. The real layout comes from the partition scheme chosen in Tools → Partition Scheme in the Arduino IDE; schemes with OTA have two app slots, and "no OTA" schemes give one big slot instead. Look at the board's actual table with the class.</div>
+</section>
+
+<!-- 06 -->
+<section class="slide" data-t="Settings as data, versions on everything" data-act="versioning">
+  <div>
+    <h2>Keep what changes often out of the code, and put a version on everything.</h2>
+    <div class="split" style="grid-template-columns:1.15fr .85fr;gap:26px;align-items:start">
+      <table class="dt txt frag" style="width:100%">
+        <tr><th style="width:34%">part</th><th style="width:26%">changes</th><th>keep it as</th></tr>
+        <tr><td>code and runtime</td><td>rarely</td><td>firmware</td></tr>
+        <tr><td>model weights</td><td>every few weeks</td><td>firmware, versioned</td></tr>
+        <tr><td>thresholds, labels</td><td>often</td><td>settings: data, not code</td></tr>
+        <tr><td>calibration, learned values</td><td>per device</td><td>NVS, on that device</td></tr>
+        <tr><td>training data</td><td>grows</td><td>a dated, versioned dataset</td></tr>
+      </table>
+      <pre class="frag" style="font-size:15px">firmware   1.4.2
+model      kws-int8-2026-11-c
+thresholds wake 0.82 · vad -45 dB
+dataset    commands-v7 (2,410 clips)
+device     a4cf12 · boots 37</pre>
+    </div>
+    <p class="frag" style="margin-top:16px;max-width:76ch">Print a banner like this at every boot, and include it in every report. "It rings at night" is unanswerable; "model c, threshold 0.82, boot 37" is a lead.</p>
+  </div>
+  <div class="cue">The banner is an example. A version string costs a few bytes of flash and saves hours of guessing. The dataset line matters for responsible AI too (Class 26): you can say exactly which data a shipped model learned from.</div>
+</section>
+
+<!-- 07 -->
+<section class="slide" data-t="Values that must survive a reset" data-act="versioning">
+  <div>
+    <h2>Learned and calibrated values live in NVS: flash that behaves like a tiny dictionary.</h2>
+    <div class="split" style="grid-template-columns:1fr 1fr;gap:26px;align-items:center">
+      <pre style="font-size:16px"><span class="k">#include</span> <span class="s">&lt;Preferences.h&gt;</span>
+Preferences prefs;
+
+prefs.begin(<span class="s">"edgeai"</span>, <span class="k">false</span>);          <span class="c">// a namespace</span>
+prefs.putFloat(<span class="s">"vadT"</span>, -<span class="s">45.0</span>);         <span class="c">// write</span>
+<span class="k">float</span> t = prefs.getFloat(<span class="s">"vadT"</span>, -<span class="s">40</span>);  <span class="c">// read, with a default</span>
+prefs.putBytes(<span class="s">"cenA"</span>, cenA, <span class="k">sizeof</span>(cenA)); <span class="c">// arrays too</span></pre>
+      <div>
+        <div class="ntile frag"><div class="nb" style="font-size:24px">survives</div><div class="ns">power-off, reset, and normally a new upload or an OTA update</div></div>
+        <div class="ntile frag" style="margin-top:12px"><div class="nb" style="font-size:24px">write rarely</div><div class="ns">flash wears out after many writes: save when learning ends, not every frame</div></div>
+        <div class="ntile frag" style="margin-top:12px"><div class="nb" style="font-size:24px">store a version with it</div><div class="ns">values learned for model b may be nonsense for model c</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Preferences is the Arduino-ESP32 wrapper around ESP-IDF's NVS (non-volatile storage). Flash cells survive on the order of tens of thousands to around a hundred thousand erase cycles, and NVS spreads writes out, so saving a few times a day is fine; saving 50 times a second is not. Exact endurance depends on the chip: treat the figure as an order of magnitude.</div>
+</section>
+
+<!-- 08 -->
+<section class="slide" data-t="Updating over the air" data-act="updates">
+  <div>
+    <h2>Over-the-air updates: write the new firmware next to the old, switch only when it is proven.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ucard frag"><div class="un">1</div><div class="ut">download</div><div class="ud">into the slot that is <em>not</em> running</div></div>
+      <div class="ucard frag"><div class="un">2</div><div class="ut">verify</div><div class="ud">size, checksum, and ideally a signature (slide 13)</div></div>
+      <div class="ucard frag"><div class="un">3</div><div class="ut">switch and reboot</div><div class="ud">otadata now points at the new slot</div></div>
+      <div class="ucard frag"><div class="un">4</div><div class="ut">prove it, or roll back</div><div class="ud">the new firmware must pass a self-check, or the old slot boots again</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:76ch">The old firmware is never erased until the new one has proved itself. A power cut halfway through a download leaves a working device.</p>
+  </div>
+  <div class="cue">On the ESP32 this is built in: two OTA app partitions plus otadata, and an optional "rollback" mode where a new image must mark itself valid or the bootloader reverts. Arduino offers ArduinoOTA (upload over the local network from the IDE) and HTTP update libraries for fetching from a server. We name them; the lab does not need Wi-Fi.</div>
+</section>
+
+<!-- 09 -->
+<section class="slide" data-t="Update simulator" data-act="updates">
+  <div>
+    <div class="kicker">try it live · two slots, one pointer</div>
+    <h2>Run an update. Then break it, and watch the device survive.</h2>
+    <div class="panel ota">
+      <div class="crow" style="grid-template-columns:170px 1fr"><span class="cl">what goes wrong</span><span class="cb otat"><button data-t="none" class="sel">nothing</button><button data-t="corrupt">download corrupted</button><button data-t="crash">new model crashes at boot</button></span></div>
+      <div class="split" style="grid-template-columns:1.1fr .9fr;gap:24px;align-items:center">
+        <svg viewBox="0 0 700 270" width="100%" class="otasvg"></svg>
+        <div><div class="sbtns otabtns"><button data-o="dl">1 · download</button><button data-o="ver">2 · verify</button><button data-o="boot">3 · switch + reboot</button><button data-o="reset">reset</button></div><div class="otalog"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Simulation of the A/B scheme. Try all three cases. With a corrupted download, verification refuses to switch. With a crashing model, the new slot fails its boot check and the bootloader falls back to the old slot. In both cases the house keeps its working doorbell. The only unsafe path is one that skips a step.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-t="Don't update everyone at once" data-act="updates">
+  <div>
+    <div class="kicker">try it live · 400 devices · the new model is worse on 1 in 20</div>
+    <h2>Staged rollout: give the update to a few first, and watch.</h2>
+    <div class="panel roll">
+      <div class="crow" style="grid-template-columns:170px 1fr"><span class="cl">plan</span><span class="cb rollp"><button data-p="all">everyone at once</button><button data-p="staged" class="sel">staged · 1% → 5% → 25% → 100%</button></span></div>
+      <div class="split" style="grid-template-columns:1fr 1fr;gap:24px;align-items:center">
+        <svg viewBox="0 0 520 300" width="100%" class="rollsvg"></svg>
+        <div><div class="sbtns"><button data-r="next">release next stage</button><button data-r="reset">reset</button></div><div class="rollstats"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Simulation. Assumption: each updated device that is worse sends a health warning within a day (more false wakes, lower confidence), and any warning halts the rollout and rolls the updated devices back. The first small group is often called the "canary". Staged rollouts trade speed for safety: the good update also reaches everyone later.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-t="Watching devices you can't see" data-act="monitoring">
+  <div>
+    <h2>Monitoring: count things on the device, send summaries, never the raw data by default.</h2>
+    <div class="ntiles" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ntile frag"><div class="nb" style="font-size:26px">health</div><div class="ns">versions, boots, resets, free memory, battery</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">activity</div><div class="ns">wakes per day, commands per day, time spent awake</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">quality hints</div><div class="ns">confidence histogram; "that was wrong" button presses</div></div>
+      <div class="ntile frag"><div class="nb" style="font-size:26px">drift signals</div><div class="ns">background loudness creeping up; confidences slowly falling</div></div>
+    </div>
+    <p class="frag" style="margin-top:22px;max-width:76ch">The device usually has no labels (Class 20). It cannot report its accuracy, but it can report <strong>symptoms</strong> that change when accuracy changes.</p>
+  </div>
+  <div class="cue">A confidence histogram is a classic drift signal: if the share of "barely above threshold" detections grows week by week, something has changed in the homes or the hardware. The next slide makes the privacy cost of each choice concrete.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-t="What should it report?" data-act="monitoring">
+  <div>
+    <div class="kicker">try it live · tick what each doorbell sends home every day</div>
+    <h2>Every report costs bytes and privacy. Choose.</h2>
+    <div class="panel tel split" style="grid-template-columns:1.1fr .9fr;gap:24px;align-items:start">
+      <div class="telitems"></div>
+      <div>
+        <div class="telbig"></div>
+        <div class="cbar" style="grid-template-columns:110px 1fr;margin-top:10px"><span class="cl">privacy</span><div class="ctrack"><div class="cfill telpriv"></div></div></div>
+        <div class="telverdict" style="margin-top:12px;font-size:20px"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cue">Byte counts are rough, illustrative estimates (for example, raw audio at 16 kHz, 16-bit for a full day is about 2.8 GB). The point: the useful summaries total well under a kilobyte a day and reveal almost nothing about the household; audio clips multiply the bytes by a thousand and change what the product is (Class 26). If clips are ever needed for improving the model, make it opt-in and say so.</div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-t="Only your firmware" data-act="security">
+  <div>
+    <h2>An update channel is a door. Make sure only you can walk through it.</h2>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard frag"><div class="un">signed firmware</div><div class="ut">reject anything you didn't sign</div><div class="ud">The device checks a signature before switching slots: a fake model or firmware is refused.</div></div>
+      <div class="ucard frag"><div class="un">secure boot</div><div class="ut">the chip checks at every power-on</div><div class="ud">The ESP32-S3 can refuse to run unsigned code at all.</div></div>
+      <div class="ucard frag"><div class="un">flash encryption</div><div class="ut">a stolen board reveals little</div><div class="ud">Model weights and stored settings can't simply be read out.</div></div>
+    </div>
+    <table class="dt txt frag" style="width:100%;margin-top:18px">
+      <tr><th style="width:30%">your project, before gate 2</th><th>one line each</th></tr>
+      <tr><td>versions</td><td>firmware, model and thresholds printed at boot and sent with every report</td></tr>
+      <tr><td>update path</td><td>how a new model reaches a board, and how it is undone</td></tr>
+      <tr><td>what it reports</td><td>the few counters you would want from 30 boards in the exhibition hall</td></tr>
+    </table>
+  </div>
+  <div class="cue">Named only: enabling secure boot and flash encryption on the ESP32 involves burning one-time eFuses and can permanently lock a board if done wrongly. Do not try it on lab boards. The project table ties today to the course project's link-and-language gate.</div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-t="Lab: make it a product" data-act="lab">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+      <div><div class="kicker">lab · teams of four · your Class 24 board and sketch</div><h2 style="margin-bottom:6px">Version the model, keep what it learns, and give it a factory reset.</h2></div>
+      <div class="panel timer" data-secs="1500"><span class="tdisp">25:00</span><span class="tb"><button data-a="go">start</button><button data-a="reset">reset</button></span></div>
+    </div>
+    <div class="ucards" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ucard"><div class="un">A</div><div class="ut">version it</div><div class="ud">Move the factory centroids into model.h with a MODEL_VERSION. Print a boot banner and a boot counter.</div></div>
+      <div class="ucard"><div class="un">B</div><div class="ut">keep what it learns</div><div class="ud">Teach gestures, send 's' to save. Press reset: does the board still know them?</div></div>
+      <div class="ucard"><div class="un">C</div><div class="ut">undo it</div><div class="ud">Hold pad 4 while pressing reset: factory model. Then change MODEL_VERSION, upload, and see what happens to the saved centroids.</div></div>
+    </div>
+  </div>
+  <div class="cue">In the Arduino IDE, add model.h as a new tab (the down-arrow at the right of the tab bar → New Tab). Check that "Erase All Flash Before Sketch Upload" is Disabled in the Tools menu, or every upload wipes NVS: that itself makes a good worksheet question.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-t="Lab A: model.h and the boot" data-act="lab">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre><span class="c">// ---- model.h · the "model" ships as versioned data ----</span>
+<span class="k">#pragma once</span>
+<span class="k">#define</span> FW_VERSION    <span class="s">"1.0.0"</span>
+<span class="k">#define</span> MODEL_VERSION <span class="s">"gesture-centroids-a"</span>     <span class="c">// ← change when the model changes</span>
+<span class="k">const int</span> D = <span class="s">6</span>;                                  <span class="c">// mean x,y,z · std x,y,z</span>
+<span class="k">const float</span> FACTORY_A[D] = { <span class="s">0.2</span>, <span class="s">0.3</span>, <span class="s">9.7</span>, <span class="s">0.05</span>, <span class="s">0.05</span>, <span class="s">0.05</span> };  <span class="c">// ← your still/flat numbers</span>
+<span class="k">const float</span> FACTORY_B[D] = { <span class="s">0.4</span>, <span class="s">0.5</span>, <span class="s">9.5</span>, <span class="s">3.0</span>, <span class="s">3.0</span>, <span class="s">3.0</span> };     <span class="c">// ← your shake numbers</span>
+
+<span class="c">// ---- in the sketch: replace the Class 24 sums with these ----</span>
+<span class="k">#include</span> <span class="s">&lt;Preferences.h&gt;</span>
+<span class="k">#include</span> <span class="s">"model.h"</span>
+Preferences prefs;
+<span class="k">float</span> cenA[D], cenB[D];  <span class="k">int</span> cntA = <span class="s">0</span>, cntB = <span class="s">0</span>;
+
+<span class="k">void</span> <span class="f">loadModel</span>() {
+  <span class="k">bool</span> same = prefs.getString(<span class="s">"ver"</span>, <span class="s">""</span>) == MODEL_VERSION;
+  <span class="k">if</span> (same &amp;&amp; prefs.getBytesLength(<span class="s">"cenA"</span>) == <span class="k">sizeof</span>(cenA)) {
+    prefs.getBytes(<span class="s">"cenA"</span>, cenA, <span class="k">sizeof</span>(cenA));  prefs.getBytes(<span class="s">"cenB"</span>, cenB, <span class="k">sizeof</span>(cenB));
+    Serial.println(<span class="s">"model: learned centroids from flash"</span>);
+  } <span class="k">else</span> {
+    memcpy(cenA, FACTORY_A, <span class="k">sizeof</span>(cenA));  memcpy(cenB, FACTORY_B, <span class="k">sizeof</span>(cenB));
+    Serial.println(same ? <span class="s">"model: factory"</span> : <span class="s">"model: factory (saved values were for another model)"</span>);
+  }
+}
+<span class="c">// setup(): after Wire.begin and mpu.begin</span>
+  delay(<span class="s">1000</span>);
+  prefs.begin(<span class="s">"edgeai"</span>, <span class="k">false</span>);
+  <span class="k">if</span> (touchRead(<span class="s">4</span>) &gt; touchRead(<span class="s">5</span>) * <span class="s">1.2</span>) {                   <span class="c">// pad 4 held at boot</span>
+    prefs.clear();  Serial.println(<span class="s">"FACTORY RESET"</span>);
+  }
+  <span class="k">uint32_t</span> boots = prefs.getUInt(<span class="s">"boots"</span>, <span class="s">0</span>) + <span class="s">1</span>;  prefs.putUInt(<span class="s">"boots"</span>, boots);
+  Serial.printf(<span class="s">"firmware %s · model %s · boot %u\n"</span>, FW_VERSION, MODEL_VERSION, boots);
+  loadModel();</pre>
+    <div class="stack">
+      <div class="kicker">lab · part A</div>
+      <h2>A boot banner and a factory model.</h2>
+      <p class="small">Put your own Class 24 centroids in FACTORY_A and FACTORY_B.</p>
+      <p class="small">Reset three times. Does the boot count go up?</p>
+    </div>
+  </div>
+  <div class="cue">The factory-reset check compares pad 4 with untouched pad 5, so it works without knowing pad 4's resting value; on the ESP32-S3 touch readings rise when touched. If a team's pads differ a lot at rest, they can use a fixed number from their Class 13 measurements instead. Saved centroids carry the model version: after a model change, old learned values are ignored rather than mixed in.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-t="Lab B and C: learn, save, undo" data-act="lab">
+  <div class="split" style="grid-template-columns:1.5fr .5fr;align-items:center">
+    <pre><span class="c">// in loop(), replace the Class 24 learn / infer block with this</span>
+  <span class="k">if</span> (touched(PAD_A, baseA)) {                       <span class="c">// learn A: running mean</span>
+    cntA++;  <span class="k">for</span> (<span class="k">int</span> j = <span class="s">0</span>; j &lt; D; j++) cenA[j] += (f[j] - cenA[j]) / cntA;
+    rgbLedWrite(RGB_BUILTIN, <span class="s">0</span>, <span class="s">0</span>, <span class="s">40</span>);  Serial.printf(<span class="s">"learned A · %d\n"</span>, cntA);
+  } <span class="k">else if</span> (touched(PAD_B, baseB)) {                <span class="c">// learn B</span>
+    cntB++;  <span class="k">for</span> (<span class="k">int</span> j = <span class="s">0</span>; j &lt; D; j++) cenB[j] += (f[j] - cenB[j]) / cntB;
+    rgbLedWrite(RGB_BUILTIN, <span class="s">20</span>, <span class="s">0</span>, <span class="s">40</span>);  Serial.printf(<span class="s">"learned B · %d\n"</span>, cntB);
+  } <span class="k">else</span> {                                          <span class="c">// infer: nearest centroid</span>
+    <span class="k">float</span> dA = <span class="s">0</span>, dB = <span class="s">0</span>;
+    <span class="k">for</span> (<span class="k">int</span> j = <span class="s">0</span>; j &lt; D; j++) { dA += sq(f[j] - cenA[j]);  dB += sq(f[j] - cenB[j]); }
+    <span class="k">bool</span> isA = dA &lt; dB;
+    rgbLedWrite(RGB_BUILTIN, isA ? <span class="s">0</span> : <span class="s">40</span>, isA ? <span class="s">40</span> : <span class="s">20</span>, <span class="s">0</span>);
+    Serial.printf(<span class="s">"%s  dA %.1f  dB %.1f\n"</span>, isA ? <span class="s">"A"</span> : <span class="s">"B"</span>, dA, dB);
+  }
+  <span class="k">if</span> (Serial.available()) {
+    <span class="k">char</span> c = Serial.read();
+    <span class="k">if</span> (c == <span class="s">'s'</span>) {                                       <span class="c">// save: rarely, on purpose</span>
+      prefs.putBytes(<span class="s">"cenA"</span>, cenA, <span class="k">sizeof</span>(cenA));  prefs.putBytes(<span class="s">"cenB"</span>, cenB, <span class="k">sizeof</span>(cenB));
+      prefs.putString(<span class="s">"ver"</span>, MODEL_VERSION);  Serial.println(<span class="s">"saved"</span>);
+    }
+    <span class="k">if</span> (c == <span class="s">'v'</span>) Serial.printf(<span class="s">"firmware %s · model %s\n"</span>, FW_VERSION, MODEL_VERSION);
+  }</pre>
+    <div class="stack">
+      <div class="kicker">lab · parts B and C</div>
+      <h2>Teach, save, reset, check.</h2>
+      <p class="small">Teach both gestures, send 's', press reset. Still right?</p>
+      <p class="small">Part C: hold pad 4 at reset. Then change MODEL_VERSION and upload. What did the board keep?</p>
+    </div>
+  </div>
+  <div class="cue">Starting the running mean from the factory centroid means the first touch moves it all the way to the new example (cnt = 1), so a learned class replaces the factory one; with cnt carried over from flash it would blend instead, a nice extension question. sq() is Arduino's square. Saving only on 's' is deliberate: it keeps flash writes rare (slide 7).</div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-t="Worksheet" data-act="lab">
+  <div>
+    <div class="kicker">lab · worksheet</div>
+    <h2>Six answers.</h2>
+    <div class="wrow" style="grid-template-columns:repeat(3,1fr)"><div class="wbox" style="min-height:190px"><div class="wk">A · boot count</div><div class="wq">after three resets</div></div><div class="wbox" style="min-height:190px"><div class="wk">B · after reset</div><div class="wq">did the learned gestures survive? how do you know?</div></div><div class="wbox" style="min-height:190px"><div class="wk">B · after re-upload</div><div class="wq">same code uploaded again: kept or lost? why?</div></div><div class="wbox" style="min-height:190px"><div class="wk">C · factory reset</div><div class="wq">what changed, what stayed (boot count?)</div></div><div class="wbox" style="min-height:190px"><div class="wk">C · new MODEL_VERSION</div><div class="wq">what happened to the saved centroids, and why is that right?</div></div><div class="wbox" style="min-height:190px"><div class="wk">for 500 devices</div><div class="wq">the three numbers you'd want each board to report</div></div></div>
+  </div>
+  <div class="cue">Factory reset as written clears the whole namespace, including the boot counter: ask whether a real product should keep the counter (usually yes: keep health data, wipe user data). Re-upload keeps NVS unless "Erase All Flash" is enabled.</div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-t="Exit ticket" data-act="closing">
+  <div class="center">
+    <div class="kicker">exit ticket · on paper, before you leave</div>
+    <h2 style="font-size:44px;max-width:32ch;margin:0 auto">Your update makes 1 device in 20 worse. How would you have caught it before every device got it, and how would you undo it?</h2>
+    <p class="small frag" style="margin-top:30px">Next class: <strong>general methods for model optimisation</strong>. Quantisation and pruning, properly this time.</p>
+  </div>
+  <div class="cue">Good answers: a staged rollout with a canary group and health signals that would show the problem (more false wakes, lower confidence), halting automatically; undo by rolling back to the previous slot or pushing the previous version, with the old firmware kept until the new one has proved itself.</div>
+</section>
+</template>
+
+<script>
+(function(){
+  'use strict';
+
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+
+  var deck=document.getElementById('deck');
+  deck.appendChild(document.getElementById('slides').content.cloneNode(true));
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var N=slides.length,i=0,f=0;
+
+  var rail=document.getElementById('rail'), jl=document.getElementById('jumplist');
+  slides.forEach(function(s,k){
+    rail.appendChild(document.createElement('i'));
+    var li=document.createElement('li');
+    li.innerHTML='<span>'+String(k+1).padStart(2,'0')+'</span>'+(s.dataset.t||'');
+    li.onclick=function(){ i=k;f=0;paint(); document.getElementById('jump').classList.remove('open'); };
+    jl.appendChild(li);
+  });
+  var ticks=rail.children, count=document.getElementById('count'), actlab=document.getElementById('actlab');
+
+  function frags(){ return Array.prototype.slice.call(slides[i].querySelectorAll('.frag')); }
+  function stopVideos(){
+    slides.forEach(function(s,k){ if(k!==i){ s.querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src===undefined) fr.dataset.src=fr.src;
+      if(fr.src!=='about:blank') fr.src='about:blank'; }); } });
+    slides[i].querySelectorAll('iframe').forEach(function(fr){
+      if(fr.dataset.src && fr.src==='about:blank') fr.src=fr.dataset.src; });
+  }
+  function paint(){
+    slides.forEach(function(s,k){ s.classList.toggle('on',k===i); });
+    for(var k=0;k<N;k++) ticks[k].className = k<i?'done':(k===i?'here':'');
+    count.textContent=String(i+1).padStart(2,'0')+' / '+N;
+    actlab.textContent=slides[i].dataset.act||'';
+    frags().forEach(function(el,k){ el.classList.toggle('shown',k<f); });
+    stopVideos();
+  }
+  function next(){ var n=frags().length; if(f<n){f++;paint();return;} if(i<N-1){i++;f=0;paint();} }
+  function prev(){ if(f>0){f--;paint();return;} if(i>0){i--;f=slides[i].querySelectorAll('.frag').length;paint();} }
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key,t=e.target.tagName;
+    if(t==='INPUT'||t==='TEXTAREA') return;
+    if(k==='ArrowRight'||k==='PageDown'||k===' '){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();prev();}
+    else if(k==='Home'){i=0;f=0;paint();}
+    else if(k==='End'){i=N-1;f=0;paint();}
+    else if(k==='f'||k==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(k==='n'||k==='N'){document.body.classList.toggle('cues');}
+    else if(k==='o'||k==='O'){document.getElementById('jump').classList.toggle('open');}
+    else if(k==='Escape'){document.getElementById('jump').classList.remove('open');}
+  });
+  var swallowClick=false;
+  document.addEventListener('click',function(e){
+    swallowClick = !!(e.target.closest('.panel')||e.target.closest('#jump')||e.target.closest('button')||e.target.closest('svg')||e.target.closest('a')||e.target.closest('.vidwrap')||e.target.closest('.timer')||e.target.closest('.tel')||e.target.closest('pre'));
+  },true);
+  document.addEventListener('click',function(e){
+    if(swallowClick){ swallowClick=false; return; }
+    if(e.clientX<window.innerWidth*0.26) prev(); else next();
+  });
+
+  /* ---------- OTA simulator ---------- */
+  function otaInit(p){ p._s={slots:['v1.0 · working','empty'], active:0, stage:0, verified:false, log:['booted slot A · v1.0']}; otaDraw(p); }
+  function otaDraw(p){
+    var st=p._s, o='';
+    for(var k=0;k<2;k++){
+      var x=40+k*330, act=st.active===k, txt=st.slots[k], bad=/corrupt|crash/.test(txt), fresh=/v1\.1/.test(txt)&&!bad;
+      var col= bad?'#a8231f':(act?'#146b5c':(fresh?'#23408f':'#c6c3ba'));
+      o+='<rect x="'+x+'" y="70" width="290" height="130" rx="12" fill="'+(act?'#e6f1ee':'#ffffff')+'" stroke="'+col+'" stroke-width="'+(act?3:2)+'"/>';
+      o+='<text x="'+(x+145)+'" y="110" font-size="18" text-anchor="middle" font-weight="700" fill="#15171b">'+(k?'app1 · slot B':'app0 · slot A')+'</text>';
+      o+='<text x="'+(x+145)+'" y="146" font-size="16" text-anchor="middle" fill="'+col+'" font-weight="700">'+txt+'</text>';
+      if(act) o+='<text x="'+(x+145)+'" y="180" font-size="14" text-anchor="middle" fill="#146b5c">running</text>';
+    }
+    var ax=40+st.active*330+145;
+    o+='<rect x="260" y="8" width="180" height="36" rx="8" fill="#fbeceb" stroke="#a8231f"/><text x="350" y="32" font-size="15" text-anchor="middle" fill="#a8231f" font-weight="700">otadata → '+(st.active?'B':'A')+'</text>';
+    o+='<line x1="350" y1="44" x2="'+ax+'" y2="66" stroke="#a8231f" stroke-width="3"/>';
+    o+='<text x="350" y="240" font-size="14" text-anchor="middle" fill="#8b9096">the bootloader reads otadata to decide which slot to run</text>';
+    p.querySelector('.otasvg').innerHTML=o;
+    p.querySelector('.otalog').innerHTML=st.log.map(function(l){ return '<div class="'+(/refus|fail|roll/.test(l)?'bad':(/valid|now running/.test(l)?'good':''))+'">'+l+'</div>'; }).join('');
+    var bs=p.querySelectorAll('.otabtns button');
+    bs[0].disabled=st.stage!==0; bs[1].disabled=st.stage!==1; bs[2].disabled=st.stage!==2;
+  }
+  function otaStep(p,o){
+    var st=p._s, mode=p.querySelector('.otat button.sel').dataset.t, other=1-st.active;
+    if(o==='reset'){ otaInit(p); return; }
+    if(o==='dl'){ st.slots[other]= mode==='corrupt'? 'v1.1 · corrupt' : (mode==='crash'? 'v1.1 · crash' : 'v1.1 · new'); st.slots[other]=st.slots[other].replace('v1.1 · crash','v1.1 · new'); st.crash=(mode==='crash'); st.corrupt=(mode==='corrupt'); if(st.corrupt) st.slots[other]='v1.1 · corrupt';
+      st.log.push('downloaded v1.1 into slot '+(other?'B':'A')+' (old firmware untouched)'); st.stage=1; }
+    else if(o==='ver'){ if(st.corrupt){ st.log.push('verify: checksum mismatch, update refused'); st.log.push('still running v1.0: nothing changed'); st.stage=3; } else { st.log.push('verify: size and checksum OK'); st.stage=2; } }
+    else if(o==='boot'){ st.active=other; st.log.push('otadata → slot '+(other?'B':'A')+'; rebooting…');
+      if(st.crash){ st.slots[other]='v1.1 · crash'; st.log.push('boot check failed: new model crashed'); st.active=1-other; st.log.push('rolled back: slot '+(st.active?'B':'A')+' v1.0 boots again'); }
+      else { st.slots[1-other]='v1.0 · kept as backup'; st.slots[other]='v1.1 · working'; st.log.push('self-test passed: marked valid, v1.1 now running'); }
+      st.stage=3; }
+    otaDraw(p);
+  }
+  deck.querySelectorAll('.ota').forEach(otaInit);
+  /* ---------- staged rollout ---------- */
+  var RN=400, RORD=[], RBAD={};
+  (function(){ var seed=11; function r(){ seed=(seed*16807)%2147483647; return seed/2147483647; }
+    for(var k=0;k<RN;k++) RORD.push(k);
+    for(var k2=RN-1;k2>0;k2--){ var j=Math.floor(r()*(k2+1)); var t=RORD[k2]; RORD[k2]=RORD[j]; RORD[j]=t; }
+    var nb=0; for(var k3=0;k3<RN;k3++){ if(r()<0.05){ RBAD[k3]=1; nb++; } }
+    RBAD[RORD[7]]=1; })();
+  function rollInit(p){ p._r={stage:0, updated:0, halted:false, rolled:false}; rollDraw(p); }
+  function rollStages(p){ return p.querySelector('.rollp button.sel').dataset.p==='all'? [400] : [4,20,100,400]; }
+  function rollDraw(p){
+    var r=p._r, o='', hurt=0;
+    var upd={}; for(var k=0;k<r.updated;k++) upd[RORD[k]]=1;
+    for(var d=0;d<RN;d++){
+      var x=14+(d%20)*25, y=14+Math.floor(d/20)*14.2, col='#e2e0d9';
+      if(upd[d]){ if(RBAD[d]){ col= r.rolled?'#b06a12':'#a8231f'; hurt++; } else col= r.rolled?'#c6c3ba':'#146b5c'; }
+      o+='<circle cx="'+x+'" cy="'+y+'" r="5.5" fill="'+col+'"/>';
+    }
+    p.querySelector('.rollsvg').innerHTML=o;
+    var ST=rollStages(p), next=ST[r.stage];
+    var msg='Devices on the new model: <b>'+r.updated+' / 400</b><br>Devices made worse so far: <b style="color:var(--fail)">'+hurt+'</b><br>';
+    if(r.halted) msg+='<span style="color:var(--fail);font-weight:700">Health warnings → rollout halted, '+r.updated+' devices rolled back.</span><br><span style="color:var(--soft)">Only '+hurt+' homes ever saw the bad model.</span>';
+    else if(r.updated===400) msg+='<span style="color:var(--fail);font-weight:700">Everyone has it. The warnings arrive tomorrow, from '+hurt+' homes at once.</span>';
+    else msg+='<span style="color:var(--soft)">Next: release to '+next+' devices.</span>';
+    p.querySelector('.rollstats').innerHTML=msg;
+    p.querySelector('[data-r="next"]').disabled= r.halted || r.updated===400;
+  }
+  function rollNext(p){
+    var r=p._r, ST=rollStages(p); if(r.halted||r.updated===400) return;
+    r.updated=ST[r.stage]; r.stage++;
+    var hurt=0; for(var k=0;k<r.updated;k++) if(RBAD[RORD[k]]) hurt++;
+    if(hurt>0 && ST.length>1){ r.halted=true; r.rolled=true; }
+    rollDraw(p);
+  }
+  deck.querySelectorAll('.roll').forEach(rollInit);
+  /* ---------- telemetry ---------- */
+  var TEL=[['firmware and model versions',40,0,1],['boot and reset counts',8,0,1],['wakes per day',4,1,1],['confidence histogram (10 bins)',40,1,1],['"that was wrong" presses',4,1,0],['battery voltage, hourly',96,0,0],['transcript of each command',2000,2,0],['5 s audio clip of each wake',1600000,3,0],['all audio, all day',2764800000,4,0]];
+  var PLAB=['none','low','high','very high','extreme'], PCOL=['#146b5c','#146b5c','#b06a12','#a8231f','#a8231f'];
+  function fmtB(b){ return b<1000? b+' B' : (b<1e6? (b/1000).toFixed(b<1e4?1:0)+' KB' : (b<1e9? (b/1e6).toFixed(1)+' MB' : (b/1e9).toFixed(1)+' GB')); }
+  function telDraw(p){
+    var tot=0, pr=0, n=0;
+    p.querySelectorAll('.telitems input').forEach(function(c){ if(c.checked){ var t=TEL[+c.dataset.k]; tot+=t[1]; pr=Math.max(pr,t[2]); n++; } });
+    p.querySelector('.telbig').innerHTML=fmtB(tot)+' <span style="font-size:18px;color:var(--soft)">per device per day</span>';
+    var f=p.querySelector('.telpriv'); f.style.width=((pr+1)/5*100)+'%'; f.style.background=PCOL[pr];
+    var v=p.querySelector('.telverdict');
+    v.innerHTML= n===0? 'Nothing sent: you will learn about problems from angry users.' :
+      (pr<=1? '<span style="color:var(--ok)">Enough to spot crashes, drift and bad updates, and it reveals little about the household. × 500 devices = '+fmtB(tot*500)+' a day.</span>' :
+      (pr===2? '<span style="color:var(--amber)">Transcripts say what people asked for: needs consent and a clear notice (Class 26).</span>' :
+      '<span style="color:var(--fail)">Recording people’s homes. × 500 devices = '+fmtB(tot*500)+' a day, and a very different product.</span>'));
+  }
+  deck.querySelectorAll('.tel').forEach(function(p){
+    p.querySelector('.telitems').innerHTML=TEL.map(function(t,k){ return '<label><input type="checkbox" data-k="'+k+'"'+(t[3]?' checked':'')+'><span>'+t[0]+'</span><span class="tb">'+fmtB(t[1])+'</span><span class="tp" style="color:'+PCOL[t[2]]+'">'+PLAB[t[2]]+'</span></label>'; }).join('');
+    p.querySelectorAll('input').forEach(function(c){ c.addEventListener('change',function(){ telDraw(p); }); });
+    telDraw(p);
+  });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.otabtns button'); if(b){ b.blur(); otaStep(b.closest('.ota'),b.dataset.o); return; }
+    b=e.target.closest('.otat button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); otaInit(b.closest('.ota')); return; }
+    b=e.target.closest('.rollp button'); if(b){ b.blur(); b.parentNode.querySelectorAll('button').forEach(function(q){q.classList.remove('sel');}); b.classList.add('sel'); rollInit(b.closest('.roll')); return; }
+    b=e.target.closest('.roll .sbtns button'); if(b){ b.blur(); var p=b.closest('.roll'); if(b.dataset.r==='reset') rollInit(p); else rollNext(p); return; }
+  });
+
+  var tmr=null;
+  function tset(el,secs){ el.dataset.left=secs; var m=Math.floor(secs/60), q=secs%60;
+    el.querySelector('.tdisp').textContent=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
+    el.classList.toggle('done',secs<=0); }
+  deck.querySelectorAll('.timer').forEach(function(el){ tset(el,+el.dataset.secs); });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.timer button'); if(!b) return;
+    var el=b.closest('.timer'), go=el.querySelector('button[data-a="go"]'); b.blur();
+    if(b.dataset.a==='reset'){ clearInterval(tmr); tmr=null; go.textContent='start'; tset(el,+el.dataset.secs); return; }
+    if(tmr){ clearInterval(tmr); tmr=null; go.textContent='start'; return; }
+    go.textContent='pause';
+    tmr=setInterval(function(){ var l=+el.dataset.left-1; tset(el,Math.max(l,0)); if(l<=0){ clearInterval(tmr); tmr=null; go.textContent='start'; } },1000);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
